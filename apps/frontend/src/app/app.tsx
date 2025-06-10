@@ -311,6 +311,7 @@ export function App() {
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [isDarkMode, setIsDarkMode] = useState(false); // Default to light mode like ChatGPT
+  const [currentAbortController, setCurrentAbortController] = useState<AbortController | null>(null);
 
   const currentConversation = conversations.find(c => c.id === currentConversationId);
   const currentTheme = isDarkMode ? darkTheme : lightTheme;
@@ -452,7 +453,10 @@ export function App() {
     ));
 
     try {
-      // Use streaming endpoint
+      const abortController = new AbortController();
+      setCurrentAbortController(abortController);
+      
+      // Use streaming endpoint with timeout and abort signal
       const response = await fetch('http://localhost:3001/api/chat/stream', {
         method: 'POST',
         headers: {
@@ -461,6 +465,7 @@ export function App() {
         body: JSON.stringify({
           messages: [...conversation.messages, userMessage],
         }),
+        signal: abortController.signal,
       });
 
       if (!response.ok) {
@@ -473,6 +478,8 @@ export function App() {
       if (reader) {
         let currentContent = '';
         let buffer = '';
+        let lastUpdateTime = Date.now();
+        let tokenCount = 0;
 
         try {
           while (true) {
@@ -493,6 +500,7 @@ export function App() {
                     }
                   : c
               ));
+              console.log(`✅ Streaming completed: ${tokenCount} tokens processed`);
               break;
             }
 
@@ -508,41 +516,63 @@ export function App() {
               if (line.trim()) {
                 try {
                   const jsonChunk = JSON.parse(line);
-                  const { token, done, metadata } = jsonChunk;
+                  const { token, done, metadata, error } = jsonChunk;
+                  
+                  // Handle error responses
+                  if (error) {
+                    throw new Error(error.message || 'Unknown streaming error');
+                  }
                   
                   currentContent += token;
+                  tokenCount++;
+                  
+                  const now = Date.now();
+                  
+                  // Throttle UI updates for performance (max 60fps)
+                  if (now - lastUpdateTime >= 16 || done) {
+                    lastUpdateTime = now;
+                    
+                    // Update the message content with metadata
+                    setConversations(prev => prev.map(c => 
+                      c.id === conversation!.id 
+                        ? { 
+                            ...c, 
+                            messages: c.messages.map(m => 
+                              m.id === assistantMessageId 
+                                ? { 
+                                    ...m, 
+                                    content: currentContent,
+                                    metadata: metadata,
+                                    isStreaming: !done 
+                                  }
+                                : m
+                            ),
+                            lastUpdated: new Date() 
+                          }
+                        : c
+                    ));
+                  }
 
-                  // Update the message content with metadata
-                  setConversations(prev => prev.map(c => 
-                    c.id === conversation!.id 
-                      ? { 
-                          ...c, 
-                          messages: c.messages.map(m => 
-                            m.id === assistantMessageId 
-                              ? { 
-                                  ...m, 
-                                  content: currentContent,
-                                  metadata: metadata,
-                                  isStreaming: !done 
-                                }
-                              : m
-                          ),
-                          lastUpdated: new Date() 
-                        }
-                      : c
-                  ));
-
-                  if (metadata) {
-                    console.log(`Progress: ${metadata.index}/${metadata.total_tokens}`, {
-                      confidence: metadata.confidence,
+                  // Log progress for debugging
+                  if (metadata && metadata.progress) {
+                    console.log(`🔄 Generation progress: ${metadata.progress}% (${metadata.index}/${metadata.total_tokens})`, {
+                      confidence: metadata.confidence?.toFixed(3),
                       categories: metadata.categories,
-                      usage: metadata.usage
+                      processing_time: `${metadata.processing_time_ms}ms`
                     });
                   }
 
-                  if (done) break;
+                  if (done) {
+                    console.log(`🎉 Generation complete! Final stats:`, {
+                      total_tokens: metadata?.total_tokens,
+                      processing_time: `${metadata?.processing_time_ms}ms`,
+                      confidence: metadata?.confidence?.toFixed(3),
+                      categories: metadata?.categories
+                    });
+                    break;
+                  }
                 } catch (parseError) {
-                  console.warn('Failed to parse JSON chunk:', line, parseError);
+                  console.warn('⚠️ Failed to parse JSON chunk:', line, parseError);
                 }
               }
             }
@@ -551,14 +581,27 @@ export function App() {
           reader.releaseLock();
         }
       }
-    } catch (error) {
-      console.error('Failed to send message:', error);
-      // Add error message
-      const errorMessage: Message = {
-        id: (Date.now() + 2).toString(),
+    } catch (error: any) {
+      console.error('❌ Streaming error:', error);
+      
+      let errorMessage = 'Sorry, I encountered an error. Please try again.';
+      
+      // Handle specific error types
+      if (error.name === 'AbortError') {
+        errorMessage = 'Request was cancelled.';
+      } else if (error.message?.includes('fetch')) {
+        errorMessage = 'Unable to connect to the server. Please check your connection.';
+      } else if (error.message?.includes('HTTP error')) {
+        errorMessage = `Server error (${error.message}). Please try again.`;
+      }
+      
+      // Replace the streaming message with error
+      const errorMessageObj: Message = {
+        id: assistantMessageId,
         role: 'assistant',
-        content: 'Sorry, I encountered an error. Please try again.',
+        content: errorMessage,
         timestamp: new Date(),
+        isStreaming: false,
       };
 
       setConversations(prev => prev.map(c => 
@@ -566,7 +609,7 @@ export function App() {
           ? { 
               ...c, 
               messages: c.messages.map(m => 
-                m.id === assistantMessageId ? errorMessage : m
+                m.id === assistantMessageId ? errorMessageObj : m
               ),
               lastUpdated: new Date() 
             }
@@ -574,6 +617,7 @@ export function App() {
       ));
     } finally {
       setIsLoading(false);
+      setCurrentAbortController(null);
     }
   };
 
@@ -848,7 +892,13 @@ export function App() {
             value={input}
             onChange={setInput}
             onSend={sendMessage}
-            onStop={() => setIsLoading(false)}
+            onStop={() => {
+              if (currentAbortController) {
+                currentAbortController.abort();
+                setCurrentAbortController(null);
+              }
+              setIsLoading(false);
+            }}
             disabled={isLoading}
             isLoading={isLoading}
             isDarkMode={isDarkMode}
