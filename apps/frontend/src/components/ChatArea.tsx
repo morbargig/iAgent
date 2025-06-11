@@ -5,6 +5,7 @@ import {
   IconButton,
   useTheme,
   Tooltip,
+  Chip,
 } from '@mui/material';
 import {
   SmartToy as BotIcon,
@@ -21,6 +22,8 @@ import {
   Delete as DeleteIcon,
   Share as ShareIcon,
   MoreVert as MoreVertIcon,
+  Api as ApiIcon,
+  Psychology as MockIcon,
 } from '@mui/icons-material';
 import { Message } from '../app/app';
 import { MarkdownRenderer } from './MarkdownRenderer';
@@ -32,6 +35,8 @@ interface ChatAreaProps {
   onToggleSidebar: () => void;
   isDarkMode: boolean;
   onToggleTheme: () => void;
+  useMockMode: boolean;
+  onToggleMockMode: () => void;
   onRefreshMessage?: (messageId: string) => void;
   onEditMessage?: (messageId: string) => void;
   onDeleteMessage?: (messageId: string) => void;
@@ -474,11 +479,13 @@ const TypingIndicator = ({ isDarkMode, theme }: { isDarkMode: boolean; theme: an
 );
 
 // Welcome Screen - Clean, centered
-const WelcomeScreen = ({ isDarkMode, theme, onToggleSidebar, onToggleTheme }: {
+const WelcomeScreen = ({ isDarkMode, theme, onToggleSidebar, onToggleTheme, useMockMode, onToggleMockMode }: {
   isDarkMode: boolean;
   theme: any;
   onToggleSidebar: () => void;
   onToggleTheme: () => void;
+  useMockMode: boolean;
+  onToggleMockMode: () => void;
 }) => (
   <Box
     sx={{
@@ -526,6 +533,37 @@ const WelcomeScreen = ({ isDarkMode, theme, onToggleSidebar, onToggleTheme }: {
       </Typography>
 
       <Box sx={{ flex: 1 }} />
+
+      {/* Mock Mode Toggle */}
+      <Tooltip title={useMockMode ? "Switch to API mode" : "Switch to Mock mode"}>
+        <Chip
+          icon={useMockMode ? <MockIcon /> : <ApiIcon />}
+          label={useMockMode ? "Mock" : "API"}
+          onClick={onToggleMockMode}
+          size="small"
+          variant={useMockMode ? "filled" : "outlined"}
+          sx={{
+            marginRight: '8px',
+            height: '28px',
+            borderRadius: '6px',
+            fontSize: '12px',
+            fontWeight: 600,
+            cursor: 'pointer',
+            transition: 'all 150ms cubic-bezier(0.4, 0, 0.2, 1)',
+            backgroundColor: useMockMode ? theme.palette.warning.main : 'transparent',
+            color: useMockMode ? theme.palette.warning.contrastText : theme.palette.text.secondary,
+            borderColor: useMockMode ? theme.palette.warning.main : theme.palette.divider,
+            '&:hover': {
+              backgroundColor: useMockMode ? theme.palette.warning.dark : theme.palette.action.hover,
+              borderColor: useMockMode ? theme.palette.warning.dark : theme.palette.text.secondary,
+            },
+            '& .MuiChip-icon': {
+              fontSize: '14px',
+              color: 'inherit',
+            },
+          }}
+        />
+      </Tooltip>
 
       <IconButton 
         onClick={onToggleTheme}
@@ -666,7 +704,7 @@ const WelcomeScreen = ({ isDarkMode, theme, onToggleSidebar, onToggleTheme }: {
   </Box>
 );
 
-export function ChatArea({ messages, isLoading, onToggleSidebar, isDarkMode, onToggleTheme, onRefreshMessage, onEditMessage, onDeleteMessage, onShareMessage }: ChatAreaProps) {
+export function ChatArea({ messages, isLoading, onToggleSidebar, isDarkMode, onToggleTheme, useMockMode, onToggleMockMode, onRefreshMessage, onEditMessage, onDeleteMessage, onShareMessage }: ChatAreaProps) {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const theme = useTheme();
 
@@ -688,6 +726,8 @@ export function ChatArea({ messages, isLoading, onToggleSidebar, isDarkMode, onT
         theme={theme}
         onToggleSidebar={onToggleSidebar}
         onToggleTheme={onToggleTheme}
+        useMockMode={useMockMode}
+        onToggleMockMode={onToggleMockMode}
       />
     );
   }
@@ -744,6 +784,37 @@ export function ChatArea({ messages, isLoading, onToggleSidebar, isDarkMode, onT
         </Typography>
 
         <Box sx={{ flex: 1 }} />
+
+        {/* Mock Mode Toggle */}
+        <Tooltip title={useMockMode ? "Switch to API mode" : "Switch to Mock mode"}>
+          <Chip
+            icon={useMockMode ? <MockIcon /> : <ApiIcon />}
+            label={useMockMode ? "Mock" : "API"}
+            onClick={onToggleMockMode}
+            size="small"
+            variant={useMockMode ? "filled" : "outlined"}
+            sx={{
+              marginRight: '8px',
+              height: '28px',
+              borderRadius: '6px',
+              fontSize: '12px',
+              fontWeight: 600,
+              cursor: 'pointer',
+              transition: 'all 150ms cubic-bezier(0.4, 0, 0.2, 1)',
+              backgroundColor: useMockMode ? theme.palette.warning.main : 'transparent',
+              color: useMockMode ? theme.palette.warning.contrastText : theme.palette.text.secondary,
+              borderColor: useMockMode ? theme.palette.warning.main : theme.palette.divider,
+              '&:hover': {
+                backgroundColor: useMockMode ? theme.palette.warning.dark : theme.palette.action.hover,
+                borderColor: useMockMode ? theme.palette.warning.dark : theme.palette.text.secondary,
+              },
+              '& .MuiChip-icon': {
+                fontSize: '14px',
+                color: 'inherit',
+              },
+            }}
+          />
+        </Tooltip>
 
         <IconButton 
           onClick={onToggleTheme}

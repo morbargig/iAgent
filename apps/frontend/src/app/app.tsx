@@ -6,6 +6,8 @@ import { CssBaseline, Box } from '@mui/material';
 import { Sidebar } from '../components/Sidebar';
 import { ChatArea } from '../components/ChatArea';
 import { InputArea } from '../components/InputArea';
+import { useMockMode } from '../hooks/useMockMode';
+import { StreamingClient } from '@chatbot-app/stream-mocks';
 
 // iagent-inspired Design System
 // Philosophy: Clean, minimal, muted aesthetic with subtle interactions
@@ -313,6 +315,25 @@ export function App() {
   const [isDarkMode, setIsDarkMode] = useState(false); // Default to light mode like ChatGPT
   const [currentAbortController, setCurrentAbortController] = useState<AbortController | null>(null);
 
+  // Mock mode hook
+  const mockModeHook = useMockMode();
+  const isMockMode = mockModeHook.useMockMode;
+  const toggleMockMode = mockModeHook.toggleMockMode;
+  
+  // Safe toggle function
+  const handleMockModeToggle = React.useCallback(() => {
+    if (toggleMockMode) {
+      toggleMockMode();
+    }
+  }, [toggleMockMode]);
+  
+  // Streaming client for both API and mock modes
+  const streamingClientRef = useRef<StreamingClient | null>(null);
+  
+  useEffect(() => {
+    streamingClientRef.current = new StreamingClient();
+  }, []);
+
   const currentConversation = conversations.find(c => c.id === currentConversationId);
   const currentTheme = isDarkMode ? darkTheme : lightTheme;
 
@@ -454,134 +475,88 @@ export function App() {
     ));
 
     try {
-      const abortController = new AbortController();
-      setCurrentAbortController(abortController);
-      
-      // Use streaming endpoint with timeout and abort signal
-      const response = await fetch('http://localhost:3000/api/chat/stream', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          messages: [...conversation.messages, userMessage],
-        }),
-        signal: abortController.signal,
-      });
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+      const streamingClient = streamingClientRef.current;
+      if (!streamingClient) {
+        throw new Error('Streaming client not initialized');
       }
 
-      const reader = response.body?.getReader();
-      const decoder = new TextDecoder();
+      console.log(`🚀 Starting ${isMockMode ? 'MOCK' : 'API'} streaming...`);
 
-      if (reader) {
-        let currentContent = '';
-        let buffer = '';
-        let lastUpdateTime = Date.now();
-        let tokenCount = 0;
+      let currentContent = '';
+      let tokenCount = 0;
+      let lastUpdateTime = Date.now();
 
-        try {
-          while (true) {
-            const { done, value } = await reader.read();
+      await streamingClient.streamChat(
+        [...conversation.messages, userMessage],
+        // onToken callback
+        (token: string, metadata?: any) => {
+          currentContent += token;
+          tokenCount++;
+
+          const now = Date.now();
+          
+          // Throttle UI updates for performance (max 60fps)
+          if (now - lastUpdateTime >= 16) {
+            lastUpdateTime = now;
             
-            if (done) {
-              // Mark streaming as complete
-              setConversations(prev => prev.map(c => 
-                c.id === conversation!.id 
-                  ? { 
-                      ...c, 
-                      messages: c.messages.map(m => 
-                        m.id === assistantMessageId 
-                          ? { ...m, isStreaming: false }
-                          : m
-                      ),
-                      lastUpdated: new Date() 
-                    }
-                  : c
-              ));
-              console.log(`✅ Streaming completed: ${tokenCount} tokens processed`);
-              break;
-            }
-
-            // Decode the chunk and add to buffer
-            const chunk = decoder.decode(value, { stream: true });
-            buffer += chunk;
-
-            // Process complete JSON lines
-            const lines = buffer.split('\n');
-            buffer = lines.pop() || ''; // Keep incomplete line in buffer
-
-            for (const line of lines) {
-              if (line.trim()) {
-                try {
-                  const jsonChunk = JSON.parse(line);
-                  const { token, done, metadata, error } = jsonChunk;
-                  
-                  // Handle error responses
-                  if (error) {
-                    throw new Error(error.message || 'Unknown streaming error');
-                  }
-                  
-                  currentContent += token;
-                  tokenCount++;
-                  
-                  const now = Date.now();
-                  
-                  // Throttle UI updates for performance (max 60fps)
-                  if (now - lastUpdateTime >= 16 || done) {
-                    lastUpdateTime = now;
-                    
-                    // Update the message content with metadata
-                    setConversations(prev => prev.map(c => 
-                      c.id === conversation!.id 
+            // Update the message content with metadata
+            setConversations(prev => prev.map(c => 
+              c.id === conversation!.id 
+                ? { 
+                    ...c, 
+                    messages: c.messages.map(m => 
+                      m.id === assistantMessageId 
                         ? { 
-                            ...c, 
-                            messages: c.messages.map(m => 
-                              m.id === assistantMessageId 
-                                ? { 
-                                    ...m, 
-                                    content: currentContent,
-                                    metadata: metadata,
-                                    isStreaming: !done 
-                                  }
-                                : m
-                            ),
-                            lastUpdated: new Date() 
+                            ...m, 
+                            content: currentContent,
+                            metadata: metadata,
+                            isStreaming: true 
                           }
-                        : c
-                    ));
+                        : m
+                    ),
+                    lastUpdated: new Date() 
                   }
-
-                  // Log progress for debugging
-                  if (metadata && metadata.progress) {
-                    console.log(`🔄 Generation progress: ${metadata.progress}% (${metadata.index}/${metadata.total_tokens})`, {
-                      confidence: metadata.confidence?.toFixed(3),
-                      categories: metadata.categories,
-                      processing_time: `${metadata.processing_time_ms}ms`
-                    });
-                  }
-
-                  if (done) {
-                    console.log(`🎉 Generation complete! Final stats:`, {
-                      total_tokens: metadata?.total_tokens,
-                      processing_time: `${metadata?.processing_time_ms}ms`,
-                      confidence: metadata?.confidence?.toFixed(3),
-                      categories: metadata?.categories
-                    });
-                    break;
-                  }
-                } catch (parseError) {
-                  console.warn('⚠️ Failed to parse JSON chunk:', line, parseError);
-                }
-              }
-            }
+                : c
+            ));
           }
-        } finally {
-          reader.releaseLock();
-        }
-      }
+
+          // Log progress for debugging
+          if (metadata && metadata.progress) {
+            console.log(`🔄 Generation progress: ${metadata.progress}% (${metadata.index}/${metadata.total_tokens})`, {
+              confidence: metadata.confidence?.toFixed(3),
+              categories: metadata.categories,
+              processing_time: `${metadata.processing_time_ms}ms`
+            });
+          }
+        },
+        // onComplete callback
+        () => {
+          // Final update with complete content and mark streaming as done
+          setConversations(prev => prev.map(c => 
+            c.id === conversation!.id 
+              ? { 
+                  ...c, 
+                  messages: c.messages.map(m => 
+                    m.id === assistantMessageId 
+                      ? { ...m, content: currentContent, isStreaming: false }
+                      : m
+                  ),
+                  lastUpdated: new Date() 
+                }
+              : c
+          ));
+          console.log(`✅ ${isMockMode ? 'Mock' : 'API'} streaming completed: ${tokenCount} tokens processed`);
+        },
+        // onError callback
+        (error: Error) => {
+          console.error('❌ Streaming error:', error);
+          throw error;
+        },
+        // useMock flag
+        isMockMode,
+        // baseUrl for API mode
+        'http://localhost:3000'
+      );
     } catch (error: any) {
       console.error('❌ Streaming error:', error);
       
@@ -691,97 +666,69 @@ export function App() {
     setIsLoading(true);
 
     try {
-      // Use streaming endpoint
-      const response = await fetch('http://localhost:3000/api/chat/stream', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          messages: messagesToSend,
-        }),
-      });
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+      const streamingClient = streamingClientRef.current;
+      if (!streamingClient) {
+        throw new Error('Streaming client not initialized');
       }
 
-      const reader = response.body?.getReader();
-      const decoder = new TextDecoder();
+      console.log(`🔄 Regenerating ${isMockMode ? 'with MOCK' : 'with API'}...`);
 
-      if (reader) {
-        let currentContent = '';
-        let buffer = '';
+      let currentContent = '';
 
-        try {
-          while (true) {
-            const { done, value } = await reader.read();
-            
-            if (done) {
-              // Mark streaming as complete
-              setConversations(prev => prev.map(c => 
-                c.id === conversation.id 
-                  ? { 
-                      ...c, 
-                      messages: c.messages.map(m => 
-                        m.id === newAssistantMessageId 
-                          ? { ...m, isStreaming: false }
-                          : m
-                      ),
-                      lastUpdated: new Date() 
-                    }
-                  : c
-              ));
-              break;
-            }
+      await streamingClient.streamChat(
+        messagesToSend,
+        // onToken callback
+        (token: string, metadata?: any) => {
+          currentContent += token;
 
-            // Decode the chunk and add to buffer
-            const chunk = decoder.decode(value, { stream: true });
-            buffer += chunk;
-
-            // Process complete JSON lines
-            const lines = buffer.split('\n');
-            buffer = lines.pop() || ''; // Keep incomplete line in buffer
-
-            for (const line of lines) {
-              if (line.trim()) {
-                try {
-                  const jsonChunk = JSON.parse(line);
-                  const { token, done, metadata } = jsonChunk;
-                  
-                  currentContent += token;
-
-                  // Update the message content with metadata
-                  setConversations(prev => prev.map(c => 
-                    c.id === conversation.id 
+          // Update the message content with metadata
+          setConversations(prev => prev.map(c => 
+            c.id === conversation.id 
+              ? { 
+                  ...c, 
+                  messages: c.messages.map(m => 
+                    m.id === newAssistantMessageId 
                       ? { 
-                          ...c, 
-                          messages: c.messages.map(m => 
-                            m.id === newAssistantMessageId 
-                              ? { 
-                                  ...m, 
-                                  content: currentContent,
-                                  metadata: metadata,
-                                  isStreaming: !done 
-                                }
-                              : m
-                          ),
-                          lastUpdated: new Date() 
+                          ...m, 
+                          content: currentContent,
+                          metadata: metadata,
+                          isStreaming: true 
                         }
-                      : c
-                  ));
-
-                  if (done) break;
-                } catch (parseError) {
-                  console.warn('Failed to parse JSON chunk:', line, parseError);
+                      : m
+                  ),
+                  lastUpdated: new Date() 
                 }
-              }
-            }
-          }
-        } finally {
-          reader.releaseLock();
-        }
-      }
+              : c
+          ));
+        },
+        // onComplete callback
+        () => {
+          // Mark streaming as complete
+          setConversations(prev => prev.map(c => 
+            c.id === conversation.id 
+              ? { 
+                  ...c, 
+                  messages: c.messages.map(m => 
+                    m.id === newAssistantMessageId 
+                      ? { ...m, content: currentContent, isStreaming: false }
+                      : m
+                  ),
+                  lastUpdated: new Date() 
+                }
+              : c
+          ));
+          console.log(`✅ Regeneration completed using ${isMockMode ? 'Mock' : 'API'} mode`);
+        },
+        // onError callback
+        (error: Error) => {
+          console.error('Failed to refresh message:', error);
+          throw error;
+        },
+        // useMock flag
+        isMockMode,
+        // baseUrl for API mode
+        'http://localhost:3000'
+      );
     } catch (error) {
       console.error('Failed to refresh message:', error);
       // Add error message
@@ -932,6 +879,8 @@ export function App() {
             onToggleSidebar={toggleSidebar}
             isDarkMode={isDarkMode}
             onToggleTheme={toggleTheme}
+            useMockMode={isMockMode}
+            onToggleMockMode={handleMockModeToggle}
             onRefreshMessage={refreshMessage}
             onEditMessage={editMessage}
             onDeleteMessage={deleteMessage}
