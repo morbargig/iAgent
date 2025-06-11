@@ -1,159 +1,266 @@
-# ChatGPT Clone - Nx Monorepo
+# iAgent2 - AI Chat Application
 
-A modern ChatGPT-like interface built with React and NestJS in an Nx monorepo workspace.
+A modern ChatGPT-like AI chat application built with NX monorepo, React frontend, NestJS backend, and comprehensive mock streaming capabilities.
 
 ## 🚀 Features
 
-- **Dark Theme UI** - ChatGPT-inspired dark interface
-- **Real-time Chat** - Interactive messaging with the AI assistant
-- **Conversation History** - Sidebar with chat history management
-- **Modern UI Components** - Material-UI and Radix UI components
-- **Responsive Design** - Works on desktop and mobile
-- **Voice Input Button** - Recording animation (UI ready)
-- **File Attachment** - Attachment controls (UI ready)
-- **Settings Panel** - Configuration options (UI ready)
+- **Real-time Streaming**: Token-by-token response streaming for natural conversation flow
+- **Mock Mode**: Comprehensive mock responses for development and testing
+- **Dark/Light Theme**: Beautiful Material-UI themes with smooth transitions
+- **Conversation Management**: Create, edit, delete, and organize chat conversations
+- **Message Actions**: Edit, regenerate, copy, share, and delete messages
+- **Responsive Design**: Mobile-friendly interface with sidebar toggle
+- **Persistent Storage**: LocalStorage persistence for conversations and preferences
+- **Type Safety**: Full TypeScript implementation across all components
 
 ## 🏗️ Architecture
 
 ```
-chatbot-app/
+iagent2/
 ├── apps/
-│   ├── frontend/          # React + Vite + Material-UI
-│   └── backend/           # NestJS API server
-├── package.json           # Shared dependencies
-└── nx.json               # Nx configuration
+│   ├── frontend/          # React + Material-UI chat interface
+│   └── backend/           # NestJS API server with streaming
+├── libs/
+│   └── stream-mocks/      # Shared streaming mock utilities
+├── tools/
+└── docs/
 ```
 
 ## 🛠️ Tech Stack
 
 ### Frontend
-- **React 19** with TypeScript
-- **Vite** for fast development
-- **Material-UI** for components
-- **Radix UI** for advanced components
-- **Emotion** for styling
+- **React 18** - Modern React with hooks
+- **Material-UI (MUI)** - Professional UI components
+- **TypeScript** - Type-safe development
+- **Vite** - Fast build tool and dev server
 
 ### Backend
-- **NestJS** framework
-- **TypeScript**
-- **CORS** enabled for frontend communication
+- **NestJS** - Enterprise Node.js framework
+- **Express** - HTTP server
+- **TypeScript** - Type-safe API development
+- **Server-Sent Events** - Real-time streaming
 
-### Development
-- **Nx** monorepo tooling
-- **ESLint** & **Prettier**
-- **Jest** for testing
+### Shared Libraries
+- **Stream Mocks** - Intelligent mock responses with realistic streaming
+- **TypeScript** - Shared types and utilities
 
-## 🚀 Getting Started
+### DevOps & Tooling
+- **NX** - Monorepo management and build system
+- **ESLint** - Code linting and formatting
+- **Jest** - Unit testing framework
+
+## 🚦 Quick Start
 
 ### Prerequisites
-- Node.js 18+
-- npm
+- Node.js 18+ 
+- npm 9+
 
-### Installation & Running
+### Installation
 
-1. **Install dependencies:**
+1. **Clone the repository**
+   ```bash
+   git clone <repository-url>
+   cd iagent2
+   ```
+
+2. **Install dependencies**
    ```bash
    npm install
    ```
 
-2. **Start the backend (port 3000):**
+3. **Start development servers**
    ```bash
-   npx nx serve backend
+   # Start both frontend and backend
+   npm run dev
+
+   # Or start individually
+   npx nx serve frontend    # Frontend on http://localhost:4200
+   npx nx serve backend     # Backend on http://localhost:3000
    ```
 
-3. **Start the frontend (port 4200):**
-   ```bash
-npx nx serve frontend
-```
+4. **Open your browser**
+   Navigate to `http://localhost:4200`
 
-4. **Open your browser:**
-   ```
-   http://localhost:4200
-   ```
+## 🎮 Usage
 
-## 🎯 Usage
+### Basic Chat
+1. Type your message in the input area
+2. Press Enter or click Send
+3. Watch the AI response stream in real-time
 
-1. **New Chat** - Click "New chat" button in sidebar
-2. **Send Messages** - Type in the input area and press Enter or click Send
-3. **Voice Input** - Click the microphone icon (UI ready for implementation)
-4. **Attach Files** - Click the attachment icon (UI ready for implementation)
-5. **Settings** - Click the settings icon (UI ready for implementation)
-6. **Chat History** - Previous conversations appear in the sidebar
-7. **Delete Chats** - Hover over conversation and click delete icon
+### Mock vs API Mode
+- **Toggle**: Click the "Mock"/"API" chip in the header
+- **Mock Mode**: Uses intelligent local responses (default)
+- **API Mode**: Connects to the backend streaming service
 
-## 🔧 Development Commands
+### Message Management
+- **Edit**: Click edit icon to modify and regenerate from any message
+- **Regenerate**: Click refresh icon to get a new response
+- **Copy**: Click copy icon to copy message content
+- **Delete**: Click delete icon to remove messages
+- **Share**: Click share icon for sharing options
+
+### Conversation Management
+- **New Chat**: Click "New Chat" in sidebar
+- **Switch**: Click any conversation in sidebar to switch
+- **Delete**: Hover over conversation and click delete icon
+
+## 🔧 Development
+
+### Available Scripts
 
 ```bash
-# Build applications
-npx nx build frontend
-npx nx build backend
+# Development
+npm run dev                 # Start both frontend and backend
+npx nx serve frontend       # Frontend only
+npx nx serve backend        # Backend only
 
-# Run tests
-npx nx test frontend
-npx nx test backend
+# Building
+npx nx build frontend       # Build frontend for production
+npx nx build backend        # Build backend for production
+npm run build              # Build all projects
 
-# Lint code
-npx nx lint frontend
-npx nx lint backend
+# Testing
+npx nx test frontend        # Run frontend tests
+npx nx test backend         # Run backend tests
+npx nx test stream-mocks    # Run shared library tests
 
-# Generate new components
-npx nx g @nx/react:component MyComponent --project=frontend
+# Linting
+npx nx lint frontend        # Lint frontend
+npx nx lint backend         # Lint backend
+npm run lint               # Lint all projects
 ```
 
-## 🎨 UI Features
+### Project Structure
 
-- **ChatGPT-like Design** - Dark theme with green accent colors
-- **Message Bubbles** - Different styling for user and assistant messages
-- **Typing Indicators** - Loading animation when AI is responding
-- **Smooth Scrolling** - Auto-scroll to latest messages
-- **Responsive Layout** - Sidebar collapses on mobile
-- **Hover Effects** - Interactive buttons and controls
-- **Icon Animations** - Pulse animation for voice recording
+```
+apps/frontend/src/
+├── components/            # React components
+│   ├── ChatArea.tsx      # Main chat interface
+│   ├── Sidebar.tsx       # Conversation sidebar
+│   └── InputArea.tsx     # Message input
+├── hooks/                # Custom React hooks
+│   └── useMockMode.ts    # Mock mode state management
+└── app/                  # Main app component
 
-## 🔌 API Endpoints
+apps/backend/src/
+├── app/                  # NestJS modules
+├── chat/                 # Chat-related endpoints
+│   └── chat.controller.ts # Streaming chat API
+└── main.ts              # Application entry point
 
-### POST `/api/chat`
-Send a message to the AI assistant.
+libs/stream-mocks/src/
+├── lib/
+│   └── stream-mocks.ts   # Mock streaming utilities
+└── index.ts             # Library exports
+```
 
-**Request:**
-```json
+### Adding New Features
+
+1. **Frontend Components**: Add to `apps/frontend/src/components/`
+2. **Backend Endpoints**: Add to `apps/backend/src/`
+3. **Shared Utilities**: Add to `libs/stream-mocks/src/`
+
+### Code Style
+
+- **TypeScript**: Strict mode enabled
+- **ESLint**: Enforced code standards
+- **Prettier**: Automatic code formatting
+- **Material-UI**: Follow MUI design patterns
+
+## 🌐 API Endpoints
+
+### Chat Streaming
+```
+POST /api/chat/stream
+Content-Type: application/json
+
 {
   "messages": [
     {
       "id": "1",
       "role": "user",
-      "content": "Hello!",
-      "timestamp": "2024-01-01T00:00:00.000Z"
+      "content": "Hello",
+      "timestamp": "2024-01-01T00:00:00Z"
     }
   ]
 }
+
+Response: Server-Sent Events stream
 ```
 
-**Response:**
+## 🎨 Theming
+
+The application supports both light and dark themes with:
+- **Automatic persistence** to localStorage
+- **Smooth transitions** between themes
+- **Material-UI color palettes**
+- **Responsive design** across all screen sizes
+
+## 📱 Mobile Support
+
+- **Responsive sidebar** - Collapses on mobile
+- **Touch-friendly** interface elements
+- **iOS safe areas** for proper display
+- **Mobile-optimized** chat bubbles and inputs
+
+## 🧪 Testing
+
+```bash
+# Run all tests
+npm test
+
+# Run tests for specific project
+npx nx test frontend
+npx nx test backend
+npx nx test stream-mocks
+
+# Run tests in watch mode
+npx nx test frontend --watch
 ```
-"Hello! I'm a ChatGPT Clone built with React and NestJS..."
+
+## 🚀 Deployment
+
+### Frontend (Static)
+```bash
+# Build for production
+npx nx build frontend
+
+# Deploy dist/apps/frontend to your static hosting
 ```
 
-## 🚀 Future Enhancements
+### Backend (Node.js)
+```bash
+# Build for production
+npx nx build backend
 
-- [ ] **Real AI Integration** - Connect to OpenAI API or local AI models
-- [ ] **File Upload** - Support for document and image uploads
-- [ ] **Voice Recognition** - Implement speech-to-text
-- [ ] **Message Export** - Download conversations
-- [ ] **User Authentication** - Login and user management
-- [ ] **Conversation Search** - Search through chat history
-- [ ] **Markdown Support** - Rich text formatting in messages
-- [ ] **Code Highlighting** - Syntax highlighting for code blocks
+# Run production server
+node dist/apps/backend/main.js
+```
 
-## 📱 Screenshots
+## 🤝 Contributing
 
-The interface features:
-- Clean dark theme matching ChatGPT's design
-- Sidebar with conversation management
-- Modern input area with multiple controls
-- Responsive message layout
-- Professional loading states
+1. Fork the repository
+2. Create your feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
+
+## 📄 License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+## 🙏 Acknowledgments
+
+- **Material-UI** for the beautiful component library
+- **NestJS** for the robust backend framework
+- **NX** for excellent monorepo tooling
+- **React** team for the amazing frontend library
+
+## 📞 Support
+
+For support, please open an issue on GitHub or contact the development team.
 
 ---
 
-Built with ❤️ using Nx, React, and NestJS
+**Built with ❤️ using NX, React, and NestJS**

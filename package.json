@@ -2,7 +2,23 @@
   "name": "@chatbot-app/source",
   "version": "0.0.0",
   "license": "MIT",
-  "scripts": {},
+  "scripts": {
+    "dev": "concurrently \"npm run dev:backend\" \"npm run dev:frontend\"",
+    "dev:frontend": "npx nx serve frontend",
+    "dev:backend": "npx nx serve backend",
+    "build": "npx nx run-many --target=build --projects=frontend,backend",
+    "build:frontend": "npx nx build frontend",
+    "build:backend": "npx nx build backend",
+    "test": "npx nx run-many --target=test --projects=frontend,backend",
+    "test:frontend": "npx nx test frontend",
+    "test:backend": "npx nx test backend",
+    "lint": "npx nx run-many --target=lint --projects=frontend,backend",
+    "lint:frontend": "npx nx lint frontend",
+    "lint:backend": "npx nx lint backend",
+    "predeploy": "npm run build:frontend",
+    "deploy": "gh-pages -d dist/apps/frontend",
+    "deploy:gh-pages": "npm run predeploy && npm run deploy"
+  },
   "private": true,
   "dependencies": {
     "@emotion/react": "^11.14.0",
@@ -91,8 +107,6 @@
   },
   "workspaces": [
     "apps/*",
-    "backend",
-    "backend-e2e",
     "libs/*"
   ],
   "nx": {
