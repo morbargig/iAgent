@@ -3,6 +3,9 @@
   "include": [],
   "references": [
     {
+      "path": "../../libs/stream-mocks"
+    },
+    {
       "path": "./tsconfig.app.json"
     },
     {
