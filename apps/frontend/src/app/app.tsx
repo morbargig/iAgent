@@ -482,6 +482,9 @@ export function App() {
 
       console.log(`🚀 Starting ${isMockMode ? 'MOCK' : 'API'} streaming...`);
 
+      // Store the streaming client for abort functionality
+      setCurrentAbortController({ abort: () => streamingClient.abort() } as AbortController);
+
       let currentContent = '';
       let tokenCount = 0;
       let lastUpdateTime = Date.now();
@@ -672,6 +675,9 @@ export function App() {
       }
 
       console.log(`🔄 Regenerating ${isMockMode ? 'with MOCK' : 'with API'}...`);
+
+      // Store the streaming client for abort functionality
+      setCurrentAbortController({ abort: () => streamingClient.abort() } as AbortController);
 
       let currentContent = '';
 

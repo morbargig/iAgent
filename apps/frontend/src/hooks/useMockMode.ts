@@ -2,9 +2,9 @@ import { useState, useEffect } from 'react';
 
 export function useMockMode() {
   const [useMockMode, setUseMockMode] = useState<boolean>(() => {
-    // Initialize from localStorage or default to false (API mode)
+    // Initialize from localStorage or default to true (Mock mode)
     const stored = localStorage.getItem('chatbot-use-mock-mode');
-    return stored ? JSON.parse(stored) : false;
+    return stored ? JSON.parse(stored) : true;
   });
 
   const toggleMockMode = () => {

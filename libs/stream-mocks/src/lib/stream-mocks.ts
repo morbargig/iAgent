@@ -271,6 +271,7 @@ Just let me know what direction you'd like to take this conversation, and I'll t
 // Stream response generator for mock mode
 export async function* generateStreamResponse(
   input: string,
+  abortSignal?: AbortSignal,
   onProgress?: (progress: number, metadata: any) => void
 ): AsyncGenerator<StreamTokenDto> {
   const response = generateMockResponse(input);
@@ -278,11 +279,30 @@ export async function* generateStreamResponse(
   const totalTokens = tokens.length;
   
   for (let i = 0; i < tokens.length; i++) {
+    // Check if aborted before processing each token
+    if (abortSignal?.aborted) {
+      return;
+    }
+    
     const token = tokens[i];
     const delay = calculateStreamingDelay(token, i, tokens);
     
-    // Simulate processing time
-    await new Promise(resolve => setTimeout(resolve, delay));
+    // Simulate processing time with abort checking
+    await new Promise((resolve, reject) => {
+      const timeout = setTimeout(resolve, delay);
+      
+      if (abortSignal) {
+        abortSignal.addEventListener('abort', () => {
+          clearTimeout(timeout);
+          reject(new Error('Aborted'));
+        });
+      }
+    });
+    
+    // Double-check abort status after delay
+    if (abortSignal?.aborted) {
+      return;
+    }
     
     const progress = Math.round((i + 1) / totalTokens * 100);
     const metadata = {
@@ -320,13 +340,18 @@ export class StreamingClient {
     onError: (error: Error) => void
   ): Promise<void> {
     try {
+      // Create abort controller for mock mode
+      this.abortController = new AbortController();
+      
       const lastUserMessage = messages.filter(m => m.role === 'user').pop();
       const input = lastUserMessage?.content || '';
       
-      const generator = generateStreamResponse(input);
+      const generator = generateStreamResponse(input, this.abortController.signal);
       
       for await (const chunk of generator) {
+        // Check if aborted
         if (this.abortController?.signal.aborted) {
+          console.log('Mock stream was aborted');
           return;
         }
         
@@ -342,11 +367,13 @@ export class StreamingClient {
         }
       }
     } catch (error) {
-      if (error instanceof Error && error.name === 'AbortError') {
+      if (this.abortController?.signal.aborted) {
         console.log('Mock stream was aborted');
       } else {
         onError(error instanceof Error ? error : new Error('Unknown mock streaming error'));
       }
+    } finally {
+      this.abortController = null;
     }
   }
 
