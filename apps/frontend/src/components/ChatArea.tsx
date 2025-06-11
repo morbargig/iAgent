@@ -23,6 +23,8 @@ import {
   MoreVert as MoreVertIcon,
 } from '@mui/icons-material';
 import { Message } from '../app/app';
+import { MarkdownRenderer } from './MarkdownRenderer';
+import { extractPlainTextFromMarkdown, copyToClipboard } from '../utils/textUtils';
 
 interface ChatAreaProps {
   messages: Message[];
@@ -52,9 +54,14 @@ const MessageBubble = ({ message, isDarkMode, theme, onRefreshMessage, onEditMes
 
   const handleCopy = async () => {
     try {
-      await navigator.clipboard.writeText(message.content);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
+      // Extract plain text from markdown for better copying experience
+      const plainText = extractPlainTextFromMarkdown(message.content);
+      const success = await copyToClipboard(plainText);
+      
+      if (success) {
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
+      }
     } catch (error) {
       console.error('Failed to copy text:', error);
     }
@@ -90,12 +97,14 @@ const MessageBubble = ({ message, isDarkMode, theme, onRefreshMessage, onEditMes
   };
 
   const handleShare = async () => {
+    const plainText = extractPlainTextFromMarkdown(message.content);
+    
     // Try native Web Share API first
     if (navigator.share) {
       try {
         await navigator.share({
           title: 'Chat Message',
-          text: message.content,
+          text: plainText,
         });
       } catch (error) {
         // Fallback to copy if share is cancelled or fails
@@ -107,7 +116,7 @@ const MessageBubble = ({ message, isDarkMode, theme, onRefreshMessage, onEditMes
     }
     
     if (onShareMessage) {
-      onShareMessage(message.id, message.content);
+      onShareMessage(message.id, plainText);
     }
     console.log('Share message:', message.id);
   };
@@ -125,33 +134,70 @@ const MessageBubble = ({ message, isDarkMode, theme, onRefreshMessage, onEditMes
           display: 'grid',
           gridTemplateColumns: 'minmax(72px, 1fr) auto',
           gridTemplateRows: 'auto auto',
-          gap: '8px',
-          width: '100%',
-          maxWidth: '42rem', // Match iagent thread max-width
-          py: 2,
-          animation: 'messageSlideIn 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
-          '@keyframes messageSlideIn': {
-            '0%': { opacity: 0, transform: 'translateY(4px)' },
-            '100%': { opacity: 1, transform: 'translateY(0)' },
-          },
-          // Show action buttons when hovering over the entire message container
+                        gap: '8px',
+              width: '100%',
+              py: 2,
+              animation: 'messageSlideIn 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
+              '@keyframes messageSlideIn': {
+                '0%': { opacity: 0, transform: 'translateY(4px)' },
+                '100%': { opacity: 1, transform: 'translateY(0)' },
+              },
           '&:hover .user-action-bar': {
             opacity: 1,
           },
         }}
       >
+        {/* User message bubble */}
+        <Box
+          className="message-container"
+          sx={{
+                          gridColumn: '2',
+              gridRow: '1',
+              backgroundColor: isDarkMode ? '#404040' : '#f3f4f6',
+              color: theme.palette.text.primary,
+              borderRadius: '24px',
+            padding: '10px 20px',
+            wordBreak: 'break-word',
+            fontSize: '16px',
+            lineHeight: 1.7,
+          }}
+        >
+          <MarkdownRenderer 
+            content={message.content}
+            isDarkMode={isDarkMode}
+          />
+          
+          {message.isStreaming && (
+            <Box
+              component="span"
+              sx={{
+                display: 'inline-block',
+                width: '2px',
+                height: '1.2em',
+                // backgroundColor: theme.palette.primary.main,
+                marginLeft: '4px',
+                borderRadius: '1px',
+                animation: 'typingBlink 1s infinite',
+                '@keyframes typingBlink': {
+                  '0%, 50%': { opacity: 1 },
+                  '51%, 100%': { opacity: 0.3 },
+                },
+              }}
+            />
+          )}
+        </Box>
+
         {/* User action bar */}
         <Box
           className="user-action-bar"
           sx={{
-            gridColumn: '2',
-            gridRow: '2',
-            display: 'flex',
-            gap: '4px',
-            marginTop: '8px',
-            opacity: 0,
-            transition: 'opacity 150ms cubic-bezier(0.4, 0, 0.2, 1)',
-            // Keep buttons visible when hovering over the action area itself
+                          gridColumn: '2',
+              gridRow: '2',
+              display: 'flex',
+              gap: '4px',
+              marginTop: '8px',
+              opacity: 0,
+              transition: 'opacity 150ms cubic-bezier(0.4, 0, 0.2, 1)',
             '&:hover': {
               opacity: 1,
             },
@@ -217,45 +263,6 @@ const MessageBubble = ({ message, isDarkMode, theme, onRefreshMessage, onEditMes
             </IconButton>
           </Tooltip>
         </Box>
-
-        {/* User message bubble */}
-        <Box
-          className="message-container"
-          sx={{
-            gridColumn: '2',
-            gridRow: '1',
-            backgroundColor: isDarkMode ? '#404040' : '#f3f4f6', // Muted background
-            color: theme.palette.text.primary,
-            maxWidth: 'calc(42rem * 0.8)', // 80% of container width
-            borderRadius: '24px', // rounded-3xl like iagent
-            padding: '10px 20px',
-            wordBreak: 'break-word',
-            fontSize: '16px',
-            lineHeight: 1.7,
-          }}
-        >
-          {message.content}
-          
-          {/* Typing indicator for streaming user messages */}
-          {message.isStreaming && (
-            <Box
-              component="span"
-              sx={{
-                display: 'inline-block',
-                width: '2px',
-                height: '1.2em',
-                backgroundColor: theme.palette.primary.main,
-                marginLeft: '4px',
-                borderRadius: '1px',
-                animation: 'typingBlink 1s infinite',
-                '@keyframes typingBlink': {
-                  '0%, 50%': { opacity: 1 },
-                  '51%, 100%': { opacity: 0.3 },
-                },
-              }}
-            />
-          )}
-        </Box>
       </Box>
     );
   }
@@ -264,19 +271,17 @@ const MessageBubble = ({ message, isDarkMode, theme, onRefreshMessage, onEditMes
   return (
     <Box
       sx={{
-        display: 'grid',
-        gridTemplateColumns: 'auto auto 1fr',
-        gridTemplateRows: 'auto 1fr auto',
-        position: 'relative',
-        width: '100%',
-        maxWidth: '42rem',
-        py: 2,
-        animation: 'messageSlideIn 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
-        '@keyframes messageSlideIn': {
-          '0%': { opacity: 0, transform: 'translateY(4px)' },
-          '100%': { opacity: 1, transform: 'translateY(0)' },
-        },
-        // Show action buttons when hovering over the entire message container
+                    display: 'grid',
+            gridTemplateColumns: 'auto 1fr',
+            gridTemplateRows: 'auto auto',
+            position: 'relative',
+            width: '100%',
+            py: 2,
+            animation: 'messageSlideIn 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
+            '@keyframes messageSlideIn': {
+              '0%': { opacity: 0, transform: 'translateY(4px)' },
+              '100%': { opacity: 1, transform: 'translateY(0)' },
+            },
         '&:hover .assistant-action-bar': {
           opacity: 1,
         },
@@ -286,19 +291,22 @@ const MessageBubble = ({ message, isDarkMode, theme, onRefreshMessage, onEditMes
       <Box
         className="message-container"
         sx={{
-          gridColumn: '2 / 4',
-          gridRow: '1',
-          color: theme.palette.text.primary,
-          maxWidth: 'calc(42rem * 0.8)',
-          wordBreak: 'break-word',
-          lineHeight: 1.7,
-          fontSize: '16px',
-          margin: '6px 0',
+                        gridColumn: '1 / -1',
+              gridRow: '1',
+              color: theme.palette.text.primary,
+              wordBreak: 'break-word',
+              lineHeight: 1.7,
+              fontSize: '16px',
+              margin: '6px 0',
+              padding: '10px 20px',
+              borderRadius: '24px',
         }}
       >
-        {message.content}
+        <MarkdownRenderer 
+          content={message.content}
+          isDarkMode={isDarkMode}
+        />
         
-        {/* Typing indicator */}
         {message.isStreaming && (
           <Box
             component="span"
@@ -323,14 +331,13 @@ const MessageBubble = ({ message, isDarkMode, theme, onRefreshMessage, onEditMes
       <Box
         className="assistant-action-bar"
         sx={{
-          gridColumn: '2 / 4',
+          gridColumn: '1 / -1',
           gridRow: '2',
           display: 'flex',
           gap: '4px',
           marginTop: '8px',
           opacity: 0,
           transition: 'opacity 150ms cubic-bezier(0.4, 0, 0.2, 1)',
-          // Keep buttons visible when hovering over the action area itself
           '&:hover': {
             opacity: 1,
           },
@@ -683,6 +690,7 @@ export function ChatArea({ messages, isLoading, onToggleSidebar, isDarkMode, onT
         height: '100%',
         flexDirection: 'column',
         overflow: 'hidden',
+        position: 'relative',
       }}
     >
       {/* Header */}
@@ -696,7 +704,7 @@ export function ChatArea({ messages, isLoading, onToggleSidebar, isDarkMode, onT
         flexShrink: 0,
         position: 'sticky',
         top: 0,
-        zIndex: 10,
+        zIndex: 100,
         backgroundColor: theme.palette.background.default,
       }}>
         <IconButton 
@@ -749,10 +757,18 @@ export function ChatArea({ messages, isLoading, onToggleSidebar, isDarkMode, onT
           overflow: 'auto',
           display: 'flex',
           flexDirection: 'column',
-          alignItems: 'center',
+          alignItems: 'stretch',
           scrollBehavior: 'smooth',
           backgroundColor: 'inherit',
           padding: '32px 16px',
+          paddingBottom: {
+            xs: '120px',
+            sm: '32px'
+          },
+          '@media (max-width: 600px)': {
+            WebkitOverflowScrolling: 'touch',
+            padding: '16px 8px',
+          }
         }}
       >
         {/* Messages */}

@@ -433,6 +433,7 @@ export function App() {
 
     const messageInput = input;
     setInput('');
+    setEditingState(null); // Clear editing state when sending new message
     setIsLoading(true);
 
     // Create assistant message placeholder for streaming
@@ -457,7 +458,7 @@ export function App() {
       setCurrentAbortController(abortController);
       
       // Use streaming endpoint with timeout and abort signal
-      const response = await fetch('http://localhost:3001/api/chat/stream', {
+      const response = await fetch('http://localhost:3000/api/chat/stream', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -675,7 +676,7 @@ export function App() {
 
     try {
       // Use streaming endpoint
-      const response = await fetch('http://localhost:3001/api/chat/stream', {
+      const response = await fetch('http://localhost:3000/api/chat/stream', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -791,6 +792,12 @@ export function App() {
     }
   };
 
+  const [editingState, setEditingState] = React.useState<{
+    messageId: string;
+    originalContent: string;
+    originalMessages: Message[];
+  } | null>(null);
+
   const editMessage = (messageId: string) => {
     const conversation = currentConversation;
     if (!conversation) return;
@@ -799,6 +806,13 @@ export function App() {
     if (messageIndex === -1 || conversation.messages[messageIndex].role !== 'user') return;
 
     const messageToEdit = conversation.messages[messageIndex];
+    
+    // Store the original state for potential discard
+    setEditingState({
+      messageId,
+      originalContent: messageToEdit.content,
+      originalMessages: [...conversation.messages]
+    });
     
     // Set the input to the message content for editing
     setInput(messageToEdit.content);
@@ -817,6 +831,27 @@ export function App() {
     ));
     
     console.log(`Editing message: "${messageToEdit.content}"`);
+  };
+
+  const discardEdit = () => {
+    if (!editingState || !currentConversation) return;
+
+    // Restore the original messages
+    setConversations(prev => prev.map(c => 
+      c.id === currentConversation.id 
+        ? {
+            ...c, 
+            messages: editingState.originalMessages,
+            lastUpdated: new Date()
+          }
+        : c
+    ));
+
+    // Clear the input and editing state
+    setInput('');
+    setEditingState(null);
+    
+    console.log('Edit discarded, messages restored');
   };
 
   const deleteMessage = (messageId: string) => {
@@ -899,9 +934,11 @@ export function App() {
               }
               setIsLoading(false);
             }}
+            onDiscard={editingState ? discardEdit : undefined}
             disabled={isLoading}
             isLoading={isLoading}
             isDarkMode={isDarkMode}
+            isEditing={!!editingState}
           />
         </Box>
       </Box>

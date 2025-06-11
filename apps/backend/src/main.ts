@@ -13,7 +13,7 @@ async function bootstrap() {
   
   // Enable CORS for frontend communication
   app.enableCors({
-    origin: ['http://localhost:4200', 'http://localhost:3000'], // Frontend ports
+    origin: ['http://localhost:4200', 'http://localhost:3000'], // Frontend ports  
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization', 'Cache-Control'],
     credentials: true,
@@ -33,7 +33,7 @@ async function bootstrap() {
       'contact@chatgptclone.dev'
     )
     .addTag('Chat', 'Chat and messaging endpoints')
-    .addServer('http://localhost:3001', 'Development server')
+    .addServer('http://localhost:3000', 'Development server')
     .addServer('https://your-production-domain.com', 'Production server')
     .build();
 
@@ -47,7 +47,7 @@ async function bootstrap() {
     customfavIcon: 'https://avatars.githubusercontent.com/u/6936373?s=200&v=4',
   });
 
-  const port = process.env.PORT || 3001;
+  const port = process.env.PORT || 3000;
   await app.listen(port);
   
   Logger.log(

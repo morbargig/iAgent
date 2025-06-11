@@ -307,18 +307,27 @@ export function Sidebar({
         open={open}
         onClose={onToggle}
         variant="temporary"
+        ModalProps={{
+          keepMounted: true, // Better mobile performance
+        }}
         sx={{
           '& .MuiDrawer-paper': {
-            backgroundColor: 'transparent',
-            border: 'none',
-            boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
+            backgroundColor: theme.palette.background.default,
+            width: '85%',
+            maxWidth: '300px',
+            height: '100%',
+            zIndex: 1200,
+            boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)',
+            '@media (max-width: 600px)': {
+              paddingBottom: 'env(safe-area-inset-bottom, 20px)',
+            }
           },
           '& .MuiBackdrop-root': {
-            backgroundColor: 'rgba(0, 0, 0, 0.25)',
-            backdropFilter: 'blur(2px)',
+            backgroundColor: 'rgba(0, 0, 0, 0.5)',
+            backdropFilter: 'blur(4px)',
+            zIndex: 1150,
           },
         }}
-        transitionDuration={200}
       >
         {sidebarContent}
       </Drawer>

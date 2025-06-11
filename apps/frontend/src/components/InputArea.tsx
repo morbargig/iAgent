@@ -8,6 +8,7 @@ import {
 import {
   Send as SendIcon,
   Stop as StopIcon,
+  Close as CloseIcon,
 } from '@mui/icons-material';
 
 interface InputAreaProps {
@@ -15,9 +16,11 @@ interface InputAreaProps {
   onChange: (value: string) => void;
   onSend: () => void;
   onStop?: () => void;
+  onDiscard?: () => void;
   disabled: boolean;
   isLoading?: boolean;
   isDarkMode: boolean;
+  isEditing?: boolean;
 }
 
 // ChatGPT-style Input Area - Matches official ChatGPT design
@@ -74,31 +77,39 @@ export function InputArea({
       {/* Sticky Bottom Container */}
       <Box
         sx={{
-          position: 'sticky',
+          position: 'fixed',
           bottom: 0,
           left: 0,
           right: 0,
-          zIndex: 10,
+          zIndex: 1000,
           background: isDarkMode 
             ? 'linear-gradient(180deg, rgba(52, 53, 65, 0) 0%, rgba(52, 53, 65, 0.8) 50%, #343541 100%)'
             : 'linear-gradient(180deg, rgba(255, 255, 255, 0) 0%, rgba(255, 255, 255, 0.8) 50%, #ffffff 100%)',
           paddingTop: '20px',
           paddingBottom: '20px',
+          '@media (max-width: 600px)': {
+            paddingBottom: 'env(safe-area-inset-bottom, 10px)',
+            paddingTop: '10px',
+          }
         }}
       >
         <Box
           sx={{
-            maxWidth: '768px', // ChatGPT's max width
+            maxWidth: '768px',
             margin: '0 auto',
             paddingLeft: '20px',
             paddingRight: '20px',
+            '@media (max-width: 600px)': {
+              paddingLeft: '10px',
+              paddingRight: '10px',
+            }
           }}
         >
           {/* Main Input Container */}
           <Box
             sx={{
               position: 'relative',
-              borderRadius: '24px', // ChatGPT's rounded corners
+              borderRadius: '24px',
               backgroundColor: isDarkMode ? '#40414f' : '#f7f7f8',
               border: isFocused 
                 ? `1px solid ${isDarkMode ? '#565869' : '#d1d5db'}` 
@@ -110,6 +121,9 @@ export function InputArea({
               '&:hover': {
                 boxShadow: '0 2px 12px rgba(0, 0, 0, 0.1)',
               },
+              '@media (max-width: 600px)': {
+                marginBottom: 'env(safe-area-inset-bottom, 10px)',
+              }
             }}
           >
             {/* Textarea */}
@@ -126,7 +140,7 @@ export function InputArea({
                 width: '100%',
                 minHeight: '52px',
                 maxHeight: '200px',
-                padding: '14px 50px 14px 16px', // Right padding for button
+                padding: '14px 50px 14px 16px',
                 border: 'none',
                 outline: 'none',
                 resize: 'none',
@@ -137,6 +151,13 @@ export function InputArea({
                 lineHeight: '1.5',
                 overflow: 'hidden',
                 fontWeight: '400',
+                WebkitAppearance: 'none',
+                WebkitTapHighlightColor: 'transparent',
+                touchAction: 'manipulation',
+                WebkitTouchCallout: 'none',
+                position: 'relative',
+                zIndex: 1,
+                cursor: 'text',
               }}
             />
 
@@ -162,6 +183,7 @@ export function InputArea({
                     : (isDarkMode ? '#6b7280' : '#9ca3af'),
                 borderRadius: '18px',
                 transition: 'all 0.2s ease',
+                zIndex: 2,
                 '&:hover': {
                   backgroundColor: showStopButton
                     ? (isDarkMode ? '#6b7280' : '#e5e7eb')
@@ -174,12 +196,18 @@ export function InputArea({
                   backgroundColor: 'transparent',
                   color: isDarkMode ? '#6b7280' : '#9ca3af',
                 },
+                '@media (max-width: 600px)': {
+                  width: '44px',
+                  height: '44px',
+                  right: '6px',
+                  bottom: '4px',
+                }
               }}
             >
               {showStopButton ? (
-                <StopIcon sx={{ fontSize: 18 }} />
+                <StopIcon sx={{ fontSize: 20 }} />
               ) : (
-                <SendIcon sx={{ fontSize: 18 }} />
+                <SendIcon sx={{ fontSize: 20 }} />
               )}
             </IconButton>
           </Box>
@@ -194,6 +222,9 @@ export function InputArea({
               color: isDarkMode ? '#8e8ea0' : '#6b7280',
               fontSize: '12px',
               lineHeight: '16px',
+              '@media (max-width: 600px)': {
+                marginBottom: 'env(safe-area-inset-bottom, 10px)',
+              }
             }}
           >
             ChatGPT can make mistakes. Check important info.

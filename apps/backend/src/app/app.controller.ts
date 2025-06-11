@@ -35,7 +35,7 @@ interface MessageEvent {
 
 @ApiTags('Chat API')
 @ApiExtraModels(ChatRequestDto, ChatResponseDto, StreamTokenDto, ErrorResponseDto, HealthCheckDto)
-@Controller('api')
+@Controller()
 export class AppController {
   constructor(private readonly appService: AppService) {}
 
@@ -105,10 +105,18 @@ export class AppController {
     description: 'Internal server error',
     type: ErrorResponseDto
   })
-  @UsePipes(new ValidationPipe({ transform: true, whitelist: true }))
-  async chat(@Body() request: ChatRequestDto): Promise<string> {
+  async chat(@Body() request: any): Promise<string> {
     const { messages } = request;
-    const lastMessage = messages[messages.length - 1];
+    
+    // Convert DTOs to internal format with defaults
+    const processedMessages: ChatMessage[] = messages.map((msg: any) => ({
+      id: msg.id || Date.now().toString(),
+      role: msg.role,
+      content: msg.content,
+      timestamp: msg.timestamp || new Date()
+    }));
+    
+    const lastMessage = processedMessages[processedMessages.length - 1];
     
     // Enhanced mock responses with markdown examples
     const responses = [
@@ -253,10 +261,18 @@ And here's a **table example**:
       }
     }
   })
-  @UsePipes(new ValidationPipe({ transform: true, whitelist: true }))
-  async streamChat(@Body() request: ChatRequestDto, @Res() res: Response) {
+  async streamChat(@Body() request: any, @Res() res: Response) {
     const { messages } = request;
-    const lastMessage = messages[messages.length - 1];
+    
+    // Convert DTOs to internal format with defaults
+    const processedMessages: ChatMessage[] = messages.map((msg: any) => ({
+      id: msg.id || Date.now().toString(),
+      role: msg.role,
+      content: msg.content,
+      timestamp: msg.timestamp || new Date()
+    }));
+    
+    const lastMessage = processedMessages[processedMessages.length - 1];
     
     // Set streaming headers for JSON
     res.setHeader('Content-Type', 'application/json; charset=utf-8');
@@ -267,7 +283,7 @@ And here's a **table example**:
 
     try {
       // Generate contextual response based on conversation
-      const response = await this.generateContextualResponse(messages);
+      const response = await this.generateContextualResponse(processedMessages);
       
       // Tokenize the response for realistic streaming
       const tokens = this.tokenizeResponse(response);
@@ -294,9 +310,9 @@ And here's a **table example**:
             timestamp: new Date().toISOString(),
             model: 'chatgpt-clone-v1',
             usage: {
-              prompt_tokens: this.countTokens(messages),
+              prompt_tokens: this.countTokens(processedMessages),
               completion_tokens: i + 1,
-              total_tokens: this.countTokens(messages) + i + 1
+              total_tokens: this.countTokens(processedMessages) + i + 1
             },
             processing_time_ms: Date.now() - startTime.getTime(),
             confidence: 0.92 + Math.random() * 0.07,
@@ -335,33 +351,54 @@ And here's a **table example**:
   }
 
   /**
-   * Generate contextual response based on conversation history
+   * Generate contextual response based on conversation history - enhanced with better context awareness
    */
   private async generateContextualResponse(messages: ChatMessage[]): Promise<string> {
     const lastMessage = messages[messages.length - 1];
     const userContent = lastMessage.content.toLowerCase();
-    const conversationContext = messages.slice(-3); // Last 3 messages for context
+    const conversationContext = messages.slice(-5); // More context for better responses
     
-    // Analyze conversation patterns
+    // Enhanced conversation analysis
     const hasCodeContext = conversationContext.some(m => 
       m.content.includes('```') || 
       m.content.toLowerCase().includes('code') ||
       m.content.toLowerCase().includes('function') ||
-      m.content.toLowerCase().includes('typescript')
+      m.content.toLowerCase().includes('typescript') ||
+      m.content.toLowerCase().includes('javascript') ||
+      m.content.toLowerCase().includes('react') ||
+      m.content.toLowerCase().includes('nestjs')
+    );
+    
+    const hasProjectContext = conversationContext.some(m =>
+      m.content.toLowerCase().includes('nx') ||
+      m.content.toLowerCase().includes('monorepo') ||
+      m.content.toLowerCase().includes('project') ||
+      m.content.toLowerCase().includes('setup')
     );
     
     const isFollowUp = messages.length > 1;
-    const isGreeting = userContent.match(/\b(hello|hi|hey|good morning|good afternoon)\b/);
+    const isGreeting = userContent.match(/\b(hello|hi|hey|good morning|good afternoon|start|begin)\b/);
+    const isQuestion = userContent.includes('?') || userContent.match(/\b(what|how|why|when|where|can|could|would|should)\b/);
+    const isProblemSolving = userContent.match(/\b(error|issue|problem|bug|fix|help|stuck|trouble)\b/);
+    const isCompliment = userContent.match(/\b(good|great|nice|excellent|perfect|awesome|thanks|thank you)\b/);
     
-    // Generate response based on context
+    // Smart response selection based on enhanced context
     if (isGreeting && !isFollowUp) {
       return this.getGreetingResponse();
+    } else if (isCompliment) {
+      return this.getComplimentResponse();
+    } else if (isProblemSolving) {
+      return this.getProblemSolvingResponse(userContent);
     } else if (hasCodeContext || userContent.includes('code')) {
       return this.getCodeResponse(userContent);
+    } else if (hasProjectContext || userContent.includes('nx') || userContent.includes('monorepo')) {
+      return this.getProjectResponse(userContent);
     } else if (userContent.includes('help') || userContent.includes('how')) {
       return this.getHelpResponse(userContent);
     } else if (userContent.includes('explain') || userContent.includes('what is')) {
       return this.getExplanationResponse(userContent);
+    } else if (isQuestion) {
+      return this.getQuestionResponse(userContent);
     } else if (isFollowUp) {
       return this.getFollowUpResponse(userContent, conversationContext);
     } else {
@@ -370,26 +407,40 @@ And here's a **table example**:
   }
 
   /**
-   * Tokenize response for realistic streaming
+   * Tokenize response for realistic streaming - improved for more natural flow
    */
   private tokenizeResponse(text: string): string[] {
     const tokens: string[] = [];
     
-    // Split by words and punctuation while preserving structure
-    const parts = text.split(/(\s+|[\n\r]+|[.,!?;:])/);
+    // Split by natural boundaries while preserving formatting
+    const parts = text.split(/(\s+|[\n\r]+|[.,!?;:]|```|`|\*\*|\*|##|#|\|)/);
     
     for (const part of parts) {
       if (part.trim()) {
-        // For longer words, sometimes split into smaller chunks for more realistic streaming
-        if (part.length > 8 && Math.random() > 0.7) {
-          const mid = Math.floor(part.length / 2);
-          tokens.push(part.slice(0, mid));
-          tokens.push(part.slice(mid));
+        // Handle different token types for more natural streaming
+        if (part.startsWith('```')) {
+          // Code blocks stream as complete units
+          tokens.push(part);
+        } else if (part.match(/^\*\*.*\*\*$/)) {
+          // Bold text streams as units
+          tokens.push(part);
+        } else if (part.length > 12 && Math.random() > 0.8) {
+          // Occasionally split very long words for realism
+          const chunks = Math.ceil(part.length / 8);
+          for (let i = 0; i < chunks; i++) {
+            const start = i * 8;
+            const end = Math.min(start + 8, part.length);
+            tokens.push(part.slice(start, end));
+          }
         } else {
           tokens.push(part);
         }
-      } else {
-        tokens.push(part); // Preserve whitespace and newlines
+      } else if (part.includes('\n')) {
+        // Preserve line breaks
+        tokens.push(part);
+      } else if (part.trim() === '') {
+        // Preserve spaces
+        tokens.push(part);
       }
     }
     
@@ -397,37 +448,59 @@ And here's a **table example**:
   }
 
   /**
-   * Calculate realistic streaming delay based on token content
+   * Calculate realistic streaming delay based on token content - enhanced for better timing
    */
   private calculateStreamingDelay(token: string, index: number, allTokens: string[]): number {
-    const baseDelay = 25; // Base delay between tokens
-    const randomFactor = Math.random() * 30; // Add randomness
-    
-    // Longer delays for:
-    // - Punctuation (thinking time)
-    // - After newlines (processing new thoughts)
-    // - Complex words
-    // - Code blocks
+    const baseDelay = 15; // Faster base delay for more responsive feel
+    const randomFactor = Math.random() * 25; // Add randomness
     
     let delay = baseDelay + randomFactor;
     
-    if (/[.!?]/.test(token)) {
-      delay += 100 + Math.random() * 200; // Pause after sentences
-    } else if (/[,;:]/.test(token)) {
-      delay += 50 + Math.random() * 100; // Shorter pause for commas
+    // Different delays based on content type
+    if (/[.!?]$/.test(token)) {
+      delay += 200 + Math.random() * 300; // Longer pause after sentences
+    } else if (/[,;:]$/.test(token)) {
+      delay += 80 + Math.random() * 120; // Medium pause for commas
+    } else if (token.includes('\n\n')) {
+      delay += 300 + Math.random() * 400; // Long pause for paragraph breaks
     } else if (token.includes('\n')) {
-      delay += 150 + Math.random() * 250; // Longer pause for new paragraphs
+      delay += 150 + Math.random() * 200; // Medium pause for line breaks
     } else if (token.startsWith('```')) {
-      delay += 200 + Math.random() * 300; // Processing code blocks
-    } else if (token.length > 6) {
-      delay += 20 + Math.random() * 40; // Longer words take more time
+      delay += 400 + Math.random() * 600; // Processing code blocks
+    } else if (token.startsWith('#')) {
+      delay += 200 + Math.random() * 300; // Headers need processing time
+    } else if (token.includes('**')) {
+      delay += 50 + Math.random() * 100; // Bold text formatting
+    } else if (token.includes('`')) {
+      delay += 30 + Math.random() * 70; // Inline code
+    } else if (token.length > 8) {
+      delay += token.length * 3; // Longer words take proportionally more time
+    } else if (/^\d+\./.test(token)) {
+      delay += 100 + Math.random() * 150; // List items
     }
     
-    // Gradual speed increase as response progresses (AI "warming up")
-    const progressFactor = Math.max(0.5, 1 - (index / allTokens.length) * 0.3);
-    delay *= progressFactor;
+    // Dynamic speed adjustment based on position
+    const progressRatio = index / allTokens.length;
     
-    return Math.round(delay);
+    if (progressRatio < 0.1) {
+      // Slower start (thinking time)
+      delay *= 1.5;
+    } else if (progressRatio < 0.3) {
+      // Getting into rhythm
+      delay *= 1.2;
+    } else if (progressRatio > 0.8) {
+      // Slightly slower towards end (wrapping up thoughts)
+      delay *= 1.1;
+    }
+    
+    // Add some variety to prevent mechanical feeling
+    if (Math.random() < 0.1) {
+      delay *= 0.5; // Occasional quick bursts
+    } else if (Math.random() < 0.05) {
+      delay *= 2; // Occasional pauses for "thinking"
+    }
+    
+    return Math.round(Math.max(10, delay)); // Minimum 10ms delay
   }
 
   /**
@@ -670,6 +743,228 @@ What would you like to dive deeper into?`
     return responses[Math.floor(Math.random() * responses.length)];
   }
 
+  private getComplimentResponse(): string {
+    const responses = [
+      `Thank you! I'm glad I could help. 😊 
+
+This project is designed to showcase how modern web technologies can work together seamlessly:
+
+- **Frontend**: React with Material-UI for a polished interface
+- **Backend**: NestJS providing robust API endpoints
+- **Development**: Nx monorepo for efficient development workflow
+- **Streaming**: Real-time communication with Server-Sent Events
+
+Is there anything else you'd like to explore or any other questions I can help with?`,
+
+      `I appreciate your kind words! 🙏
+
+It's great to see the streaming functionality working smoothly. The combination of:
+- Token-by-token streaming
+- Contextual responses  
+- Markdown rendering
+- Responsive design
+
+...creates a nice ChatGPT-like experience. Feel free to test out different types of questions - I can help with code examples, explanations, problem-solving, and more!`,
+
+      `Thanks! That means a lot. ✨
+
+This demo showcases several interesting technical concepts:
+- **Real-time streaming** with controlled delays for natural flow
+- **Context awareness** based on conversation history
+- **Rich formatting** with markdown support
+- **Modern architecture** using TypeScript throughout
+
+What would you like to explore next?`
+    ];
+    
+    return responses[Math.floor(Math.random() * responses.length)];
+  }
+
+  private getProblemSolvingResponse(userContent: string): string {
+    const responses = [
+      `I'm here to help you troubleshoot! 🔧 Let's work through this step by step.
+
+Common debugging approaches:
+
+1. **Identify the Problem**: What exactly is happening vs. what you expected?
+2. **Check the Basics**: 
+   - Are all services running?
+   - Are there any console errors?
+   - Is the network connection working?
+3. **Isolate the Issue**: Test components individually
+4. **Review Recent Changes**: What was the last thing that worked?
+
+For this **Nx monorepo** specifically, common issues include:
+- Port conflicts between frontend/backend
+- CORS configuration problems
+- Build/serve command issues
+- Missing dependencies
+
+What specific error or issue are you encountering?`,
+
+      `Let's solve this together! 🚀
+
+Here's my **systematic debugging checklist**:
+
+**Frontend Issues:**
+- Check browser console for errors
+- Verify API endpoints are correct
+- Test with browser dev tools network tab
+
+**Backend Issues:**
+- Check server logs
+- Verify database connections
+- Test endpoints with Postman/curl
+
+**Nx Workspace Issues:**
+- Run \`nx reset\` to clear cache
+- Check \`nx.json\` configuration
+- Verify project dependencies
+
+**Common Quick Fixes:**
+\`\`\`bash
+# Clear and reinstall dependencies
+rm -rf node_modules package-lock.json
+npm install
+
+# Reset Nx cache
+nx reset
+
+# Check if ports are available
+lsof -i :3000
+lsof -i :4200
+\`\`\`
+
+What's the specific issue you're facing?`
+    ];
+    
+    return responses[Math.floor(Math.random() * responses.length)];
+  }
+
+  private getProjectResponse(userContent: string): string {
+    const responses = [
+      `Great question about the **Nx monorepo setup**! 📁
+
+This project structure demonstrates several best practices:
+
+## **Project Architecture:**
+\`\`\`
+iagent2/
+├── apps/
+│   ├── backend/     # NestJS API server
+│   └── frontend/    # React application
+├── libs/            # Shared libraries
+└── tools/           # Development tools
+\`\`\`
+
+## **Key Benefits:**
+- **Code Sharing**: Common utilities, types, and components
+- **Unified Tooling**: Single place for linting, testing, building
+- **Dependency Management**: Consistent versions across apps
+- **Development Efficiency**: Fast rebuilds with intelligent caching
+
+## **Available Commands:**
+\`\`\`bash
+# Development
+nx serve backend    # Start API server (port 3000)
+nx serve frontend   # Start React app (port 4200)
+
+# Building
+nx build backend
+nx build frontend
+
+# Testing
+nx test backend
+nx test frontend
+\`\`\`
+
+What aspect of the Nx setup interests you most?`,
+
+      `Excellent! You're asking about the **monorepo architecture**. 🏗️
+
+This setup showcases how to organize a **full-stack TypeScript application**:
+
+### **Backend (NestJS):**
+- RESTful API with `/api` prefix
+- Server-Sent Events for streaming
+- Swagger documentation at `/api/docs`
+- CORS enabled for frontend communication
+
+### **Frontend (React):**
+- Modern React 19 with hooks
+- Material-UI components
+- Real-time streaming integration
+- Responsive ChatGPT-like interface
+
+### **Development Workflow:**
+1. **Start both apps**: \`nx run-many --target=serve --projects=backend,frontend\`
+2. **Parallel development**: Changes auto-reload
+3. **Shared types**: Type safety across frontend/backend
+4. **Consistent tooling**: Same ESLint, Prettier, Jest config
+
+### **Production Ready:**
+- Built with \`nx build\` for optimized bundles
+- Environment-specific configurations
+- Docker-ready setup
+
+Want to know more about any specific part?`
+    ];
+    
+    return responses[Math.floor(Math.random() * responses.length)];
+  }
+
+  private getQuestionResponse(userContent: string): string {
+    const responses = [
+      `That's a thoughtful question! 🤔 Let me provide a comprehensive answer:
+
+The approach depends on what you're trying to accomplish. In general, I recommend:
+
+**For Learning:**
+- Start with the fundamentals
+- Practice with small projects  
+- Build up complexity gradually
+- Learn from real-world examples (like this project!)
+
+**For Problem Solving:**
+- Break the problem into smaller parts
+- Research existing solutions
+- Prototype quickly
+- Iterate based on feedback
+
+**For This Demo Specifically:**
+- Explore the codebase structure
+- Test different input types
+- Check out the Swagger docs at \`/api/docs\`
+- Try the streaming functionality
+
+What specific aspect would you like me to elaborate on?`,
+
+      `Interesting question! 💭 Here's how I'd approach it:
+
+**Context Matters:** The best solution depends on:
+- Your specific use case
+- Available resources and constraints
+- Timeline and complexity requirements
+- Team expertise and preferences
+
+**For Web Development Projects:**
+1. **Choose the right stack** (like React + NestJS here)
+2. **Plan your architecture** (monorepo vs separate repos)
+3. **Set up good development practices** (linting, testing, CI/CD)
+4. **Focus on user experience** (responsive design, performance)
+
+**For This Type of Chat Application:**
+- **Real-time communication** (WebSockets or SSE)
+- **State management** (context, reducers, or external libraries)
+- **Error handling** (graceful degradation)
+- **Accessibility** (keyboard navigation, screen readers)
+
+Would you like me to dive deeper into any of these areas?`
+    ];
+    
+    return responses[Math.floor(Math.random() * responses.length)];
+  }
+
   @Sse('chat/sse-stream')
   @ApiOperation({ 
     summary: 'Send a chat message with Server-Sent Events streaming',
@@ -702,147 +997,69 @@ What would you like to dive deeper into?`
     description: 'Internal server error during SSE streaming',
     type: ErrorResponseDto
   })
-  sseStreamChat(@Body() request: ChatRequestDto): Observable<MessageEvent> {
+  async sseStreamChat(@Body() request: any): Promise<Observable<MessageEvent>> {
     const { messages } = request;
-    const lastMessage = messages[messages.length - 1];
     
-    // Enhanced mock responses with markdown examples
-    const responses = [
-      `Hello! I'm a **ChatGPT Clone** built with React and NestJS in an Nx monorepo. How can I help you today?
-
-Here are some things I can help with:
-- 💻 Code explanations and debugging
-- 📝 Writing and editing
-- 🧮 Math and calculations
-- 🎨 Creative projects`,
-
-      `That's an interesting question! Let me think about that...
-
-Here's a quick **code example** in TypeScript:
-
-\`\`\`typescript
-interface User {
-  id: string;
-  name: string;
-  email: string;
-}
-
-const createUser = (userData: Partial<User>): User => {
-  return {
-    id: generateId(),
-    ...userData
-  } as User;
-};
-\`\`\`
-
-This demonstrates type safety and object composition.`,
-
-      `I'm a mock AI assistant designed to demonstrate the **frontend-backend communication** in this Nx workspace.
-
-## Key Features:
-1. **Real-time streaming** - Token-by-token generation
-2. **Markdown support** - Rich text formatting
-3. **Modern UI** - ChatGPT-like interface
-4. **Monorepo architecture** - Nx workspace organization
-
-> This is a blockquote example showing how markdown is rendered in the chat interface.`,
-
-      `This project showcases a **modern tech stack**:
-
-### Frontend:
-- React 19 with TypeScript
-- Material-UI components
-- Vite for fast development
-- Real-time streaming support
-
-### Backend:
-- NestJS framework
-- Server-Sent Events (SSE)
-- CORS enabled
-- TypeScript throughout
-
-### Development:
-- Nx monorepo tooling
-- ESLint & Prettier
-- Jest for testing
-
-*All managed efficiently in a single workspace!*`,
-
-      `Feel free to ask me anything! I'll provide helpful responses to demonstrate the chat functionality.
-
-Here's a **mathematical equation** example:
-
-The quadratic formula: $x = \\frac{-b \\pm \\sqrt{b^2 - 4ac}}{2a}$
-
-And here's a **table example**:
-
-| Feature | Status | Notes |
-|---------|--------|-------|
-| Streaming | ✅ | Token-by-token generation |
-| Markdown | ✅ | Full support |
-| Dark Theme | ✅ | ChatGPT-like styling |
-| Mobile | ✅ | Responsive design |
-
-**Lists work too:**
-- [x] Completed feature
-- [x] Another completed item
-- [ ] Future enhancement
-- [ ] Another planned feature`,
-    ];
-
-    // Simple response logic based on user input
-    let response: string;
-    const userContent = lastMessage.content.toLowerCase();
+    // Use the enhanced contextual response generation
+    const response = await this.generateContextualResponse(messages);
     
-    if (userContent.includes('hello') || userContent.includes('hi')) {
-      response = responses[0];
-    } else if (userContent.includes('code') || userContent.includes('typescript') || userContent.includes('programming')) {
-      response = responses[1];
-    } else if (userContent.includes('nx') || userContent.includes('monorepo') || userContent.includes('architecture')) {
-      response = responses[2];
-    } else if (userContent.includes('tech') || userContent.includes('stack') || userContent.includes('framework')) {
-      response = responses[3];
-    } else if (userContent.includes('markdown') || userContent.includes('table') || userContent.includes('math')) {
-      response = responses[4];
-    } else {
-      response = responses[Math.floor(Math.random() * responses.length)];
-    }
-
-    // Split response into words for streaming
-    const words = response.split(' ');
+    // Use the improved tokenization
+    const tokens = this.tokenizeResponse(response);
     
     return of(null).pipe(
-      delay(300), // Initial delay
-      switchMap(() => 
-        interval(50 + Math.random() * 100).pipe( // Random delay between words (50-150ms)
-          take(words.length + 1),
-          map((index) => {
-            if (index < words.length) {
-              return {
+      delay(200), // Initial thinking delay
+      switchMap(() => {
+        let tokenIndex = 0;
+        
+        return new Observable<MessageEvent>((subscriber) => {
+          const sendNextToken = () => {
+            if (tokenIndex < tokens.length) {
+              const token = tokens[tokenIndex];
+              const delay = this.calculateStreamingDelay(token, tokenIndex, tokens);
+              
+              // Send the current token
+              const tokenEvent: MessageEvent = {
                 data: JSON.stringify({
-                  token: words[index] + (index < words.length - 1 ? ' ' : ''),
+                  token,
                   done: false,
                   metadata: {
-                    index: index + 1,
-                    total_tokens: words.length
+                    index: tokenIndex + 1,
+                    total_tokens: tokens.length,
+                    progress: Math.round((tokenIndex / tokens.length) * 100),
+                                         estimated_remaining_ms: Math.round((tokens.length - tokenIndex) * 80)
                   }
-                }),
+                })
               };
+              
+              subscriber.next(tokenEvent);
+              tokenIndex++;
+              
+              // Schedule next token
+              setTimeout(sendNextToken, delay);
             } else {
-              return {
+              // Send completion event
+              const completeEvent: MessageEvent = {
                 data: JSON.stringify({
                   token: '',
                   done: true,
                   metadata: {
-                    index: words.length,
-                    total_tokens: words.length
+                    index: tokens.length,
+                    total_tokens: tokens.length,
+                    progress: 100,
+                    estimated_remaining_ms: 0
                   }
-                }),
+                })
               };
+              
+              subscriber.next(completeEvent);
+              subscriber.complete();
             }
-          })
-        )
-      )
+          };
+          
+          // Start the streaming
+          setTimeout(sendNextToken, 100);
+        });
+      })
     );
   }
 }

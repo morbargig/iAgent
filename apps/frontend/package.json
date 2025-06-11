@@ -1,5 +1,10 @@
 {
   "name": "@chatbot-app/frontend",
   "version": "0.0.1",
-  "private": true
+  "private": true,
+  "dependencies": {
+    "react-markdown": "^10.1.0",
+    "rehype-highlight": "^7.0.2",
+    "remark-gfm": "^4.0.1"
+  }
 }

@@ -56,7 +56,7 @@ chatbot-app/
    npm install
    ```
 
-2. **Start the backend (port 3001):**
+2. **Start the backend (port 3000):**
    ```bash
    npx nx serve backend
    ```
