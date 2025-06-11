@@ -285,6 +285,11 @@ const MessageBubble = ({ message, isDarkMode, theme, onRefreshMessage, onEditMes
         '&:hover .assistant-action-bar': {
           opacity: 1,
         },
+        '@media (hover: none)': {
+          '& .assistant-action-bar': {
+            opacity: 1,
+          },
+        },
       }}
     >
       {/* Assistant message content */}
@@ -522,12 +527,15 @@ const WelcomeScreen = ({ isDarkMode, theme, onToggleSidebar, onToggleTheme }: {
       <IconButton 
         onClick={onToggleTheme}
         sx={{ 
-          color: theme.palette.text.secondary,
+          color: theme.palette.text.primary,
           borderRadius: '6px',
           transition: 'all 150ms cubic-bezier(0.4, 0, 0.2, 1)',
           '&:hover': {
             backgroundColor: theme.palette.action.hover,
-            color: theme.palette.text.primary,
+            color: theme.palette.primary.main,
+          },
+          '&:active': {
+            transform: 'scale(0.95)',
           },
         }}
       >
@@ -737,12 +745,15 @@ export function ChatArea({ messages, isLoading, onToggleSidebar, isDarkMode, onT
         <IconButton 
           onClick={onToggleTheme}
           sx={{ 
-            color: theme.palette.text.secondary,
+            color: theme.palette.text.primary,
             borderRadius: '6px',
             transition: 'all 150ms cubic-bezier(0.4, 0, 0.2, 1)',
             '&:hover': {
               backgroundColor: theme.palette.action.hover,
-              color: theme.palette.text.primary,
+              color: theme.palette.primary.main,
+            },
+            '&:active': {
+              transform: 'scale(0.95)',
             },
           }}
         >
