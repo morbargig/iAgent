@@ -243,7 +243,7 @@ const MessageBubble = ({ message, isDarkMode, theme, onRefreshMessage, onEditMes
             </IconButton>
           </Tooltip>
 
-          <Tooltip title="Refresh query">
+          <Tooltip title="Regenerate query">
             <IconButton
               onClick={handleRefresh}
               size="small"
@@ -341,7 +341,10 @@ const MessageBubble = ({ message, isDarkMode, theme, onRefreshMessage, onEditMes
           display: 'flex',
           gap: '4px',
           marginTop: '8px',
+          marginBottom: '8px',
           opacity: 0,
+          position: 'relative',
+          zIndex: 10,
           transition: 'opacity 150ms cubic-bezier(0.4, 0, 0.2, 1)',
           '&:hover': {
             opacity: 1,
@@ -411,7 +414,7 @@ const MessageBubble = ({ message, isDarkMode, theme, onRefreshMessage, onEditMes
           </IconButton>
         </Tooltip>
         
-        {/* Refresh Button */}
+        {/* Regenerate Response Button */}
         {!message.isStreaming && (
           <Tooltip title="Regenerate response">
             <IconButton
@@ -774,7 +777,7 @@ export function ChatArea({ messages, isLoading, onToggleSidebar, isDarkMode, onT
           padding: '32px 16px',
           paddingBottom: {
             xs: '120px',
-            sm: '32px'
+            sm: '80px'
           },
           '@media (max-width: 600px)': {
             WebkitOverflowScrolling: 'touch',

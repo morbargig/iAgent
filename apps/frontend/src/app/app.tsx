@@ -641,15 +641,31 @@ export function App() {
     const conversation = currentConversation;
     if (!conversation || isLoading) return;
 
-    // Find the user message and get the conversation history up to that point
+    // Find the message and get the conversation history up to that point
     const messageIndex = conversation.messages.findIndex(m => m.id === messageId);
-    if (messageIndex === -1 || conversation.messages[messageIndex].role !== 'user') return;
+    if (messageIndex === -1) return;
 
-    // Get messages up to and including the user message to regenerate from
-    const messagesToSend = conversation.messages.slice(0, messageIndex + 1);
-    
-    // Remove all assistant messages after this user message
-    const messagesToKeep = conversation.messages.slice(0, messageIndex + 1);
+    const targetMessage = conversation.messages[messageIndex];
+
+    let messagesToSend: Message[];
+    let messagesToKeep: Message[];
+
+    if (targetMessage.role === 'user') {
+      // For user messages: regenerate from this user message
+      messagesToSend = conversation.messages.slice(0, messageIndex + 1);
+      messagesToKeep = conversation.messages.slice(0, messageIndex + 1);
+    } else {
+      // For assistant messages: find the previous user message and regenerate from there
+      const previousUserMessageIndex = conversation.messages.slice(0, messageIndex)
+        .reverse()
+        .findIndex(m => m.role === 'user');
+      
+      if (previousUserMessageIndex === -1) return; // No previous user message found
+      
+      const actualUserIndex = messageIndex - 1 - previousUserMessageIndex;
+      messagesToSend = conversation.messages.slice(0, actualUserIndex + 1);
+      messagesToKeep = conversation.messages.slice(0, actualUserIndex + 1);
+    }
     
     // Create a new assistant message placeholder for streaming
     const newAssistantMessageId = Date.now().toString();
