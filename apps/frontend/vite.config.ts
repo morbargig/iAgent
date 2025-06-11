@@ -20,7 +20,7 @@ export default defineConfig({
   plugins: [react(), nxViteTsPaths()],
 
   // GitHub Pages deployment configuration
-  base: process.env.NODE_ENV === 'production' ? '/iagent2/' : '/',
+  base: '/iagent2/',
 
   build: {
     outDir: '../../dist/apps/frontend',
