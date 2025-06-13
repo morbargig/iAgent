@@ -8,6 +8,7 @@ import 'highlight.js/styles/github-dark.css';
 interface MarkdownRendererProps {
   content: string;
   isDarkMode?: boolean;
+  
 }
 
 export const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({ 
