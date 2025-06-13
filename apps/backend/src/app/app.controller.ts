@@ -70,7 +70,7 @@ export class AppController {
   @Post('chat')
   @ApiOperation({ 
     summary: 'Send a chat message',
-    description: 'Send a message to the AI assistant and receive a complete response. This endpoint returns the full response at once.'
+            description: 'Send a message to the AI assistant and receive a complete response. This endpoint returns the full response at once.'
   })
   @ApiConsumes('application/json')
   @ApiProduces('application/json')
@@ -849,7 +849,7 @@ This project structure demonstrates several best practices:
 
 ## **Project Architecture:**
 \`\`\`
-iagent2/
+iagent/
 ├── apps/
 │   ├── backend/     # NestJS API server
 │   └── frontend/    # React application

@@ -1,5 +1,5 @@
 {
-  "name": "@chatbot-app/backend",
+  "name": "@iagent/backend",
   "version": "0.0.1",
   "private": true,
   "nx": {
@@ -28,15 +28,15 @@
           "build"
         ],
         "options": {
-          "buildTarget": "@chatbot-app/backend:build",
+          "buildTarget": "@iagent/backend:build",
           "runBuildTargetDependencies": false
         },
         "configurations": {
           "development": {
-            "buildTarget": "@chatbot-app/backend:build:development"
+            "buildTarget": "@iagent/backend:build:development"
           },
           "production": {
-            "buildTarget": "@chatbot-app/backend:build:production"
+            "buildTarget": "@iagent/backend:build:production"
           }
         }
       }

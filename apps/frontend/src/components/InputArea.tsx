@@ -84,17 +84,17 @@ export function InputArea({
         sx={{
           position: 'fixed',
           bottom: 0,
-          left: sidebarOpen ? '280px' : '0', // Adjust for sidebar
-          right: 0,
+          insetInlineStart: sidebarOpen ? '280px' : '0', // Use logical property for RTL/LTR
+          insetInlineEnd: 0,
           zIndex: 1000,
           background: isDarkMode 
             ? 'linear-gradient(180deg, rgba(52, 53, 65, 0) 0%, rgba(52, 53, 65, 0.8) 50%, #343541 100%)'
             : 'linear-gradient(180deg, rgba(255, 255, 255, 0) 0%, rgba(255, 255, 255, 0.8) 50%, #ffffff 100%)',
           paddingTop: '20px',
           paddingBottom: '20px',
-          transition: 'left 0.3s ease', // Smooth transition when sidebar opens/closes
+          transition: 'inset-inline-start 0.3s ease', // Smooth transition with logical property
           '@media (max-width: 768px)': {
-            left: 0, // On mobile, always full width
+            insetInlineStart: 0, // On mobile, always full width
             paddingBottom: 'env(safe-area-inset-bottom, 10px)',
             paddingTop: '10px',
           }
@@ -161,7 +161,10 @@ export function InputArea({
                 width: '100%',
                 minHeight: '52px',
                 maxHeight: '200px',
-                padding: '14px 50px 14px 16px', // Restore original padding for proper text flow
+                paddingTop: '14px',
+                paddingBottom: '14px',
+                paddingInlineStart: '16px', // Use logical properties for RTL/LTR
+                paddingInlineEnd: '50px',   // Space for send button
                 border: 'none',
                 outline: 'none',
                 resize: 'none',
@@ -189,7 +192,7 @@ export function InputArea({
               disabled={!canSend && !showStopButton}
               sx={{
                 position: 'absolute',
-                right: '8px',
+                insetInlineEnd: '8px', // Use logical property for RTL/LTR
                 bottom: '8px',
                 width: '36px',
                 height: '36px',
@@ -221,7 +224,7 @@ export function InputArea({
                 '@media (max-width: 600px)': {
                   width: '44px',
                   height: '44px',
-                  right: '6px',
+                  insetInlineEnd: '6px', // Use logical property for RTL/LTR
                   bottom: '4px',
                 }
               }}

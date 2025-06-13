@@ -26,7 +26,7 @@ const translations: Translation = {
     thinking: 'חושב...',
   },
   header: {
-    title: 'עוזר בינה מלאכותית',
+    title: 'iAgent',
     subtitle: 'השותף החכם שלך לשיחה',
     changeLanguage: 'שנה שפה',
   },
@@ -41,7 +41,7 @@ const translations: Translation = {
     chatError: 'מצטער, נתקלתי בשגיאה. אנא נסה שוב.',
   },
   chat: {
-    placeholder: 'הודעה לעוזר הבינה המלאכותית...',
+    placeholder: 'הודעה ל-iAgent...',
     emptyState: 'השיחות שלך יופיעו כאן',
     emptyStateSuggestion1: 'במה אתה יכול לעזור לי?',
     emptyStateSuggestion2: 'ספר לי על עצמך',
@@ -64,7 +64,7 @@ const translations: Translation = {
       ]
     },
     welcome: {
-      title: 'ברוכים הבאים לעוזר הבינה המלאכותית',
+      title: 'ברוכים הבאים ל-iAgent',
       subtitle: 'איך אוכל לעזור לך היום?',
       description: 'אני יכול לעזור לך עם שאלות, כתיבה, ניתוח, תכנות ופרויקטים יצירתיים.',
     },
@@ -77,7 +77,7 @@ const translations: Translation = {
   },
   message: {
     user: 'אתה',
-    assistant: 'עוזר',
+    assistant: 'iAgent',
     streaming: 'מזרים...',
     copy: 'העתק הודעה',
     copied: 'הועתק!',
@@ -102,7 +102,7 @@ const translations: Translation = {
     deleteConversation: 'מחק שיחה',
   },
   input: {
-    placeholder: 'הודעה לעוזר הבינה המלאכותית...',
+    placeholder: 'הודעה ל-iAgent...',
     disclaimer: 'בינה מלאכותית יכולה לטעות. בדוק מידע חשוב.',
     send: 'שלח הודעה',
     stop: 'עצור יצירה',

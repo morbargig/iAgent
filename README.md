@@ -1,4 +1,4 @@
-# iAgent2 - AI Chat Application
+# iAgent - AI Chat Application
 
 A modern ChatGPT-like AI chat application built with NX monorepo, React frontend, NestJS backend, and comprehensive mock streaming capabilities.
 
@@ -16,7 +16,7 @@ A modern ChatGPT-like AI chat application built with NX monorepo, React frontend
 ## 🏗️ Architecture
 
 ```
-iagent2/
+iagent/
 ├── apps/
 │   ├── frontend/          # React + Material-UI chat interface
 │   └── backend/           # NestJS API server with streaming
@@ -60,7 +60,7 @@ iagent2/
 1. **Clone the repository**
    ```bash
    git clone <repository-url>
-   cd iagent2
+   cd iagent
    ```
 
 2. **Install dependencies**

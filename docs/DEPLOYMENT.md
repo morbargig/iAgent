@@ -1,6 +1,6 @@
 # Deployment Guide
 
-This guide covers deployment options for the iAgent2 AI Chat Application, including GitHub Pages, Netlify, Vercel, and self-hosted solutions.
+This guide covers deployment options for the iAgent AI Chat Application, including GitHub Pages, Netlify, Vercel, and self-hosted solutions.
 
 ## 🚀 GitHub Pages Deployment (Recommended for Frontend)
 
@@ -21,7 +21,7 @@ The project includes a pre-configured GitHub Actions workflow that automatically
 4. Save the configuration
 
 #### 2. Update Repository Name (if needed)
-If your repository name is different from `iagent2`, update the base path:
+If your repository name is different from `iagent`, update the base path:
 
 ```typescript
 // apps/frontend/vite.config.ts

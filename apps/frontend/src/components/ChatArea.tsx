@@ -25,7 +25,7 @@ import {
   Api as ApiIcon,
   Psychology as MockIcon,
 } from '@mui/icons-material';
-import { type Message } from '@chatbot-app/stream-mocks';
+import { type Message } from '@iagent/stream-mocks';
 import { MarkdownRenderer } from './MarkdownRenderer';
 import { extractPlainTextFromMarkdown, copyToClipboard } from '../utils/textUtils';
 import { useTranslation } from '../contexts/TranslationContext';
@@ -91,7 +91,7 @@ const ChatHeader = ({
         <MenuIcon />
       </IconButton>
       
-      <Box sx={{ width: '1px', height: '16px', backgroundColor: theme.palette.divider, marginRight: '8px' }} />
+      <Box sx={{ width: '1px', height: '16px', backgroundColor: theme.palette.divider, marginInlineEnd: '8px' }} />
       
       <Typography variant="h6" sx={{ 
         color: theme.palette.text.primary,
@@ -104,7 +104,7 @@ const ChatHeader = ({
       <Box sx={{ flex: 1 }} />
 
       {/* Language Switcher */}
-      <Box sx={{ marginRight: '8px' }}>
+      <Box sx={{ marginInlineEnd: '8px' }}>
         <LanguageSwitcher isDarkMode={isDarkMode} />
       </Box>
 
@@ -117,7 +117,7 @@ const ChatHeader = ({
           size="small"
           variant={useMockMode ? "filled" : "outlined"}
           sx={{
-            marginRight: '8px',
+            marginInlineEnd: '8px',
             height: '28px',
             borderRadius: '6px',
             fontSize: '12px',
@@ -298,7 +298,7 @@ const MessageBubble = ({ message, isDarkMode, theme, onRefreshMessage, onEditMes
                 width: '2px',
                 height: '1.2em',
                 // backgroundColor: theme.palette.primary.main,
-                marginLeft: '4px',
+                marginInlineStart: '4px',
                 borderRadius: '1px',
                 animation: 'typingBlink 1s infinite',
                 '@keyframes typingBlink': {
@@ -443,7 +443,7 @@ const MessageBubble = ({ message, isDarkMode, theme, onRefreshMessage, onEditMes
               width: '2px',
               height: '1.2em',
               backgroundColor: theme.palette.primary.main,
-              marginLeft: '4px',
+              marginInlineStart: '4px',
               borderRadius: '1px',
               animation: 'typingBlink 1s infinite',
               '@keyframes typingBlink': {

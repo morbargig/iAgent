@@ -7,7 +7,7 @@ import { useTranslation } from '../contexts/TranslationContext';
 import { Sidebar } from '../components/Sidebar';
 import { ChatArea } from '../components/ChatArea';
 import { InputArea } from '../components/InputArea';
-import { StreamingClient, createMessage, createStreamingMessage, updateMessageContent, type Message, type Conversation } from '@chatbot-app/stream-mocks';
+import { StreamingClient, createMessage, createStreamingMessage, updateMessageContent, type Message, type Conversation } from '@iagent/stream-mocks';
 import { useMockMode } from '../hooks/useMockMode';
 import { LanguageSwitcher } from '../components/LanguageSwitcher';
 import { TranslationProvider } from '../contexts/TranslationContext';

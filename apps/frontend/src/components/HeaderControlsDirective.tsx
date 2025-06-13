@@ -89,7 +89,7 @@ export const HeaderControlsDirective: React.FC<HeaderControlsDirectiveProps> = (
           i18nKey="header.subtitle" 
           as="small" 
           style={{ fontSize: '10px', opacity: 0.7 }}
-          fallback="Assistant"
+          fallback="iAgent"
         />
       </Box>
     </Box>

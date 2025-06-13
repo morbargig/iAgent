@@ -24,6 +24,7 @@ export const HeaderControls: React.FC<HeaderControlsProps> = ({
         justifyContent: 'flex-end',
         gap: 2,
         p: 2,
+        direction: 'ltr', // Force LTR for consistent button layout
       }}
     >
       <LanguageSwitcher isDarkMode={isDarkMode} />
@@ -31,7 +32,8 @@ export const HeaderControls: React.FC<HeaderControlsProps> = ({
         onClick={onToggleMockMode}
         className="mock-api-button"
         style={{
-          padding: '8px 16px',
+          paddingBlock: '8px',
+          paddingInline: '16px',
           borderRadius: '8px',
           border: 'none',
           backgroundColor: isDarkMode ? '#3b82f6' : '#2563eb',
@@ -39,6 +41,7 @@ export const HeaderControls: React.FC<HeaderControlsProps> = ({
           cursor: 'pointer',
           fontSize: '14px',
           fontWeight: 500,
+          direction: 'ltr', // Force LTR for button text
         }}
       >
         {isMockMode ? t('common.disableMockApi') : t('common.enableMockApi')}

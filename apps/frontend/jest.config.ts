@@ -1,5 +1,5 @@
 export default {
-  displayName: '@chatbot-app/frontend',
+  displayName: '@iagent/frontend',
   preset: '../../jest.preset.js',
   transform: {
     '^(?!.*\\.(js|jsx|ts|tsx|css|json)$)': '@nx/react/plugins/jest',

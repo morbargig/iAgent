@@ -26,7 +26,7 @@ const translations: Translation = {
     thinking: 'Thinking...',
   },
   header: {
-    title: 'AI Assistant',
+    title: 'iAgent',
     subtitle: 'Your intelligent conversation partner',
     changeLanguage: 'Change Language',
   },
@@ -41,7 +41,7 @@ const translations: Translation = {
     chatError: 'Sorry, I encountered an error. Please try again.',
   },
   chat: {
-    placeholder: 'Message AI Assistant...',
+    placeholder: 'Message iAgent...',
     emptyState: 'Your conversations will appear here',
     emptyStateSuggestion1: 'What can you help me with?',
     emptyStateSuggestion2: 'Tell me about yourself',
@@ -64,7 +64,7 @@ const translations: Translation = {
       ]
     },
     welcome: {
-      title: 'Welcome to AI Assistant',
+      title: 'Welcome to iAgent',
       subtitle: 'How can I help you today?',
       description: 'I can help you with questions, writing, analysis, coding, and creative projects.',
     },
@@ -77,7 +77,7 @@ const translations: Translation = {
   },
   message: {
     user: 'You',
-    assistant: 'Assistant',
+    assistant: 'iAgent',
     streaming: 'Streaming...',
     copy: 'Copy message',
     copied: 'Copied!',
@@ -102,7 +102,7 @@ const translations: Translation = {
     deleteConversation: 'Delete conversation',
   },
   input: {
-    placeholder: 'Message AI Assistant...',
+    placeholder: 'Message iAgent...',
     disclaimer: 'AI can make mistakes. Check important info.',
     send: 'Send message',
     stop: 'Stop generation',

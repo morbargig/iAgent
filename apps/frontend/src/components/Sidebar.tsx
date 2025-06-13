@@ -114,7 +114,7 @@ export function Sidebar({
             },
           }}
         >
-          <AddIcon sx={{ fontSize: 16, marginRight: '8px' }} />
+                      <AddIcon sx={{ fontSize: 16, marginInlineEnd: '8px' }} />
           {t('sidebar.newChat')}
         </Button>
       </Box>
@@ -203,7 +203,7 @@ export function Sidebar({
                   {/* Conversation Icon */}
                   <ChatIcon sx={{ 
                     fontSize: 16, 
-                    marginRight: '12px',
+                    marginInlineEnd: '12px',
                     color: currentConversationId === conversation.id 
                       ? theme.palette.primary.main
                       : theme.palette.text.secondary,
@@ -244,7 +244,7 @@ export function Sidebar({
                     sx={{ 
                       opacity: 0,
                       transition: 'all 150ms cubic-bezier(0.4, 0, 0.2, 1)',
-                      marginLeft: '8px',
+                      marginInlineStart: '8px',
                       width: 24,
                       height: 24,
                       color: theme.palette.text.secondary,
@@ -291,9 +291,9 @@ export function Sidebar({
           }}
         >
           {isDarkMode ? (
-            <LightModeIcon sx={{ fontSize: 16, marginRight: '12px' }} />
+                          <LightModeIcon sx={{ fontSize: 16, marginInlineEnd: '12px' }} />
           ) : (
-            <DarkModeIcon sx={{ fontSize: 16, marginRight: '12px' }} />
+                          <DarkModeIcon sx={{ fontSize: 16, marginInlineEnd: '12px' }} />
           )}
           {isDarkMode ? t('theme.light') : t('theme.dark')}
         </Button>

@@ -20,7 +20,7 @@ describe('App', () => {
       </BrowserRouter>
     );
     expect(
-      getAllByText(new RegExp('Welcome @chatbot-app/frontend', 'gi')).length > 0
+      getAllByText(new RegExp('Welcome @iagent/frontend', 'gi')).length > 0
     ).toBeTruthy();
   });
 });

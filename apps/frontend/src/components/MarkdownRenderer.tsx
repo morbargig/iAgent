@@ -136,7 +136,7 @@ export const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({
         },
         // Task list styling
         '& input[type="checkbox"]': {
-          marginRight: '0.5em',
+                      marginInlineEnd: '0.5em',
         },
         // Math support placeholder
         '& .math': {

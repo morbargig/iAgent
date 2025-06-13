@@ -316,4 +316,4 @@ npx nx build frontend --analyze
 
 ---
 
-**Part of the iAgent2 monorepo - Built with React + Material-UI** 
+**Part of the iAgent monorepo - Built with React + Material-UI** 

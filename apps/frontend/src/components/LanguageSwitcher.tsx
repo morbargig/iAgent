@@ -10,7 +10,9 @@ export const LanguageSwitcher: React.FC<{ isDarkMode: boolean }> = ({ isDarkMode
       value={currentLang}
       onChange={(e) => changeLanguage(e.target.value)}
       style={{
-        padding: '8px 16px',
+        paddingBlock: '8px',
+        paddingInlineStart: '16px',
+        paddingInlineEnd: '32px', // Space for dropdown arrow
         borderRadius: '8px',
         border: 'none',
         backgroundColor: isDarkMode ? '#3b82f6' : '#2563eb',
@@ -21,8 +23,9 @@ export const LanguageSwitcher: React.FC<{ isDarkMode: boolean }> = ({ isDarkMode
         appearance: 'none',
         backgroundImage: `url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='white'%3e%3cpath d='M7 10l5 5 5-5z'/%3e%3c/svg%3e")`,
         backgroundRepeat: 'no-repeat',
-        backgroundPosition: 'right 8px center',
-        paddingRight: '32px',
+        backgroundPosition: 'right 8px center', // Keep right for dropdown arrow
+        backgroundSize: '16px',
+        direction: 'ltr', // Force LTR for dropdown functionality
       }}
     >
       <option value="none">Raw Keys</option>

@@ -508,4 +508,4 @@ async streamChat(@Body() request: ChatRequestDto) {
 
 ---
 
-**Part of the iAgent2 monorepo - Built with NestJS + TypeScript** 
+**Part of the iAgent monorepo - Built with NestJS + TypeScript** 

@@ -26,7 +26,7 @@ const translations: Translation = {
     thinking: 'يفكر...',
   },
   header: {
-    title: 'مساعد الذكاء الاصطناعي',
+    title: 'iAgent',
     subtitle: 'شريكك الذكي في المحادثة',
     changeLanguage: 'تغيير اللغة',
   },
@@ -41,7 +41,7 @@ const translations: Translation = {
     chatError: 'عذراً، واجهت خطأ. يرجى المحاولة مرة أخرى.',
   },
   chat: {
-    placeholder: 'رسالة إلى مساعد الذكاء الاصطناعي...',
+    placeholder: 'رسالة إلى iAgent...',
     emptyState: 'ستظهر محادثاتك هنا',
     emptyStateSuggestion1: 'كيف يمكنك مساعدتي؟',
     emptyStateSuggestion2: 'أخبرني عن نفسك',
@@ -64,7 +64,7 @@ const translations: Translation = {
       ]
     },
     welcome: {
-      title: 'مرحباً بك في مساعد الذكاء الاصطناعي',
+      title: 'مرحباً بك في iAgent',
       subtitle: 'كيف يمكنني مساعدتك اليوم؟',
       description: 'يمكنني مساعدتك في الأسئلة والكتابة والتحليل والبرمجة والمشاريع الإبداعية.',
     },
@@ -77,7 +77,7 @@ const translations: Translation = {
   },
   message: {
     user: 'أنت',
-    assistant: 'المساعد',
+    assistant: 'iAgent',
     streaming: 'يتدفق...',
     copy: 'نسخ الرسالة',
     copied: 'تم النسخ!',
@@ -102,7 +102,7 @@ const translations: Translation = {
     deleteConversation: 'حذف المحادثة',
   },
   input: {
-    placeholder: 'رسالة إلى مساعد الذكاء الاصطناعي...',
+    placeholder: 'رسالة إلى iAgent...',
     disclaimer: 'قد يرتكب الذكاء الاصطناعي أخطاء. تحقق من المعلومات المهمة.',
     send: 'إرسال رسالة',
     stop: 'إيقاف التوليد',
