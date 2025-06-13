@@ -10,6 +10,8 @@ import {
   Stop as StopIcon,
   Close as CloseIcon,
 } from '@mui/icons-material';
+import { useTranslation } from '../contexts/TranslationContext';
+import { Translate } from './Translate';
 
 interface InputAreaProps {
   value: string;
@@ -21,6 +23,7 @@ interface InputAreaProps {
   isLoading?: boolean;
   isDarkMode: boolean;
   isEditing?: boolean;
+  sidebarOpen?: boolean; // Add sidebar state
 }
 
 // ChatGPT-style Input Area - Matches official ChatGPT design
@@ -32,11 +35,13 @@ export function InputArea({
   onStop,
   disabled, 
   isLoading = false,
-  isDarkMode 
+  isDarkMode,
+  sidebarOpen = false
 }: InputAreaProps) {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const theme = useTheme();
   const [isFocused, setIsFocused] = useState(false);
+  const { t } = useTranslation();
 
   useEffect(() => {
     if (textareaRef.current && !disabled) {
@@ -79,7 +84,7 @@ export function InputArea({
         sx={{
           position: 'fixed',
           bottom: 0,
-          left: 0,
+          left: sidebarOpen ? '280px' : '0', // Adjust for sidebar
           right: 0,
           zIndex: 1000,
           background: isDarkMode 
@@ -87,7 +92,9 @@ export function InputArea({
             : 'linear-gradient(180deg, rgba(255, 255, 255, 0) 0%, rgba(255, 255, 255, 0.8) 50%, #ffffff 100%)',
           paddingTop: '20px',
           paddingBottom: '20px',
-          '@media (max-width: 600px)': {
+          transition: 'left 0.3s ease', // Smooth transition when sidebar opens/closes
+          '@media (max-width: 768px)': {
+            left: 0, // On mobile, always full width
             paddingBottom: 'env(safe-area-inset-bottom, 10px)',
             paddingTop: '10px',
           }
@@ -105,6 +112,7 @@ export function InputArea({
             }
           }}
         >
+
           {/* Main Input Container */}
           <Box
             sx={{
@@ -123,6 +131,19 @@ export function InputArea({
               },
               '@media (max-width: 600px)': {
                 marginBottom: 'env(safe-area-inset-bottom, 10px)',
+              },
+              // Placeholder styling - respects document direction
+              '& textarea::placeholder': {
+                opacity: 0.7,
+              },
+              '& textarea::-webkit-input-placeholder': {
+                opacity: 0.7,
+              },
+              '& textarea::-moz-placeholder': {
+                opacity: 0.7,
+              },
+              '& textarea:-ms-input-placeholder': {
+                opacity: 0.7,
               }
             }}
           >
@@ -134,13 +155,13 @@ export function InputArea({
               onKeyDown={handleKeyDown}
               onFocus={() => setIsFocused(true)}
               onBlur={() => setIsFocused(false)}
-              placeholder="Message ChatGPT..."
+              placeholder={t('input.placeholder')}
               disabled={disabled}
               style={{
                 width: '100%',
                 minHeight: '52px',
                 maxHeight: '200px',
-                padding: '14px 50px 14px 16px',
+                padding: '14px 50px 14px 16px', // Restore original padding for proper text flow
                 border: 'none',
                 outline: 'none',
                 resize: 'none',
@@ -158,6 +179,7 @@ export function InputArea({
                 position: 'relative',
                 zIndex: 1,
                 cursor: 'text',
+                direction: 'inherit', // Inherit document direction (RTL/LTR)
               }}
             />
 
@@ -213,22 +235,19 @@ export function InputArea({
           </Box>
 
           {/* Helper Text */}
-          <Typography
-            variant="caption"
-            sx={{
+          <Translate
+            i18nKey="input.disclaimer"
+            fallback="AI can make mistakes. Check important info."
+            as="div"
+            style={{
               display: 'block',
-              textAlign: 'center',
               marginTop: '8px',
               color: isDarkMode ? '#8e8ea0' : '#6b7280',
               fontSize: '12px',
               lineHeight: '16px',
-              '@media (max-width: 600px)': {
-                marginBottom: 'env(safe-area-inset-bottom, 10px)',
-              }
+              direction: 'inherit',
             }}
-          >
-            ChatGPT can make mistakes. Check important info.
-          </Typography>
+          />
         </Box>
       </Box>
     </>

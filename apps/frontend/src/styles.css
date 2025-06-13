@@ -1,1 +1,36 @@
 /* You can add global styles to this file, and also import other style files */
+
+/* RTL/LTR Direction Support */
+html {
+  transition: direction 0.3s ease;
+}
+
+/* Ensure proper text alignment for RTL languages */
+html[dir="rtl"] {
+  text-align: right;
+}
+
+html[dir="ltr"] {
+  text-align: left;
+}
+
+/* Smooth transitions for layout changes */
+* {
+  transition: margin 0.2s ease, padding 0.2s ease;
+}
+
+/* Fix for Material-UI components in RTL */
+html[dir="rtl"] .MuiDrawer-paper {
+  right: 0;
+  left: auto;
+}
+
+html[dir="rtl"] .MuiIconButton-root {
+  transform: scaleX(-1);
+}
+
+/* Ensure proper scrollbar position */
+html[dir="rtl"] ::-webkit-scrollbar {
+  left: 0;
+  right: auto;
+}

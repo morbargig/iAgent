@@ -1,13 +1,17 @@
 // Uncomment this line to use CSS modules
 // import styles from './app.module.css';
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { ThemeProvider, createTheme } from '@mui/material/styles';
 import { CssBaseline, Box } from '@mui/material';
+import { useTranslation } from '../contexts/TranslationContext';
 import { Sidebar } from '../components/Sidebar';
 import { ChatArea } from '../components/ChatArea';
 import { InputArea } from '../components/InputArea';
+import { StreamingClient, createMessage, createStreamingMessage, updateMessageContent, type Message, type Conversation } from '@chatbot-app/stream-mocks';
 import { useMockMode } from '../hooks/useMockMode';
-import { StreamingClient } from '@chatbot-app/stream-mocks';
+import { LanguageSwitcher } from '../components/LanguageSwitcher';
+import { TranslationProvider } from '../contexts/TranslationContext';
+import { generateUniqueId } from '../utils/id-generator';
 
 // iagent-inspired Design System
 // Philosophy: Clean, minimal, muted aesthetic with subtle interactions
@@ -277,48 +281,143 @@ const lightTheme = createTheme({
   },
 });
 
-export interface Message {
-  id: string;
-  role: 'user' | 'assistant';
-  content: string;
-  timestamp: Date;
-  isStreaming?: boolean;
-  metadata?: {
-    index?: number;
-    total_tokens?: number;
-    timestamp?: string;
-    model?: string;
-    usage?: {
-      prompt_tokens: number;
-      completion_tokens: number;
-      total_tokens: number;
-    };
-    processing_time_ms?: number;
-    confidence?: number;
-    categories?: string[];
-  };
-}
-
-export interface Conversation {
-  id: string;
-  title: string;
-  messages: Message[];
-  lastUpdated: Date;
-}
-
-export function App() {
+const App = () => {
+  const { t } = useTranslation();
+  const [isDarkMode, setIsDarkMode] = useState(false);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [currentConversationId, setCurrentConversationId] = useState<string | null>(null);
-  const [sidebarOpen, setSidebarOpen] = useState(true);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [isDarkMode, setIsDarkMode] = useState(false); // Default to light mode like ChatGPT
+  const [error, setError] = useState<string | null>(null);
   const [currentAbortController, setCurrentAbortController] = useState<AbortController | null>(null);
+  const streamingClient = useRef(new StreamingClient());
+
+  const currentConversation = useMemo(() => {
+    return conversations.find(conv => conv.id === currentConversationId) || null;
+  }, [conversations, currentConversationId]);
+
+  const handleSendMessage = async (content: string) => {
+    if (!content.trim() || isLoading) return;
+
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      const userMessage = createMessage('user', content);
+      const assistantMessage = createStreamingMessage('assistant');
+
+      // Update conversation with new messages
+      const updatedConversation: Conversation = currentConversation
+        ? {
+            ...currentConversation,
+            messages: [...currentConversation.messages, userMessage, assistantMessage],
+            lastUpdated: new Date(),
+          }
+        : {
+            id: generateUniqueId(),
+            title: content.slice(0, 30) + '...',
+            messages: [userMessage, assistantMessage],
+            createdAt: new Date(),
+            updatedAt: new Date(),
+            lastUpdated: new Date(),
+          };
+
+      setConversations(prev =>
+        currentConversation
+          ? prev.map(conv =>
+              conv.id === currentConversationId ? updatedConversation : conv
+            )
+          : [...prev, updatedConversation]
+      );
+
+      if (!currentConversation) {
+        setCurrentConversationId(updatedConversation.id);
+      }
+
+      // Stream the response
+      await streamingClient.current.streamChat(
+        updatedConversation.messages,
+        (token: string, metadata?: Record<string, any>) => {
+          setConversations(prev =>
+            prev.map(conv => {
+              if (conv.id === updatedConversation.id) {
+                const lastMessage = conv.messages[conv.messages.length - 1];
+                return {
+                  ...conv,
+                  messages: [
+                    ...conv.messages.slice(0, -1),
+                    updateMessageContent(lastMessage, lastMessage.content + token, true),
+                  ],
+                  lastUpdated: new Date(),
+                };
+              }
+              return conv;
+            })
+          );
+        },
+        () => {
+          setConversations(prev =>
+            prev.map(conv => {
+              if (conv.id === updatedConversation.id) {
+                const lastMessage = conv.messages[conv.messages.length - 1];
+                return {
+                  ...conv,
+                  messages: [
+                    ...conv.messages.slice(0, -1),
+                    updateMessageContent(lastMessage, lastMessage.content, false),
+                  ],
+                  lastUpdated: new Date(),
+                };
+              }
+              return conv;
+            })
+          );
+          setIsLoading(false);
+        },
+        (error: Error) => {
+          setError(error.message);
+          setConversations(prev =>
+            prev.map(conv => {
+              if (conv.id === updatedConversation.id) {
+                const lastMessage = conv.messages[conv.messages.length - 1];
+                return {
+                  ...conv,
+                  messages: [
+                    ...conv.messages.slice(0, -1),
+                    updateMessageContent(
+                      lastMessage,
+                      t('errors.streaming', { error: error.message }),
+                      false
+                    ),
+                  ],
+                  lastUpdated: new Date(),
+                };
+              }
+              return conv;
+            })
+          );
+          setIsLoading(false);
+        },
+        true, // useMock
+        'http://localhost:3000',
+        t
+      );
+
+      setInput('');
+    } catch (error) {
+      setError(error instanceof Error ? error.message : 'An unknown error occurred');
+      setIsLoading(false);
+    }
+  };
 
   // Mock mode hook
   const mockModeHook = useMockMode();
   const isMockMode = mockModeHook.useMockMode;
   const toggleMockMode = mockModeHook.toggleMockMode;
+  
+  // Translation hook
+  const { t: translation } = useTranslation();
   
   // Safe toggle function
   const handleMockModeToggle = React.useCallback(() => {
@@ -334,7 +433,6 @@ export function App() {
     streamingClientRef.current = new StreamingClient();
   }, []);
 
-  const currentConversation = conversations.find(c => c.id === currentConversationId);
   const currentTheme = isDarkMode ? darkTheme : lightTheme;
 
   // Load conversations, theme preference, and sidebar state from localStorage on mount
@@ -348,15 +446,41 @@ export function App() {
       try {
         const parsedConversations = JSON.parse(savedConversations).map((conv: any) => ({
           ...conv,
+          id: conv.id.includes('-') ? conv.id : generateUniqueId(), // Ensure unique ID format
           lastUpdated: new Date(conv.lastUpdated),
           messages: conv.messages.map((msg: any) => ({
             ...msg,
+            id: msg.id.includes('-') ? msg.id : generateUniqueId(), // Ensure unique message IDs
             timestamp: new Date(msg.timestamp)
           }))
         }));
-        setConversations(parsedConversations);
+        
+        // Check for duplicate IDs and fix them
+        const seenIds = new Set();
+        const fixedConversations = parsedConversations.map((conv: any) => {
+          if (seenIds.has(conv.id)) {
+            conv.id = generateUniqueId();
+          }
+          seenIds.add(conv.id);
+          
+          const seenMessageIds = new Set();
+          conv.messages = conv.messages.map((msg: any) => {
+            if (seenMessageIds.has(msg.id)) {
+              msg.id = generateUniqueId();
+            }
+            seenMessageIds.add(msg.id);
+            return msg;
+          });
+          
+          return conv;
+        });
+        
+        setConversations(fixedConversations);
       } catch (error) {
         console.error('Failed to load conversations from localStorage:', error);
+        // Clear corrupted data
+        localStorage.removeItem('chatbot-conversations');
+        localStorage.removeItem('chatbot-current-conversation-id');
       }
     }
     
@@ -370,11 +494,11 @@ export function App() {
     
     // Responsive sidebar state - hidden on mobile, visible on desktop
     if (savedSidebarOpen !== null) {
-      setSidebarOpen(savedSidebarOpen === 'true');
+      setIsSidebarOpen(savedSidebarOpen === 'true');
     } else {
       const isMobile = window.innerWidth < 768; // Mobile breakpoint
       const defaultSidebarState = !isMobile;
-      setSidebarOpen(defaultSidebarState);
+      setIsSidebarOpen(defaultSidebarState);
       localStorage.setItem('chatbot-sidebar-open', defaultSidebarState.toString());
     }
   }, []);
@@ -404,200 +528,22 @@ export function App() {
 
   // Toggle sidebar with smooth slide animation (300ms)
   const toggleSidebar = () => {
-    const newSidebarState = !sidebarOpen;
-    setSidebarOpen(newSidebarState);
+    const newSidebarState = !isSidebarOpen;
+    setIsSidebarOpen(newSidebarState);
     localStorage.setItem('chatbot-sidebar-open', newSidebarState.toString());
   };
 
   const createNewConversation = () => {
     const newConversation: Conversation = {
-      id: Date.now().toString(),
-      title: 'New Chat',
+      id: generateUniqueId(),
+      title: t('sidebar.newChatTitle'),
       messages: [],
+      createdAt: new Date(),
+      updatedAt: new Date(),
       lastUpdated: new Date(),
     };
     setConversations(prev => [newConversation, ...prev]);
     setCurrentConversationId(newConversation.id);
-  };
-
-  const sendMessage = async () => {
-    if (!input.trim() || isLoading) return;
-
-    let conversation = currentConversation;
-    
-    // Create new conversation if none exists
-    if (!conversation) {
-      const newConversation: Conversation = {
-        id: Date.now().toString(),
-        title: input.slice(0, 30) + (input.length > 30 ? '...' : ''),
-        messages: [],
-        lastUpdated: new Date(),
-      };
-      setConversations(prev => [newConversation, ...prev]);
-      setCurrentConversationId(newConversation.id);
-      conversation = newConversation;
-    }
-
-    const userMessage: Message = {
-      id: Date.now().toString(),
-      role: 'user',
-      content: input,
-      timestamp: new Date(),
-    };
-
-    // Add user message
-    setConversations(prev => prev.map(c => 
-      c.id === conversation!.id 
-        ? { ...c, messages: [...c.messages, userMessage], lastUpdated: new Date() }
-        : c
-    ));
-
-    const messageInput = input;
-    setInput('');
-    setEditingState(null); // Clear editing state when sending new message
-    setIsLoading(true);
-
-    // Create assistant message placeholder for streaming
-    const assistantMessageId = (Date.now() + 1).toString();
-    const assistantMessage: Message = {
-      id: assistantMessageId,
-      role: 'assistant',
-      content: '',
-      timestamp: new Date(),
-      isStreaming: true,
-    };
-
-    // Add assistant message placeholder
-    setConversations(prev => prev.map(c => 
-      c.id === conversation!.id 
-        ? { ...c, messages: [...c.messages, assistantMessage], lastUpdated: new Date() }
-        : c
-    ));
-
-    try {
-      const streamingClient = streamingClientRef.current;
-      if (!streamingClient) {
-        throw new Error('Streaming client not initialized');
-      }
-
-      console.log(`🚀 Starting ${isMockMode ? 'MOCK' : 'API'} streaming...`);
-
-      // Store the streaming client for abort functionality
-      setCurrentAbortController({ abort: () => streamingClient.abort() } as AbortController);
-
-      let currentContent = '';
-      let tokenCount = 0;
-      let lastUpdateTime = Date.now();
-
-      await streamingClient.streamChat(
-        [...conversation.messages, userMessage],
-        // onToken callback
-        (token: string, metadata?: any) => {
-          currentContent += token;
-          tokenCount++;
-
-          const now = Date.now();
-          
-          // Throttle UI updates for performance (max 60fps)
-          if (now - lastUpdateTime >= 16) {
-            lastUpdateTime = now;
-            
-            // Update the message content with metadata
-            setConversations(prev => prev.map(c => 
-              c.id === conversation!.id 
-                ? { 
-                    ...c, 
-                    messages: c.messages.map(m => 
-                      m.id === assistantMessageId 
-                        ? { 
-                            ...m, 
-                            content: currentContent,
-                            metadata: metadata,
-                            isStreaming: true 
-                          }
-                        : m
-                    ),
-                    lastUpdated: new Date() 
-                  }
-                : c
-            ));
-          }
-
-          // Log progress for debugging
-          if (metadata && metadata.progress) {
-            console.log(`🔄 Generation progress: ${metadata.progress}% (${metadata.index}/${metadata.total_tokens})`, {
-              confidence: metadata.confidence?.toFixed(3),
-              categories: metadata.categories,
-              processing_time: `${metadata.processing_time_ms}ms`
-            });
-          }
-        },
-        // onComplete callback
-        () => {
-          // Final update with complete content and mark streaming as done
-          setConversations(prev => prev.map(c => 
-            c.id === conversation!.id 
-              ? { 
-                  ...c, 
-                  messages: c.messages.map(m => 
-                    m.id === assistantMessageId 
-                      ? { ...m, content: currentContent, isStreaming: false }
-                      : m
-                  ),
-                  lastUpdated: new Date() 
-                }
-              : c
-          ));
-          console.log(`✅ ${isMockMode ? 'Mock' : 'API'} streaming completed: ${tokenCount} tokens processed`);
-        },
-        // onError callback
-        (error: Error) => {
-          console.error('❌ Streaming error:', error);
-          throw error;
-        },
-        // useMock flag
-        isMockMode,
-        // baseUrl for API mode
-        'http://localhost:3000'
-      );
-    } catch (error: any) {
-      console.error('❌ Streaming error:', error);
-      
-      let errorMessage = 'Sorry, I encountered an error. Please try again.';
-      
-      // Handle specific error types
-      if (error.name === 'AbortError') {
-        errorMessage = 'Request was cancelled.';
-      } else if (error.message?.includes('fetch')) {
-        errorMessage = 'Unable to connect to the server. Please check your connection.';
-      } else if (error.message?.includes('HTTP error')) {
-        errorMessage = `Server error (${error.message}). Please try again.`;
-      }
-      
-      // Replace the streaming message with error
-      const errorMessageObj: Message = {
-        id: assistantMessageId,
-        role: 'assistant',
-        content: errorMessage,
-        timestamp: new Date(),
-        isStreaming: false,
-      };
-
-      setConversations(prev => prev.map(c => 
-        c.id === conversation!.id 
-          ? { 
-              ...c, 
-              messages: c.messages.map(m => 
-                m.id === assistantMessageId ? errorMessageObj : m
-              ),
-              lastUpdated: new Date() 
-            }
-          : c
-      ));
-    } finally {
-      setIsLoading(false);
-      setCurrentAbortController(null);
-    }
   };
 
   const deleteConversation = (id: string) => {
@@ -646,7 +592,7 @@ export function App() {
     }
     
     // Create a new assistant message placeholder for streaming
-    const newAssistantMessageId = Date.now().toString();
+    const newAssistantMessageId = generateUniqueId();
     const newAssistantMessage: Message = {
       id: newAssistantMessageId,
       role: 'assistant',
@@ -838,84 +784,91 @@ export function App() {
     console.log('Message deleted:', messageId);
   };
 
-  const shareMessage = (messageId: string, content: string) => {
-    console.log('Message shared:', { messageId, content });
+  const shareMessage = (messageId: string) => {
+    console.log('Sharing message:', messageId);
     // Additional share tracking or analytics could go here
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      handleSendMessage(input);
+    }
   };
 
   return (
     <ThemeProvider theme={currentTheme}>
       <CssBaseline />
-      <Box 
-        sx={{ 
-          display: 'flex', 
-          height: '100vh', 
-          backgroundColor: currentTheme.palette.background.default,
-          overflow: 'hidden',
-          width: '100vw',
+      <Box
+        sx={{
+          display: 'flex',
+          flexDirection: 'column',
+          height: '100vh',
+          bgcolor: 'background.default',
+          color: 'text.primary',
         }}
       >
-        {/* Sidebar with smooth slide animation (300ms) */}
-        <Sidebar
-          conversations={conversations}
-          currentConversationId={currentConversationId}
-          onSelectConversation={setCurrentConversationId}
-          onNewConversation={createNewConversation}
-          onDeleteConversation={deleteConversation}
-          open={sidebarOpen}
-          onToggle={toggleSidebar}
-          isDarkMode={isDarkMode}
-          onToggleTheme={toggleTheme}
-        />
-        
-        {/* Main Content Area - Centered container max width 768px-1024px */}
-        <Box 
-          sx={{ 
-            flex: 1, 
-            display: 'flex', 
-            flexDirection: 'column',
-            minWidth: 0,
-            height: '100vh',
+        <Box
+          sx={{
+            display: 'flex',
+            flex: 1,
             overflow: 'hidden',
           }}
         >
-          <ChatArea 
-            messages={currentConversation?.messages || []}
-            isLoading={isLoading}
-            onToggleSidebar={toggleSidebar}
+          <Sidebar
+            open={isSidebarOpen}
+            onToggle={() => setIsSidebarOpen(!isSidebarOpen)}
+            conversations={conversations}
+            currentConversationId={currentConversationId}
+            onSelectConversation={setCurrentConversationId}
+            onNewConversation={createNewConversation}
+            onDeleteConversation={deleteConversation}
             isDarkMode={isDarkMode}
-            onToggleTheme={toggleTheme}
-            useMockMode={isMockMode}
-            onToggleMockMode={handleMockModeToggle}
-            onRefreshMessage={refreshMessage}
-            onEditMessage={editMessage}
-            onDeleteMessage={deleteMessage}
-            onShareMessage={shareMessage}
+            onToggleTheme={() => setIsDarkMode(!isDarkMode)}
           />
-          
-          {/* Sticky input at bottom of screen */}
-          <InputArea
-            value={input}
-            onChange={setInput}
-            onSend={sendMessage}
-            onStop={() => {
-              if (currentAbortController) {
-                currentAbortController.abort();
-                setCurrentAbortController(null);
-              }
-              setIsLoading(false);
+          <Box
+            sx={{
+              display: 'flex',
+              flexDirection: 'column',
+              flex: 1,
+              overflow: 'hidden',
             }}
-            onDiscard={editingState ? discardEdit : undefined}
-            disabled={isLoading}
-            isLoading={isLoading}
-            isDarkMode={isDarkMode}
-            isEditing={!!editingState}
-          />
+          >
+            <ChatArea
+              messages={currentConversation?.messages || []}
+              isLoading={isLoading}
+              onToggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)}
+              isDarkMode={isDarkMode}
+              onToggleTheme={() => setIsDarkMode(!isDarkMode)}
+              useMockMode={isMockMode}
+              onToggleMockMode={handleMockModeToggle}
+              onRefreshMessage={refreshMessage}
+              onEditMessage={editMessage}
+              onDeleteMessage={deleteMessage}
+              onShareMessage={shareMessage}
+            />
+            <InputArea
+              value={input}
+              onChange={setInput}
+              onSend={() => handleSendMessage(input)}
+              onStop={() => {
+                if (currentAbortController) {
+                  currentAbortController.abort();
+                  setCurrentAbortController(null);
+                }
+                setIsLoading(false);
+              }}
+              disabled={isLoading}
+              isLoading={isLoading}
+              isDarkMode={isDarkMode}
+              sidebarOpen={isSidebarOpen}
+            />
+          </Box>
         </Box>
       </Box>
     </ThemeProvider>
   );
-}
+};
 
 export default App;
 

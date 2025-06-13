@@ -25,9 +25,11 @@ import {
   Api as ApiIcon,
   Psychology as MockIcon,
 } from '@mui/icons-material';
-import { Message } from '../app/app';
+import { type Message } from '@chatbot-app/stream-mocks';
 import { MarkdownRenderer } from './MarkdownRenderer';
 import { extractPlainTextFromMarkdown, copyToClipboard } from '../utils/textUtils';
+import { useTranslation } from '../contexts/TranslationContext';
+import { LanguageSwitcher } from './LanguageSwitcher';
 
 interface ChatAreaProps {
   messages: Message[];
@@ -43,6 +45,121 @@ interface ChatAreaProps {
   onShareMessage?: (messageId: string, content: string) => void;
 }
 
+// Shared Header Component
+const ChatHeader = ({ 
+  onToggleSidebar, 
+  isDarkMode, 
+  onToggleTheme, 
+  useMockMode, 
+  onToggleMockMode 
+}: {
+  onToggleSidebar: () => void;
+  isDarkMode: boolean;
+  onToggleTheme: () => void;
+  useMockMode: boolean;
+  onToggleMockMode: () => void;
+}) => {
+  const theme = useTheme();
+  const { t } = useTranslation();
+
+  return (
+    <Box sx={{ 
+      display: 'flex', 
+      height: '64px',
+      alignItems: 'center',
+      gap: '8px',
+      borderBottom: `1px solid ${theme.palette.divider}`,
+      padding: '0 16px',
+      flexShrink: 0,
+      position: 'sticky',
+      top: 0,
+      zIndex: 100,
+      backgroundColor: theme.palette.background.default,
+    }}>
+      <IconButton 
+        onClick={onToggleSidebar}
+        sx={{ 
+          color: theme.palette.text.secondary,
+          borderRadius: '6px',
+          transition: 'all 150ms cubic-bezier(0.4, 0, 0.2, 1)',
+          '&:hover': {
+            backgroundColor: theme.palette.action.hover,
+            color: theme.palette.text.primary,
+          },
+        }}
+      >
+        <MenuIcon />
+      </IconButton>
+      
+      <Box sx={{ width: '1px', height: '16px', backgroundColor: theme.palette.divider, marginRight: '8px' }} />
+      
+      <Typography variant="h6" sx={{ 
+        color: theme.palette.text.primary,
+        fontWeight: 600,
+        fontSize: '16px',
+      }}>
+        {t('message.assistant')}
+      </Typography>
+
+      <Box sx={{ flex: 1 }} />
+
+      {/* Language Switcher */}
+      <Box sx={{ marginRight: '8px' }}>
+        <LanguageSwitcher isDarkMode={isDarkMode} />
+      </Box>
+
+      {/* Mock Mode Toggle */}
+      <Tooltip title={useMockMode ? t('common.disableMockApi') : t('common.enableMockApi')}>
+        <Chip
+          icon={useMockMode ? <MockIcon /> : <ApiIcon />}
+          label={useMockMode ? t('common.mockApi') : 'API'}
+          onClick={onToggleMockMode}
+          size="small"
+          variant={useMockMode ? "filled" : "outlined"}
+          sx={{
+            marginRight: '8px',
+            height: '28px',
+            borderRadius: '6px',
+            fontSize: '12px',
+            fontWeight: 600,
+            cursor: 'pointer',
+            transition: 'all 150ms cubic-bezier(0.4, 0, 0.2, 1)',
+            backgroundColor: useMockMode ? theme.palette.warning.main : 'transparent',
+            color: useMockMode ? theme.palette.warning.contrastText : theme.palette.text.secondary,
+            borderColor: useMockMode ? theme.palette.warning.main : theme.palette.divider,
+            '&:hover': {
+              backgroundColor: useMockMode ? theme.palette.warning.dark : theme.palette.action.hover,
+              borderColor: useMockMode ? theme.palette.warning.dark : theme.palette.text.secondary,
+            },
+            '& .MuiChip-icon': {
+              fontSize: '14px',
+              color: 'inherit',
+            },
+          }}
+        />
+      </Tooltip>
+
+      <IconButton 
+        onClick={onToggleTheme}
+        sx={{ 
+          color: theme.palette.text.primary,
+          borderRadius: '6px',
+          transition: 'all 150ms cubic-bezier(0.4, 0, 0.2, 1)',
+          '&:hover': {
+            backgroundColor: theme.palette.action.hover,
+            color: theme.palette.primary.main,
+          },
+          '&:active': {
+            transform: 'scale(0.95)',
+          },
+        }}
+      >
+        {isDarkMode ? <LightModeIcon /> : <DarkModeIcon />}
+      </IconButton>
+    </Box>
+  );
+};
+
 // iagent-inspired Message Component - Clean, grid-based layout with comprehensive action buttons
 const MessageBubble = ({ message, isDarkMode, theme, onRefreshMessage, onEditMessage, onDeleteMessage, onShareMessage }: { 
   message: Message; 
@@ -53,6 +170,7 @@ const MessageBubble = ({ message, isDarkMode, theme, onRefreshMessage, onEditMes
   onDeleteMessage?: (messageId: string) => void;
   onShareMessage?: (messageId: string, content: string) => void;
 }) => {
+  const { t } = useTranslation();
   const isUser = message.role === 'user';
   const [copied, setCopied] = React.useState(false);
   const [liked, setLiked] = React.useState<boolean | null>(null);
@@ -108,7 +226,7 @@ const MessageBubble = ({ message, isDarkMode, theme, onRefreshMessage, onEditMes
     if (navigator.share) {
       try {
         await navigator.share({
-          title: 'Chat Message',
+          title: t('chat.shareTitle'),
           text: plainText,
         });
       } catch (error) {
@@ -208,7 +326,7 @@ const MessageBubble = ({ message, isDarkMode, theme, onRefreshMessage, onEditMes
             },
           }}
         >
-          <Tooltip title={copied ? "Copied!" : "Copy"}>
+          <Tooltip title={copied ? t('message.copied') : t('message.copy')}>
             <IconButton
               onClick={handleCopy}
               size="small"
@@ -228,7 +346,7 @@ const MessageBubble = ({ message, isDarkMode, theme, onRefreshMessage, onEditMes
             </IconButton>
           </Tooltip>
 
-          <Tooltip title="Edit message">
+          <Tooltip title={t('message.edit')}>
             <IconButton
               onClick={handleEdit}
               size="small"
@@ -248,7 +366,7 @@ const MessageBubble = ({ message, isDarkMode, theme, onRefreshMessage, onEditMes
             </IconButton>
           </Tooltip>
 
-          <Tooltip title="Regenerate query">
+          <Tooltip title={t('message.refresh')}>
             <IconButton
               onClick={handleRefresh}
               size="small"
@@ -357,7 +475,7 @@ const MessageBubble = ({ message, isDarkMode, theme, onRefreshMessage, onEditMes
         }}
       >
         {/* Copy Button */}
-        <Tooltip title={copied ? "Copied!" : "Copy"}>
+        <Tooltip title={copied ? t('message.copied') : t('message.copy')}>
           <IconButton
             onClick={handleCopy}
             size="small"
@@ -378,7 +496,7 @@ const MessageBubble = ({ message, isDarkMode, theme, onRefreshMessage, onEditMes
         </Tooltip>
 
         {/* Like Button */}
-        <Tooltip title={liked === true ? "Remove like" : "Good response"}>
+        <Tooltip title={liked === true ? t('message.removeLike') : t('message.goodResponse')}>
           <IconButton
             onClick={handleLike}
             size="small"
@@ -399,7 +517,7 @@ const MessageBubble = ({ message, isDarkMode, theme, onRefreshMessage, onEditMes
         </Tooltip>
 
         {/* Dislike Button */}
-        <Tooltip title={liked === false ? "Remove dislike" : "Bad response"}>
+        <Tooltip title={liked === false ? t('message.removeDislike') : t('message.badResponse')}>
           <IconButton
             onClick={handleDislike}
             size="small"
@@ -421,7 +539,7 @@ const MessageBubble = ({ message, isDarkMode, theme, onRefreshMessage, onEditMes
         
         {/* Regenerate Response Button */}
         {!message.isStreaming && (
-          <Tooltip title="Regenerate response">
+          <Tooltip title={t('message.regenerateResponse')}>
             <IconButton
               onClick={handleRefresh}
               size="small"
@@ -464,19 +582,23 @@ const MessageBubble = ({ message, isDarkMode, theme, onRefreshMessage, onEditMes
 };
 
 // Loading Indicator - Clean, minimal
-const TypingIndicator = ({ isDarkMode, theme }: { isDarkMode: boolean; theme: any }) => (
-  <MessageBubble 
-    message={{
-      id: 'typing',
-      role: 'assistant',
-      content: '',
-      timestamp: new Date(),
-      isStreaming: true,
-    }} 
-    isDarkMode={isDarkMode} 
-    theme={theme}
-  />
-);
+const TypingIndicator = ({ isDarkMode, theme }: { isDarkMode: boolean; theme: any }) => {
+  const { t } = useTranslation();
+  return (
+    <Box
+      sx={{
+        display: 'flex',
+        alignItems: 'center',
+        gap: '8px',
+        color: theme.palette.text.secondary,
+        py: 2,
+      }}
+    >
+      <BotIcon sx={{ fontSize: 20 }} />
+      <Typography variant="body2">{t('chat.thinking')}</Typography>
+    </Box>
+  );
+};
 
 // Welcome Screen - Clean, centered
 const WelcomeScreen = ({ isDarkMode, theme, onToggleSidebar, onToggleTheme, useMockMode, onToggleMockMode }: {
@@ -486,227 +608,88 @@ const WelcomeScreen = ({ isDarkMode, theme, onToggleSidebar, onToggleTheme, useM
   onToggleTheme: () => void;
   useMockMode: boolean;
   onToggleMockMode: () => void;
-}) => (
-  <Box
-    sx={{
-      flex: 1,
-      display: 'flex',
-      flexDirection: 'column',
-      backgroundColor: theme.palette.background.default,
-      height: '100%',
-      overflow: 'hidden',
-    }}
-  >
-    {/* Header */}
-    <Box sx={{ 
-      display: 'flex', 
-      height: '64px', // h-16
-      alignItems: 'center',
-      gap: '8px',
-      borderBottom: `1px solid ${theme.palette.divider}`,
-      padding: '0 16px',
-      flexShrink: 0,
-    }}>
-      <IconButton 
-        onClick={onToggleSidebar}
-        sx={{ 
-          color: theme.palette.text.secondary,
-          borderRadius: '6px',
-          transition: 'all 150ms cubic-bezier(0.4, 0, 0.2, 1)',
-          '&:hover': {
-            backgroundColor: theme.palette.action.hover,
-            color: theme.palette.text.primary,
-          },
-        }}
-      >
-        <MenuIcon />
-      </IconButton>
-      
-      <Box sx={{ width: '1px', height: '16px', backgroundColor: theme.palette.divider, marginRight: '8px' }} />
-      
-      <Typography variant="h6" sx={{ 
-        color: theme.palette.text.primary,
-        fontWeight: 600,
-        fontSize: '16px',
-      }}>
-        Assistant
-      </Typography>
-
-      <Box sx={{ flex: 1 }} />
-
-      {/* Mock Mode Toggle */}
-      <Tooltip title={useMockMode ? "Switch to API mode" : "Switch to Mock mode"}>
-        <Chip
-          icon={useMockMode ? <MockIcon /> : <ApiIcon />}
-          label={useMockMode ? "Mock" : "API"}
-          onClick={onToggleMockMode}
-          size="small"
-          variant={useMockMode ? "filled" : "outlined"}
-          sx={{
-            marginRight: '8px',
-            height: '28px',
-            borderRadius: '6px',
-            fontSize: '12px',
-            fontWeight: 600,
-            cursor: 'pointer',
-            transition: 'all 150ms cubic-bezier(0.4, 0, 0.2, 1)',
-            backgroundColor: useMockMode ? theme.palette.warning.main : 'transparent',
-            color: useMockMode ? theme.palette.warning.contrastText : theme.palette.text.secondary,
-            borderColor: useMockMode ? theme.palette.warning.main : theme.palette.divider,
-            '&:hover': {
-              backgroundColor: useMockMode ? theme.palette.warning.dark : theme.palette.action.hover,
-              borderColor: useMockMode ? theme.palette.warning.dark : theme.palette.text.secondary,
-            },
-            '& .MuiChip-icon': {
-              fontSize: '14px',
-              color: 'inherit',
-            },
-          }}
-        />
-      </Tooltip>
-
-      <IconButton 
-        onClick={onToggleTheme}
-        sx={{ 
-          color: theme.palette.text.primary,
-          borderRadius: '6px',
-          transition: 'all 150ms cubic-bezier(0.4, 0, 0.2, 1)',
-          '&:hover': {
-            backgroundColor: theme.palette.action.hover,
-            color: theme.palette.primary.main,
-          },
-          '&:active': {
-            transform: 'scale(0.95)',
-          },
-        }}
-      >
-        {isDarkMode ? <LightModeIcon /> : <DarkModeIcon />}
-      </IconButton>
-    </Box>
-
-    {/* Welcome Content */}
+}) => {
+  const { t } = useTranslation();
+  return (
     <Box
       sx={{
-        flex: 1,
+        backgroundColor: theme.palette.background.default,
+        boxSizing: 'border-box',
         display: 'flex',
+        height: '100%',
         flexDirection: 'column',
-        alignItems: 'center',
-        overflow: 'auto',
-        padding: '32px 16px',
+        overflow: 'hidden',
+        position: 'relative',
       }}
     >
-      <Box sx={{ 
-        display: 'flex',
-        width: '100%',
-        maxWidth: '42rem',
-        flexGrow: 1,
-        flexDirection: 'column',
-      }}>
-        <Box sx={{
+      {/* Header */}
+      <ChatHeader 
+        onToggleSidebar={onToggleSidebar}
+        isDarkMode={isDarkMode}
+        onToggleTheme={onToggleTheme}
+        useMockMode={useMockMode}
+        onToggleMockMode={onToggleMockMode}
+      />
+
+      {/* Welcome Content */}
+      <Box
+        sx={{
           display: 'flex',
-          width: '100%',
-          flexGrow: 1,
           flexDirection: 'column',
           alignItems: 'center',
           justifyContent: 'center',
-        }}>
-          <Typography variant="h4" sx={{ 
-            marginTop: '16px',
-            fontWeight: 500,
-            color: theme.palette.text.primary,
-            fontSize: '18px',
+          flex: 1,
+          gap: '24px',
+          p: 4,
+        }}
+      >
+        <Typography
+          variant="h4"
+          sx={{
+            fontWeight: 600,
             textAlign: 'center',
-          }}>
-            How can I help you today?
+            color: theme.palette.text.primary,
+          }}
+        >
+          {t('chat.welcome.title')}
+        </Typography>
+        <Box
+          sx={{
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '16px',
+            maxWidth: '400px',
+            width: '100%',
+          }}
+        >
+          <Typography
+            variant="body1"
+            sx={{
+              textAlign: 'center',
+              color: theme.palette.text.primary,
+            }}
+          >
+            {t('chat.welcome.subtitle')}
           </Typography>
-        </Box>
-        
-        {/* Welcome suggestions */}
-        <Box sx={{
-          marginTop: '12px',
-          display: 'flex',
-          width: '100%',
-          alignItems: 'stretch',
-          justifyContent: 'center',
-          gap: '16px',
-          flexWrap: 'wrap',
-        }}>
-          <Box
+          <Typography
+            variant="body1"
             sx={{
-              display: 'flex',
-              maxWidth: '384px', // max-w-sm
-              flexGrow: 1,
-              flexBasis: 0,
-              flexDirection: 'column',
-              alignItems: 'center',
-              justifyContent: 'center',
-              borderRadius: '12px',
-              border: `1px solid ${theme.palette.divider}`,
-              padding: '12px',
-              transition: 'colors 150ms ease-in',
-              cursor: 'pointer',
-              '&:hover': {
-                backgroundColor: isDarkMode ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.05)',
-              },
-            }}
-          >
-            <Typography sx={{
-              overflow: 'hidden',
-              textOverflow: 'ellipsis',
-              display: '-webkit-box',
-              WebkitLineClamp: 2,
-              WebkitBoxOrient: 'vertical',
-              fontSize: '14px',
-              fontWeight: 600,
               textAlign: 'center',
               color: theme.palette.text.primary,
-            }}>
-              What can you help me with?
-            </Typography>
-          </Box>
-          
-          <Box
-            sx={{
-              display: 'flex',
-              maxWidth: '384px',
-              flexGrow: 1,
-              flexBasis: 0,
-              flexDirection: 'column',
-              alignItems: 'center',
-              justifyContent: 'center',
-              borderRadius: '12px',
-              border: `1px solid ${theme.palette.divider}`,
-              padding: '12px',
-              transition: 'colors 150ms ease-in',
-              cursor: 'pointer',
-              '&:hover': {
-                backgroundColor: isDarkMode ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.05)',
-              },
             }}
           >
-            <Typography sx={{
-              overflow: 'hidden',
-              textOverflow: 'ellipsis',
-              display: '-webkit-box',
-              WebkitLineClamp: 2,
-              WebkitBoxOrient: 'vertical',
-              fontSize: '14px',
-              fontWeight: 600,
-              textAlign: 'center',
-              color: theme.palette.text.primary,
-            }}>
-              Tell me about yourself
-            </Typography>
-          </Box>
+            {t('chat.welcome.description')}
+          </Typography>
         </Box>
       </Box>
     </Box>
-  </Box>
-);
+  );
+};
 
 export function ChatArea({ messages, isLoading, onToggleSidebar, isDarkMode, onToggleTheme, useMockMode, onToggleMockMode, onRefreshMessage, onEditMessage, onDeleteMessage, onShareMessage }: ChatAreaProps) {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const theme = useTheme();
+  const { t } = useTranslation();
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ 
@@ -745,95 +728,13 @@ export function ChatArea({ messages, isLoading, onToggleSidebar, isDarkMode, onT
       }}
     >
       {/* Header */}
-      <Box sx={{ 
-        display: 'flex', 
-        height: '64px',
-        alignItems: 'center',
-        gap: '8px',
-        borderBottom: `1px solid ${theme.palette.divider}`,
-        padding: '0 16px',
-        flexShrink: 0,
-        position: 'sticky',
-        top: 0,
-        zIndex: 100,
-        backgroundColor: theme.palette.background.default,
-      }}>
-        <IconButton 
-          onClick={onToggleSidebar}
-          sx={{ 
-            color: theme.palette.text.secondary,
-            borderRadius: '6px',
-            transition: 'all 150ms cubic-bezier(0.4, 0, 0.2, 1)',
-            '&:hover': {
-              backgroundColor: theme.palette.action.hover,
-              color: theme.palette.text.primary,
-            },
-          }}
-        >
-          <MenuIcon />
-        </IconButton>
-        
-        <Box sx={{ width: '1px', height: '16px', backgroundColor: theme.palette.divider, marginRight: '8px' }} />
-        
-        <Typography variant="h6" sx={{ 
-          color: theme.palette.text.primary,
-          fontWeight: 600,
-          fontSize: '16px',
-        }}>
-          Assistant
-        </Typography>
-
-        <Box sx={{ flex: 1 }} />
-
-        {/* Mock Mode Toggle */}
-        <Tooltip title={useMockMode ? "Switch to API mode" : "Switch to Mock mode"}>
-          <Chip
-            icon={useMockMode ? <MockIcon /> : <ApiIcon />}
-            label={useMockMode ? "Mock" : "API"}
-            onClick={onToggleMockMode}
-            size="small"
-            variant={useMockMode ? "filled" : "outlined"}
-            sx={{
-              marginRight: '8px',
-              height: '28px',
-              borderRadius: '6px',
-              fontSize: '12px',
-              fontWeight: 600,
-              cursor: 'pointer',
-              transition: 'all 150ms cubic-bezier(0.4, 0, 0.2, 1)',
-              backgroundColor: useMockMode ? theme.palette.warning.main : 'transparent',
-              color: useMockMode ? theme.palette.warning.contrastText : theme.palette.text.secondary,
-              borderColor: useMockMode ? theme.palette.warning.main : theme.palette.divider,
-              '&:hover': {
-                backgroundColor: useMockMode ? theme.palette.warning.dark : theme.palette.action.hover,
-                borderColor: useMockMode ? theme.palette.warning.dark : theme.palette.text.secondary,
-              },
-              '& .MuiChip-icon': {
-                fontSize: '14px',
-                color: 'inherit',
-              },
-            }}
-          />
-        </Tooltip>
-
-        <IconButton 
-          onClick={onToggleTheme}
-          sx={{ 
-            color: theme.palette.text.primary,
-            borderRadius: '6px',
-            transition: 'all 150ms cubic-bezier(0.4, 0, 0.2, 1)',
-            '&:hover': {
-              backgroundColor: theme.palette.action.hover,
-              color: theme.palette.primary.main,
-            },
-            '&:active': {
-              transform: 'scale(0.95)',
-            },
-          }}
-        >
-          {isDarkMode ? <LightModeIcon /> : <DarkModeIcon />}
-        </IconButton>
-      </Box>
+      <ChatHeader 
+        onToggleSidebar={onToggleSidebar}
+        isDarkMode={isDarkMode}
+        onToggleTheme={onToggleTheme}
+        useMockMode={useMockMode}
+        onToggleMockMode={onToggleMockMode}
+      />
 
       {/* Messages Container */}
       <Box 

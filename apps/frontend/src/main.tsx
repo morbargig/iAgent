@@ -2,6 +2,22 @@ import { StrictMode } from 'react';
 import { BrowserRouter } from 'react-router-dom';
 import * as ReactDOM from 'react-dom/client';
 import App from './app/app';
+import { TranslationProvider } from './contexts/TranslationContext';
+import './styles.css';
+
+// Restore document direction immediately on page load
+const restoreDirection = () => {
+  const storedDirection = localStorage.getItem('preferred_direction');
+  const storedLang = localStorage.getItem('preferred_language');
+  
+  if (storedDirection && storedLang) {
+    document.documentElement.dir = storedDirection;
+    document.documentElement.lang = storedLang;
+  }
+};
+
+// Apply direction before React renders
+restoreDirection();
 
 const root = ReactDOM.createRoot(
   document.getElementById('root') as HTMLElement
@@ -9,9 +25,15 @@ const root = ReactDOM.createRoot(
 
 root.render(
   <StrictMode>
-    
-    <BrowserRouter>
-      <App />
-    </BrowserRouter>
+    <TranslationProvider>
+      <BrowserRouter
+        future={{
+          v7_startTransition: true,
+          v7_relativeSplatPath: true,
+        }}
+      >
+        <App />
+      </BrowserRouter>
+    </TranslationProvider>
   </StrictMode>
 );

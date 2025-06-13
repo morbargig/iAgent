@@ -21,6 +21,7 @@ import {
   Close as CloseIcon,
 } from '@mui/icons-material';
 import { Conversation } from '../app/app';
+import { useTranslation } from '../contexts/TranslationContext';
 
 interface SidebarProps {
   conversations: Conversation[];
@@ -49,6 +50,7 @@ export function Sidebar({
 }: SidebarProps) {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
+  const { t } = useTranslation();
 
   // Sidebar Content - Clean, functional design
   const sidebarContent = (
@@ -113,7 +115,7 @@ export function Sidebar({
           }}
         >
           <AddIcon sx={{ fontSize: 16, marginRight: '8px' }} />
-          New chat
+          {t('sidebar.newChat')}
         </Button>
       </Box>
 
@@ -160,7 +162,7 @@ export function Sidebar({
               opacity: 0.8,
               lineHeight: 1.4,
             }}>
-              Your conversations will appear here
+              {t('sidebar.emptyState')}
             </Typography>
           </Box>
         ) : (
@@ -293,7 +295,7 @@ export function Sidebar({
           ) : (
             <DarkModeIcon sx={{ fontSize: 16, marginRight: '12px' }} />
           )}
-          {isDarkMode ? 'Light mode' : 'Dark mode'}
+          {isDarkMode ? t('theme.light') : t('theme.dark')}
         </Button>
       </Box>
     </Box>
