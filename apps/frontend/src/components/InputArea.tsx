@@ -84,17 +84,17 @@ export function InputArea({
         sx={{
           position: 'fixed',
           bottom: 0,
-          insetInlineStart: sidebarOpen ? '280px' : '0', // Use logical property for RTL/LTR
+          insetInlineStart: sidebarOpen ? '280px' : '0',
           insetInlineEnd: 0,
-          zIndex: 1000,
+          zIndex: 10,
           background: isDarkMode 
             ? 'linear-gradient(180deg, rgba(52, 53, 65, 0) 0%, rgba(52, 53, 65, 0.8) 50%, #343541 100%)'
             : 'linear-gradient(180deg, rgba(255, 255, 255, 0) 0%, rgba(255, 255, 255, 0.8) 50%, #ffffff 100%)',
           paddingTop: '20px',
           paddingBottom: '20px',
-          transition: 'inset-inline-start 0.3s ease', // Smooth transition with logical property
+          transition: 'inset-inline-start 0.3s ease',
           '@media (max-width: 768px)': {
-            insetInlineStart: 0, // On mobile, always full width
+            insetInlineStart: 0,
             paddingBottom: 'env(safe-area-inset-bottom, 10px)',
             paddingTop: '10px',
           }
@@ -163,7 +163,7 @@ export function InputArea({
                 maxHeight: '200px',
                 paddingTop: '14px',
                 paddingBottom: '14px',
-                paddingInlineStart: '16px', // Use logical properties for RTL/LTR
+                paddingInlineStart: '16px', // Use logical properties for RTL/LTL
                 paddingInlineEnd: '50px',   // Space for send button
                 border: 'none',
                 outline: 'none',
@@ -176,13 +176,11 @@ export function InputArea({
                 overflow: 'hidden',
                 fontWeight: '400',
                 WebkitAppearance: 'none',
-                WebkitTapHighlightColor: 'transparent',
-                touchAction: 'manipulation',
-                WebkitTouchCallout: 'none',
+
                 position: 'relative',
                 zIndex: 1,
                 cursor: 'text',
-                direction: 'inherit', // Inherit document direction (RTL/LTR)
+                direction: 'inherit', // Inherit document direction (RTL/LTL)
               }}
             />
 

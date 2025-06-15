@@ -1,5 +1,14 @@
 /* You can add global styles to this file, and also import other style files */
 
+/* Fix Material-UI overlay components blocking touch interactions */
+.MuiDrawer-root, .MuiModal-root, .MuiBackdrop-root {
+  pointer-events: none !important;
+}
+
+.MuiDrawer-paper {
+  pointer-events: auto !important;
+}
+
 /* RTL/LTR Direction Support */
 html {
   transition: direction 0.3s ease;

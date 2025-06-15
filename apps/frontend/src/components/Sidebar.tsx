@@ -20,7 +20,7 @@ import {
   DarkMode as DarkModeIcon,
   Close as CloseIcon,
 } from '@mui/icons-material';
-import { Conversation } from '../app/app';
+import { type Conversation } from '@iagent/stream-mocks';
 import { useTranslation } from '../contexts/TranslationContext';
 
 interface SidebarProps {
@@ -318,17 +318,13 @@ export function Sidebar({
             width: '85%',
             maxWidth: '300px',
             height: '100%',
-            zIndex: 1200,
+            zIndex: 20,
             boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)',
             '@media (max-width: 600px)': {
               paddingBottom: 'env(safe-area-inset-bottom, 20px)',
             }
           },
-          '& .MuiBackdrop-root': {
-            backgroundColor: 'rgba(0, 0, 0, 0.5)',
-            backdropFilter: 'blur(4px)',
-            zIndex: 1150,
-          },
+
         }}
       >
         {sidebarContent}
