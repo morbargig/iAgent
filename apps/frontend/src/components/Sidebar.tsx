@@ -74,9 +74,10 @@ export function Sidebar({
         {isMobile && (
           <IconButton
             onClick={onToggle}
+            className="no-rtl-transform"
             sx={{ 
               position: 'absolute', 
-              right: 8, 
+              insetInlineEnd: 8, 
               top: 8,
               color: theme.palette.text.secondary,
               borderRadius: '6px',

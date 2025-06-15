@@ -34,7 +34,7 @@ html[dir="rtl"] .MuiDrawer-paper {
   left: auto;
 }
 
-html[dir="rtl"] .MuiIconButton-root {
+html[dir="rtl"] .MuiIconButton-root:not(.no-rtl-transform) {
   transform: scaleX(-1);
 }
 
