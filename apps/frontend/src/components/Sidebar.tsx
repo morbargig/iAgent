@@ -37,7 +37,7 @@ interface SidebarProps {
 
 // iagent-inspired Sidebar - Clean, minimal navigation
 
-export function Sidebar({ 
+export const Sidebar = React.forwardRef<HTMLDivElement, SidebarProps>(({ 
   conversations, 
   currentConversationId, 
   onSelectConversation, 
@@ -47,7 +47,7 @@ export function Sidebar({
   onToggle,
   isDarkMode,
   onToggleTheme,
-}: SidebarProps) {
+}, ref) => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
   const { t } = useTranslation();
@@ -61,7 +61,7 @@ export function Sidebar({
         backgroundColor: isDarkMode ? '#171717' : '#f9fafb', // Clean, muted background
         display: 'flex',
         flexDirection: 'column',
-        borderRight: isDarkMode ? 'none' : `1px solid ${theme.palette.divider}`,
+        borderInlineEnd: isDarkMode ? 'none' : `1px solid ${theme.palette.divider}`,
         overflow: 'hidden',
       }}
     >
@@ -336,6 +336,7 @@ export function Sidebar({
   // Desktop Implementation
   return (
     <Box
+      ref={ref}
       sx={{
         width: open ? 250 : 0,
         flexShrink: 0,
@@ -347,4 +348,4 @@ export function Sidebar({
       {sidebarContent}
     </Box>
   );
-} 
+});

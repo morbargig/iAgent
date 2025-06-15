@@ -36,6 +36,7 @@ export const LanguageSwitcher: React.FC<{ isDarkMode: boolean }> = ({ isDarkMode
         id="language-button"
         onClick={handleClick}
         className="no-rtl-transform"
+        aria-label="Change language"
         sx={{
           width: '36px',
           height: '36px',

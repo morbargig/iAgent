@@ -78,9 +78,12 @@ const ChatHeader = ({
     }}>
       <IconButton 
         onClick={onToggleSidebar}
+        aria-label={t('sidebar.toggle')}
         sx={{ 
           color: theme.palette.text.secondary,
           borderRadius: '6px',
+          minWidth: '44px',
+          minHeight: '44px',
           transition: 'all 150ms cubic-bezier(0.4, 0, 0.2, 1)',
           '&:hover': {
             backgroundColor: theme.palette.action.hover,
@@ -113,6 +116,7 @@ const ChatHeader = ({
         <IconButton
           onClick={onToggleMockMode}
           className="no-rtl-transform"
+          aria-label={useMockMode ? t('common.disableMockApi') : t('common.enableMockApi')}
           sx={{
             marginInlineEnd: '8px',
             width: '36px',
@@ -150,6 +154,7 @@ const ChatHeader = ({
       <IconButton 
         onClick={onToggleTheme}
         className="no-rtl-transform"
+        aria-label={isDarkMode ? t('theme.light') : t('theme.dark')}
         sx={{ 
           width: '36px',
           height: '36px',
@@ -217,19 +222,19 @@ const MessageBubble = ({ message, isDarkMode, theme, onRefreshMessage, onEditMes
 
   const handleLike = () => {
     setLiked(liked === true ? null : true);
-    console.log(`${liked === true ? 'Removed like' : 'Liked'} message:`, message.id);
+    // console.log(`${liked === true ? 'Removed like' : 'Liked'} message:`, message.id);
   };
 
   const handleDislike = () => {
     setLiked(liked === false ? null : false);
-    console.log(`${liked === false ? 'Removed dislike' : 'Disliked'} message:`, message.id);
+    // console.log(`${liked === false ? 'Removed dislike' : 'Disliked'} message:`, message.id);
   };
 
   const handleDelete = () => {
     if (onDeleteMessage) {
       onDeleteMessage(message.id);
     }
-    console.log('Delete message:', message.id);
+    // console.log('Delete message:', message.id);
   };
 
   const handleShare = async () => {
@@ -254,12 +259,12 @@ const MessageBubble = ({ message, isDarkMode, theme, onRefreshMessage, onEditMes
     if (onShareMessage) {
       onShareMessage(message.id, plainText);
     }
-    console.log('Share message:', message.id);
+    // console.log('Share message:', message.id);
   };
 
   const handleMoreActions = () => {
     // TODO: Implement more actions menu (pin, forward, etc.)
-    console.log('More actions for message:', message.id);
+    // console.log('More actions for message:', message.id);
   };
 
   if (isUser) {

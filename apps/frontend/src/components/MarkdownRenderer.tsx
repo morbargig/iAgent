@@ -54,7 +54,7 @@ export const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({
         },
         '& ul, & ol': {
           margin: '0.5em 0',
-          paddingLeft: '1.5em',
+                      paddingInlineStart: '1.5em',
         },
         '& li': {
           margin: '0.25em 0',
@@ -66,7 +66,7 @@ export const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({
           backgroundColor: isDarkMode 
             ? 'rgba(255, 255, 255, 0.05)' 
             : 'rgba(0, 0, 0, 0.05)',
-          borderLeft: `4px solid ${theme.palette.primary.main}`,
+          borderInlineStart: `4px solid ${theme.palette.primary.main}`,
           borderRadius: '0 6px 6px 0',
           '& p': {
             margin: 0,
@@ -150,9 +150,10 @@ export const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({
         rehypePlugins={[rehypeHighlight]}
         components={{
           // Custom component overrides if needed
-          code: ({ node, inline, className, children, ...props }) => {
+          code: ({ node, className, children, ...props }: any) => {
             const match = /language-(\w+)/.exec(className || '');
-            return !inline && match ? (
+            const isInline = !match;
+            return isInline ? (
               <code className={className} {...props}>
                 {children}
               </code>

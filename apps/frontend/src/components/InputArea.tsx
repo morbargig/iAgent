@@ -24,6 +24,7 @@ interface InputAreaProps {
   isDarkMode: boolean;
   isEditing?: boolean;
   sidebarOpen?: boolean; // Add sidebar state
+  sidebarRef?: React.RefObject<HTMLDivElement | null>; // Add sidebar ref
 }
 
 // ChatGPT-style Input Area - Matches official ChatGPT design
@@ -36,11 +37,13 @@ export function InputArea({
   disabled, 
   isLoading = false,
   isDarkMode,
-  sidebarOpen = false
+  sidebarOpen = false,
+  sidebarRef
 }: InputAreaProps) {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const theme = useTheme();
   const [isFocused, setIsFocused] = useState(false);
+  const [sidebarWidth, setSidebarWidth] = useState(0);
   const { t } = useTranslation();
 
   useEffect(() => {
@@ -48,6 +51,31 @@ export function InputArea({
       textareaRef.current.focus();
     }
   }, [disabled]);
+
+  // Measure sidebar width dynamically
+  useEffect(() => {
+    const updateSidebarWidth = () => {
+      if (sidebarRef?.current && sidebarOpen) {
+        const width = sidebarRef.current.offsetWidth;
+        setSidebarWidth(width);
+      } else {
+        setSidebarWidth(0);
+      }
+    };
+
+    updateSidebarWidth();
+    
+    // Update on window resize
+    window.addEventListener('resize', updateSidebarWidth);
+    
+    // Update when sidebar state changes
+    const timeoutId = setTimeout(updateSidebarWidth, 300); // Wait for transition
+    
+    return () => {
+      window.removeEventListener('resize', updateSidebarWidth);
+      clearTimeout(timeoutId);
+    };
+  }, [sidebarRef, sidebarOpen]);
 
   // Auto-resize textarea
   useEffect(() => {
@@ -84,7 +112,7 @@ export function InputArea({
         sx={{
           position: 'fixed',
           bottom: 0,
-          insetInlineStart: sidebarOpen ? '280px' : '0',
+          insetInlineStart: sidebarWidth > 0 ? `${sidebarWidth}px` : '0',
           insetInlineEnd: 0,
           zIndex: 10,
           background: isDarkMode 
@@ -92,7 +120,7 @@ export function InputArea({
             : 'linear-gradient(180deg, rgba(255, 255, 255, 0) 0%, rgba(255, 255, 255, 0.8) 50%, #ffffff 100%)',
           paddingTop: '20px',
           paddingBottom: '20px',
-          transition: 'inset-inline-start 0.3s ease',
+          // Removed transition to prevent animation when sidebar opens/closes
           '@media (max-width: 768px)': {
             insetInlineStart: 0,
             paddingBottom: 'env(safe-area-inset-bottom, 10px)',
@@ -104,11 +132,11 @@ export function InputArea({
           sx={{
             maxWidth: '768px',
             margin: '0 auto',
-            paddingLeft: '20px',
-            paddingRight: '20px',
+            paddingInlineStart: '20px',
+            paddingInlineEnd: '20px',
             '@media (max-width: 600px)': {
-              paddingLeft: '10px',
-              paddingRight: '10px',
+              paddingInlineStart: '10px',
+              paddingInlineEnd: '10px',
             }
           }}
         >

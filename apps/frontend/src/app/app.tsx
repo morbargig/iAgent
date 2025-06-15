@@ -292,6 +292,7 @@ const App = () => {
   const [error, setError] = useState<string | null>(null);
   const [currentAbortController, setCurrentAbortController] = useState<AbortController | null>(null);
   const streamingClient = useRef(new StreamingClient());
+  const sidebarRef = useRef<HTMLDivElement>(null);
 
   const currentConversation = useMemo(() => {
     return conversations.find(conv => conv.id === currentConversationId) || null;
@@ -620,7 +621,7 @@ const App = () => {
         throw new Error('Streaming client not initialized');
       }
 
-      console.log(`🔄 Regenerating ${isMockMode ? 'with MOCK' : 'with API'}...`);
+      // console.log(`🔄 Regenerating ${isMockMode ? 'with MOCK' : 'with API'}...`);
 
       // Store the streaming client for abort functionality
       setCurrentAbortController({ abort: () => streamingClient.abort() } as AbortController);
@@ -669,7 +670,7 @@ const App = () => {
                 }
               : c
           ));
-          console.log(`✅ Regeneration completed using ${isMockMode ? 'Mock' : 'API'} mode`);
+          // console.log(`✅ Regeneration completed using ${isMockMode ? 'Mock' : 'API'} mode`);
         },
         // onError callback
         (error: Error) => {
@@ -745,7 +746,7 @@ const App = () => {
         : c
     ));
     
-    console.log(`Editing message: "${messageToEdit.content}"`);
+    // console.log(`Editing message: "${messageToEdit.content}"`);
   };
 
   const discardEdit = () => {
@@ -766,7 +767,7 @@ const App = () => {
     setInput('');
     setEditingState(null);
     
-    console.log('Edit discarded, messages restored');
+    // console.log('Edit discarded, messages restored');
   };
 
   const deleteMessage = (messageId: string) => {
@@ -781,11 +782,11 @@ const App = () => {
           : conv
       )
     );
-    console.log('Message deleted:', messageId);
+    // console.log('Message deleted:', messageId);
   };
 
   const shareMessage = (messageId: string) => {
-    console.log('Sharing message:', messageId);
+    // console.log('Sharing message:', messageId);
     // Additional share tracking or analytics could go here
   };
 
@@ -816,15 +817,16 @@ const App = () => {
           }}
         >
           <Sidebar
+            ref={sidebarRef}
             open={isSidebarOpen}
-            onToggle={() => setIsSidebarOpen(!isSidebarOpen)}
+            onToggle={toggleSidebar}
             conversations={conversations}
             currentConversationId={currentConversationId}
             onSelectConversation={setCurrentConversationId}
             onNewConversation={createNewConversation}
             onDeleteConversation={deleteConversation}
             isDarkMode={isDarkMode}
-            onToggleTheme={() => setIsDarkMode(!isDarkMode)}
+            onToggleTheme={toggleTheme}
           />
           <Box
             sx={{
@@ -837,9 +839,9 @@ const App = () => {
             <ChatArea
               messages={currentConversation?.messages || []}
               isLoading={isLoading}
-              onToggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)}
+              onToggleSidebar={toggleSidebar}
               isDarkMode={isDarkMode}
-              onToggleTheme={() => setIsDarkMode(!isDarkMode)}
+              onToggleTheme={toggleTheme}
               useMockMode={isMockMode}
               onToggleMockMode={handleMockModeToggle}
               onRefreshMessage={refreshMessage}
@@ -862,6 +864,7 @@ const App = () => {
               isLoading={isLoading}
               isDarkMode={isDarkMode}
               sidebarOpen={isSidebarOpen}
+              sidebarRef={sidebarRef}
             />
           </Box>
         </Box>
