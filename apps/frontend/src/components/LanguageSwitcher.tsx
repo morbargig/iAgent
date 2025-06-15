@@ -1,39 +1,146 @@
-import React from 'react';
+import React, { useState } from 'react';
+import { 
+  IconButton, 
+  Menu, 
+  MenuItem, 
+  Typography, 
+  Box,
+  useTheme 
+} from '@mui/material';
+import { Language as LanguageIcon } from '@mui/icons-material';
 import { useTranslation } from '../contexts/TranslationContext';
 import { SUPPORTED_LANGUAGES } from '../i18n/types';
 
 export const LanguageSwitcher: React.FC<{ isDarkMode: boolean }> = ({ isDarkMode }) => {
   const { currentLang, changeLanguage } = useTranslation();
+  const theme = useTheme();
+  const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
+  const open = Boolean(anchorEl);
+
+  const handleClick = (event: React.MouseEvent<HTMLElement>) => {
+    setAnchorEl(event.currentTarget);
+  };
+
+  const handleClose = () => {
+    setAnchorEl(null);
+  };
+
+  const handleLanguageChange = (langCode: string) => {
+    changeLanguage(langCode);
+    setAnchorEl(null);
+  };
 
   return (
-    <select
-      value={currentLang}
-      onChange={(e) => changeLanguage(e.target.value)}
-      style={{
-        paddingBlock: '8px',
-        paddingInlineStart: '16px',
-        paddingInlineEnd: '32px', // Space for dropdown arrow
-        borderRadius: '8px',
-        border: 'none',
-        backgroundColor: isDarkMode ? '#3b82f6' : '#2563eb',
-        color: 'white',
-        cursor: 'pointer',
-        fontSize: '14px',
-        fontWeight: 500,
-        appearance: 'none',
-        backgroundImage: `url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='white'%3e%3cpath d='M7 10l5 5 5-5z'/%3e%3c/svg%3e")`,
-        backgroundRepeat: 'no-repeat',
-        backgroundPosition: 'right 8px center', // Keep right for dropdown arrow
-        backgroundSize: '16px',
-        direction: 'ltr', // Force LTR for dropdown functionality
-      }}
-    >
-      <option value="none">Raw Keys</option>
-      {SUPPORTED_LANGUAGES.map((lang) => (
-        <option key={lang.code} value={lang.code}>
-          {lang.name}
-        </option>
-      ))}
-    </select>
+    <>
+      <IconButton
+        id="language-button"
+        onClick={handleClick}
+        className="no-rtl-transform"
+        sx={{
+          width: '36px',
+          height: '36px',
+          borderRadius: '8px',
+          border: `1px solid ${theme.palette.divider}`,
+          backgroundColor: 'transparent',
+          color: theme.palette.text.secondary,
+          transition: 'all 150ms cubic-bezier(0.4, 0, 0.2, 1)',
+          '&:hover': {
+            backgroundColor: theme.palette.action.hover,
+            borderColor: theme.palette.text.secondary,
+          },
+          '&:active': {
+            transform: 'scale(0.95)',
+          },
+        }}
+      >
+        <LanguageIcon sx={{ fontSize: '18px' }} />
+      </IconButton>
+
+      <Menu
+        anchorEl={anchorEl}
+        open={open}
+        onClose={handleClose}
+        disableAutoFocusItem
+        MenuListProps={{
+          'aria-labelledby': 'language-button',
+        }}
+        anchorOrigin={{
+          vertical: 'bottom',
+          horizontal: 'center',
+        }}
+        transformOrigin={{
+          vertical: 'top',
+          horizontal: 'center',
+        }}
+        sx={{
+          '& .MuiPaper-root': {
+            borderRadius: '12px',
+            border: `1px solid ${theme.palette.divider}`,
+            backgroundColor: theme.palette.background.paper,
+            boxShadow: isDarkMode 
+              ? '0 4px 20px rgba(0, 0, 0, 0.3)' 
+              : '0 4px 20px rgba(0, 0, 0, 0.15)',
+            minWidth: '160px',
+            marginTop: '4px',
+            pointerEvents: 'auto !important',
+          },
+          '& .MuiMenuItem-root': {
+            borderRadius: '8px',
+            margin: '4px 8px',
+            fontSize: '14px',
+            fontWeight: 400,
+            color: theme.palette.text.primary,
+            pointerEvents: 'auto !important',
+            '&:hover': {
+              backgroundColor: theme.palette.action.hover,
+            },
+            '&.Mui-selected': {
+              backgroundColor: theme.palette.primary.main,
+              color: theme.palette.primary.contrastText,
+              '&:hover': {
+                backgroundColor: theme.palette.primary.dark,
+              },
+            },
+          },
+          '& .MuiBackdrop-root': {
+            pointerEvents: 'auto !important',
+          },
+        }}
+      >
+        <MenuItem 
+          selected={currentLang === 'none'}
+          onClick={() => handleLanguageChange('none')}
+        >
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            <Typography variant="body2">🔧</Typography>
+            <Typography variant="body2">Raw Keys</Typography>
+          </Box>
+        </MenuItem>
+        
+        {SUPPORTED_LANGUAGES.map((lang) => {
+          const getLanguageFlag = (code: string) => {
+            switch (code) {
+              case 'en': return '🇺🇸';
+              case 'he': return '🇮🇱';
+              case 'ar': return '🇸🇦';
+              default: return '🌐';
+            }
+          };
+
+          return (
+            <MenuItem 
+              key={lang.code}
+              selected={currentLang === lang.code}
+              onClick={() => handleLanguageChange(lang.code)}
+            >
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                <Typography variant="body2">{getLanguageFlag(lang.code)}</Typography>
+                <Typography variant="body2">{lang.name}</Typography>
+              </Box>
+            </MenuItem>
+          );
+        })}
+      </Menu>
+    </>
   );
 }; 

@@ -108,53 +108,66 @@ const ChatHeader = ({
         <LanguageSwitcher isDarkMode={isDarkMode} />
       </Box>
 
-      {/* Mock Mode Toggle */}
+      {/* Mock Mode Toggle - ChatGPT Style */}
       <Tooltip title={useMockMode ? t('common.disableMockApi') : t('common.enableMockApi')}>
-        <Chip
-          icon={useMockMode ? <MockIcon /> : <ApiIcon />}
-          label={useMockMode ? t('common.mockApi') : 'API'}
+        <IconButton
           onClick={onToggleMockMode}
-          size="small"
-          variant={useMockMode ? "filled" : "outlined"}
+          className="no-rtl-transform"
           sx={{
             marginInlineEnd: '8px',
-            height: '28px',
-            borderRadius: '6px',
-            fontSize: '12px',
-            fontWeight: 600,
-            cursor: 'pointer',
+            width: '36px',
+            height: '36px',
+            borderRadius: '8px',
+            border: `1px solid ${theme.palette.divider}`,
+            backgroundColor: useMockMode 
+              ? (isDarkMode ? 'rgba(52, 53, 65, 1)' : 'rgba(0, 0, 0, 0.05)')
+              : 'transparent',
+            color: useMockMode 
+              ? theme.palette.primary.main 
+              : theme.palette.text.secondary,
             transition: 'all 150ms cubic-bezier(0.4, 0, 0.2, 1)',
-            backgroundColor: useMockMode ? theme.palette.warning.main : 'transparent',
-            color: useMockMode ? theme.palette.warning.contrastText : theme.palette.text.secondary,
-            borderColor: useMockMode ? theme.palette.warning.main : theme.palette.divider,
             '&:hover': {
-              backgroundColor: useMockMode ? theme.palette.warning.dark : theme.palette.action.hover,
-              borderColor: useMockMode ? theme.palette.warning.dark : theme.palette.text.secondary,
+              backgroundColor: useMockMode 
+                ? (isDarkMode ? 'rgba(52, 53, 65, 0.8)' : 'rgba(0, 0, 0, 0.08)')
+                : theme.palette.action.hover,
+              borderColor: useMockMode 
+                ? theme.palette.primary.main 
+                : theme.palette.text.secondary,
             },
-            '& .MuiChip-icon': {
-              fontSize: '14px',
-              color: 'inherit',
+            '&:active': {
+              transform: 'scale(0.95)',
             },
           }}
-        />
+        >
+          {useMockMode ? (
+            <MockIcon sx={{ fontSize: '18px' }} />
+          ) : (
+            <ApiIcon sx={{ fontSize: '18px' }} />
+          )}
+        </IconButton>
       </Tooltip>
 
       <IconButton 
         onClick={onToggleTheme}
+        className="no-rtl-transform"
         sx={{ 
-          color: theme.palette.text.primary,
-          borderRadius: '6px',
+          width: '36px',
+          height: '36px',
+          borderRadius: '8px',
+          border: `1px solid ${theme.palette.divider}`,
+          backgroundColor: 'transparent',
+          color: theme.palette.text.secondary,
           transition: 'all 150ms cubic-bezier(0.4, 0, 0.2, 1)',
           '&:hover': {
             backgroundColor: theme.palette.action.hover,
-            color: theme.palette.primary.main,
+            borderColor: theme.palette.text.secondary,
           },
           '&:active': {
             transform: 'scale(0.95)',
           },
         }}
       >
-        {isDarkMode ? <LightModeIcon /> : <DarkModeIcon />}
+        {isDarkMode ? <LightModeIcon sx={{ fontSize: '18px' }} /> : <DarkModeIcon sx={{ fontSize: '18px' }} />}
       </IconButton>
     </Box>
   );
