@@ -43,6 +43,7 @@ interface ChatAreaProps {
   onEditMessage?: (messageId: string) => void;
   onDeleteMessage?: (messageId: string) => void;
   onShareMessage?: (messageId: string, content: string) => void;
+  inputAreaHeight?: number; // Add input area height prop
 }
 
 // Shared Header Component
@@ -704,7 +705,7 @@ const WelcomeScreen = ({ isDarkMode, theme, onToggleSidebar, onToggleTheme, useM
   );
 };
 
-export function ChatArea({ messages, isLoading, onToggleSidebar, isDarkMode, onToggleTheme, useMockMode, onToggleMockMode, onRefreshMessage, onEditMessage, onDeleteMessage, onShareMessage }: ChatAreaProps) {
+export function ChatArea({ messages, isLoading, onToggleSidebar, isDarkMode, onToggleTheme, useMockMode, onToggleMockMode, onRefreshMessage, onEditMessage, onDeleteMessage, onShareMessage, inputAreaHeight = 80 }: ChatAreaProps) {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const theme = useTheme();
   const { t } = useTranslation();
@@ -765,13 +766,11 @@ export function ChatArea({ messages, isLoading, onToggleSidebar, isDarkMode, onT
           scrollBehavior: 'smooth',
           backgroundColor: 'inherit',
           padding: '32px 16px',
-          paddingBottom: {
-            xs: '120px',
-            sm: '80px'
-          },
+          paddingBottom: `${inputAreaHeight + 20}px`, // Dynamic padding based on input area height
           '@media (max-width: 600px)': {
             WebkitOverflowScrolling: 'touch',
             padding: '16px 8px',
+            paddingBottom: `${inputAreaHeight + 10}px`, // Smaller padding on mobile
           }
         }}
       >

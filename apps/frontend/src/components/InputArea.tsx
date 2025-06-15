@@ -25,6 +25,7 @@ interface InputAreaProps {
   isEditing?: boolean;
   sidebarOpen?: boolean; // Add sidebar state
   sidebarRef?: React.RefObject<HTMLDivElement | null>; // Add sidebar ref
+  onHeightChange?: (height: number) => void; // Callback for height changes
 }
 
 // ChatGPT-style Input Area - Matches official ChatGPT design
@@ -38,9 +39,11 @@ export function InputArea({
   isLoading = false,
   isDarkMode,
   sidebarOpen = false,
-  sidebarRef
+  sidebarRef,
+  onHeightChange
 }: InputAreaProps) {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const inputContainerRef = useRef<HTMLDivElement>(null);
   const theme = useTheme();
   const [isFocused, setIsFocused] = useState(false);
   const [sidebarWidth, setSidebarWidth] = useState(0);
@@ -85,6 +88,29 @@ export function InputArea({
     }
   }, [value]);
 
+  // Measure input area height and report changes
+  useEffect(() => {
+    const measureHeight = () => {
+      if (inputContainerRef.current && onHeightChange) {
+        const height = inputContainerRef.current.offsetHeight;
+        onHeightChange(height);
+      }
+    };
+
+    measureHeight();
+    
+    // Update on window resize
+    window.addEventListener('resize', measureHeight);
+    
+    // Update when value changes (textarea resizes)
+    const timeoutId = setTimeout(measureHeight, 100);
+    
+    return () => {
+      window.removeEventListener('resize', measureHeight);
+      clearTimeout(timeoutId);
+    };
+  }, [value, onHeightChange]);
+
   const handleKeyDown = (event: React.KeyboardEvent) => {
     if (event.key === 'Enter' && !event.shiftKey) {
       event.preventDefault();
@@ -109,6 +135,7 @@ export function InputArea({
     <>
       {/* Sticky Bottom Container */}
       <Box
+        ref={inputContainerRef}
         sx={{
           position: 'fixed',
           bottom: 0,

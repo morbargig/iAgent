@@ -293,6 +293,7 @@ const App = () => {
   const [currentAbortController, setCurrentAbortController] = useState<AbortController | null>(null);
   const streamingClient = useRef(new StreamingClient());
   const sidebarRef = useRef<HTMLDivElement>(null);
+  const [inputAreaHeight, setInputAreaHeight] = useState(80); // Track input area height
 
   const currentConversation = useMemo(() => {
     return conversations.find(conv => conv.id === currentConversationId) || null;
@@ -400,7 +401,7 @@ const App = () => {
           );
           setIsLoading(false);
         },
-        true, // useMock
+        isMockMode, // useMock
         'http://localhost:3000',
         t
       );
@@ -670,6 +671,8 @@ const App = () => {
                 }
               : c
           ));
+          setIsLoading(false);
+          setCurrentAbortController(null);
           // console.log(`✅ Regeneration completed using ${isMockMode ? 'Mock' : 'API'} mode`);
         },
         // onError callback
@@ -680,7 +683,9 @@ const App = () => {
         // useMock flag
         isMockMode,
         // baseUrl for API mode
-        'http://localhost:3000'
+        'http://localhost:3000',
+        // translation function
+        t
       );
     } catch (error) {
       console.error('Failed to refresh message:', error);
@@ -848,6 +853,7 @@ const App = () => {
               onEditMessage={editMessage}
               onDeleteMessage={deleteMessage}
               onShareMessage={shareMessage}
+              inputAreaHeight={inputAreaHeight}
             />
             <InputArea
               value={input}
@@ -865,6 +871,7 @@ const App = () => {
               isDarkMode={isDarkMode}
               sidebarOpen={isSidebarOpen}
               sidebarRef={sidebarRef}
+              onHeightChange={setInputAreaHeight}
             />
           </Box>
         </Box>
