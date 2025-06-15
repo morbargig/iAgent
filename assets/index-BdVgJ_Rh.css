@@ -1,4 +1,4 @@
-html{transition:direction .3s ease}html[dir=rtl]{text-align:right}html[dir=ltr]{text-align:left}*{transition:margin .2s ease,padding .2s ease}html[dir=rtl] .MuiDrawer-paper{right:0;left:auto}html[dir=rtl] .MuiIconButton-root{transform:scaleX(-1)}html[dir=rtl] ::-webkit-scrollbar{left:0;right:auto}pre code.hljs{display:block;overflow-x:auto;padding:1em}code.hljs{padding:3px 5px}/*!
+.MuiDrawer-root,.MuiModal-root,.MuiBackdrop-root{pointer-events:none!important}.MuiDrawer-paper{pointer-events:auto!important}html{transition:direction .3s ease}html[dir=rtl]{text-align:right}html[dir=ltr]{text-align:left}*{transition:margin .2s ease,padding .2s ease}html[dir=rtl] .MuiDrawer-paper{right:0;left:auto}html[dir=rtl] .MuiIconButton-root{transform:scaleX(-1)}html[dir=rtl] ::-webkit-scrollbar{left:0;right:auto}pre code.hljs{display:block;overflow-x:auto;padding:1em}code.hljs{padding:3px 5px}/*!
   Theme: GitHub Dark
   Description: Dark theme as seen on github.com
   Author: github.com
