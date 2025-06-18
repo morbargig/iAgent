@@ -106,6 +106,18 @@ const translations: Translation = {
     disclaimer: 'AI can make mistakes. Check important info.',
     send: 'Send message',
     stop: 'Stop generation',
+    examples: [
+      'What can you help me with?',
+      'Explain quantum computing simply',
+      'Write a creative short story',
+      'Help me debug this code',
+      'Plan a weekend trip to Paris',
+      'Create a workout routine',
+      'Explain machine learning concepts',
+      'Write a professional email',
+      'Help with math homework',
+      'Generate creative ideas for...'
+    ],
   },
   actions: {
     toggleSidebar: 'Toggle sidebar',

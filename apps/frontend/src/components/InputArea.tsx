@@ -12,6 +12,7 @@ import {
 } from '@mui/icons-material';
 import { useTranslation } from '../contexts/TranslationContext';
 import { Translate } from './Translate';
+import { useAnimatedPlaceholder } from '../hooks/useAnimatedPlaceholder';
 
 interface InputAreaProps {
   value: string;
@@ -47,7 +48,28 @@ export function InputArea({
   const theme = useTheme();
   const [isFocused, setIsFocused] = useState(false);
   const [sidebarWidth, setSidebarWidth] = useState(0);
-  const { t } = useTranslation();
+  const translationContext = useTranslation();
+  const { t } = translationContext;
+
+  // Animated placeholder - get examples from translation
+  const examples = React.useMemo(() => {
+    try {
+      // Access the current translations directly
+      const currentTranslations = (translationContext as any).translations?.[translationContext.currentLang];
+      const examples = currentTranslations?.input?.examples;
+      return Array.isArray(examples) ? examples : [];
+    } catch {
+      return [];
+    }
+  }, [translationContext.translations, translationContext.currentLang]);
+
+  const animatedPlaceholder = useAnimatedPlaceholder({
+    examples,
+    typingSpeed: 80,
+    pauseDuration: 2500,
+    deletingSpeed: 40,
+    isActive: !value.trim() // Show animation when input is empty, regardless of focus
+  });
 
   useEffect(() => {
     if (textareaRef.current && !disabled) {
@@ -210,7 +232,7 @@ export function InputArea({
               onKeyDown={handleKeyDown}
               onFocus={() => setIsFocused(true)}
               onBlur={() => setIsFocused(false)}
-              placeholder={t('input.placeholder')}
+              placeholder={animatedPlaceholder || t('input.placeholder')}
               disabled={disabled}
               style={{
                 width: '100%',
