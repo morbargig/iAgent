@@ -309,11 +309,18 @@ const App = () => {
       const userMessage = createMessage('user', content);
       const assistantMessage = createStreamingMessage('assistant');
 
-      // Update conversation with new messages
+      // Update conversation with new messages and generate title if needed
+      const shouldGenerateTitle = currentConversation && currentConversation.titleKey === 'sidebar.newChatTitle';
+      const conversationTitle = shouldGenerateTitle 
+        ? (content.length > 50 ? content.substring(0, 47) + '...' : content)
+        : currentConversation?.title;
+
       const updatedConversation: Conversation = currentConversation
         ? {
             ...currentConversation,
             messages: [...currentConversation.messages, userMessage, assistantMessage],
+            title: shouldGenerateTitle ? conversationTitle! : currentConversation.title,
+            titleKey: shouldGenerateTitle ? undefined : currentConversation.titleKey, // Remove titleKey when we have a custom title
             lastUpdated: new Date(),
           }
         : {
@@ -389,7 +396,7 @@ const App = () => {
                     ...conv.messages.slice(0, -1),
                     updateMessageContent(
                       lastMessage,
-                      t('errors.streaming', { error: error.message }),
+                      translation('errors.streaming', { error: error.message }),
                       false
                     ),
                   ],
@@ -403,7 +410,7 @@ const App = () => {
         },
         isMockMode, // useMock
         'http://localhost:3000',
-        t
+        translation
       );
 
       setInput('');
@@ -538,7 +545,8 @@ const App = () => {
   const createNewConversation = () => {
     const newConversation: Conversation = {
       id: generateUniqueId(),
-      title: t('sidebar.newChatTitle'),
+      title: translation('sidebar.newChatTitle'),
+      titleKey: 'sidebar.newChatTitle', // Store the translation key
       messages: [],
       createdAt: new Date(),
       updatedAt: new Date(),
@@ -685,7 +693,7 @@ const App = () => {
         // baseUrl for API mode
         'http://localhost:3000',
         // translation function
-        t
+        translation
       );
     } catch (error) {
       console.error('Failed to refresh message:', error);

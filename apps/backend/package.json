@@ -1,7 +1,22 @@
 {
   "name": "@iagent/backend",
-  "version": "0.0.1",
+  "version": "1.0.0",
   "private": true,
+  "description": "iAgent Backend - NestJS API with Swagger Documentation",
+  "scripts": {
+    "dev": "nx serve backend",
+    "build": "nx build backend",
+    "build:prod": "nx build backend --configuration=production",
+    "test": "nx test backend",
+    "test:watch": "nx test backend --watch",
+    "test:cov": "nx test backend --coverage",
+    "test:e2e": "nx e2e backend",
+    "lint": "nx lint backend",
+    "start": "node dist/apps/backend/main.js",
+    "start:dev": "nx serve backend --configuration=development",
+    "start:debug": "nx serve backend --configuration=development --inspect",
+    "start:prod": "node dist/apps/backend/main.js"
+  },
   "nx": {
     "targets": {
       "build": {
@@ -41,5 +56,12 @@
         }
       }
     }
-  }
+  },
+  "keywords": [
+    "nestjs",
+    "typescript",
+    "api",
+    "swagger",
+    "backend"
+  ]
 }

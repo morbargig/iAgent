@@ -1,185 +1,254 @@
-# Backend - AI Chat API
+# 🚀 iAgent Backend
 
-A robust NestJS-based backend API providing real-time streaming chat capabilities with comprehensive error handling and CORS support.
+A robust NestJS API server providing AI chat functionality with real-time streaming, comprehensive documentation, and production-ready features.
 
-## 🚀 Features
+## ✨ Features
 
-- **Real-time Streaming**: Server-Sent Events (SSE) for token-by-token response streaming
-- **RESTful API**: Clean, well-documented API endpoints
-- **CORS Support**: Configured for cross-origin requests from frontend
-- **Error Handling**: Comprehensive error handling with proper HTTP status codes
-- **Health Monitoring**: Built-in health check endpoints
-- **Development Ready**: Hot reload and comprehensive logging
+- 🔄 **Real-time Streaming**: Server-Sent Events for live AI responses
+- 📚 **Swagger Documentation**: Auto-generated API documentation
+- 🛡️ **Type Safety**: Full TypeScript implementation with validation
+- 🔧 **Modular Architecture**: Clean, maintainable NestJS structure
+- 🌐 **CORS Support**: Cross-origin resource sharing enabled
+- 📊 **Request Validation**: DTO validation with class-validator
+- 🎯 **Mock Mode**: Built-in mock responses for development
+- 🔍 **Debugging**: Comprehensive logging and error handling
 
 ## 🛠️ Tech Stack
 
-- **NestJS** - Enterprise-grade Node.js framework
-- **TypeScript** - Type-safe server-side development
-- **Express** - HTTP server foundation
-- **Server-Sent Events** - Real-time streaming protocol
-- **Class Validator** - Request validation and transformation
+- **NestJS 11** - Progressive Node.js framework
+- **TypeScript** - Type-safe development
+- **Express** - Fast, unopinionated web framework
+- **Swagger/OpenAPI** - API documentation and testing
+- **Class Validator** - DTO validation and transformation
+- **RxJS** - Reactive programming for streams
 
-## 🏗️ Architecture
+## 🚀 Getting Started
+
+### Prerequisites
+
+- Node.js >= 18.0.0
+- npm >= 8.0.0
+
+### Installation
+
+```bash
+# Install dependencies
+npm install
+
+# Start development server
+npm run dev
+```
+
+### Available Scripts
+
+- `npm run dev` - Start development server with hot reload
+- `npm run build` - Build for production
+- `npm run build:prod` - Build with production optimizations
+- `npm run start` - Start production server
+- `npm run start:dev` - Start development server
+- `npm run start:debug` - Start with debugging enabled
+- `npm run test` - Run unit tests
+- `npm run test:watch` - Run tests in watch mode
+- `npm run test:cov` - Run tests with coverage
+- `npm run test:e2e` - Run end-to-end tests
+- `npm run lint` - Run ESLint
+
+## 📁 Project Structure
 
 ```
 src/
-├── app/
-│   ├── app.controller.ts    # Main application controller
-│   ├── app.module.ts        # Root application module
-│   └── app.service.ts       # Application services
-├── chat/
-│   ├── chat.controller.ts   # Chat endpoints and streaming logic
-│   ├── chat.module.ts       # Chat module configuration
-│   ├── chat.service.ts      # Chat business logic
-│   └── dto/                 # Data Transfer Objects
-│       ├── chat-request.dto.ts
-│       └── stream-token.dto.ts
-├── common/
-│   ├── filters/             # Exception filters
-│   ├── guards/              # Authentication guards
-│   ├── interceptors/        # Request/response interceptors
-│   └── pipes/               # Validation pipes
-└── main.ts                  # Application bootstrap
+├── app.controller.ts      # Main application controller
+├── app.module.ts          # Root application module
+├── app.service.ts         # Core application service
+├── main.ts               # Application entry point
+├── dto/                  # Data Transfer Objects
+│   └── chat.dto.ts      # Chat request/response DTOs
+├── interfaces/           # TypeScript interfaces
+│   └── chat.interface.ts # Chat-related interfaces
+├── services/            # Business logic services
+│   └── streaming.service.ts # Streaming functionality
+└── utils/               # Utility functions
+    └── mock-responses.ts # Mock data for development
 ```
 
-## 🌐 API Endpoints
+## 🔌 API Endpoints
 
-### Chat Streaming
-```http
-POST /api/chat/stream
-Content-Type: application/json
+### Base URL
+- **Development**: `http://localhost:3000/api`
+- **Documentation**: `http://localhost:3000/api/docs`
 
+### Endpoints
+
+#### GET `/api`
+Health check endpoint
+```json
+{
+  "message": "iAgent API is running!",
+  "version": "1.0.0",
+  "timestamp": "2024-01-01T00:00:00.000Z"
+}
+```
+
+#### POST `/api/chat`
+Standard chat endpoint (non-streaming)
+```json
 {
   "messages": [
     {
-      "id": "1",
       "role": "user",
-      "content": "Hello, how are you?",
-      "timestamp": "2024-01-01T00:00:00Z"
+      "content": "Hello, how are you?"
     }
   ]
 }
 ```
 
-**Response**: Server-Sent Events stream
-```
-data: {"token": "Hello", "done": false, "metadata": {...}}
-data: {"token": " there!", "done": false, "metadata": {...}}
-data: {"token": "", "done": true, "metadata": {...}}
-```
-
-### Health Check
-```http
-GET /health
-```
-
-**Response**:
+#### POST `/api/chat/stream`
+Streaming chat endpoint with Server-Sent Events
 ```json
 {
-  "status": "ok",
-  "timestamp": "2024-01-01T00:00:00Z",
-  "uptime": 12345,
-  "version": "1.0.0"
+  "messages": [
+    {
+      "role": "user", 
+      "content": "Tell me a story"
+    }
+  ]
 }
 ```
 
-## 🔧 Data Transfer Objects
+#### GET `/api/chat/sse-stream`
+Server-Sent Events endpoint for real-time streaming
+
+## 📊 Data Transfer Objects
+
+### ChatMessageDto
+```typescript
+export class ChatMessageDto {
+  @IsString()
+  @IsIn(['user', 'assistant', 'system'])
+  role: 'user' | 'assistant' | 'system';
+
+  @IsString()
+  @IsNotEmpty()
+  content: string;
+
+  @IsOptional()
+  @IsDateString()
+  timestamp?: string;
+}
+```
 
 ### ChatRequestDto
 ```typescript
 export class ChatRequestDto {
   @IsArray()
   @ValidateNested({ each: true })
-  @Type(() => MessageDto)
-  messages: MessageDto[];
+  @Type(() => ChatMessageDto)
+  messages: ChatMessageDto[];
 
   @IsOptional()
-  @IsString()
-  model?: string;
-
-  @IsOptional()
-  @IsNumber()
-  @Min(0)
-  @Max(2)
-  temperature?: number;
-}
-```
-
-### MessageDto
-```typescript
-export class MessageDto {
-  @IsString()
-  id: string;
-
-  @IsEnum(['user', 'assistant'])
-  role: 'user' | 'assistant';
-
-  @IsString()
-  @IsNotEmpty()
-  content: string;
-
-  @IsDateString()
-  timestamp: string;
-}
-```
-
-### StreamTokenDto
-```typescript
-export class StreamTokenDto {
-  @IsString()
-  token: string;
-
   @IsBoolean()
-  done: boolean;
-
-  @IsOptional()
-  @IsObject()
-  metadata?: {
-    index?: number;
-    total_tokens?: number;
-    timestamp?: string;
-    model?: string;
-    processing_time_ms?: number;
-    confidence?: number;
-    categories?: string[];
-  };
-
-  @IsOptional()
-  @IsObject()
-  error?: {
-    message: string;
-    code?: string;
-  };
+  stream?: boolean;
 }
 ```
 
-## 🚦 Development
+## 🔄 Streaming Implementation
 
-### Start Development Server
-```bash
-npx nx serve backend
-# or
-npm run dev:backend
+### Server-Sent Events
+The backend implements real-time streaming using Server-Sent Events (SSE):
+
+```typescript
+@Post('stream')
+async streamChat(@Body() chatRequest: ChatRequestDto, @Res() res: Response) {
+  res.setHeader('Content-Type', 'text/event-stream');
+  res.setHeader('Cache-Control', 'no-cache');
+  res.setHeader('Connection', 'keep-alive');
+  res.setHeader('Access-Control-Allow-Origin', '*');
+
+  // Stream implementation
+  const stream = this.streamingService.createStream(chatRequest.messages);
+  
+  stream.subscribe({
+    next: (chunk) => res.write(`data: ${JSON.stringify(chunk)}\n\n`),
+    complete: () => res.end(),
+    error: (error) => res.write(`data: ${JSON.stringify({ error })}\n\n`)
+  });
+}
 ```
 
-### Build for Production
-```bash
-npx nx build backend
+### Mock Responses
+Built-in mock responses for development and testing:
+
+```typescript
+const MOCK_RESPONSES = {
+  greeting: "Hello! I'm an AI assistant...",
+  help: "I can help you with various tasks...",
+  story: "Once upon a time, in a digital realm...",
+  code: "Here's a simple example:\n\n```javascript\n...",
+  default: "I understand you're asking about..."
+};
 ```
 
-### Run Tests
-```bash
-npx nx test backend
+## 🛡️ Validation & Security
+
+### Request Validation
+- **DTO Validation**: All requests validated using class-validator
+- **Type Safety**: Full TypeScript implementation
+- **Sanitization**: Input sanitization and validation
+
+### CORS Configuration
+```typescript
+app.enableCors({
+  origin: ['http://localhost:4200', 'http://localhost:3000'],
+  methods: ['GET', 'POST'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+  credentials: true
+});
 ```
 
-### Lint Code
+## 📚 API Documentation
+
+### Swagger/OpenAPI
+Comprehensive API documentation available at `/api/docs`
+
+Features:
+- **Interactive Testing**: Test endpoints directly from docs
+- **Schema Definitions**: Complete request/response schemas
+- **Authentication**: API key and bearer token support
+- **Examples**: Real request/response examples
+
+### Generate Documentation
 ```bash
-npx nx lint backend
+# Documentation is auto-generated from decorators
+# Access at http://localhost:3000/api/docs
 ```
 
-### Watch Mode
+## 🧪 Testing
+
+### Unit Tests
 ```bash
-npx nx serve backend --watch
+# Run all tests
+npm run test
+
+# Run with coverage
+npm run test:cov
+
+# Watch mode
+npm run test:watch
+```
+
+### End-to-End Tests
+```bash
+# Run e2e tests
+npm run test:e2e
+```
+
+### Test Structure
+```
+test/
+├── app.e2e-spec.ts       # End-to-end tests
+├── chat.controller.spec.ts # Controller tests
+├── streaming.service.spec.ts # Service tests
+└── utils/                # Test utilities
 ```
 
 ## 🔧 Configuration
@@ -189,197 +258,56 @@ npx nx serve backend --watch
 # .env
 PORT=3000
 NODE_ENV=development
+API_VERSION=1.0.0
 CORS_ORIGIN=http://localhost:4200
-
-# AI Service Configuration (when implementing real AI)
-OPENAI_API_KEY=your_api_key_here
-ANTHROPIC_API_KEY=your_api_key_here
 ```
 
-### CORS Configuration
+### NestJS Configuration
 ```typescript
 // main.ts
-app.enableCors({
-  origin: process.env.CORS_ORIGIN || 'http://localhost:4200',
-  credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization'],
-});
-```
-
-## 🔄 Streaming Implementation
-
-### Server-Sent Events Setup
-```typescript
-@Post('stream')
-async streamChat(
-  @Body() chatRequest: ChatRequestDto,
-  @Res() response: Response,
-): Promise<void> {
-  response.writeHead(200, {
-    'Content-Type': 'text/plain',
-    'Cache-Control': 'no-cache',
-    'Connection': 'keep-alive',
-    'Access-Control-Allow-Origin': '*',
-  });
-
-  // Streaming logic here
-  for await (const token of this.chatService.generateResponse(chatRequest)) {
-    response.write(`data: ${JSON.stringify(token)}\n\n`);
-  }
-
-  response.end();
-}
-```
-
-### Error Handling
-```typescript
-@Catch()
-export class AllExceptionsFilter implements ExceptionFilter {
-  catch(exception: unknown, host: ArgumentsHost) {
-    const ctx = host.switchToHttp();
-    const response = ctx.getResponse<Response>();
+async function bootstrap() {
+  const app = await NestFactory.create(AppModule);
+  
+  app.setGlobalPrefix('api');
+  app.useGlobalPipes(new ValidationPipe());
+  app.enableCors();
+  
+  const config = new DocumentBuilder()
+    .setTitle('iAgent API')
+    .setDescription('AI Chat API with streaming support')
+    .setVersion('1.0')
+    .build();
     
-    const status = exception instanceof HttpException 
-      ? exception.getStatus() 
-      : 500;
-
-    response.status(status).json({
-      statusCode: status,
-      timestamp: new Date().toISOString(),
-      message: exception.message || 'Internal server error',
-    });
-  }
+  const document = SwaggerModule.createDocument(app, config);
+  SwaggerModule.setup('api/docs', app, document);
+  
+  await app.listen(3000);
 }
-```
-
-## 🔌 AI Service Integration
-
-### OpenAI Integration Example
-```typescript
-import { OpenAI } from 'openai';
-
-@Injectable()
-export class ChatService {
-  private openai = new OpenAI({
-    apiKey: process.env.OPENAI_API_KEY,
-  });
-
-  async *generateResponse(request: ChatRequestDto) {
-    const stream = await this.openai.chat.completions.create({
-      model: 'gpt-3.5-turbo',
-      messages: request.messages,
-      stream: true,
-    });
-
-    for await (const chunk of stream) {
-      const token = chunk.choices[0]?.delta?.content || '';
-      const done = chunk.choices[0]?.finish_reason === 'stop';
-      
-      yield new StreamTokenDto({
-        token,
-        done,
-        metadata: {
-          model: chunk.model,
-          timestamp: new Date().toISOString(),
-        }
-      });
-    }
-  }
-}
-```
-
-### Anthropic Integration Example
-```typescript
-import { Anthropic } from '@anthropic-ai/sdk';
-
-@Injectable()
-export class ChatService {
-  private anthropic = new Anthropic({
-    apiKey: process.env.ANTHROPIC_API_KEY,
-  });
-
-  async *generateResponse(request: ChatRequestDto) {
-    const stream = this.anthropic.messages.stream({
-      model: 'claude-3-sonnet-20240229',
-      messages: request.messages,
-      max_tokens: 2048,
-    });
-
-    for await (const event of stream) {
-      if (event.type === 'content_block_delta') {
-        yield new StreamTokenDto({
-          token: event.delta.text,
-          done: false,
-        });
-      }
-    }
-
-    yield new StreamTokenDto({ token: '', done: true });
-  }
-}
-```
-
-## 🧪 Testing
-
-### Unit Tests
-```typescript
-describe('ChatController', () => {
-  let controller: ChatController;
-  let service: ChatService;
-
-  beforeEach(async () => {
-    const module: TestingModule = await Test.createTestingModule({
-      controllers: [ChatController],
-      providers: [ChatService],
-    }).compile();
-
-    controller = module.get<ChatController>(ChatController);
-    service = module.get<ChatService>(ChatService);
-  });
-
-  it('should stream chat responses', async () => {
-    const mockResponse = { writeHead: jest.fn(), write: jest.fn(), end: jest.fn() };
-    const request = { messages: [{ role: 'user', content: 'Hello' }] };
-    
-    await controller.streamChat(request, mockResponse as any);
-    
-    expect(mockResponse.writeHead).toHaveBeenCalled();
-    expect(mockResponse.write).toHaveBeenCalled();
-    expect(mockResponse.end).toHaveBeenCalled();
-  });
-});
-```
-
-### Integration Tests
-```bash
-# Run e2e tests
-npm run test:e2e
-
-# Test specific endpoint
-curl -X POST http://localhost:3000/api/chat/stream \
-  -H "Content-Type: application/json" \
-  -d '{"messages":[{"role":"user","content":"Hello"}]}'
 ```
 
 ## 🚀 Deployment
+
+### Production Build
+```bash
+# Build for production
+npm run build:prod
+
+# Start production server
+npm run start:prod
+```
 
 ### Docker
 ```dockerfile
 FROM node:18-alpine
 
 WORKDIR /app
-
-# Copy package files
 COPY package*.json ./
 RUN npm ci --only=production
 
-# Copy built application
-COPY dist/apps/backend ./
-
+COPY dist/ ./dist/
 EXPOSE 3000
 
-CMD ["node", "main.js"]
+CMD ["node", "dist/apps/backend/main.js"]
 ```
 
 ### Environment Setup
@@ -387,125 +315,78 @@ CMD ["node", "main.js"]
 # Production environment
 NODE_ENV=production
 PORT=3000
-CORS_ORIGIN=https://yourdomain.com
-
-# Database (when implemented)
-DATABASE_URL=postgresql://user:password@host:port/database
-
-# AI Service
-OPENAI_API_KEY=your_production_key
+API_VERSION=1.0.0
 ```
 
-### Health Checks
+## 🔍 Debugging
+
+### Development Debugging
 ```bash
-# Docker health check
-HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
-  CMD curl -f http://localhost:3000/health || exit 1
-```
+# Start with debugging
+npm run start:debug
 
-## 🐛 Debugging
+# Debug port: 9229
+# VS Code: Attach to Node.js process
+```
 
 ### Logging
 ```typescript
 import { Logger } from '@nestjs/common';
 
-@Controller('chat')
-export class ChatController {
-  private readonly logger = new Logger(ChatController.name);
+export class AppService {
+  private readonly logger = new Logger(AppService.name);
 
-  @Post('stream')
-  async streamChat(@Body() request: ChatRequestDto) {
-    this.logger.log(`Streaming chat with ${request.messages.length} messages`);
-    // Implementation
+  async processRequest() {
+    this.logger.log('Processing request...');
+    this.logger.error('Error occurred', error.stack);
   }
 }
 ```
 
-### Common Issues
-
-**Port Already in Use:**
-```bash
-npx kill-port 3000
-npx nx serve backend
-```
-
-**CORS Errors:**
-```typescript
-// Ensure CORS is properly configured in main.ts
-app.enableCors({
-  origin: true, // or specific origins
-  credentials: true,
-});
-```
-
-**Streaming Issues:**
-```typescript
-// Ensure proper headers for SSE
-response.writeHead(200, {
-  'Content-Type': 'text/plain',
-  'Cache-Control': 'no-cache',
-  'Connection': 'keep-alive',
-});
-```
-
 ## 📊 Performance
 
+### Optimization Features
+- **Streaming**: Efficient real-time data streaming
+- **Validation Pipes**: Request validation without performance impact
+- **Async/Await**: Non-blocking operations
+- **Connection Pooling**: Efficient resource management
+
 ### Monitoring
-- **Response Times**: Track streaming latency
-- **Memory Usage**: Monitor for memory leaks in long connections
-- **Connection Count**: Track concurrent streaming connections
-- **Error Rates**: Monitor failed requests and streaming errors
-
-### Optimization
-- **Connection Pooling**: Reuse HTTP connections
-- **Compression**: Enable gzip compression
-- **Caching**: Cache responses where appropriate
-- **Rate Limiting**: Implement rate limiting for production
-
-## 🔒 Security
-
-### Authentication (Future Enhancement)
 ```typescript
-@UseGuards(JwtAuthGuard)
-@Post('stream')
-async streamChat(@Req() req: Request) {
-  const user = req.user;
-  // Implementation with user context
-}
-```
-
-### Validation
-```typescript
-@UsePipes(new ValidationPipe({ transform: true, whitelist: true }))
-@Post('stream')
-async streamChat(@Body() request: ChatRequestDto) {
-  // Validated request
-}
+// Add performance monitoring
+app.use((req, res, next) => {
+  const start = Date.now();
+  res.on('finish', () => {
+    const duration = Date.now() - start;
+    console.log(`${req.method} ${req.path} - ${duration}ms`);
+  });
+  next();
+});
 ```
 
 ## 🤝 Contributing
 
 ### Development Guidelines
-1. **TypeScript**: Use strict typing for all services and controllers
-2. **NestJS Patterns**: Follow NestJS architectural patterns
-3. **Error Handling**: Implement comprehensive error handling
-4. **Testing**: Write unit and integration tests
-5. **Documentation**: Update OpenAPI/Swagger documentation
+1. **Follow NestJS conventions**: Use decorators and dependency injection
+2. **Add tests**: Unit tests for services, e2e tests for controllers
+3. **Document APIs**: Use Swagger decorators for documentation
+4. **Validate inputs**: Use DTOs with class-validator
+5. **Handle errors**: Proper error handling and logging
 
 ### Code Style
-- **ESLint**: Follow NestJS linting rules
-- **Prettier**: Auto-format code
-- **Naming**: Use descriptive names for services and methods
-- **DTOs**: Validate all input/output with DTOs
+- **ESLint**: Follow configured linting rules
+- **Prettier**: Auto-format code on save
+- **TypeScript**: Strict typing for all functions
+- **Naming**: Use descriptive names following NestJS conventions
 
 ## 📚 Resources
 
 - [NestJS Documentation](https://docs.nestjs.com)
 - [TypeScript Handbook](https://www.typescriptlang.org/docs)
-- [Express.js Documentation](https://expressjs.com)
-- [Server-Sent Events](https://developer.mozilla.org/en-US/docs/Web/API/Server-sent_events)
-- [OpenAPI Specification](https://swagger.io/specification/)
+- [Swagger/OpenAPI](https://swagger.io/docs)
+- [RxJS Documentation](https://rxjs.dev)
+- [Class Validator](https://github.com/typestack/class-validator)
 
----
+## 📄 License
 
-**Part of the iAgent monorepo - Built with NestJS + TypeScript** 
+MIT License - see the [LICENSE](../../LICENSE) file for details. 

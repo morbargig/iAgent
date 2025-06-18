@@ -1,10 +1,32 @@
 {
   "name": "@iagent/frontend",
-  "version": "0.0.1",
+  "version": "1.0.0",
   "private": true,
-  "dependencies": {
-    "react-markdown": "^10.1.0",
-    "rehype-highlight": "^7.0.2",
-    "remark-gfm": "^4.0.1"
-  }
+  "description": "iAgent Frontend - React Application with Material-UI",
+  "scripts": {
+    "dev": "nx serve frontend",
+    "build": "nx build frontend",
+    "test": "nx test frontend",
+    "lint": "nx lint frontend",
+    "preview": "vite preview"
+  },
+  "browserslist": {
+    "production": [
+      ">0.2%",
+      "not dead",
+      "not op_mini all"
+    ],
+    "development": [
+      "last 1 chrome version",
+      "last 1 firefox version",
+      "last 1 safari version"
+    ]
+  },
+  "keywords": [
+    "react",
+    "typescript",
+    "material-ui",
+    "vite",
+    "frontend"
+  ]
 }

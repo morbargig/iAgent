@@ -214,7 +214,7 @@ export const Sidebar = React.forwardRef<HTMLDivElement, SidebarProps>(({
                   
                   {/* Conversation Title */}
                   <ListItemText
-                    primary={conversation.title}
+                    primary={conversation.titleKey ? t(conversation.titleKey) : conversation.title}
                     primaryTypographyProps={{
                       noWrap: true,
                       variant: 'body2',
