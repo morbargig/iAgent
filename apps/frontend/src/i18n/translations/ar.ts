@@ -110,6 +110,9 @@ const translations: Translation = {
     disclaimer: 'الذكاء الاصطناعي قد يخطئ. تحقق من المعلومات المهمة.',
     send: 'إرسال رسالة',
     stop: 'إيقاف التوليد',
+    clear: 'مسح الإدخال',
+    voice: 'إدخال صوتي',
+    attachment: 'إرفاق ملف',
     selectCountries: 'اختر البلدان',
     examples: [
       'كيف يمكنك مساعدتي؟',

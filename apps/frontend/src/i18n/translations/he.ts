@@ -110,6 +110,9 @@ const translations: Translation = {
     disclaimer: 'בינה מלאכותית יכולה לטעות. בדוק מידע חשוב.',
     send: 'שלח הודעה',
     stop: 'עצור יצירה',
+    clear: 'נקה קלט',
+    voice: 'קלט קולי',
+    attachment: 'צרף קובץ',
     selectCountries: 'בחר מדינות',
     examples: [
       'במה אתה יכול לעזור לי?',

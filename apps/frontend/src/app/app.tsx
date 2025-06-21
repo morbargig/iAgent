@@ -832,6 +832,24 @@ const App = () => {
     }
   };
 
+  // Control button handlers
+  const handleVoiceInput = () => {
+    // TODO: Implement voice input functionality
+    console.log('Voice input clicked');
+    // You can implement Web Speech API here
+  };
+
+  const handleClearInput = () => {
+    setInput('');
+    console.log('Input cleared');
+  };
+
+  const handleAttachment = () => {
+    // TODO: Implement file attachment functionality
+    console.log('Attachment clicked');
+    // You can implement file upload here
+  };
+
   return (
     <ThemeProvider theme={currentTheme}>
       <CssBaseline />
@@ -906,6 +924,13 @@ const App = () => {
               sidebarOpen={isSidebarOpen}
               sidebarRef={sidebarRef}
               onHeightChange={setInputAreaHeight}
+              // Control buttons
+              onVoiceInput={handleVoiceInput}
+              onClear={handleClearInput}
+              onAttachment={handleAttachment}
+              showVoiceButton={false} // Enable when voice functionality is ready
+              showClearButton={true}  // Always show clear button
+              showAttachmentButton={false} // Enable when attachment functionality is ready
             />
           </Box>
         </Box>

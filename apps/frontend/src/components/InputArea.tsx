@@ -8,10 +8,6 @@ import {
   Button,
   Tooltip,
 } from '@mui/material';
-import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
-import { DateTimePicker } from '@mui/x-date-pickers/DateTimePicker';
-import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
-import { DemoContainer } from '@mui/x-date-pickers/internals/demo';
 import dayjs, { Dayjs } from 'dayjs';
 import {
   Send as SendIcon,
@@ -21,10 +17,14 @@ import {
   CalendarMonth as CalendarIcon,
   ExpandMore as ExpandMoreIcon,
   KeyboardArrowUp as ArrowUpIcon,
+  Mic as MicIcon,
+  Clear as ClearIcon,
+  AttachFile as AttachFileIcon,
 } from '@mui/icons-material';
 import { useTranslation } from '../contexts/TranslationContext';
 import { Translate } from './Translate';
 import { useAnimatedPlaceholder } from '../hooks/useAnimatedPlaceholder';
+import BasicDateRangePicker from './BasicDateRangePicker';
 
 // Helper function to detect text direction
 const detectLanguage = (text: string): 'ltr' | 'rtl' => {
@@ -49,6 +49,13 @@ interface InputAreaProps {
   sidebarOpen?: boolean; // Add sidebar state
   sidebarRef?: React.RefObject<HTMLDivElement | null>; // Add sidebar ref
   onHeightChange?: (height: number) => void; // Callback for height changes
+  // Control buttons
+  onVoiceInput?: () => void; // Voice input callback
+  onClear?: () => void; // Clear input callback
+  onAttachment?: () => void; // File attachment callback
+  showVoiceButton?: boolean; // Show voice button
+  showClearButton?: boolean; // Show clear button
+  showAttachmentButton?: boolean; // Show attachment button
 }
 
 // ChatGPT-style Input Area - Matches official ChatGPT design
@@ -92,7 +99,14 @@ export function InputArea({
   isDarkMode,
   sidebarOpen = false,
   sidebarRef,
-  onHeightChange
+  onHeightChange,
+  // Control buttons
+  onVoiceInput,
+  onClear,
+  onAttachment,
+  showVoiceButton = false,
+  showClearButton = true,
+  showAttachmentButton = false
 }: InputAreaProps) {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const inputContainerRef = useRef<HTMLDivElement>(null);
@@ -784,6 +798,85 @@ export function InputArea({
                   ))}
                 </Box>
 
+                {/* Additional Control Buttons */}
+                <Box sx={{ 
+                  display: 'flex', 
+                  gap: '4px', 
+                  alignItems: 'center',
+                }}>
+                  {/* Clear Button */}
+                  {showClearButton && value.trim() && (
+                    <IconButton
+                      onClick={() => {
+                        onChange('');
+                        onClear?.();
+                      }}
+                      disabled={disabled}
+                      sx={{
+                        width: '32px',
+                        height: '32px',
+                        backgroundColor: 'transparent',
+                        color: isDarkMode ? '#8e8ea0' : '#6b7280',
+                        borderRadius: '16px',
+                        transition: 'all 0.2s ease',
+                        '&:hover': {
+                          backgroundColor: isDarkMode ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.05)',
+                          color: isDarkMode ? '#ffffff' : '#374151',
+                        },
+                      }}
+                      title={t('input.clear') || 'Clear'}
+                    >
+                      <ClearIcon sx={{ fontSize: 16 }} />
+                    </IconButton>
+                  )}
+
+                  {/* Voice Button */}
+                  {showVoiceButton && (
+                    <IconButton
+                      onClick={onVoiceInput}
+                      disabled={disabled}
+                      sx={{
+                        width: '32px',
+                        height: '32px',
+                        backgroundColor: 'transparent',
+                        color: isDarkMode ? '#8e8ea0' : '#6b7280',
+                        borderRadius: '16px',
+                        transition: 'all 0.2s ease',
+                        '&:hover': {
+                          backgroundColor: isDarkMode ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.05)',
+                          color: isDarkMode ? '#ffffff' : '#374151',
+                        },
+                      }}
+                      title={t('input.voice') || 'Voice input'}
+                    >
+                      <MicIcon sx={{ fontSize: 16 }} />
+                    </IconButton>
+                  )}
+
+                  {/* Attachment Button */}
+                  {showAttachmentButton && (
+                    <IconButton
+                      onClick={onAttachment}
+                      disabled={disabled}
+                      sx={{
+                        width: '32px',
+                        height: '32px',
+                        backgroundColor: 'transparent',
+                        color: isDarkMode ? '#8e8ea0' : '#6b7280',
+                        borderRadius: '16px',
+                        transition: 'all 0.2s ease',
+                        '&:hover': {
+                          backgroundColor: isDarkMode ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.05)',
+                          color: isDarkMode ? '#ffffff' : '#374151',
+                        },
+                      }}
+                      title={t('input.attachment') || 'Attach file'}
+                    >
+                      <AttachFileIcon sx={{ fontSize: 16 }} />
+                    </IconButton>
+                  )}
+                </Box>
+
             {/* Submit/Stop Button */}
             <IconButton
               onClick={handleSubmit}
@@ -1231,90 +1324,13 @@ export function InputArea({
                           {t('dateRange.datePickerTitle')}
                         </Typography>
                         
-                        <LocalizationProvider dateAdapter={AdapterDayjs}>
-                          <DemoContainer 
-                            components={['DateTimePicker', 'DateTimePicker']}
-                            sx={{
-                              direction: 'ltr', // Force LTR for date picker to avoid layout issues
-                              display: 'flex',
-                              flexDirection: 'column',
-                              gap: '16px',
-                            }}
-                          >
-                            <DateTimePicker
-                              label={t('dateRange.startDate')}
-                              value={tempDateRange[0]}
-                              onChange={(newValue: Dayjs | null) => setTempDateRange([newValue, tempDateRange[1]])}
-                              ampm={false}
-                              slotProps={{
-                                textField: {
-                                  size: 'small',
-                                  sx: {
-                                    '& .MuiOutlinedInput-root': {
-                                      backgroundColor: isDarkMode ? '#404040' : '#f8f9fa',
-                                      borderRadius: '6px',
-                                      color: isDarkMode ? '#f1f1f1' : '#1f2937',
-                                      fontSize: '14px',
-                                      '& fieldset': {
-                                        borderColor: isDarkMode ? '#555555' : '#e1e5e9',
-                                      },
-                                      '&:hover fieldset': {
-                                        borderColor: isDarkMode ? '#666666' : '#c1c7cd',
-                                      },
-                                      '&.Mui-focused fieldset': {
-                                        borderColor: '#10a37f',
-                                        borderWidth: '1px',
-                                      },
-                                    },
-                                    '& .MuiInputLabel-root': {
-                                      color: isDarkMode ? '#a0a0a0' : '#6b7280',
-                                      fontSize: '14px',
-                                      '&.Mui-focused': {
-                                        color: '#10a37f',
-                                      },
-                                    },
-                                  },
-                                },
-                              }}
-                            />
-                            <DateTimePicker
-                              label={t('dateRange.endDate')}
-                              value={tempDateRange[1]}
-                              onChange={(newValue: Dayjs | null) => setTempDateRange([tempDateRange[0], newValue])}
-                              ampm={false}
-                              slotProps={{
-                                textField: {
-                                  size: 'small',
-                                  sx: {
-                                    '& .MuiOutlinedInput-root': {
-                                      backgroundColor: isDarkMode ? '#404040' : '#f8f9fa',
-                                      borderRadius: '6px',
-                                      color: isDarkMode ? '#f1f1f1' : '#1f2937',
-                                      fontSize: '14px',
-                                      '& fieldset': {
-                                        borderColor: isDarkMode ? '#555555' : '#e1e5e9',
-                                      },
-                                      '&:hover fieldset': {
-                                        borderColor: isDarkMode ? '#666666' : '#c1c7cd',
-                                      },
-                                      '&.Mui-focused fieldset': {
-                                        borderColor: '#10a37f',
-                                        borderWidth: '1px',
-                                      },
-                                    },
-                                    '& .MuiInputLabel-root': {
-                                      color: isDarkMode ? '#a0a0a0' : '#6b7280',
-                                      fontSize: '14px',
-                                      '&.Mui-focused': {
-                                        color: '#10a37f',
-                                      },
-                                    },
-                                  },
-                                },
-                              }}
-                            />
-                          </DemoContainer>
-                        </LocalizationProvider>
+                        <BasicDateRangePicker
+                          value={tempDateRange}
+                          onChange={setTempDateRange}
+                          isDarkMode={isDarkMode}
+                          startLabel={t('dateRange.startDate')}
+                          endLabel={t('dateRange.endDate')}
+                        />
                       </Box>
                     )}
 

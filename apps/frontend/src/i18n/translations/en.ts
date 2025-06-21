@@ -110,6 +110,9 @@ const translations: Translation = {
     disclaimer: 'AI can make mistakes. Check important info.',
     send: 'Send message',
     stop: 'Stop generation',
+    clear: 'Clear input',
+    voice: 'Voice input',
+    attachment: 'Attach file',
     selectCountries: 'Select countries',
     examples: [
       'What can you help me with?',
