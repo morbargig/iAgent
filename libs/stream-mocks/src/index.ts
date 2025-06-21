@@ -1,1 +1,1 @@
-export * from './lib/stream-mocks';
+export * from './lib/stream-mocks.js';
