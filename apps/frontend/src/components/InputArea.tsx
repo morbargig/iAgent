@@ -9,6 +9,7 @@ import {
   Tooltip,
 } from '@mui/material';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
+import { DateTimePicker } from '@mui/x-date-pickers/DateTimePicker';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import { DemoContainer } from '@mui/x-date-pickers/internals/demo';
 import dayjs, { Dayjs } from 'dayjs';
@@ -23,6 +24,7 @@ import {
 } from '@mui/icons-material';
 import { useTranslation } from '../contexts/TranslationContext';
 import { Translate } from './Translate';
+import { useAnimatedPlaceholder } from '../hooks/useAnimatedPlaceholder';
 
 // Helper function to detect text direction
 const detectLanguage = (text: string): 'ltr' | 'rtl' => {
@@ -32,23 +34,6 @@ const detectLanguage = (text: string): 'ltr' | 'rtl' => {
   const rtlRegex = /[\u0590-\u05FF\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFF]/;
   
   return rtlRegex.test(text) ? 'rtl' : 'ltr';
-};
-
-// Debounced text direction detection to prevent rapid changes
-const useDebounceTextDirection = (text: string, delay: number = 150) => {
-  const [debouncedDirection, setDebouncedDirection] = useState(() => detectLanguage(text));
-
-  useEffect(() => {
-    const handler = setTimeout(() => {
-      setDebouncedDirection(detectLanguage(text));
-    }, delay);
-
-    return () => {
-      clearTimeout(handler);
-    };
-  }, [text, delay]);
-
-  return debouncedDirection;
 };
 
 interface InputAreaProps {
@@ -173,7 +158,7 @@ export function InputArea({
     };
   };
 
-  const initialSettings = initializeDateRangeSettings();
+  const initialSettings = React.useMemo(() => initializeDateRangeSettings(), []);
   const [dateRangeTab, setDateRangeTab] = useState(initialSettings.activeTab);
   const [rangeAmount, setRangeAmount] = useState(initialSettings.customRange.amount);
   const [rangeType, setRangeType] = useState(initialSettings.customRange.type);
@@ -205,7 +190,7 @@ export function InputArea({
     return () => clearTimeout(timeoutId);
   }, [selectedFlags]);
 
-  // Save all date range settings to single localStorage key with debouncing
+  // Save all date range settings to single localStorage key with debouncing - Fixed to prevent infinite loops
   useEffect(() => {
     const timeoutId = setTimeout(() => {
       try {
@@ -228,27 +213,79 @@ export function InputArea({
     }, 300);
 
     return () => clearTimeout(timeoutId);
-  }, [dateRangeTab, committedTab, rangeAmount, rangeType, dateRange]);
+  }, [
+    dateRangeTab, 
+    committedTab, 
+    rangeAmount, 
+    rangeType, 
+    dateRange[0]?.toISOString(), 
+    dateRange[1]?.toISOString()
+  ]); // Use ISO strings to prevent dayjs object comparison issues
 
-  // Animated placeholder - get examples from translation with stable reference
+  // Animated placeholder - get examples from translation (fixed to prevent infinite loops)
   const examples = React.useMemo(() => {
     try {
       // Access the current translations directly
       const currentTranslations = (translationContext as any).translations?.[translationContext.currentLang];
       const examples = currentTranslations?.input?.examples;
-      return Array.isArray(examples) ? examples : [];
-    } catch {
-      return [];
+      
+      // Debug logging
+      console.log('🔍 Animation Debug:', {
+        currentLang: translationContext.currentLang,
+        hasTranslations: !!currentTranslations,
+        hasExamples: !!examples,
+        examplesLength: examples?.length || 0,
+        firstExample: examples?.[0]
+      });
+      
+      // If no examples from translations, use fallback for testing
+      if (!examples || !Array.isArray(examples) || examples.length === 0) {
+        console.log('⚠️ No examples found, using fallback');
+        return [
+          'What can you help me with?',
+          'Explain quantum computing simply',
+          'Write a creative short story',
+          'Help me debug this code'
+        ];
+      }
+      
+      return examples;
+    } catch (error) {
+      console.error('❌ Error loading examples:', error);
+      // Return fallback examples if there's an error
+      return [
+        'What can you help me with?',
+        'Explain quantum computing simply',
+        'Write a creative short story'
+      ];
     }
-  }, [translationContext.translations, translationContext.currentLang]);
+  }, [translationContext.currentLang, translationContext.translations]); // Include both dependencies
 
+  // Animated placeholder with optimized hook to prevent infinite loops
   const animatedPlaceholder = useAnimatedPlaceholder({
     examples,
-    typingSpeed: 80,
-    pauseDuration: 2500,
-    deletingSpeed: 40,
-    isActive: !value.trim() // Show animation when input is empty, regardless of focus
+    typingSpeed: 150, // Slower for easier debugging
+    pauseDuration: 1500, // Shorter pause for faster testing
+    deletingSpeed: 75,
+    isActive: !value.trim() && examples.length > 0 // Show animation when input is empty and examples exist
   });
+
+  // Debug the animated placeholder
+  React.useEffect(() => {
+    console.log('🎬 Animated Placeholder Debug:', {
+      examples: examples,
+      examplesLength: examples.length,
+      isActive: !value.trim() && examples.length > 0,
+      animatedPlaceholder: animatedPlaceholder,
+      value: value,
+      valueLength: value.length
+    });
+  }, [examples, animatedPlaceholder, value]);
+
+  // Show debug info in placeholder for testing
+  const debugPlaceholder = animatedPlaceholder 
+    ? `${animatedPlaceholder}` 
+    : `[Debug: ${examples.length} examples, active: ${!value.trim() && examples.length > 0}]`;
 
   useEffect(() => {
     if (textareaRef.current && !disabled) {
@@ -256,70 +293,64 @@ export function InputArea({
     }
   }, [disabled]);
 
-  // Stable callback for height measurement
-  const measureHeight = useCallback(() => {
-    if (inputContainerRef.current && onHeightChange) {
-      const height = inputContainerRef.current.offsetHeight;
-      onHeightChange(height);
-    }
-  }, [onHeightChange]);
+  // Stable callback for height measurement - use ref to avoid dependency issues
+  const onHeightChangeRef = useRef(onHeightChange);
+  onHeightChangeRef.current = onHeightChange;
 
-  // Stable callback for sidebar width update
+  // Stable callback for sidebar width update - use refs to avoid dependency issues
+  const sidebarRefCurrent = useRef(sidebarRef);
+  const sidebarOpenRef = useRef(sidebarOpen);
+  sidebarRefCurrent.current = sidebarRef;
+  sidebarOpenRef.current = sidebarOpen;
+  
   const updateSidebarWidth = useCallback(() => {
-    if (sidebarRef?.current && sidebarOpen) {
-      const width = sidebarRef.current.offsetWidth;
+    if (sidebarRefCurrent.current?.current && sidebarOpenRef.current) {
+      const width = sidebarRefCurrent.current.current.offsetWidth;
       setSidebarWidth(width);
     } else {
       setSidebarWidth(0);
     }
-  }, [sidebarRef, sidebarOpen]);
+  }, []);
 
-  // Auto-resize textarea with debouncing
+  // Auto-resize textarea - simplified to prevent infinite loops
   useEffect(() => {
-    const resizeTextarea = () => {
-      if (textareaRef.current) {
-        textareaRef.current.style.height = 'auto';
-        textareaRef.current.style.height = `${Math.min(textareaRef.current.scrollHeight, 200)}px`;
+    if (textareaRef.current) {
+      textareaRef.current.style.height = 'auto';
+      textareaRef.current.style.height = `${Math.min(textareaRef.current.scrollHeight, 200)}px`;
+      
+      // Measure height after resize
+      if (inputContainerRef.current && onHeightChangeRef.current) {
+        const height = inputContainerRef.current.offsetHeight;
+        onHeightChangeRef.current(height);
+      }
+    }
+  }, [value]);
+
+  // Measure input area height on window resize only - fixed to prevent infinite loops
+  useEffect(() => {
+    const handleResize = () => {
+      if (inputContainerRef.current && onHeightChangeRef.current) {
+        const height = inputContainerRef.current.offsetHeight;
+        onHeightChangeRef.current(height);
       }
     };
 
-    // Immediate resize for better UX
-    resizeTextarea();
-    
-    // Debounced measurement to prevent flickering
-    const timeoutId = setTimeout(() => {
-      measureHeight();
-    }, 50); // Reduced timeout for better responsiveness
+    window.addEventListener('resize', handleResize);
     
     return () => {
-      clearTimeout(timeoutId);
+      window.removeEventListener('resize', handleResize);
     };
-  }, [value, measureHeight]);
+  }, []); // Empty dependency array - no dependencies needed
 
-  // Measure input area height on window resize only
+  // Measure sidebar width dynamically - simplified
   useEffect(() => {
-    window.addEventListener('resize', measureHeight);
-    
-    return () => {
-      window.removeEventListener('resize', measureHeight);
-    };
-  }, [measureHeight]);
-
-  // Measure sidebar width dynamically
-  useEffect(() => {
-    updateSidebarWidth();
-    
-    // Update on window resize
-    window.addEventListener('resize', updateSidebarWidth);
-    
-    // Update when sidebar state changes
-    const timeoutId = setTimeout(updateSidebarWidth, 300); // Wait for transition
-    
-    return () => {
-      window.removeEventListener('resize', updateSidebarWidth);
-      clearTimeout(timeoutId);
-    };
-  }, [updateSidebarWidth]);
+    if (sidebarRefCurrent.current?.current && sidebarOpenRef.current) {
+      const width = sidebarRefCurrent.current.current.offsetWidth;
+      setSidebarWidth(width);
+    } else {
+      setSidebarWidth(0);
+    }
+  }, [sidebarOpen]); // Only depend on sidebarOpen, not the callback
 
   const handleKeyDown = (event: React.KeyboardEvent) => {
     if (event.key === 'Enter' && !event.shiftKey) {
@@ -341,9 +372,9 @@ export function InputArea({
   const canSend = value.trim() && !disabled;
   const showStopButton = isLoading;
   
-  // Detect text direction for proper alignment - debounced to prevent flickering
-  const textDirection = useDebounceTextDirection(value || animatedPlaceholder);
-  const placeholderDirection = useDebounceTextDirection(animatedPlaceholder);
+  // Detect text direction for proper alignment - simplified to prevent infinite loops
+  const textDirection = React.useMemo(() => detectLanguage(value || ''), [value]);
+  const placeholderDirection = 'ltr'; // Keep placeholder simple to avoid loops
 
   // Memoize textarea styles to prevent unnecessary re-renders
   const textareaStyle = React.useMemo(() => ({
@@ -489,26 +520,26 @@ export function InputArea({
               '&:hover': {
                 boxShadow: '0 2px 12px rgba(0, 0, 0, 0.1)',
               },
-              // Placeholder styling - respects text direction
+              // Placeholder styling - simplified to prevent loops
               '& textarea::placeholder': {
                 opacity: 0.7,
-                textAlign: placeholderDirection === 'rtl' ? 'right' : 'left',
-                direction: placeholderDirection,
+                textAlign: 'left',
+                direction: 'ltr',
               },
               '& textarea::-webkit-input-placeholder': {
                 opacity: 0.7,
-                textAlign: placeholderDirection === 'rtl' ? 'right' : 'left',
-                direction: placeholderDirection,
+                textAlign: 'left',
+                direction: 'ltr',
               },
               '& textarea::-moz-placeholder': {
                 opacity: 0.7,
-                textAlign: placeholderDirection === 'rtl' ? 'right' : 'left',
-                direction: placeholderDirection,
+                textAlign: 'left',
+                direction: 'ltr',
               },
               '& textarea:-ms-input-placeholder': {
                 opacity: 0.7,
-                textAlign: placeholderDirection === 'rtl' ? 'right' : 'left',
-                direction: placeholderDirection,
+                textAlign: 'left',
+                direction: 'ltr',
               }
             }}
           >
@@ -520,7 +551,7 @@ export function InputArea({
               onKeyDown={handleKeyDown}
               onFocus={() => setIsFocused(true)}
               onBlur={() => setIsFocused(false)}
-              placeholder={animatedPlaceholder || t('input.placeholder')}
+              placeholder={debugPlaceholder}
               disabled={disabled}
               style={textareaStyle}
             />
@@ -1202,14 +1233,18 @@ export function InputArea({
                         
                         <LocalizationProvider dateAdapter={AdapterDayjs}>
                           <DemoContainer 
-                            components={['DateTimeRangePicker']}
+                            components={['DateTimePicker', 'DateTimePicker']}
                             sx={{
                               direction: 'ltr', // Force LTR for date picker to avoid layout issues
+                              display: 'flex',
+                              flexDirection: 'column',
+                              gap: '16px',
                             }}
                           >
-                            <DateTimeRangePicker
-                              value={tempDateRange}
-                              onChange={(newValue) => setTempDateRange(newValue || [null, null])}
+                            <DateTimePicker
+                              label={t('dateRange.startDate')}
+                              value={tempDateRange[0]}
+                              onChange={(newValue: Dayjs | null) => setTempDateRange([newValue, tempDateRange[1]])}
                               ampm={false}
                               slotProps={{
                                 textField: {
@@ -1240,44 +1275,39 @@ export function InputArea({
                                     },
                                   },
                                 },
-                                popper: {
+                              }}
+                            />
+                            <DateTimePicker
+                              label={t('dateRange.endDate')}
+                              value={tempDateRange[1]}
+                              onChange={(newValue: Dayjs | null) => setTempDateRange([tempDateRange[0], newValue])}
+                              ampm={false}
+                              slotProps={{
+                                textField: {
+                                  size: 'small',
                                   sx: {
-                                    zIndex: 10020,
-                                    '& .MuiPaper-root': {
-                                      backgroundColor: isDarkMode ? '#2f2f2f' : '#ffffff',
-                                      border: `1px solid ${isDarkMode ? '#4a4a4a' : '#e1e5e9'}`,
-                                      borderRadius: '8px',
-                                      boxShadow: isDarkMode 
-                                        ? '0 8px 25px rgba(0, 0, 0, 0.4)' 
-                                        : '0 8px 25px rgba(0, 0, 0, 0.15)',
-                                    },
-                                    '& .MuiPickersDay-root': {
+                                    '& .MuiOutlinedInput-root': {
+                                      backgroundColor: isDarkMode ? '#404040' : '#f8f9fa',
+                                      borderRadius: '6px',
                                       color: isDarkMode ? '#f1f1f1' : '#1f2937',
-                                      '&:hover': {
-                                        backgroundColor: isDarkMode ? '#404040' : '#f3f4f6',
+                                      fontSize: '14px',
+                                      '& fieldset': {
+                                        borderColor: isDarkMode ? '#555555' : '#e1e5e9',
                                       },
-                                      '&.Mui-selected': {
-                                        backgroundColor: '#10a37f',
-                                        '&:hover': {
-                                          backgroundColor: '#0d8b70',
-                                        },
+                                      '&:hover fieldset': {
+                                        borderColor: isDarkMode ? '#666666' : '#c1c7cd',
                                       },
-                                      '&.MuiPickersDay-rangeIntervalDay': {
-                                        backgroundColor: isDarkMode ? 'rgba(16, 163, 127, 0.2)' : 'rgba(16, 163, 127, 0.1)',
+                                      '&.Mui-focused fieldset': {
+                                        borderColor: '#10a37f',
+                                        borderWidth: '1px',
                                       },
                                     },
-                                    '& .MuiPickersCalendarHeader-root': {
-                                      color: isDarkMode ? '#f1f1f1' : '#1f2937',
-                                    },
-                                    '& .MuiDayCalendar-weekDayLabel': {
+                                    '& .MuiInputLabel-root': {
                                       color: isDarkMode ? '#a0a0a0' : '#6b7280',
-                                    },
-                                    // Hide MUI X license warning
-                                    '& div[style*="MUI X Missing license key"]': {
-                                      display: 'none !important',
-                                    },
-                                    '& div[style*="pointer-events: none"][style*="position: absolute"]': {
-                                      display: 'none !important',
+                                      fontSize: '14px',
+                                      '&.Mui-focused': {
+                                        color: '#10a37f',
+                                      },
                                     },
                                   },
                                 },

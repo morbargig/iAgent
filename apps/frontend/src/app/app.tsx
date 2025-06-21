@@ -11,7 +11,6 @@ import { InputArea } from '../components/InputArea';
 import { StreamingClient, createMessage, createStreamingMessage, updateMessageContent, type Message, type Conversation } from '@iagent/stream-mocks';
 import { useMockMode } from '../hooks/useMockMode';
 import { LanguageSwitcher } from '../components/LanguageSwitcher';
-import { TranslationProvider } from '../contexts/TranslationContext';
 import { generateUniqueId } from '../utils/id-generator';
 
 // iagent-inspired Design System

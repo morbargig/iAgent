@@ -10,6 +10,17 @@ export default defineConfig({
   server: {
     port: 4200,
     host: 'localhost',
+    watch: {
+      // Prevent watching files that could cause infinite rebuilds
+      ignored: [
+        '**/node_modules/**',
+        '**/dist/**',
+        '**/.nx/**',
+        '**/coverage/**',
+        '**/*.tsbuildinfo',
+        '**/tmp/**'
+      ]
+    }
   },
 
   preview: {
