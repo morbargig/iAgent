@@ -1,0 +1,71 @@
+{
+  "name": "@iagent/frontend",
+  "root": "apps/frontend",
+  "projectType": "application",
+  "targets": {
+    "build": {
+      "executor": "@nx/vite:build",
+      "outputs": ["{options.outputPath}"],
+      "defaultConfiguration": "production",
+      "options": {
+        "outputPath": "dist/apps/frontend"
+      },
+      "configurations": {
+        "development": {
+          "mode": "development"
+        },
+        "production": {
+          "mode": "production"
+        }
+      }
+    },
+    "serve": {
+      "executor": "@nx/vite:dev-server",
+      "defaultConfiguration": "development",
+      "options": {
+        "buildTarget": "@iagent/frontend:build"
+      },
+      "configurations": {
+        "development": {
+          "buildTarget": "@iagent/frontend:build:development",
+          "hmr": true
+        },
+        "production": {
+          "buildTarget": "@iagent/frontend:build:production",
+          "hmr": false
+        }
+      }
+    },
+    "preview": {
+      "executor": "@nx/vite:preview-server",
+      "defaultConfiguration": "development",
+      "options": {
+        "buildTarget": "@iagent/frontend:build"
+      },
+      "configurations": {
+        "development": {
+          "buildTarget": "@iagent/frontend:build:development"
+        },
+        "production": {
+          "buildTarget": "@iagent/frontend:build:production"
+        }
+      }
+    },
+    "test": {
+      "executor": "@nx/vite:test",
+      "outputs": ["{options.reportsDirectory}"],
+      "options": {
+        "passWithNoTests": true,
+        "reportsDirectory": "../../coverage/apps/frontend"
+      }
+    },
+    "lint": {
+      "executor": "@nx/eslint:lint",
+      "outputs": ["{options.outputFile}"],
+      "options": {
+        "lintFilePatterns": ["apps/frontend/**/*.{ts,tsx,js,jsx}"]
+      }
+    }
+  },
+  "tags": ["scope:frontend", "type:app"]
+} 

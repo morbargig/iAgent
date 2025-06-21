@@ -6,9 +6,9 @@ import {
   Typography,
   TextField,
   Button,
+  Tooltip,
 } from '@mui/material';
-import { LocalizationProvider } from '@mui/x-date-pickers-pro/LocalizationProvider';
-import { DateTimeRangePicker } from '@mui/x-date-pickers-pro/DateTimeRangePicker';
+import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import { DemoContainer } from '@mui/x-date-pickers/internals/demo';
 import dayjs, { Dayjs } from 'dayjs';
@@ -23,7 +23,6 @@ import {
 } from '@mui/icons-material';
 import { useTranslation } from '../contexts/TranslationContext';
 import { Translate } from './Translate';
-import { useAnimatedPlaceholder } from '../hooks/useAnimatedPlaceholder';
 
 // Helper function to detect text direction
 const detectLanguage = (text: string): 'ltr' | 'rtl' => {
