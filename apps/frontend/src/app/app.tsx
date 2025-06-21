@@ -7,6 +7,7 @@ import { useTranslation } from '../contexts/TranslationContext';
 import { Sidebar } from '../components/Sidebar';
 import { ChatArea } from '../components/ChatArea';
 import { InputArea } from '../components/InputArea';
+
 import { StreamingClient, createMessage, createStreamingMessage, updateMessageContent, type Message, type Conversation } from '@iagent/stream-mocks';
 import { useMockMode } from '../hooks/useMockMode';
 import { LanguageSwitcher } from '../components/LanguageSwitcher';
@@ -289,11 +290,13 @@ const App = () => {
   const [currentConversationId, setCurrentConversationId] = useState<string | null>(null);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [streamingConversationId, setStreamingConversationId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [currentAbortController, setCurrentAbortController] = useState<AbortController | null>(null);
   const streamingClient = useRef(new StreamingClient());
   const sidebarRef = useRef<HTMLDivElement>(null);
   const [inputAreaHeight, setInputAreaHeight] = useState(80); // Track input area height
+
 
   const currentConversation = useMemo(() => {
     return conversations.find(conv => conv.id === currentConversationId) || null;
@@ -303,6 +306,7 @@ const App = () => {
     if (!content.trim() || isLoading) return;
 
     setIsLoading(true);
+    setStreamingConversationId(currentConversation?.id || null);
     setError(null);
 
     try {
@@ -342,6 +346,7 @@ const App = () => {
 
       if (!currentConversation) {
         setCurrentConversationId(updatedConversation.id);
+        setStreamingConversationId(updatedConversation.id); // Update streaming ID for new conversation
       }
 
       // Stream the response
@@ -383,6 +388,7 @@ const App = () => {
             })
           );
           setIsLoading(false);
+          setStreamingConversationId(null); // Clear streaming conversation
         },
         (error: Error) => {
           setError(error.message);
@@ -407,6 +413,7 @@ const App = () => {
             })
           );
           setIsLoading(false);
+          setStreamingConversationId(null); // Clear streaming conversation
         },
         isMockMode, // useMock
         'http://localhost:3000',
@@ -571,6 +578,19 @@ const App = () => {
     }
   };
 
+  const renameConversation = (id: string, newTitle: string) => {
+    setConversations(prev => prev.map(conv => 
+      conv.id === id 
+        ? { 
+            ...conv, 
+            title: newTitle,
+            titleKey: undefined, // Remove titleKey when setting custom title
+            lastUpdated: new Date()
+          }
+        : conv
+    ));
+  };
+
   const refreshMessage = async (messageId: string) => {
     const conversation = currentConversation;
     if (!conversation || isLoading) return;
@@ -623,6 +643,7 @@ const App = () => {
     ));
 
     setIsLoading(true);
+    setStreamingConversationId(conversation.id);
 
     try {
       const streamingClient = streamingClientRef.current;
@@ -680,6 +701,7 @@ const App = () => {
               : c
           ));
           setIsLoading(false);
+          setStreamingConversationId(null);
           setCurrentAbortController(null);
           // console.log(`✅ Regeneration completed using ${isMockMode ? 'Mock' : 'API'} mode`);
         },
@@ -718,6 +740,7 @@ const App = () => {
       ));
     } finally {
       setIsLoading(false);
+      setStreamingConversationId(null);
     }
   };
 
@@ -813,15 +836,16 @@ const App = () => {
   return (
     <ThemeProvider theme={currentTheme}>
       <CssBaseline />
-      <Box
-        sx={{
-          display: 'flex',
-          flexDirection: 'column',
-          height: '100vh',
-          bgcolor: 'background.default',
-          color: 'text.primary',
-        }}
-      >
+
+        <Box
+          sx={{
+            display: 'flex',
+            flexDirection: 'column',
+            height: '100vh',
+            bgcolor: 'background.default',
+            color: 'text.primary',
+          }}
+        >
         <Box
           sx={{
             display: 'flex',
@@ -838,8 +862,10 @@ const App = () => {
             onSelectConversation={setCurrentConversationId}
             onNewConversation={createNewConversation}
             onDeleteConversation={deleteConversation}
+            onRenameConversation={renameConversation}
             isDarkMode={isDarkMode}
             onToggleTheme={toggleTheme}
+            streamingConversationId={streamingConversationId}
           />
           <Box
             sx={{
@@ -873,6 +899,7 @@ const App = () => {
                   setCurrentAbortController(null);
                 }
                 setIsLoading(false);
+                setStreamingConversationId(null);
               }}
               disabled={isLoading}
               isLoading={isLoading}

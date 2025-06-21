@@ -28,5 +28,9 @@
     "material-ui",
     "vite",
     "frontend"
-  ]
+  ],
+  "dependencies": {
+    "@mui/x-date-pickers": "^8.5.3",
+    "dayjs": "^1.11.13"
+  }
 }

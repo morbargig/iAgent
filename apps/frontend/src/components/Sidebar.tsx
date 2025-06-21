@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   Box,
   Typography,
@@ -11,6 +11,9 @@ import {
   useTheme,
   Drawer,
   useMediaQuery,
+  TextField,
+  ClickAwayListener,
+  CircularProgress,
 } from '@mui/material';
 import {
   Add as AddIcon,
@@ -19,6 +22,10 @@ import {
   LightMode as LightModeIcon,
   DarkMode as DarkModeIcon,
   Close as CloseIcon,
+  Edit as EditIcon,
+  Check as CheckIcon,
+  Close as CancelIcon,
+  Psychology as GeneratingIcon,
 } from '@mui/icons-material';
 import { type Conversation } from '@iagent/stream-mocks';
 import { useTranslation } from '../contexts/TranslationContext';
@@ -29,10 +36,12 @@ interface SidebarProps {
   onSelectConversation: (id: string) => void;
   onNewConversation: () => void;
   onDeleteConversation: (id: string) => void;
+  onRenameConversation: (id: string, newTitle: string) => void;
   open: boolean;
   onToggle: () => void;
   isDarkMode: boolean;
   onToggleTheme: () => void;
+  streamingConversationId?: string | null;
 }
 
 // iagent-inspired Sidebar - Clean, minimal navigation
@@ -43,14 +52,46 @@ export const Sidebar = React.forwardRef<HTMLDivElement, SidebarProps>(({
   onSelectConversation, 
   onNewConversation, 
   onDeleteConversation,
+  onRenameConversation,
   open,
   onToggle,
   isDarkMode,
   onToggleTheme,
+  streamingConversationId,
 }, ref) => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
   const { t } = useTranslation();
+  
+  // State for editing conversation names
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editingTitle, setEditingTitle] = useState<string>('');
+
+  const handleStartEdit = (conversation: Conversation) => {
+    setEditingId(conversation.id);
+    setEditingTitle(conversation.titleKey ? t(conversation.titleKey) : conversation.title);
+  };
+
+  const handleSaveEdit = () => {
+    if (editingId && editingTitle.trim()) {
+      onRenameConversation(editingId, editingTitle.trim());
+    }
+    setEditingId(null);
+    setEditingTitle('');
+  };
+
+  const handleCancelEdit = () => {
+    setEditingId(null);
+    setEditingTitle('');
+  };
+
+  const handleKeyPress = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      handleSaveEdit();
+    } else if (e.key === 'Escape') {
+      handleCancelEdit();
+    }
+  };
 
   // Sidebar Content - Clean, functional design
   const sidebarContent = (
@@ -179,86 +220,216 @@ export const Sidebar = React.forwardRef<HTMLDivElement, SidebarProps>(({
                   '100%': { opacity: 1, transform: 'translateX(0)' },
                 },
               }}>
-                <ListItemButton
-                  onClick={() => {
-                    onSelectConversation(conversation.id);
-                    if (isMobile) onToggle();
-                  }}
-                  sx={{
-                    borderRadius: '8px',
-                    padding: '8px 12px',
-                    minHeight: 'auto',
-                    // Active state
-                    backgroundColor: currentConversationId === conversation.id 
-                      ? theme.palette.action.selected
-                      : 'transparent',
-                    transition: 'all 150ms cubic-bezier(0.4, 0, 0.2, 1)',
-                    '&:hover': {
+                {editingId === conversation.id ? (
+                  // Edit Mode
+                  <ClickAwayListener onClickAway={handleCancelEdit}>
+                    <Box
+                      sx={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        width: '100%',
+                        padding: '8px 12px',
+                        borderRadius: '8px',
+                        backgroundColor: theme.palette.action.hover,
+                        gap: '8px',
+                      }}
+                    >
+                      <ChatIcon sx={{ 
+                        fontSize: 16, 
+                        color: theme.palette.text.secondary,
+                        flexShrink: 0,
+                      }} />
+                      
+                      <TextField
+                        value={editingTitle}
+                        onChange={(e) => setEditingTitle(e.target.value)}
+                        onKeyDown={handleKeyPress}
+                        autoFocus
+                        variant="standard"
+                        size="small"
+                        sx={{
+                          flex: 1,
+                          '& .MuiInput-root': {
+                            fontSize: '14px',
+                          },
+                          '& .MuiInput-input': {
+                            padding: '2px 0',
+                          },
+                        }}
+                      />
+                      
+                      {/* Save Button */}
+                      <IconButton
+                        onClick={handleSaveEdit}
+                        size="small"
+                        sx={{
+                          width: 24,
+                          height: 24,
+                          color: theme.palette.success.main,
+                          '&:hover': {
+                            backgroundColor: theme.palette.action.hover,
+                          },
+                        }}
+                      >
+                        <CheckIcon sx={{ fontSize: 14 }} />
+                      </IconButton>
+                      
+                      {/* Cancel Button */}
+                      <IconButton
+                        onClick={handleCancelEdit}
+                        size="small"
+                        sx={{
+                          width: 24,
+                          height: 24,
+                          color: theme.palette.text.secondary,
+                          '&:hover': {
+                            backgroundColor: theme.palette.action.hover,
+                            color: theme.palette.error.main,
+                          },
+                        }}
+                      >
+                        <CancelIcon sx={{ fontSize: 14 }} />
+                      </IconButton>
+                    </Box>
+                  </ClickAwayListener>
+                ) : (
+                  // Normal Mode
+                  <ListItemButton
+                    onClick={() => {
+                      onSelectConversation(conversation.id);
+                      if (isMobile) onToggle();
+                    }}
+                    sx={{
+                      borderRadius: '8px',
+                      padding: '8px 12px',
+                      minHeight: 'auto',
+                      // Active state
                       backgroundColor: currentConversationId === conversation.id 
                         ? theme.palette.action.selected
-                        : theme.palette.action.hover,
-                      '& .delete-btn': { opacity: 1 },
-                    },
-                  }}
-                >
-                  {/* Conversation Icon */}
-                  <ChatIcon sx={{ 
-                    fontSize: 16, 
-                    marginInlineEnd: '12px',
-                    color: currentConversationId === conversation.id 
-                      ? theme.palette.primary.main
-                      : theme.palette.text.secondary,
-                    flexShrink: 0,
-                    transition: 'color 150ms cubic-bezier(0.4, 0, 0.2, 1)',
-                  }} />
-                  
-                  {/* Conversation Title */}
-                  <ListItemText
-                    primary={conversation.titleKey ? t(conversation.titleKey) : conversation.title}
-                    primaryTypographyProps={{
-                      noWrap: true,
-                      variant: 'body2',
-                      fontSize: '14px',
-                      fontWeight: currentConversationId === conversation.id ? 500 : 400,
-                      color: currentConversationId === conversation.id 
-                        ? theme.palette.text.primary
-                        : theme.palette.text.secondary,
-                    }}
-                    sx={{ 
-                      '& .MuiListItemText-primary': {
-                        overflow: 'hidden',
-                        textOverflow: 'ellipsis',
-                        lineHeight: 1.4,
-                        transition: 'all 150ms cubic-bezier(0.4, 0, 0.2, 1)',
-                      }
-                    }}
-                  />
-                  
-                  {/* Delete Button */}
-                  <IconButton
-                    className="delete-btn"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onDeleteConversation(conversation.id);
-                    }}
-                    size="small"
-                    sx={{ 
-                      opacity: 0,
+                        : 'transparent',
                       transition: 'all 150ms cubic-bezier(0.4, 0, 0.2, 1)',
-                      marginInlineStart: '8px',
-                      width: 24,
-                      height: 24,
-                      color: theme.palette.text.secondary,
-                      borderRadius: '4px',
                       '&:hover': {
-                        backgroundColor: theme.palette.action.hover,
-                        color: theme.palette.error.main,
+                        backgroundColor: currentConversationId === conversation.id 
+                          ? theme.palette.action.selected
+                          : theme.palette.action.hover,
+                        '& .action-btns': { opacity: 1 },
                       },
                     }}
                   >
-                    <DeleteIcon sx={{ fontSize: 14 }} />
-                  </IconButton>
-                </ListItemButton>
+                    {/* Conversation Icon */}
+                    {streamingConversationId === conversation.id ? (
+                      <GeneratingIcon
+                        sx={{
+                          fontSize: 16,
+                          marginInlineEnd: '12px',
+                          color: theme.palette.primary.main,
+                          flexShrink: 0,
+                          animation: 'pulse 1.5s ease-in-out infinite',
+                          '@keyframes pulse': {
+                            '0%': {
+                              opacity: 0.6,
+                              transform: 'scale(1)',
+                            },
+                            '50%': {
+                              opacity: 1,
+                              transform: 'scale(1.1)',
+                            },
+                            '100%': {
+                              opacity: 0.6,
+                              transform: 'scale(1)',
+                            },
+                          },
+                        }}
+                      />
+                    ) : (
+                      <ChatIcon sx={{ 
+                        fontSize: 16, 
+                        marginInlineEnd: '12px',
+                        color: currentConversationId === conversation.id 
+                          ? theme.palette.primary.main
+                          : theme.palette.text.secondary,
+                        flexShrink: 0,
+                        transition: 'color 150ms cubic-bezier(0.4, 0, 0.2, 1)',
+                      }} />
+                    )}
+                    
+                    {/* Conversation Title */}
+                    <ListItemText
+                      primary={conversation.titleKey ? t(conversation.titleKey) : conversation.title}
+                      primaryTypographyProps={{
+                        noWrap: true,
+                        variant: 'body2',
+                        fontSize: '14px',
+                        fontWeight: currentConversationId === conversation.id ? 500 : 400,
+                        color: currentConversationId === conversation.id 
+                          ? theme.palette.text.primary
+                          : theme.palette.text.secondary,
+                      }}
+                      sx={{ 
+                        '& .MuiListItemText-primary': {
+                          overflow: 'hidden',
+                          textOverflow: 'ellipsis',
+                          lineHeight: 1.4,
+                          transition: 'all 150ms cubic-bezier(0.4, 0, 0.2, 1)',
+                        }
+                      }}
+                    />
+                    
+                    {/* Action Buttons */}
+                    <Box
+                      className="action-btns"
+                      sx={{
+                        display: 'flex',
+                        opacity: 0,
+                        transition: 'all 150ms cubic-bezier(0.4, 0, 0.2, 1)',
+                        marginInlineStart: '8px',
+                        gap: '4px',
+                      }}
+                    >
+                      {/* Edit Button */}
+                      <IconButton
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleStartEdit(conversation);
+                        }}
+                        size="small"
+                        sx={{ 
+                          width: 24,
+                          height: 24,
+                          color: theme.palette.text.secondary,
+                          borderRadius: '4px',
+                          '&:hover': {
+                            backgroundColor: theme.palette.action.hover,
+                            color: theme.palette.primary.main,
+                          },
+                        }}
+                      >
+                        <EditIcon sx={{ fontSize: 14 }} />
+                      </IconButton>
+                      
+                      {/* Delete Button */}
+                      <IconButton
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onDeleteConversation(conversation.id);
+                        }}
+                        size="small"
+                        sx={{ 
+                          width: 24,
+                          height: 24,
+                          color: theme.palette.text.secondary,
+                          borderRadius: '4px',
+                          '&:hover': {
+                            backgroundColor: theme.palette.action.hover,
+                            color: theme.palette.error.main,
+                          },
+                        }}
+                      >
+                        <DeleteIcon sx={{ fontSize: 14 }} />
+                      </IconButton>
+                    </Box>
+                  </ListItemButton>
+                )}
               </ListItem>
             ))}
           </List>
