@@ -21,15 +21,15 @@ export function useAnimatedPlaceholder({
   
   // Debug logging
   useEffect(() => {
-    console.log('🎬 Hook Debug:', {
-      examples: examples.slice(0, 2), // Show first 2 examples
-      examplesLength: examples.length,
-      isActive,
-      currentText,
-      currentIndex,
-      phase,
-      currentExample: examples[currentIndex] || 'none'
-    });
+    // console.log('🎬 Hook Debug:', {
+    //   examples: examples.slice(0, 2), // Show first 2 examples
+    //   examplesLength: examples.length,
+    //   isActive,
+    //   currentText,
+    //   currentIndex,
+    //   phase,
+    //   currentExample: examples[currentIndex] || 'none'
+    // });
   }, [examples, isActive, currentText, currentIndex, phase]);
 
   // Reset animation when examples or isActive changes

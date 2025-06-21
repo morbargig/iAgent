@@ -244,17 +244,17 @@ export function InputArea({
       const examples = currentTranslations?.input?.examples;
       
       // Debug logging
-      console.log('🔍 Animation Debug:', {
-        currentLang: translationContext.currentLang,
-        hasTranslations: !!currentTranslations,
-        hasExamples: !!examples,
-        examplesLength: examples?.length || 0,
-        firstExample: examples?.[0]
-      });
+      // console.log('🔍 Animation Debug:', {
+      //   currentLang: translationContext.currentLang,
+      //   hasTranslations: !!currentTranslations,
+      //   hasExamples: !!examples,
+      //   examplesLength: examples?.length || 0,
+      //   firstExample: examples?.[0]
+      // });
       
       // If no examples from translations, use fallback for testing
       if (!examples || !Array.isArray(examples) || examples.length === 0) {
-        console.log('⚠️ No examples found, using fallback');
+        // console.log('⚠️ No examples found, using fallback');
         return [
           'What can you help me with?',
           'Explain quantum computing simply',
@@ -285,16 +285,16 @@ export function InputArea({
   });
 
   // Debug the animated placeholder
-  React.useEffect(() => {
-    console.log('🎬 Animated Placeholder Debug:', {
-      examples: examples,
-      examplesLength: examples.length,
-      isActive: !value.trim() && examples.length > 0,
-      animatedPlaceholder: animatedPlaceholder,
-      value: value,
-      valueLength: value.length
-    });
-  }, [examples, animatedPlaceholder, value]);
+  // React.useEffect(() => {
+  //   console.log('🎬 Animated Placeholder Debug:', {
+  //     examples: examples,
+  //     examplesLength: examples.length,
+  //     isActive: !value.trim() && examples.length > 0,
+  //     animatedPlaceholder: animatedPlaceholder,
+  //     value: value,
+  //     valueLength: value.length
+  //   });
+  // }, [examples, animatedPlaceholder, value]);
 
   // Show debug info in placeholder for testing
   const debugPlaceholder = animatedPlaceholder 
@@ -473,9 +473,17 @@ export function InputArea({
     const today = dayjs();
     const oneMonthAgo = today.subtract(1, 'month');
     setDateRange([oneMonthAgo, today]);
-    setTempDateRange([oneMonthAgo, today]); // Also reset temp state
+    setTempDateRange([null, null]); // Reset temp state to empty for date picker
     setDateRangeTab(0); // Switch back to custom range tab
     setCommittedTab(0); // Reset committed tab to custom range
+    
+    // Clear the BasicDateRangePicker's localStorage data
+    try {
+      localStorage.removeItem('dateRangePicker');
+      console.log('Cleared date picker localStorage on reset');
+    } catch (error) {
+      console.warn('Failed to clear date picker localStorage:', error);
+    }
   };
 
   return (
