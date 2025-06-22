@@ -42,41 +42,50 @@ cd iAgent
 # Install dependencies
 npm install
 
-# Start both frontend and backend
-npm run dev
+# Start the frontend (React app with Vite)
+npx nx serve @iagent/frontend
+# The app will be available at: http://localhost:4200/iAgent/
 
-# Or start individually
-npm run dev:frontend  # http://localhost:4200
-npm run dev:backend   # http://localhost:3000
+# Start the backend (NestJS API)
+npx nx serve @iagent/backend
+# The API will be available at: http://localhost:3000
+
+# Or use npm scripts if available
+npm run dev:frontend  # Alternative command
+npm run dev:backend   # Alternative command
 ```
 
 ### Available Scripts
 
 ```bash
-# Development
-npm run dev              # Start both apps
-npm run dev:frontend     # Start React app only
-npm run dev:backend      # Start NestJS API only
+# Development (using Nx)
+npx nx serve @iagent/frontend   # Start React app at http://localhost:4200/iAgent/
+npx nx serve @iagent/backend    # Start NestJS API at http://localhost:3000
 
-# Building
-npm run build            # Build both apps
-npm run build:frontend   # Build React app
-npm run build:backend    # Build NestJS API
+# Building (using Nx)
+npx nx build @iagent/frontend   # Build React app
+npx nx build @iagent/backend    # Build NestJS API
+npx nx run-many -t build        # Build all projects
 
-# Testing
-npm run test             # Test both apps
-npm run test:frontend    # Test React app
-npm run test:backend     # Test NestJS API
+# Testing (using Nx)
+npx nx test @iagent/frontend    # Test React app
+npx nx test @iagent/backend     # Test NestJS API
+npx nx run-many -t test         # Test all projects
 
-# Linting
-npm run lint             # Lint both apps
-npm run lint:frontend    # Lint React app
-npm run lint:backend     # Lint NestJS API
+# Linting (using Nx)
+npx nx lint @iagent/frontend    # Lint React app
+npx nx lint @iagent/backend     # Lint NestJS API
+npx nx run-many -t lint         # Lint all projects
 
 # Utilities
-npm run clean            # Clean workspace
-npm run graph            # View dependency graph
-npm run upgrade          # Upgrade all packages
+npx nx graph                    # View dependency graph
+npx nx reset                    # Reset Nx cache
+npx nx affected:build           # Build affected projects
+npx nx affected:test            # Test affected projects
+
+# Legacy npm scripts (if configured)
+npm run dev:frontend     # Alternative to npx nx serve @iagent/frontend
+npm run dev:backend      # Alternative to npx nx serve @iagent/backend
 ```
 
 ## 🛠️ Tech Stack
