@@ -297,9 +297,7 @@ export function InputArea({
   // }, [examples, animatedPlaceholder, value]);
 
   // Show debug info in placeholder for testing
-  const debugPlaceholder = animatedPlaceholder 
-    ? `${animatedPlaceholder}` 
-    : `[Debug: ${examples.length} examples, active: ${!value.trim() && examples.length > 0}]`;
+  const debugPlaceholder = animatedPlaceholder  ?? ''
 
   useEffect(() => {
     if (textareaRef.current && !disabled) {
