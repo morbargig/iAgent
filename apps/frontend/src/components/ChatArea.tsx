@@ -711,10 +711,24 @@ export function ChatArea({ messages, isLoading, onToggleSidebar, isDarkMode, onT
   const { t } = useTranslation();
 
   const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ 
-      behavior: 'smooth',
-      block: 'end'
-    });
+    if (messagesEndRef.current) {
+      // Check if we're currently generating text
+      const isGenerating = isLoading || messages.some(m => m.isStreaming);
+      
+      if (isGenerating) {
+        // When generating, scroll with some space above input area
+        messagesEndRef.current.scrollIntoView({ 
+          behavior: 'smooth',
+          block: 'start'
+        });
+      } else {
+        // Normal scroll behavior when not generating
+        messagesEndRef.current.scrollIntoView({ 
+          behavior: 'smooth',
+          block: 'end'
+        });
+      }
+    }
   };
 
   useEffect(() => {
@@ -766,11 +780,11 @@ export function ChatArea({ messages, isLoading, onToggleSidebar, isDarkMode, onT
           scrollBehavior: 'smooth',
           backgroundColor: 'inherit',
           padding: '32px 16px',
-          paddingBottom: `${inputAreaHeight + 20}px`, // Dynamic padding based on input area height
+          paddingBottom: `${inputAreaHeight + (isLoading || messages.some(m => m.isStreaming) ? 100 : 20)}px`, // Dynamic padding - lighter offset when generating
           '@media (max-width: 600px)': {
             WebkitOverflowScrolling: 'touch',
             padding: '16px 8px',
-            paddingBottom: `${inputAreaHeight + 10}px`, // Smaller padding on mobile
+            paddingBottom: `${inputAreaHeight + (isLoading || messages.some(m => m.isStreaming) ? 80 : 10)}px`, // Dynamic mobile padding - lighter
           }
         }}
       >
