@@ -191,6 +191,24 @@ export function InputArea({
   // Track which tab's values are currently committed/active for display
   const [committedTab, setCommittedTab] = useState(initialSettings.committedTab);
 
+  // Tool toggles state with localStorage persistence
+  const [enabledTools, setEnabledTools] = useState<{ [key: string]: boolean }>(() => {
+    try {
+      const saved = localStorage.getItem('enabledTools');
+      return saved ? JSON.parse(saved) : {
+        'tool-x': false,
+        'tool-y': false,
+        'tool-z': false
+      };
+    } catch {
+      return {
+        'tool-x': false,
+        'tool-y': false,
+        'tool-z': false
+      };
+    }
+  });
+
   // Save selected flags to localStorage with debouncing
   useEffect(() => {
     const timeoutId = setTimeout(() => {
@@ -203,6 +221,19 @@ export function InputArea({
 
     return () => clearTimeout(timeoutId);
   }, [selectedFlags]);
+
+  // Save enabled tools to localStorage with debouncing
+  useEffect(() => {
+    const timeoutId = setTimeout(() => {
+      try {
+        localStorage.setItem('enabledTools', JSON.stringify(enabledTools));
+      } catch (error) {
+        console.warn('Failed to save enabled tools to localStorage:', error);
+      }
+    }, 300);
+
+    return () => clearTimeout(timeoutId);
+  }, [enabledTools]);
 
   // Save all date range settings to single localStorage key with debouncing - Fixed to prevent infinite loops
   useEffect(() => {
@@ -482,6 +513,14 @@ export function InputArea({
     } catch (error) {
       console.warn('Failed to clear date picker localStorage:', error);
     }
+  };
+
+  // Tool toggle handler
+  const handleToolToggle = (toolId: string) => {
+    setEnabledTools(prev => ({
+      ...prev,
+      [toolId]: !prev[toolId]
+    }));
   };
 
   return (
@@ -776,32 +815,54 @@ export function InputArea({
                   gap: '6px', 
                   alignItems: 'center',
                 }}>
-                  {toolsList.map((tool) => (
-                    <Box
-                      key={tool.id}
-                      component="button"
-                      sx={{
-                        backgroundColor: 'transparent',
-                        border: `1px solid ${isDarkMode ? '#565869' : '#d1d5db'}`,
-                        borderRadius: '20px',
-                        padding: '6px 12px',
-                        fontSize: '13px',
-                        fontWeight: 500,
-                        color: isDarkMode ? '#ececf1' : '#374151',
-                        cursor: 'pointer',
-                        transition: 'all 0.2s ease',
-                        direction: 'rtl',
-                        fontFamily: 'inherit',
-                        '&:hover': {
-                          backgroundColor: isDarkMode ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.05)',
-                          borderColor: isDarkMode ? '#6b6d7a' : '#b8bcc4',
-                          transform: 'translateY(-1px)',
-                        },
-                      }}
-                    >
-                      {t(tool.nameKey)}
-                    </Box>
-                  ))}
+                  {toolsList.map((tool) => {
+                    const isEnabled = enabledTools[tool.id];
+                    return (
+                      <Box
+                        key={tool.id}
+                        component="button"
+                        onClick={() => handleToolToggle(tool.id)}
+                        sx={{
+                          backgroundColor: isEnabled 
+                            ? (isDarkMode ? '#2563eb' : '#3b82f6')
+                            : 'transparent',
+                          border: `1px solid ${
+                            isEnabled 
+                              ? (isDarkMode ? '#2563eb' : '#3b82f6')
+                              : (isDarkMode ? '#565869' : '#d1d5db')
+                          }`,
+                          borderRadius: '20px',
+                          padding: '6px 12px',
+                          fontSize: '13px',
+                          fontWeight: 500,
+                          color: isEnabled 
+                            ? '#ffffff' 
+                            : (isDarkMode ? '#ececf1' : '#374151'),
+                          cursor: 'pointer',
+                          transition: 'all 0.2s ease',
+                          direction: 'rtl',
+                          fontFamily: 'inherit',
+                          '&:hover': {
+                            backgroundColor: isEnabled
+                              ? (isDarkMode ? '#1d4ed8' : '#2563eb')
+                              : (isDarkMode ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.05)'),
+                            borderColor: isEnabled
+                              ? (isDarkMode ? '#1d4ed8' : '#2563eb')
+                              : (isDarkMode ? '#6b6d7a' : '#b8bcc4'),
+                            transform: 'translateY(-1px)',
+                            boxShadow: isEnabled 
+                              ? '0 2px 8px rgba(59, 130, 246, 0.3)'
+                              : 'none',
+                          },
+                          '&:active': {
+                            transform: 'scale(0.95)',
+                          },
+                        }}
+                      >
+                        {t(tool.nameKey)}
+                      </Box>
+                    );
+                  })}
                 </Box>
 
                 {/* Additional Control Buttons */}
