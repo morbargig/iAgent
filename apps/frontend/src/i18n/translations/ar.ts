@@ -93,6 +93,7 @@ const translations: Translation = {
     goodResponse: 'استجابة جيدة',
     badResponse: 'استجابة سيئة',
     regenerateResponse: 'إعادة توليد الاستجابة',
+    generationStopped: 'توقف التوليد',
   },
   sidebar: {
     newChat: 'محادثة جديدة',

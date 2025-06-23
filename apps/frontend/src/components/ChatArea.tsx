@@ -316,7 +316,7 @@ const MessageBubble = ({ message, isDarkMode, theme, onRefreshMessage, onEditMes
                 display: 'inline-block',
                 width: '2px',
                 height: '1.2em',
-                // backgroundColor: theme.palette.primary.main,
+                backgroundColor: theme.palette.primary.main,
                 marginInlineStart: '4px',
                 borderRadius: '1px',
                 animation: 'typingBlink 1s infinite',
@@ -326,6 +326,43 @@ const MessageBubble = ({ message, isDarkMode, theme, onRefreshMessage, onEditMes
                 },
               }}
             />
+          )}
+          
+          {message.isInterrupted && (
+            <Box
+              component="span"
+              sx={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '4px',
+                marginInlineStart: '8px',
+                color: theme.palette.warning.main,
+                fontSize: '12px',
+                fontStyle: 'italic',
+              }}
+            >
+              <Box
+                component="span"
+                sx={{
+                  display: 'inline-block',
+                  width: '2px',
+                  height: '1em',
+                  backgroundColor: theme.palette.warning.main,
+                  borderRadius: '1px',
+                }}
+              />
+              <Typography
+                component="span"
+                variant="caption"
+                sx={{
+                  color: theme.palette.warning.main,
+                  fontSize: '11px',
+                  fontStyle: 'italic',
+                }}
+              >
+                {t('message.generationStopped')}
+              </Typography>
+            </Box>
           )}
         </Box>
 
@@ -471,6 +508,43 @@ const MessageBubble = ({ message, isDarkMode, theme, onRefreshMessage, onEditMes
               },
             }}
           />
+        )}
+        
+        {message.isInterrupted && (
+          <Box
+            component="span"
+            sx={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '4px',
+              marginInlineStart: '8px',
+              color: theme.palette.warning.main,
+              fontSize: '12px',
+              fontStyle: 'italic',
+            }}
+          >
+            <Box
+              component="span"
+              sx={{
+                display: 'inline-block',
+                width: '2px',
+                height: '1em',
+                backgroundColor: theme.palette.warning.main,
+                borderRadius: '1px',
+              }}
+            />
+            <Typography
+              component="span"
+              variant="caption"
+              sx={{
+                color: theme.palette.warning.main,
+                fontSize: '11px',
+                fontStyle: 'italic',
+              }}
+            >
+              {t('message.generationStopped')}
+            </Typography>
+          </Box>
         )}
       </Box>
 

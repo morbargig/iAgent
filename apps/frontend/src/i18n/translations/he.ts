@@ -93,6 +93,7 @@ const translations: Translation = {
     goodResponse: 'תגובה טובה',
     badResponse: 'תגובה גרועה',
     regenerateResponse: 'צור תגובה מחדש',
+    generationStopped: 'הפקה הופסקה',
   },
   sidebar: {
     newChat: 'צ\'אט חדש',

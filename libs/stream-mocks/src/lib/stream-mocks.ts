@@ -8,6 +8,7 @@ export interface Message {
   content: string;
   timestamp: Date;
   isStreaming?: boolean;
+  isInterrupted?: boolean; // Add flag to indicate if generation was stopped in the middle
   metadata?: {
     index?: number;
     total_tokens?: number;
@@ -443,11 +444,12 @@ export function createStreamingMessage(role: 'user' | 'assistant'): Message {
   return createMessage(role, '', true);
 }
 
-export function updateMessageContent(message: Message, content: string, isStreaming = false): Message {
+export function updateMessageContent(message: Message, content: string, isStreaming = false, isInterrupted = false): Message {
   return {
     ...message,
     content,
-    isStreaming
+    isStreaming,
+    isInterrupted
   };
 }
 

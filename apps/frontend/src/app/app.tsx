@@ -295,6 +295,38 @@ const App = () => {
   const streamingClient = useRef(new StreamingClient());
   const sidebarRef = useRef<HTMLDivElement>(null);
   const [inputAreaHeight, setInputAreaHeight] = useState(80); // Track input area height
+  
+  // Stop generation function
+  const stopGeneration = () => {
+    if (streamingClient.current) {
+      streamingClient.current.abort();
+      
+      // Mark the current streaming message as interrupted
+      if (streamingConversationId) {
+        setConversations(prev =>
+          prev.map(conv => {
+            if (conv.id === streamingConversationId) {
+              const lastMessage = conv.messages[conv.messages.length - 1];
+              if (lastMessage && lastMessage.isStreaming) {
+                return {
+                  ...conv,
+                  messages: [
+                    ...conv.messages.slice(0, -1),
+                    updateMessageContent(lastMessage, lastMessage.content, false, true), // Mark as interrupted
+                  ],
+                  lastUpdated: new Date(),
+                };
+              }
+            }
+            return conv;
+          })
+        );
+      }
+      
+      setIsLoading(false);
+      setStreamingConversationId(null);
+    }
+  };
 
 
   const currentConversation = useMemo(() => {
@@ -466,7 +498,8 @@ const App = () => {
           messages: conv.messages.map((msg: any) => ({
             ...msg,
             id: msg.id.includes('-') ? msg.id : generateUniqueId(), // Ensure unique message IDs
-            timestamp: new Date(msg.timestamp)
+            timestamp: new Date(msg.timestamp),
+            isStreaming: false // Reset streaming state on page load
           }))
         }));
         
@@ -910,14 +943,7 @@ const App = () => {
               value={input}
               onChange={setInput}
               onSend={() => handleSendMessage(input)}
-              onStop={() => {
-                if (currentAbortController) {
-                  currentAbortController.abort();
-                  setCurrentAbortController(null);
-                }
-                setIsLoading(false);
-                setStreamingConversationId(null);
-              }}
+              onStop={stopGeneration}
               disabled={isLoading}
               isLoading={isLoading}
               isDarkMode={isDarkMode}

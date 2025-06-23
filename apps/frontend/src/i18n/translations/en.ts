@@ -93,6 +93,7 @@ const translations: Translation = {
     goodResponse: 'Good response',
     badResponse: 'Bad response',
     regenerateResponse: 'Regenerate response',
+    generationStopped: 'Generation stopped',
   },
   sidebar: {
     newChat: 'New chat',
