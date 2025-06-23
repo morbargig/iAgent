@@ -790,16 +790,24 @@ export function ChatArea({ messages, isLoading, onToggleSidebar, isDarkMode, onT
       const isGenerating = isLoading || messages.some(m => m.isStreaming);
       
       if (isGenerating) {
-        // When generating, scroll with some space above input area
-        messagesEndRef.current.scrollIntoView({ 
-          behavior: 'smooth',
-          block: 'start'
+        // Smoother scrolling during generation with requestAnimationFrame
+        requestAnimationFrame(() => {
+          if (messagesEndRef.current) {
+            messagesEndRef.current.scrollIntoView({ 
+              behavior: 'smooth',
+              block: 'start'
+            });
+          }
         });
       } else {
-        // Normal scroll behavior when not generating
-        messagesEndRef.current.scrollIntoView({ 
-          behavior: 'smooth',
-          block: 'end'
+        // Scroll with same offset as generation to avoid textarea overlap
+        requestAnimationFrame(() => {
+          if (messagesEndRef.current) {
+            messagesEndRef.current.scrollIntoView({ 
+              behavior: 'smooth',
+              block: 'start'
+            });
+          }
         });
       }
     }
