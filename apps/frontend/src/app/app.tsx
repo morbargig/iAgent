@@ -307,6 +307,7 @@ const App = () => {
     setIsLoading(true);
     setStreamingConversationId(currentConversation?.id || null);
     setError(null);
+    setInput(''); // Clear input immediately when sending
 
     try {
       const userMessage = createMessage('user', content);
@@ -419,7 +420,6 @@ const App = () => {
         translation
       );
 
-      setInput('');
     } catch (error) {
       setError(error instanceof Error ? error.message : 'An unknown error occurred');
       setIsLoading(false);
