@@ -66,6 +66,7 @@ interface InputAreaProps {
   isEditing?: boolean;
   sidebarOpen?: boolean; // Add sidebar state
   sidebarRef?: React.RefObject<HTMLDivElement | null>; // Add sidebar ref for timing
+  sidebarWidth?: number; // Dynamic sidebar width
   onHeightChange?: (height: number) => void; // Callback for height changes
   // Control buttons
   onVoiceInput?: () => void; // Voice input callback
@@ -117,6 +118,7 @@ export function InputArea({
   isDarkMode,
   sidebarOpen = false,
   sidebarRef,
+  sidebarWidth = 250,
   onHeightChange,
   // Control buttons
   onVoiceInput,
@@ -130,7 +132,6 @@ export function InputArea({
   const inputContainerRef = useRef<HTMLDivElement>(null);
   const theme = useTheme();
   const [isFocused, setIsFocused] = useState(false);
-  const [sidebarWidth, setSidebarWidth] = useState(0);
   const translationContext = useTranslation();
   const { t } = translationContext;
 
@@ -334,17 +335,8 @@ export function InputArea({
   const onHeightChangeRef = useRef(onHeightChange);
   onHeightChangeRef.current = onHeightChange;
 
-  // Calculate sidebar width with immediate response for both open and close
-  const updateSidebarWidth = useCallback(() => {
-    if (sidebarOpen) {
-      // Always immediately set to standard width for instant opening response
-      // Don't wait for measurements during opening animation
-      setSidebarWidth(250);
-    } else {
-      // Immediately set to 0 for instant close response
-      setSidebarWidth(0);
-    }
-  }, [sidebarOpen]);
+  // Calculate the effective sidebar width for positioning
+  const effectiveSidebarWidth = sidebarOpen ? sidebarWidth : 0;
 
   // Auto-resize textarea - simplified to prevent infinite loops
   useEffect(() => {
@@ -359,31 +351,6 @@ export function InputArea({
       }
     }
   }, [value]);
-
-  // Update sidebar width immediately when sidebarOpen changes
-  useEffect(() => {
-    updateSidebarWidth();
-  }, [sidebarOpen, updateSidebarWidth]);
-
-  // Optional: Listen for sidebar transition end events for any fine-tuning
-  useEffect(() => {
-    const sidebarElement = sidebarRef?.current;
-    if (sidebarElement && sidebarOpen) {
-      const handleTransitionEnd = () => {
-        // Only perform measurement adjustment after opening is complete
-        const actualWidth = sidebarElement.offsetWidth;
-        if (actualWidth > 0 && actualWidth !== 250) {
-          setSidebarWidth(actualWidth);
-        }
-      };
-      
-      sidebarElement.addEventListener('transitionend', handleTransitionEnd);
-      
-      return () => {
-        sidebarElement.removeEventListener('transitionend', handleTransitionEnd);
-      };
-    }
-  }, [sidebarRef, sidebarOpen]);
 
   // Measure input area height on window resize
   useEffect(() => {
@@ -551,7 +518,7 @@ export function InputArea({
         sx={{
           position: 'fixed',
           bottom: 0,
-          insetInlineStart: sidebarWidth > 0 ? `${sidebarWidth}px` : '0',
+          insetInlineStart: effectiveSidebarWidth > 0 ? `${effectiveSidebarWidth}px` : '0',
           insetInlineEnd: 0,
           zIndex: 10,
           background: isDarkMode 

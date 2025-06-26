@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback, useRef, useEffect } from 'react';
 import {
   Box,
   Typography,
@@ -42,6 +42,7 @@ interface SidebarProps {
   isDarkMode: boolean;
   onToggleTheme: () => void;
   streamingConversationId?: string | null;
+  onWidthChange?: (width: number) => void;
 }
 
 // iagent-inspired Sidebar - Clean, minimal navigation
@@ -58,6 +59,7 @@ export const Sidebar = React.forwardRef<HTMLDivElement, SidebarProps>(({
   isDarkMode,
   onToggleTheme,
   streamingConversationId,
+  onWidthChange,
 }, ref) => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
@@ -66,6 +68,18 @@ export const Sidebar = React.forwardRef<HTMLDivElement, SidebarProps>(({
   // State for editing conversation names
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editingTitle, setEditingTitle] = useState<string>('');
+  
+  // State for resizable width
+  const [sidebarWidth, setSidebarWidth] = useState<number>(() => {
+    try {
+      const saved = localStorage.getItem('sidebar-width');
+      return saved ? parseInt(saved, 10) : 250;
+    } catch {
+      return 250;
+    }
+  });
+  const [isResizing, setIsResizing] = useState(false);
+  const resizeRef = useRef<HTMLDivElement>(null);
 
   const handleStartEdit = (conversation: Conversation) => {
     setEditingId(conversation.id);
@@ -93,19 +107,75 @@ export const Sidebar = React.forwardRef<HTMLDivElement, SidebarProps>(({
     }
   };
 
+  // Resize functionality
+  const handleMouseDown = useCallback((e: React.MouseEvent) => {
+    e.preventDefault();
+    setIsResizing(true);
+  }, []);
+
+  const handleMouseMove = useCallback((e: MouseEvent) => {
+    if (!isResizing) return;
+    
+    const newWidth = e.clientX;
+    const minWidth = 200;
+    const maxWidth = 400;
+    
+    if (newWidth >= minWidth && newWidth <= maxWidth) {
+      setSidebarWidth(newWidth);
+      if (onWidthChange) {
+        onWidthChange(newWidth);
+      }
+    }
+  }, [isResizing, onWidthChange]);
+
+  const handleMouseUp = useCallback(() => {
+    setIsResizing(false);
+    // Save to localStorage
+    try {
+      localStorage.setItem('sidebar-width', sidebarWidth.toString());
+    } catch (error) {
+      console.warn('Failed to save sidebar width to localStorage:', error);
+    }
+  }, [sidebarWidth]);
+
+  // Add global mouse event listeners for resize
+  useEffect(() => {
+    if (isResizing) {
+      document.addEventListener('mousemove', handleMouseMove);
+      document.addEventListener('mouseup', handleMouseUp);
+      document.body.style.cursor = 'col-resize';
+      document.body.style.userSelect = 'none';
+      
+      return () => {
+        document.removeEventListener('mousemove', handleMouseMove);
+        document.removeEventListener('mouseup', handleMouseUp);
+        document.body.style.cursor = '';
+        document.body.style.userSelect = '';
+      };
+    }
+  }, [isResizing, handleMouseMove, handleMouseUp]);
+
+  // Notify parent of width changes
+  useEffect(() => {
+    if (onWidthChange && open) {
+      onWidthChange(sidebarWidth);
+    }
+  }, [sidebarWidth, onWidthChange, open]);
+
   // Sidebar Content - Clean, functional design
   const sidebarContent = (
     <Box
       id="iagent-sidebar-content"
       className="iagent-sidebar-container"
       sx={{
-        width: 250,
+        width: sidebarWidth,
         height: '100vh',
         backgroundColor: isDarkMode ? '#171717' : '#f9fafb', // Clean, muted background
         display: 'flex',
         flexDirection: 'column',
         borderInlineEnd: isDarkMode ? 'none' : `1px solid ${theme.palette.divider}`,
         overflow: 'hidden',
+        position: 'relative',
       }}
     >
       {/* Sidebar Header */}
@@ -489,6 +559,33 @@ export const Sidebar = React.forwardRef<HTMLDivElement, SidebarProps>(({
           {isDarkMode ? t('theme.light') : t('theme.dark')}
         </Button>
       </Box>
+
+      {/* Resize Handle */}
+      {!isMobile && (
+        <Box
+          ref={resizeRef}
+          onMouseDown={handleMouseDown}
+          sx={{
+            position: 'absolute',
+            top: 0,
+            insetInlineEnd: 0,
+            width: '4px',
+            height: '100%',
+            cursor: 'col-resize',
+            backgroundColor: 'transparent',
+            transition: 'background-color 150ms ease',
+            zIndex: 10,
+            '&:hover': {
+              backgroundColor: theme.palette.primary.main,
+              opacity: 0.5,
+            },
+            '&:active': {
+              backgroundColor: theme.palette.primary.main,
+              opacity: 0.8,
+            },
+          }}
+        />
+      )}
     </Box>
   );
 
@@ -530,10 +627,10 @@ export const Sidebar = React.forwardRef<HTMLDivElement, SidebarProps>(({
       className="iagent-sidebar-wrapper"
       ref={ref}
       sx={{
-        width: open ? 250 : 0,
+        width: open ? sidebarWidth : 0,
         flexShrink: 0,
         overflow: 'hidden',
-        transition: 'width 300ms cubic-bezier(0.4, 0, 0.2, 1)',
+        transition: isResizing ? 'none' : 'width 300ms cubic-bezier(0.4, 0, 0.2, 1)',
         height: '100vh',
       }}
     >

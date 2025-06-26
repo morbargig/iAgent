@@ -297,6 +297,7 @@ const App = () => {
   const streamingClient = useRef(new StreamingClient());
   const sidebarRef = useRef<HTMLDivElement>(null);
   const [inputAreaHeight, setInputAreaHeight] = useState(80); // Track input area height
+  const [sidebarWidth, setSidebarWidth] = useState(250); // Track sidebar width
   
   // Authentication state
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -640,6 +641,11 @@ const App = () => {
     setIsSidebarOpen(newState);
     // Force immediate localStorage update for synchronization
     localStorage.setItem('chatbot-sidebar-open', newState.toString());
+  };
+
+  // Handle sidebar width changes
+  const handleSidebarWidthChange = (width: number) => {
+    setSidebarWidth(width);
   };
 
   const createNewConversation = () => {
@@ -995,6 +1001,7 @@ const App = () => {
             isDarkMode={isDarkMode}
             onToggleTheme={toggleTheme}
             streamingConversationId={streamingConversationId}
+            onWidthChange={handleSidebarWidthChange}
           />
           
           {/* Conversation Area Container */}
@@ -1037,6 +1044,7 @@ const App = () => {
               isDarkMode={isDarkMode}
               sidebarOpen={isSidebarOpen}
               sidebarRef={sidebarRef}
+              sidebarWidth={sidebarWidth}
               onHeightChange={setInputAreaHeight}
               // Control buttons
               onVoiceInput={handleVoiceInput}
