@@ -230,7 +230,7 @@ export function InputArea({
   // Tool schemas and settings dialog
   const { toolSchemas, loading: toolSchemasLoading } = useToolSchemas();
   const [toolSettingsOpen, setToolSettingsOpen] = useState(false);
-  const [shouldTriggerRing, setShouldTriggerRing] = useState(false);
+
 
   // Save selected flags to localStorage with debouncing
   useEffect(() => {
@@ -386,21 +386,6 @@ export function InputArea({
     if (event.key === 'Enter' && !event.shiftKey) {
       event.preventDefault();
       
-      // If tools need configuration, trigger ring animation
-      if (needsToolConfiguration && value.trim()) {
-        setShouldTriggerRing(true);
-        setTimeout(() => setShouldTriggerRing(false), 1500);
-        setToolSettingsOpen(true);
-        
-        // Show user-friendly alert
-        if (typeof window !== 'undefined') {
-          setTimeout(() => {
-            alert(t('input.configureTools'));
-          }, 100);
-        }
-        return;
-      }
-      
       if (value.trim() && !disabled && !isLoading) {
         handleSubmit();
       }
@@ -411,22 +396,7 @@ export function InputArea({
     if (isLoading && onStop) {
       onStop();
     } else if (value.trim() && !disabled) {
-      // Check if there are unconfigured tools before submitting
-      if (needsToolConfiguration) {
-        // Trigger ring animation and open settings dialog
-        setShouldTriggerRing(true);
-        setTimeout(() => setShouldTriggerRing(false), 1500);
-        setToolSettingsOpen(true);
-        
-        // Show user-friendly alert
-        if (typeof window !== 'undefined') {
-          // This ensures browser compatibility
-          setTimeout(() => {
-            alert(t('input.configureTools'));
-          }, 100);
-        }
-        return;
-      }
+      // Since tools are now non-required, we can proceed with submission
 
       // Prepare date filter data
       const dateFilter: DateFilter = {
@@ -450,10 +420,28 @@ export function InputArea({
     }
   };
 
-  // Check if there are unconfigured tools that need attention
-  const needsToolConfiguration = hasUnconfiguredTools(toolSchemas);
+
   
-  const canSend = value.trim() && !disabled && !needsToolConfiguration;
+  // Check if we should show the settings icon
+  const shouldShowSettingsIcon = React.useMemo(() => {
+    // Hide if no tools are selected
+    const hasEnabledTools = Object.values(enabledTools).some(enabled => enabled);
+    if (!hasEnabledTools) return false;
+    
+    // Hide if none of the enabled tools have configuration fields
+    const enabledToolsWithConfig = toolSchemas.filter(tool => 
+      enabledTools[tool.id] && 
+      tool.requiresConfiguration && 
+      Object.keys(tool.configurationFields || {}).length > 0
+    );
+    
+    return enabledToolsWithConfig.length > 0;
+  }, [enabledTools, toolSchemas]);
+  
+  // Check if any tools are enabled
+  const hasEnabledTools = Object.values(enabledTools).some(enabled => enabled);
+  
+  const canSend = value.trim() && !disabled;
   const showStopButton = isLoading;
   
   // Detect text direction for proper alignment - simplified to prevent infinite loops
@@ -719,16 +707,9 @@ export function InputArea({
               onKeyDown={handleKeyDown}
               onFocus={() => setIsFocused(true)}
               onBlur={() => setIsFocused(false)}
-              placeholder={needsToolConfiguration ? t('input.disabledDueToConfig') : debugPlaceholder}
-              disabled={disabled || needsToolConfiguration}
-              style={{
-                ...textareaStyle,
-                opacity: needsToolConfiguration ? 0.6 : 1,
-                cursor: needsToolConfiguration ? 'not-allowed' : 'text',
-                color: needsToolConfiguration 
-                  ? (isDarkMode ? '#ff9800' : '#f57c00')
-                  : textareaStyle.color,
-              }}
+                              placeholder={debugPlaceholder}
+                disabled={disabled}
+                style={textareaStyle}
             />
 
             {/* Input Controls Row */}
@@ -904,66 +885,30 @@ export function InputArea({
                   </Typography>
                 </Box>
 
-                {/* Settings Button */}
-                <IconButton
-                  id="iagent-settings-button"
-                  className="iagent-settings-control"
-                                      onClick={handleToolSettingsOpen}
-                    title={needsToolConfiguration ? t('input.settingsRequired') : t('tools.settings.title')}
+                {/* Settings Button - Only show when tools with config fields are enabled */}
+                {shouldShowSettingsIcon && (
+                  <IconButton
+                    id="iagent-settings-button"
+                    className="iagent-settings-control"
+                    onClick={handleToolSettingsOpen}
+                    title={t('tools.settings.title')}
                     sx={{
-                      backgroundColor: needsToolConfiguration 
-                        ? '#ff9800' 
-                        : (isDarkMode ? '#565869' : '#e5e7eb'),
-                      border: `1px solid ${needsToolConfiguration 
-                        ? '#ff9800' 
-                        : (isDarkMode ? '#6b6d7a' : '#d1d5db')}`,
+                      backgroundColor: isDarkMode ? '#565869' : '#e5e7eb',
+                      border: `1px solid ${isDarkMode ? '#6b6d7a' : '#d1d5db'}`,
                       borderRadius: '20px',
                       width: '36px',
                       height: '36px',
-                      color: needsToolConfiguration 
-                        ? '#ffffff' 
-                        : (isDarkMode ? '#ececf1' : '#374151'),
+                      color: isDarkMode ? '#ececf1' : '#374151',
                       transition: 'all 0.2s ease',
-                      position: 'relative',
-                                             animation: (needsToolConfiguration || shouldTriggerRing) ? 'settingsRing 1.5s ease-in-out infinite' : 'none',
-                      '@keyframes settingsRing': {
-                        '0%': {
-                          boxShadow: '0 0 0 0 rgba(255, 152, 0, 0.8)',
-                          transform: 'scale(1)',
-                        },
-                        '50%': {
-                          boxShadow: '0 0 0 8px rgba(255, 152, 0, 0.2)',
-                          transform: 'scale(1.1)',
-                        },
-                        '100%': {
-                          boxShadow: '0 0 0 0 rgba(255, 152, 0, 0)',
-                          transform: 'scale(1)',
-                        },
-                      },
                       '&:hover': {
-                        backgroundColor: needsToolConfiguration 
-                          ? '#f57c00' 
-                          : (isDarkMode ? '#6b6d7a' : '#d1d5db'),
-                        transform: needsToolConfiguration ? 'scale(1.15)' : 'scale(1.05)',
+                        backgroundColor: isDarkMode ? '#6b6d7a' : '#d1d5db',
+                        transform: 'scale(1.05)',
                       },
                     }}
-                >
-                  <SettingsIcon sx={{ fontSize: '18px' }} />
-                  {needsToolConfiguration && (
-                    <Box
-                      sx={{
-                        position: 'absolute',
-                        top: -2,
-                        right: -2,
-                        width: 8,
-                        height: 8,
-                        borderRadius: '50%',
-                        backgroundColor: '#f44336',
-                        border: '1px solid #ffffff',
-                      }}
-                    />
-                  )}
-                </IconButton>
+                  >
+                    <SettingsIcon sx={{ fontSize: '18px' }} />
+                  </IconButton>
+                )}
               </Box>
 
               {/* Right Control Group */}

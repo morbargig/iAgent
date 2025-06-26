@@ -58,19 +58,11 @@ export function useToolToggles() {
   const isToolConfigured = (toolId: string, toolSchema?: any): boolean => {
     const config = toolConfigurations[toolId];
     
+    // If tool is not enabled or doesn't require configuration, it's considered configured
     if (!config?.enabled || !toolSchema?.requiresConfiguration) return true;
     
-    // Check if required fields are configured
-    if (toolSchema.configurationFields?.pages?.required && 
-        (!config.parameters.pages?.selectedPages?.length)) {
-      return false;
-    }
-    
-    if (toolSchema.configurationFields?.requiredWords?.required && 
-        (!config.parameters.requiredWords?.length)) {
-      return false;
-    }
-    
+    // Since we made all fields non-required, tools are always considered configured
+    // This removes the blocking behavior while keeping the settings available
     return true;
   };
 
@@ -84,7 +76,9 @@ export function useToolToggles() {
   };
 
   const hasUnconfiguredTools = (toolSchemas: any[]): boolean => {
-    return getEnabledToolsRequiringConfig(toolSchemas).length > 0;
+    // Since all fields are now optional, no tools are considered "unconfigured"
+    // This removes blocking behavior while keeping settings available
+    return false;
   };
 
   // Sync with localStorage changes from other tabs

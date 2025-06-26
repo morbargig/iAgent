@@ -38,7 +38,7 @@ export interface ToolConfiguration {
   parameters: {
     pages?: {
       selectedPages: string[];
-      inclusionType: 'include' | 'include_only' | 'exclude';
+      inclusionType?: 'include' | 'include_only' | 'exclude';
     };
     requiredWords?: string[];
     [key: string]: any;
@@ -131,13 +131,13 @@ export const ToolSettingsDialog: React.FC<ToolSettingsDialogProps> = ({
       parameters: {},
     };
     
-    const newConfig = {
+    const newConfig: ToolConfiguration = {
       ...config,
       parameters: {
         ...config.parameters,
         pages: {
           selectedPages: config.parameters.pages?.selectedPages || [],
-          inclusionType,
+          inclusionType: inclusionType || 'include',
         },
       },
     };
@@ -207,12 +207,12 @@ export const ToolSettingsDialog: React.FC<ToolSettingsDialogProps> = ({
     if (!config?.enabled || !tool?.requiresConfiguration) return true;
     
     // Check if required fields are configured
-    if (tool.configurationFields.pages?.required && 
+    if (tool?.configurationFields?.pages?.required && 
         (!config.parameters.pages?.selectedPages?.length)) {
       return false;
     }
     
-    if (tool.configurationFields.requiredWords?.required && 
+    if (tool?.configurationFields?.requiredWords?.required && 
         (!config.parameters.requiredWords?.length)) {
       return false;
     }
@@ -281,8 +281,13 @@ export const ToolSettingsDialog: React.FC<ToolSettingsDialogProps> = ({
             return (
               <Accordion
                 key={tool.id}
-                expanded={expandedTool === tool.id}
-                onChange={(_, isExpanded) => setExpandedTool(isExpanded ? tool.id : null)}
+                expanded={tool.requiresConfiguration && expandedTool === tool.id}
+                onChange={(_, isExpanded) => {
+                  // Only allow expansion for tools that have configuration fields
+                  if (tool.requiresConfiguration) {
+                    setExpandedTool(isExpanded ? tool.id : null);
+                  }
+                }}
                 sx={{
                   mb: 1,
                   border: needsConfig ? `1px solid #ff9800` : `1px solid ${isDarkMode ? '#404040' : '#e0e0e0'}`,
@@ -353,7 +358,7 @@ export const ToolSettingsDialog: React.FC<ToolSettingsDialogProps> = ({
                       <Box sx={{ mb: 3 }}>
                         <Typography variant="subtitle2" sx={{ mb: 1, fontWeight: 500 }}>
                           {t('tools.settings.pages.title')}
-                          {tool.configurationFields.pages.required && (
+                          {tool.configurationFields.pages?.required && (
                             <Typography component="span" sx={{ color: 'error.main', ml: 0.5 }}>*</Typography>
                           )}
                         </Typography>
@@ -373,8 +378,8 @@ export const ToolSettingsDialog: React.FC<ToolSettingsDialogProps> = ({
 
                         <Autocomplete
                           multiple
-                          options={tool.configurationFields.pages.options}
-                          value={tool.configurationFields.pages.options.filter(option => 
+                          options={tool.configurationFields.pages?.options || []}
+                          value={(tool.configurationFields.pages?.options || []).filter(option => 
                             config.parameters.pages?.selectedPages?.includes(option.value)
                           )}
                           onChange={(_, newValue) => 
@@ -386,9 +391,9 @@ export const ToolSettingsDialog: React.FC<ToolSettingsDialogProps> = ({
                             <TextField
                               {...params}
                               placeholder={t('tools.settings.pages.placeholder')}
-                              error={tool.configurationFields.pages.required && !config.parameters.pages?.selectedPages?.length}
+                              error={tool.configurationFields.pages?.required && !config.parameters.pages?.selectedPages?.length}
                               helperText={
-                                tool.configurationFields.pages.required && !config.parameters.pages?.selectedPages?.length
+                                tool.configurationFields.pages?.required && !config.parameters.pages?.selectedPages?.length
                                   ? t('tools.settings.pages.required')
                                   : t('tools.settings.pages.help')
                               }
@@ -413,7 +418,7 @@ export const ToolSettingsDialog: React.FC<ToolSettingsDialogProps> = ({
                       <Box>
                         <Typography variant="subtitle2" sx={{ mb: 1, fontWeight: 500 }}>
                           {t('tools.settings.requiredWords.title')}
-                          {tool.configurationFields.requiredWords.required && (
+                          {tool.configurationFields.requiredWords?.required && (
                             <Typography component="span" sx={{ color: 'error.main', ml: 0.5 }}>*</Typography>
                           )}
                         </Typography>
@@ -421,7 +426,7 @@ export const ToolSettingsDialog: React.FC<ToolSettingsDialogProps> = ({
                         <Box sx={{ display: 'flex', gap: 1, mb: 1 }}>
                           <TextField
                             size="small"
-                            placeholder={tool.configurationFields.requiredWords.placeholder}
+                            placeholder={tool.configurationFields.requiredWords?.placeholder}
                             value={newWord[tool.id] || ''}
                             onChange={(e) => setNewWord(prev => ({ ...prev, [tool.id]: e.target.value }))}
                             onKeyPress={(e) => {
@@ -431,7 +436,7 @@ export const ToolSettingsDialog: React.FC<ToolSettingsDialogProps> = ({
                               }
                             }}
                             sx={{ flex: 1 }}
-                            error={tool.configurationFields.requiredWords.required && !config.parameters.requiredWords?.length}
+                            error={tool.configurationFields.requiredWords?.required && !config.parameters.requiredWords?.length}
                           />
                           <Button
                             variant="outlined"
@@ -442,7 +447,7 @@ export const ToolSettingsDialog: React.FC<ToolSettingsDialogProps> = ({
                           </Button>
                         </Box>
 
-                        {tool.configurationFields.requiredWords.required && !config.parameters.requiredWords?.length && (
+                        {tool.configurationFields.requiredWords?.required && !config.parameters.requiredWords?.length && (
                           <Typography variant="caption" sx={{ color: 'error.main', display: 'block', mb: 1 }}>
                             {t('tools.settings.requiredWords.required')}
                           </Typography>
