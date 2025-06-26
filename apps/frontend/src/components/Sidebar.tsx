@@ -183,8 +183,8 @@ export const Sidebar = React.forwardRef<HTMLDivElement, SidebarProps>(({
         id="iagent-sidebar-header"
         className="iagent-sidebar-header-section"
         sx={{ 
-          padding: '16px',
-          flexShrink: 0,
+        padding: '16px',
+        flexShrink: 0,
         }}
       >
         {/* Mobile close button */}
@@ -235,7 +235,7 @@ export const Sidebar = React.forwardRef<HTMLDivElement, SidebarProps>(({
             },
           }}
         >
-          <AddIcon sx={{ fontSize: 16, marginInlineEnd: '8px' }} />
+                      <AddIcon sx={{ fontSize: 16, marginInlineEnd: '8px' }} />
           {t('sidebar.newChat')}
         </Button>
       </Box>
@@ -245,23 +245,23 @@ export const Sidebar = React.forwardRef<HTMLDivElement, SidebarProps>(({
         id="iagent-conversations-list"
         className="iagent-sidebar-conversations"
         sx={{ 
-          flex: 1, 
-          overflow: 'auto',
-          padding: '0 8px',
-          // Clean scrollbar
-          '&::-webkit-scrollbar': {
-            width: '4px',
+        flex: 1, 
+        overflow: 'auto',
+        padding: '0 8px',
+        // Clean scrollbar
+        '&::-webkit-scrollbar': {
+          width: '4px',
+        },
+        '&::-webkit-scrollbar-track': {
+          backgroundColor: 'transparent',
+        },
+        '&::-webkit-scrollbar-thumb': {
+          backgroundColor: theme.palette.divider,
+          borderRadius: '2px',
+          '&:hover': {
+            backgroundColor: theme.palette.text.secondary,
           },
-          '&::-webkit-scrollbar-track': {
-            backgroundColor: 'transparent',
-          },
-          '&::-webkit-scrollbar-thumb': {
-            backgroundColor: theme.palette.divider,
-            borderRadius: '2px',
-            '&:hover': {
-              backgroundColor: theme.palette.text.secondary,
-            },
-          },
+        },
         }}
       >
         {conversations.length === 0 ? (
@@ -524,9 +524,9 @@ export const Sidebar = React.forwardRef<HTMLDivElement, SidebarProps>(({
         id="iagent-sidebar-footer"
         className="iagent-sidebar-footer-section"
         sx={{ 
-          padding: '16px',
-          borderTop: `1px solid ${theme.palette.divider}`,
-          flexShrink: 0,
+        padding: '16px',
+        borderTop: `1px solid ${theme.palette.divider}`,
+        flexShrink: 0,
         }}
       >
         {/* Theme Toggle Button */}

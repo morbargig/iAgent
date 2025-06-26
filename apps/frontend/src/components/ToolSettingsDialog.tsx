@@ -297,7 +297,7 @@ export const ToolSettingsDialog: React.FC<ToolSettingsDialogProps> = ({
                 }}
               >
                 <AccordionSummary 
-                  expandIcon={<ExpandMoreIcon />}
+                  expandIcon={tool.requiresConfiguration && Object.keys(tool.configurationFields || {}).length > 0 ? <ExpandMoreIcon /> : null}
                   sx={{
                     '& .MuiAccordionSummary-content': {
                       alignItems: 'center',

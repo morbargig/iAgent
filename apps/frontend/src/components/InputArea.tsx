@@ -230,6 +230,7 @@ export function InputArea({
   // Tool schemas and settings dialog
   const { toolSchemas, loading: toolSchemasLoading } = useToolSchemas();
   const [toolSettingsOpen, setToolSettingsOpen] = useState(false);
+  const [settingsHintRing, setSettingsHintRing] = useState(false);
 
 
   // Save selected flags to localStorage with debouncing
@@ -560,6 +561,19 @@ export function InputArea({
     };
     
     setToolConfiguration(toolId, newConfig);
+    
+    // If enabling a tool that has configuration fields, show hint ring
+    if (!isCurrentlyEnabled) {
+      const toolSchema = toolSchemas.find(schema => schema.id === toolId);
+      if (toolSchema?.requiresConfiguration && 
+          toolSchema.configurationFields && 
+          Object.keys(toolSchema.configurationFields).length > 0) {
+        
+        // Trigger hint ring animation (2 pulses, 200ms each)
+        setSettingsHintRing(true);
+        setTimeout(() => setSettingsHintRing(false), 800); // 2 pulses × 400ms = 800ms total
+      }
+    }
   };
 
   // Tool settings handlers
@@ -900,6 +914,22 @@ export function InputArea({
                       height: '36px',
                       color: isDarkMode ? '#ececf1' : '#374151',
                       transition: 'all 0.2s ease',
+                      position: 'relative',
+                      animation: settingsHintRing ? 'settingsHintRing 400ms ease-in-out 2' : 'none',
+                      '@keyframes settingsHintRing': {
+                        '0%': {
+                          boxShadow: '0 0 0 0 rgba(59, 130, 246, 0.4)',
+                          transform: 'scale(1)',
+                        },
+                        '50%': {
+                          boxShadow: '0 0 0 6px rgba(59, 130, 246, 0.1)',
+                          transform: 'scale(1.05)',
+                        },
+                        '100%': {
+                          boxShadow: '0 0 0 0 rgba(59, 130, 246, 0)',
+                          transform: 'scale(1)',
+                        },
+                      },
                       '&:hover': {
                         backgroundColor: isDarkMode ? '#6b6d7a' : '#d1d5db',
                         transform: 'scale(1.05)',
