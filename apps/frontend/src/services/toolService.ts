@@ -11,6 +11,7 @@ const mockToolSchemas: ToolSchema[] = [
     configurationFields: {
       pages: {
         required: false,
+        // required: true,
         options: [
           { value: 'news', label: 'News Articles' },
           { value: 'academic', label: 'Academic Papers' },
@@ -73,9 +74,24 @@ export class ToolService {
       return { valid: false, errors: ['Tool not found'] };
     }
 
-    // Since all fields are now non-required, validation always passes
-    // This allows users to use tools with default configurations
-    return { valid: true };
+    const errors: string[] = [];
+
+    // Check if pages field is required and configured
+    if (tool.configurationFields.pages?.required && 
+        (!configuration.parameters?.pages?.selectedPages?.length)) {
+      errors.push('Pages selection is required');
+    }
+
+    // Keywords remain optional as before
+    // if (tool.configurationFields.requiredWords?.required && 
+    //     (!configuration.parameters?.requiredWords?.length)) {
+    //   errors.push('Required words are needed');
+    // }
+
+    return {
+      valid: errors.length === 0,
+      errors: errors.length > 0 ? errors : undefined
+    };
   }
 }
 

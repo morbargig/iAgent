@@ -387,6 +387,12 @@ export function InputArea({
     if (event.key === 'Enter' && !event.shiftKey) {
       event.preventDefault();
       
+      // If tools need configuration, open settings dialog
+      if (needsToolConfiguration && value.trim()) {
+        setToolSettingsOpen(true);
+        return;
+      }
+      
       if (value.trim() && !disabled && !isLoading) {
         handleSubmit();
       }
@@ -397,7 +403,12 @@ export function InputArea({
     if (isLoading && onStop) {
       onStop();
     } else if (value.trim() && !disabled) {
-      // Since tools are now non-required, we can proceed with submission
+      // Check if there are unconfigured tools before submitting
+      if (needsToolConfiguration) {
+        // Open settings dialog instead of submitting
+        setToolSettingsOpen(true);
+        return;
+      }
 
       // Prepare date filter data
       const dateFilter: DateFilter = {
@@ -442,7 +453,10 @@ export function InputArea({
   // Check if any tools are enabled
   const hasEnabledTools = Object.values(enabledTools).some(enabled => enabled);
   
-  const canSend = value.trim() && !disabled;
+  // Check if there are unconfigured tools that need attention
+  const needsToolConfiguration = hasUnconfiguredTools(toolSchemas);
+  
+  const canSend = value.trim() && !disabled && !needsToolConfiguration;
   const showStopButton = isLoading;
   
   // Detect text direction for proper alignment - simplified to prevent infinite loops
@@ -721,9 +735,16 @@ export function InputArea({
               onKeyDown={handleKeyDown}
               onFocus={() => setIsFocused(true)}
               onBlur={() => setIsFocused(false)}
-                              placeholder={debugPlaceholder}
-                disabled={disabled}
-                style={textareaStyle}
+                              placeholder={needsToolConfiguration ? t('input.disabledDueToConfig') : debugPlaceholder}
+                disabled={disabled || needsToolConfiguration}
+                style={{
+                  ...textareaStyle,
+                  opacity: needsToolConfiguration ? 0.6 : 1,
+                  cursor: needsToolConfiguration ? 'not-allowed' : 'text',
+                  color: needsToolConfiguration 
+                    ? (isDarkMode ? '#ff9800' : '#f57c00')
+                    : textareaStyle.color,
+                }}
             />
 
             {/* Input Controls Row */}
@@ -905,35 +926,63 @@ export function InputArea({
                     id="iagent-settings-button"
                     className="iagent-settings-control"
                     onClick={handleToolSettingsOpen}
-                    title={t('tools.settings.title')}
+                    title={needsToolConfiguration ? t('input.settingsRequired') : t('tools.settings.title')}
                     sx={{
-                      backgroundColor: isDarkMode ? '#565869' : '#e5e7eb',
-                      border: `1px solid ${isDarkMode ? '#6b6d7a' : '#d1d5db'}`,
+                      backgroundColor: needsToolConfiguration 
+                        ? (isDarkMode ? '#ff9800' : '#ff9800')
+                        : (isDarkMode ? '#565869' : '#e5e7eb'),
+                      border: `1px solid ${
+                        needsToolConfiguration 
+                          ? '#ff9800' 
+                          : (isDarkMode ? '#6b6d7a' : '#d1d5db')
+                      }`,
                       borderRadius: '20px',
                       width: '36px',
                       height: '36px',
-                      color: isDarkMode ? '#ececf1' : '#374151',
+                      color: needsToolConfiguration 
+                        ? '#ffffff'
+                        : (isDarkMode ? '#ececf1' : '#374151'),
                       transition: 'all 0.2s ease',
                       position: 'relative',
-                      animation: settingsHintRing ? 'settingsHintRing 400ms ease-in-out 2' : 'none',
-                      '@keyframes settingsHintRing': {
-                        '0%': {
-                          boxShadow: '0 0 0 0 rgba(59, 130, 246, 0.4)',
-                          transform: 'scale(1)',
-                        },
-                        '50%': {
-                          boxShadow: '0 0 0 6px rgba(59, 130, 246, 0.1)',
-                          transform: 'scale(1.05)',
-                        },
-                        '100%': {
-                          boxShadow: '0 0 0 0 rgba(59, 130, 246, 0)',
-                          transform: 'scale(1)',
-                        },
-                      },
-                      '&:hover': {
-                        backgroundColor: isDarkMode ? '#6b6d7a' : '#d1d5db',
-                        transform: 'scale(1.05)',
-                      },
+                      animation: (needsToolConfiguration || settingsHintRing) 
+                        ? needsToolConfiguration 
+                          ? 'settingsWarningRing 1.5s ease-in-out infinite'
+                          : 'settingsHintRing 400ms ease-in-out 2'
+                        : 'none',
+                                             '@keyframes settingsHintRing': {
+                         '0%': {
+                           boxShadow: '0 0 0 0 rgba(59, 130, 246, 0.4)',
+                           transform: 'scale(1)',
+                         },
+                         '50%': {
+                           boxShadow: '0 0 0 6px rgba(59, 130, 246, 0.1)',
+                           transform: 'scale(1.05)',
+                         },
+                         '100%': {
+                           boxShadow: '0 0 0 0 rgba(59, 130, 246, 0)',
+                           transform: 'scale(1)',
+                         },
+                       },
+                       '@keyframes settingsWarningRing': {
+                         '0%': {
+                           boxShadow: '0 0 0 0 rgba(255, 152, 0, 0.8)',
+                           transform: 'scale(1)',
+                         },
+                         '50%': {
+                           boxShadow: '0 0 0 8px rgba(255, 152, 0, 0.2)',
+                           transform: 'scale(1.1)',
+                         },
+                         '100%': {
+                           boxShadow: '0 0 0 0 rgba(255, 152, 0, 0)',
+                           transform: 'scale(1)',
+                         },
+                       },
+                                             '&:hover': {
+                         backgroundColor: needsToolConfiguration
+                           ? (isDarkMode ? '#f57c00' : '#f57c00')
+                           : (isDarkMode ? '#6b6d7a' : '#d1d5db'),
+                         transform: needsToolConfiguration ? 'scale(1.15)' : 'scale(1.05)',
+                       },
                     }}
                   >
                     <SettingsIcon sx={{ fontSize: '18px' }} />

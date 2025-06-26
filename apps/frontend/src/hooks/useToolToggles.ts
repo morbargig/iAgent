@@ -61,8 +61,18 @@ export function useToolToggles() {
     // If tool is not enabled or doesn't require configuration, it's considered configured
     if (!config?.enabled || !toolSchema?.requiresConfiguration) return true;
     
-    // Since we made all fields non-required, tools are always considered configured
-    // This removes the blocking behavior while keeping the settings available
+    // Check if required fields are properly configured
+    if (toolSchema.configurationFields?.pages?.required && 
+        (!config.parameters?.pages?.selectedPages?.length)) {
+      return false;
+    }
+    
+    // Keywords remain optional, so we don't check for them
+    // if (toolSchema.configurationFields?.requiredWords?.required && 
+    //     (!config.parameters?.requiredWords?.length)) {
+    //   return false;
+    // }
+    
     return true;
   };
 
@@ -76,9 +86,10 @@ export function useToolToggles() {
   };
 
   const hasUnconfiguredTools = (toolSchemas: any[]): boolean => {
-    // Since all fields are now optional, no tools are considered "unconfigured"
-    // This removes blocking behavior while keeping settings available
-    return false;
+    return toolSchemas.some(tool => {
+      const config = toolConfigurations[tool.id];
+      return config?.enabled && tool.requiresConfiguration && !isToolConfigured(tool.id, tool);
+    });
   };
 
   // Sync with localStorage changes from other tabs
