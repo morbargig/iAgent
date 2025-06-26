@@ -962,23 +962,30 @@ const App = () => {
   return (
     <ThemeProvider theme={currentTheme}>
       <CssBaseline />
-
+      
+      {/* Main App Container */}
+      <Box
+        id="iagent-app-root"
+        className="iagent-app-container"
+        sx={{
+          display: 'flex',
+          flexDirection: 'column',
+          height: '100vh',
+          bgcolor: 'background.default',
+          color: 'text.primary',
+        }}
+      >
+        {/* Main Layout Container */}
         <Box
-          sx={{
-            display: 'flex',
-            flexDirection: 'column',
-            height: '100vh',
-            bgcolor: 'background.default',
-            color: 'text.primary',
-          }}
-        >
-        <Box
+          id="iagent-main-layout"
+          className="iagent-layout-horizontal"
           sx={{
             display: 'flex',
             flex: 1,
             overflow: 'hidden',
           }}
         >
+          {/* Sidebar Container */}
           <Sidebar
             ref={sidebarRef}
             open={isSidebarOpen}
@@ -993,7 +1000,11 @@ const App = () => {
             onToggleTheme={toggleTheme}
             streamingConversationId={streamingConversationId}
           />
+          
+          {/* Conversation Area Container */}
           <Box
+            id="iagent-conversation-container"
+            className="iagent-conversation-area"
             sx={{
               display: 'flex',
               flexDirection: 'column',
@@ -1001,6 +1012,7 @@ const App = () => {
               overflow: 'hidden',
             }}
           >
+            {/* Chat Messages Area */}
             <ChatArea
               messages={currentConversation?.messages || []}
               isLoading={isLoading}
@@ -1017,6 +1029,8 @@ const App = () => {
               onLogout={handleLogout}
               userEmail={userEmail}
             />
+            
+            {/* Input Area */}
             <InputArea
               value={input}
               onChange={setInput}

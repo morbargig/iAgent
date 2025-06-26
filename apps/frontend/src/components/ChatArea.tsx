@@ -753,6 +753,8 @@ const WelcomeScreen = ({ isDarkMode, theme, onToggleSidebar, onToggleTheme, useM
   const { t } = useTranslation();
   return (
     <Box
+      id="iagent-welcome-screen"
+      className="iagent-welcome-container"
       sx={{
         backgroundColor: theme.palette.background.default,
         boxSizing: 'border-box',
@@ -763,19 +765,26 @@ const WelcomeScreen = ({ isDarkMode, theme, onToggleSidebar, onToggleTheme, useM
         position: 'relative',
       }}
     >
-      {/* Header */}
-      <ChatHeader 
-        onToggleSidebar={onToggleSidebar}
-        isDarkMode={isDarkMode}
-        onToggleTheme={onToggleTheme}
-        useMockMode={useMockMode}
-        onToggleMockMode={onToggleMockMode}
-        onLogout={onLogout}
-        userEmail={userEmail}
-      />
+      {/* Welcome Header */}
+      <Box
+        id="iagent-welcome-header"
+        className="iagent-header-section"
+      >
+        <ChatHeader 
+          onToggleSidebar={onToggleSidebar}
+          isDarkMode={isDarkMode}
+          onToggleTheme={onToggleTheme}
+          useMockMode={useMockMode}
+          onToggleMockMode={onToggleMockMode}
+          onLogout={onLogout}
+          userEmail={userEmail}
+        />
+      </Box>
 
       {/* Welcome Content */}
       <Box
+        id="iagent-welcome-content"
+        className="iagent-welcome-main"
         sx={{
           display: 'flex',
           flexDirection: 'column',
@@ -787,6 +796,8 @@ const WelcomeScreen = ({ isDarkMode, theme, onToggleSidebar, onToggleTheme, useM
         }}
       >
         <Typography
+          id="iagent-welcome-title"
+          className="iagent-welcome-heading"
           variant="h4"
           sx={{
             fontWeight: 600,
@@ -797,6 +808,8 @@ const WelcomeScreen = ({ isDarkMode, theme, onToggleSidebar, onToggleTheme, useM
           {t('chat.welcome.title')}
         </Typography>
         <Box
+          id="iagent-welcome-text"
+          className="iagent-welcome-description"
           sx={{
             display: 'flex',
             flexDirection: 'column',
@@ -806,6 +819,8 @@ const WelcomeScreen = ({ isDarkMode, theme, onToggleSidebar, onToggleTheme, useM
           }}
         >
           <Typography
+            id="iagent-welcome-subtitle"
+            className="iagent-welcome-subtitle"
             variant="body1"
             sx={{
               textAlign: 'center',
@@ -815,6 +830,8 @@ const WelcomeScreen = ({ isDarkMode, theme, onToggleSidebar, onToggleTheme, useM
             {t('chat.welcome.subtitle')}
           </Typography>
           <Typography
+            id="iagent-welcome-description"
+            className="iagent-welcome-body"
             variant="body1"
             sx={{
               textAlign: 'center',
@@ -884,6 +901,8 @@ export function ChatArea({ messages, isLoading, onToggleSidebar, isDarkMode, onT
 
   return (
     <Box
+      id="iagent-chat-area"
+      className="iagent-chat-container"
       sx={{
         backgroundColor: theme.palette.background.default,
         boxSizing: 'border-box',
@@ -894,19 +913,26 @@ export function ChatArea({ messages, isLoading, onToggleSidebar, isDarkMode, onT
         position: 'relative',
       }}
     >
-      {/* Header */}
-      <ChatHeader 
-        onToggleSidebar={onToggleSidebar}
-        isDarkMode={isDarkMode}
-        onToggleTheme={onToggleTheme}
-        useMockMode={useMockMode}
-        onToggleMockMode={onToggleMockMode}
-        onLogout={onLogout}
-        userEmail={userEmail}
-      />
+      {/* Chat Header */}
+      <Box
+        id="iagent-chat-header"
+        className="iagent-header-section"
+      >
+        <ChatHeader 
+          onToggleSidebar={onToggleSidebar}
+          isDarkMode={isDarkMode}
+          onToggleTheme={onToggleTheme}
+          useMockMode={useMockMode}
+          onToggleMockMode={onToggleMockMode}
+          onLogout={onLogout}
+          userEmail={userEmail}
+        />
+      </Box>
 
       {/* Messages Container */}
       <Box 
+        id="iagent-messages-container"
+        className="iagent-messages-scroll-area"
         sx={{ 
           flex: 1, 
           overflow: 'auto',
@@ -924,30 +950,53 @@ export function ChatArea({ messages, isLoading, onToggleSidebar, isDarkMode, onT
           }
         }}
       >
-        {/* Messages */}
-        {messages.map((message, index) => (
-          <MessageBubble
-            key={message.id}
-            message={message}
-            isDarkMode={isDarkMode}
-            theme={theme}
-            onRefreshMessage={onRefreshMessage}
-            onEditMessage={onEditMessage}
-            onDeleteMessage={onDeleteMessage}
-            onShareMessage={onShareMessage}
-          />
-        ))}
+        {/* Messages List */}
+        <Box
+          id="iagent-messages-list"
+          className="iagent-messages-content"
+        >
+          {messages.map((message, index) => (
+            <Box
+              key={message.id}
+              id={`iagent-message-${message.id}`}
+              className={`iagent-message-item iagent-message-${message.role}`}
+            >
+              <MessageBubble
+                message={message}
+                isDarkMode={isDarkMode}
+                theme={theme}
+                onRefreshMessage={onRefreshMessage}
+                onEditMessage={onEditMessage}
+                onDeleteMessage={onDeleteMessage}
+                onShareMessage={onShareMessage}
+              />
+            </Box>
+          ))}
+        </Box>
 
         {/* Loading Indicator */}
         {isLoading && !messages.some(m => m.isStreaming) && (
-          <TypingIndicator isDarkMode={isDarkMode} theme={theme} />
+          <Box
+            id="iagent-typing-indicator"
+            className="iagent-loading-state"
+          >
+            <TypingIndicator isDarkMode={isDarkMode} theme={theme} />
+          </Box>
         )}
 
         {/* Spacer */}
-        <Box sx={{ minHeight: '32px', flexGrow: 1 }} />
+        <Box 
+          id="iagent-messages-spacer"
+          className="iagent-flex-spacer"
+          sx={{ minHeight: '32px', flexGrow: 1 }} 
+        />
 
         {/* Scroll anchor */}
-        <div ref={messagesEndRef} />
+        <div 
+          id="iagent-scroll-anchor"
+          className="iagent-scroll-target"
+          ref={messagesEndRef} 
+        />
       </Box>
     </Box>
   );

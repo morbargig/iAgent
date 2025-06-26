@@ -96,6 +96,8 @@ export const Sidebar = React.forwardRef<HTMLDivElement, SidebarProps>(({
   // Sidebar Content - Clean, functional design
   const sidebarContent = (
     <Box
+      id="iagent-sidebar-content"
+      className="iagent-sidebar-container"
       sx={{
         width: 250,
         height: '100vh',
@@ -106,16 +108,21 @@ export const Sidebar = React.forwardRef<HTMLDivElement, SidebarProps>(({
         overflow: 'hidden',
       }}
     >
-      {/* Header */}
-      <Box sx={{ 
-        padding: '16px',
-        flexShrink: 0,
-      }}>
+      {/* Sidebar Header */}
+      <Box 
+        id="iagent-sidebar-header"
+        className="iagent-sidebar-header-section"
+        sx={{ 
+          padding: '16px',
+          flexShrink: 0,
+        }}
+      >
         {/* Mobile close button */}
         {isMobile && (
           <IconButton
+            id="iagent-sidebar-close"
+            className="iagent-mobile-close-button no-rtl-transform"
             onClick={onToggle}
-            className="no-rtl-transform"
             sx={{ 
               position: 'absolute', 
               insetInlineEnd: 8, 
@@ -135,6 +142,8 @@ export const Sidebar = React.forwardRef<HTMLDivElement, SidebarProps>(({
 
         {/* New Chat Button */}
         <Button
+          id="iagent-new-chat-button"
+          className="iagent-new-conversation-button"
           onClick={onNewConversation}
           variant="outlined"
           fullWidth
@@ -156,31 +165,35 @@ export const Sidebar = React.forwardRef<HTMLDivElement, SidebarProps>(({
             },
           }}
         >
-                      <AddIcon sx={{ fontSize: 16, marginInlineEnd: '8px' }} />
+          <AddIcon sx={{ fontSize: 16, marginInlineEnd: '8px' }} />
           {t('sidebar.newChat')}
         </Button>
       </Box>
 
-      {/* Conversation List */}
-      <Box sx={{ 
-        flex: 1, 
-        overflow: 'auto',
-        padding: '0 8px',
-        // Clean scrollbar
-        '&::-webkit-scrollbar': {
-          width: '4px',
-        },
-        '&::-webkit-scrollbar-track': {
-          backgroundColor: 'transparent',
-        },
-        '&::-webkit-scrollbar-thumb': {
-          backgroundColor: theme.palette.divider,
-          borderRadius: '2px',
-          '&:hover': {
-            backgroundColor: theme.palette.text.secondary,
+      {/* Conversations List */}
+      <Box 
+        id="iagent-conversations-list"
+        className="iagent-sidebar-conversations"
+        sx={{ 
+          flex: 1, 
+          overflow: 'auto',
+          padding: '0 8px',
+          // Clean scrollbar
+          '&::-webkit-scrollbar': {
+            width: '4px',
           },
-        },
-      }}>
+          '&::-webkit-scrollbar-track': {
+            backgroundColor: 'transparent',
+          },
+          '&::-webkit-scrollbar-thumb': {
+            backgroundColor: theme.palette.divider,
+            borderRadius: '2px',
+            '&:hover': {
+              backgroundColor: theme.palette.text.secondary,
+            },
+          },
+        }}
+      >
         {conversations.length === 0 ? (
           // Empty State
           <Box sx={{ 
@@ -436,14 +449,20 @@ export const Sidebar = React.forwardRef<HTMLDivElement, SidebarProps>(({
         )}
       </Box>
 
-      {/* Footer */}
-      <Box sx={{ 
-        padding: '16px',
-        borderTop: `1px solid ${theme.palette.divider}`,
-        flexShrink: 0,
-      }}>
-        {/* Theme Toggle */}
+      {/* Sidebar Footer */}
+      <Box 
+        id="iagent-sidebar-footer"
+        className="iagent-sidebar-footer-section"
+        sx={{ 
+          padding: '16px',
+          borderTop: `1px solid ${theme.palette.divider}`,
+          flexShrink: 0,
+        }}
+      >
+        {/* Theme Toggle Button */}
         <Button
+          id="iagent-theme-toggle"
+          className="iagent-theme-switch-button"
           onClick={onToggleTheme}
           variant="text"
           fullWidth
@@ -507,6 +526,8 @@ export const Sidebar = React.forwardRef<HTMLDivElement, SidebarProps>(({
   // Desktop Implementation
   return (
     <Box
+      id="iagent-sidebar"
+      className="iagent-sidebar-wrapper"
       ref={ref}
       sx={{
         width: open ? 250 : 0,

@@ -533,8 +533,10 @@ export function InputArea({
 
   return (
     <>
-      {/* Sticky Bottom Container */}
+      {/* Input Area Container */}
       <Box
+        id="iagent-input-area"
+        className="iagent-input-container"
         ref={inputContainerRef}
         sx={{
           position: 'fixed',
@@ -547,7 +549,6 @@ export function InputArea({
             : 'linear-gradient(180deg, rgba(255, 255, 255, 0) 0%, rgba(255, 255, 255, 0.8) 50%, #ffffff 100%)',
           paddingTop: '20px',
           paddingBottom: '20px',
-          // Removed transition to prevent animation when sidebar opens/closes
           '@media (max-width: 768px)': {
             insetInlineStart: 0,
             paddingBottom: 'env(safe-area-inset-bottom, 10px)',
@@ -555,7 +556,10 @@ export function InputArea({
           }
         }}
       >
+        {/* Input Area Content Wrapper */}
         <Box
+          id="iagent-input-content"
+          className="iagent-input-content-wrapper"
           sx={{
             maxWidth: '768px',
             margin: '0 auto',
@@ -567,9 +571,10 @@ export function InputArea({
             }
           }}
         >
-
-                    {/* Main Input Container - Vertical Flex Layout */}
+          {/* Main Input Form Container */}
           <Box
+            id="iagent-input-form"
+            className="iagent-input-form-container"
             sx={{
               display: 'flex',
               flexDirection: 'column',
@@ -610,8 +615,10 @@ export function InputArea({
               }
             }}
           >
-            {/* Textarea - First Row */}
+            {/* Main Textarea */}
             <textarea
+              id="iagent-message-input"
+              className="iagent-textarea-input"
               ref={textareaRef}
               value={value}
               onChange={(e) => onChange(e.target.value)}
@@ -623,8 +630,10 @@ export function InputArea({
               style={textareaStyle}
             />
 
-            {/* Control Buttons Row */}
+            {/* Input Controls Row */}
             <Box
+              id="iagent-input-controls"
+              className="iagent-controls-row"
               sx={{
                 display: 'flex',
                 alignItems: 'center',
@@ -635,6 +644,8 @@ export function InputArea({
             >
               {/* Left Control Buttons */}
               <Box
+                id="iagent-left-controls"
+                className="iagent-left-control-group"
                 sx={{
                   display: 'flex',
                   alignItems: 'center',
@@ -642,8 +653,10 @@ export function InputArea({
                   flexShrink: 0,
                 }}
               >
-                {/* Multi-Select Flag Dropdown */}
+                {/* Country Selector */}
                 <Box
+                  id="iagent-country-selector"
+                  className="iagent-country-dropdown"
                   onClick={handleFlagClick}
                   sx={{
                     display: 'flex',
@@ -748,8 +761,10 @@ export function InputArea({
                   />
                 </Box>
 
-                {/* Date Selector */}
+                {/* Date Range Selector */}
                 <Box
+                  id="iagent-date-selector"
+                  className="iagent-date-range-button"
                   onClick={handleDateClick}
                   sx={{
                     display: 'flex',
@@ -790,6 +805,8 @@ export function InputArea({
 
                 {/* Settings Button */}
                 <IconButton
+                  id="iagent-settings-button"
+                  className="iagent-settings-control"
                   sx={{
                     backgroundColor: isDarkMode ? '#565869' : '#e5e7eb',
                     border: `1px solid ${isDarkMode ? '#6b6d7a' : '#d1d5db'}`,
@@ -808,8 +825,10 @@ export function InputArea({
                 </IconButton>
               </Box>
 
-              {/* Right Control Buttons */}
+              {/* Right Control Group */}
               <Box
+                id="iagent-right-controls"
+                className="iagent-right-control-group"
                 sx={{
                   display: 'flex',
                   alignItems: 'center',
@@ -817,12 +836,16 @@ export function InputArea({
                   flexShrink: 0,
                 }}
               >
-                {/* Tools List */}
-                <Box sx={{ 
-                  display: 'flex', 
-                  gap: '6px', 
-                  alignItems: 'center',
-                }}>
+                {/* AI Tools Selector */}
+                <Box 
+                  id="iagent-tools-list"
+                  className="iagent-tools-selector"
+                  sx={{ 
+                    display: 'flex', 
+                    gap: '6px', 
+                    alignItems: 'center',
+                  }}
+                >
                   {toolsList.map((tool) => {
                     const isEnabled = enabledTools[tool.id];
                     return (
@@ -873,12 +896,16 @@ export function InputArea({
                   })}
                 </Box>
 
-                {/* Additional Control Buttons */}
-                <Box sx={{ 
-                  display: 'flex', 
-                  gap: '4px', 
-                  alignItems: 'center',
-                }}>
+                {/* Action Buttons */}
+                <Box 
+                  id="iagent-action-buttons"
+                  className="iagent-action-controls"
+                  sx={{ 
+                    display: 'flex', 
+                    gap: '4px', 
+                    alignItems: 'center',
+                  }}
+                >
                   {/* Clear Button */}
                   {showClearButton && value.trim() && (
                     <IconButton
@@ -952,8 +979,10 @@ export function InputArea({
                   )}
                 </Box>
 
-            {/* Submit/Stop Button */}
+            {/* Send/Stop Button */}
             <IconButton
+              id="iagent-send-button"
+              className={`iagent-submit-button ${showStopButton ? 'iagent-stop-mode' : 'iagent-send-mode'}`}
               onClick={handleSubmit}
               disabled={!canSend && !showStopButton}
               sx={{
