@@ -146,39 +146,13 @@ export default function BasicDateRangePicker({
               ...textFieldStyles,
             }}
           />
-
-          {/* Clear Button */}
-          {(currentValue[0] || currentValue[1]) && (
-            <Button
-              onClick={handleClear}
-              variant="outlined"
-              size="small"
-              sx={{
-                alignSelf: 'flex-start',
-                borderColor: isDarkMode ? '#555555' : '#d1d5db',
-                color: isDarkMode ? '#f1f1f1' : '#374151',
-                fontSize: '13px',
-                fontWeight: 500,
-                textTransform: 'none',
-                borderRadius: '6px',
-                padding: '8px 16px',
-                boxShadow: 'none',
-                '&:hover': {
-                  borderColor: isDarkMode ? '#666666' : '#9ca3af',
-                  backgroundColor: isDarkMode ? '#404040' : '#f9fafb',
-                  boxShadow: 'none',
-                },
-              }}
-            >
-              Clear
-            </Button>
-          )}
         </Stack>
 
         {/* Display current selection */}
         {(currentValue[0] || currentValue[1]) && (
           <Box 
             sx={{ 
+              marginTop:2,
               p: 2, 
               borderRadius: 2, 
               backgroundColor: isDarkMode ? '#1e1e1e' : '#f8f9fa',
