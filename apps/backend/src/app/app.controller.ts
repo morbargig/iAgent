@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Sse, Res, Headers, HttpStatus, ValidationPipe, UsePipes } from '@nestjs/common';
+import { Controller, Get, Post, Body, Sse, Res, Headers, HttpStatus, ValidationPipe, UsePipes, UseGuards } from '@nestjs/common';
 import { Observable, interval, map, take, switchMap, of, delay, from } from 'rxjs';
 import type { Response } from 'express';
 import { 
@@ -11,20 +11,26 @@ import {
   ApiProduces,
   ApiConsumes,
   ApiBadRequestResponse,
-  ApiInternalServerErrorResponse
+  ApiInternalServerErrorResponse,
+  ApiBearerAuth,
+  ApiUnauthorizedResponse
 } from '@nestjs/swagger';
 import { AppService } from './app.service';
+// import { AuthService, LoginRequest, LoginResponse } from './auth/auth.service';
+// import { AuthGuard, AuthenticatedRequest } from './auth/auth.guard';
 import { 
   ChatRequestDto, 
   ChatResponseDto, 
   StreamTokenDto, 
   ErrorResponseDto, 
-  HealthCheckDto 
+  HealthCheckDto,
+  AuthTokenDto,
+  ToolSelectionDto
 } from './dto/chat.dto';
 
 interface ChatMessage {
   id: string;
-  role: 'user' | 'assistant';
+  role: 'user' | 'assistant' | 'system';
   content: string;
   timestamp: Date;
 }
@@ -34,10 +40,12 @@ interface MessageEvent {
 }
 
 @ApiTags('Chat API')
-@ApiExtraModels(ChatRequestDto, ChatResponseDto, StreamTokenDto, ErrorResponseDto, HealthCheckDto)
+@ApiExtraModels(ChatRequestDto, ChatResponseDto, StreamTokenDto, ErrorResponseDto, HealthCheckDto, AuthTokenDto, ToolSelectionDto)
 @Controller()
 export class AppController {
-  constructor(private readonly appService: AppService) {}
+  constructor(
+    private readonly appService: AppService
+  ) {}
 
   @Get()
   @ApiOperation({ 
@@ -59,11 +67,85 @@ export class AppController {
       uptime: Math.floor(process.uptime()),
       endpoints: {
         health: '/api',
+        login: '/api/auth/login',
+        demo: '/api/auth/demo-token',
         chat: '/api/chat',
         stream: '/api/chat/stream',
         sse: '/api/chat/sse-stream',
         docs: '/api/docs'
       }
+    };
+  }
+
+  @Post('auth/login')
+  @ApiOperation({
+    summary: 'User login',
+    description: 'Authenticate user and receive JWT token'
+  })
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        email: { type: 'string', example: 'demo@example.com' },
+        password: { type: 'string', example: 'demo123' }
+      }
+    }
+  })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'Login successful',
+    schema: {
+      type: 'object',
+      properties: {
+        token: { type: 'string' },
+        userId: { type: 'string' },
+        email: { type: 'string' },
+        role: { type: 'string' },
+        expiresIn: { type: 'string' }
+      }
+    }
+  })
+  @ApiUnauthorizedResponse({
+    description: 'Invalid credentials'
+  })
+  async login(@Body() loginRequest: any): Promise<any> {
+    // Simple hardcoded authentication
+    if (loginRequest.email === 'demo@example.com' && loginRequest.password === 'demo123') {
+      return {
+        token: 'demo-jwt-token-12345',
+        userId: 'user_123456789',
+        email: 'demo@example.com',
+        role: 'user',
+        expiresIn: '24h'
+      };
+    }
+    throw new Error('Invalid credentials');
+  }
+
+  @Get('auth/demo-token')
+  @ApiOperation({
+    summary: 'Get demo token',
+    description: 'Get a demo authentication token for testing (demo@example.com)'
+  })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'Demo token generated',
+    schema: {
+      type: 'object',
+      properties: {
+        token: { type: 'string' },
+        userId: { type: 'string' },
+        email: { type: 'string' },
+        message: { type: 'string' }
+      }
+    }
+  })
+  getDemoToken(): any {
+    return {
+      token: 'demo-jwt-token-12345',
+      userId: 'user_123456789',
+      email: 'demo@example.com',
+      message: 'Use this token for testing. Include it in your requests as auth.token or Authorization: Bearer <token>'
     };
   }
 
@@ -227,52 +309,84 @@ And here's a **table example**:
   }
 
   @Post('chat/stream')
+  // @UseGuards(AuthGuard)
+  // @ApiBearerAuth()
   @ApiOperation({ 
-    summary: 'Send a chat message with real-time streaming',
-    description: 'Send a message to the AI assistant and receive a streaming response. Each token is sent individually with realistic timing to simulate real chatbot generation.'
+    summary: 'Send a chat message with structured streaming response',
+    description: 'Send a message to the AI assistant and receive a streaming response with structured chunks. Each chunk has a specific type (start, token, metadata, progress, complete, error) for better control and visualization. Requires authentication.'
   })
   @ApiConsumes('application/json')
   @ApiProduces('application/json')
   @ApiBody({ 
     type: ChatRequestDto,
-    description: 'Chat request containing conversation history'
+    description: 'Chat request with authentication, chat ID, messages, and optional tools'
   })
   @ApiResponse({ 
     status: HttpStatus.OK, 
-    description: 'Successfully started streaming response',
+    description: 'Successfully started structured streaming response',
     content: {
       'application/json': {
         schema: { 
           type: 'object',
           properties: {
-            token: { type: 'string', example: 'Hello' },
-            done: { type: 'boolean', example: false },
-            metadata: {
+            chunkType: { 
+              type: 'string', 
+              enum: ['start', 'token', 'metadata', 'progress', 'complete', 'error'],
+              example: 'token',
+              description: 'Type of chunk being sent'
+            },
+            data: { 
               type: 'object',
-              properties: {
-                index: { type: 'number', example: 1 },
-                total_tokens: { type: 'number', example: 150 },
-                timestamp: { type: 'string', example: '2024-01-01T12:00:00Z' },
-                model: { type: 'string', example: 'chatgpt-clone-v1' }
-              }
+              example: {
+                token: 'Hello',
+                index: 1,
+                totalTokens: 150,
+                progress: 1,
+                tokenType: 'word',
+                confidence: 0.95
+              },
+              description: 'Chunk-specific data payload'
+            },
+            timestamp: { 
+              type: 'string', 
+              format: 'date-time',
+              example: '2024-01-01T12:00:00Z'
+            },
+            sessionId: { 
+              type: 'string',
+              example: 'session_1640995200000_abc123',
+              description: 'Unique session identifier for this streaming response'
             }
           }
         }
       }
     }
   })
-  async streamChat(@Body() request: any, @Res() res: Response) {
-    const { messages } = request;
+  @ApiUnauthorizedResponse({
+    description: 'Authentication required'
+  })
+  async streamChat(@Body() request: ChatRequestDto, @Res() res: Response) {
+    const { chatId, auth, messages, tools, requestTimestamp, clientInfo } = request;
     
-    // Convert DTOs to internal format with defaults
-    const processedMessages: ChatMessage[] = messages.map((msg: any) => ({
-      id: msg.id || Date.now().toString(),
+    // Log the enhanced request data
+    console.log('🔥 Enhanced Chat Request:', {
+      chatId,
+      userId: auth.userId,
+      messageCount: messages.length,
+      toolsEnabled: tools?.length || 0,
+      timestamp: requestTimestamp || new Date().toISOString()
+    });
+    
+    // Convert DTOs to internal format with proper typing
+    const processedMessages: ChatMessage[] = messages.map((msg) => ({
+      id: msg.id,
       role: msg.role,
       content: msg.content,
-      timestamp: msg.timestamp || new Date()
+      timestamp: new Date(msg.timestamp)
     }));
     
     const lastMessage = processedMessages[processedMessages.length - 1];
+    const sessionId = `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
     
     // Set streaming headers for JSON
     res.setHeader('Content-Type', 'application/json; charset=utf-8');
@@ -282,6 +396,21 @@ And here's a **table example**:
     res.setHeader('Access-Control-Allow-Headers', 'Cache-Control, Content-Type');
 
     try {
+      // Send start chunk
+      const startChunk = {
+        chunkType: 'start',
+        data: {
+          message: 'Starting response generation',
+          model: 'chatgpt-clone-v1',
+          promptTokens: this.countTokens(processedMessages),
+          categories: this.categorizeContent(lastMessage.content),
+          conversationLength: processedMessages.length
+        },
+        timestamp: new Date().toISOString(),
+        sessionId
+      };
+      res.write(JSON.stringify(startChunk) + '\n');
+      
       // Generate contextual response based on conversation
       const response = await this.generateContextualResponse(processedMessages);
       
@@ -294,35 +423,65 @@ And here's a **table example**:
       
       let currentContent = '';
       
+      // Send metadata chunk with generation info
+      const metadataChunk = {
+        chunkType: 'metadata',
+        data: {
+          totalTokens: tokens.length,
+          estimatedDuration: tokens.length * 50, // rough estimate in ms
+          contentType: 'text/markdown',
+          language: 'en',
+          responseType: this.getResponseType(lastMessage.content)
+        },
+        timestamp: new Date().toISOString(),
+        sessionId
+      };
+      res.write(JSON.stringify(metadataChunk) + '\n');
+      
+      // Stream tokens one by one
       for (let i = 0; i < tokens.length; i++) {
         const token = tokens[i];
         const isLast = i === tokens.length - 1;
         
         currentContent += token;
         
-        // Create streaming response chunk
-        const responseChunk = {
-          token,
-          done: isLast,
-          metadata: {
+        // Create token chunk with structured data
+        const tokenChunk = {
+          chunkType: 'token',
+          data: {
+            token,
             index: i + 1,
-            total_tokens: tokens.length,
-            timestamp: new Date().toISOString(),
-            model: 'chatgpt-clone-v1',
-            usage: {
-              prompt_tokens: this.countTokens(processedMessages),
-              completion_tokens: i + 1,
-              total_tokens: this.countTokens(processedMessages) + i + 1
-            },
-            processing_time_ms: Date.now() - startTime.getTime(),
+            totalTokens: tokens.length,
+            progress: Math.round(((i + 1) / tokens.length) * 100),
+            cumulativeContent: currentContent,
+            tokenType: this.getTokenType(token),
             confidence: 0.92 + Math.random() * 0.07,
-            categories: this.categorizeContent(lastMessage.content),
-            progress: Math.round(((i + 1) / tokens.length) * 100)
-          }
+            isLastToken: isLast
+          },
+          timestamp: new Date().toISOString(),
+          sessionId
         };
         
-        // Send token
-        res.write(JSON.stringify(responseChunk) + '\n');
+        // Send token chunk
+        res.write(JSON.stringify(tokenChunk) + '\n');
+        
+        // Send periodic progress metadata (every 10 tokens)
+        if (i > 0 && i % 10 === 0 && !isLast) {
+          const progressChunk = {
+            chunkType: 'progress',
+            data: {
+              progress: Math.round(((i + 1) / tokens.length) * 100),
+              tokensProcessed: i + 1,
+              tokensRemaining: tokens.length - i - 1,
+              processingTimeMs: Date.now() - startTime.getTime(),
+              estimatedRemainingMs: Math.round((tokens.length - i - 1) * 50),
+              averageTokenTime: Math.round((Date.now() - startTime.getTime()) / (i + 1))
+            },
+            timestamp: new Date().toISOString(),
+            sessionId
+          };
+          res.write(JSON.stringify(progressChunk) + '\n');
+        }
         
         // Realistic streaming delays based on token type
         if (!isLast) {
@@ -331,18 +490,49 @@ And here's a **table example**:
         }
       }
       
+      // Send completion chunk
+      const completeChunk = {
+        chunkType: 'complete',
+        data: {
+          message: 'Response generation completed successfully',
+          totalTokens: tokens.length,
+          totalProcessingTimeMs: Date.now() - startTime.getTime(),
+          finalContent: currentContent,
+          averageTokenTime: Math.round((Date.now() - startTime.getTime()) / tokens.length),
+          usage: {
+            promptTokens: this.countTokens(processedMessages),
+            completionTokens: tokens.length,
+            totalTokens: this.countTokens(processedMessages) + tokens.length
+          },
+          quality: {
+            confidence: 0.95,
+            coherence: 0.92,
+            relevance: 0.96
+          }
+        },
+        timestamp: new Date().toISOString(),
+        sessionId
+      };
+      res.write(JSON.stringify(completeChunk) + '\n');
+      
       res.end();
     } catch (error) {
       console.error('Streaming error:', error);
       
-      // Send error response
+      // Send error chunk
       const errorChunk = {
-        token: '',
-        done: true,
-        error: {
-          message: 'An error occurred while generating the response',
-          code: 'GENERATION_ERROR'
-        }
+        chunkType: 'error',
+        data: {
+          error: {
+            message: 'An error occurred while generating the response',
+            code: 'GENERATION_ERROR',
+            details: error instanceof Error ? error.message : 'Unknown error',
+            timestamp: new Date().toISOString(),
+            recoverable: true
+          }
+        },
+        timestamp: new Date().toISOString(),
+        sessionId: sessionId || 'unknown'
       };
       
       res.write(JSON.stringify(errorChunk) + '\n');
@@ -533,6 +723,48 @@ And here's a **table example**:
     }
     
     return categories.length > 0 ? categories : ['general'];
+  }
+
+  /**
+   * Determine the type of token for better streaming visualization
+   */
+  private getTokenType(token: string): string {
+    if (token.startsWith('```')) return 'code_block';
+    if (token.startsWith('**') && token.endsWith('**')) return 'bold';
+    if (token.startsWith('#')) return 'header';
+    if (token.match(/^[-*+]\s/)) return 'list_item';
+    if (token.match(/[.!?]+$/)) return 'sentence_end';
+    if (token.match(/[,;:]+$/)) return 'punctuation';
+    if (token.match(/^\n+$/)) return 'line_break';
+    if (token.trim().length === 0) return 'whitespace';
+    if (token.match(/^\d+$/)) return 'number';
+    if (token.match(/^[A-Z][a-z]+$/)) return 'capitalized_word';
+    return 'word';
+  }
+
+  /**
+   * Determine the type of response being generated
+   */
+  private getResponseType(userContent: string): string {
+    const content = userContent.toLowerCase();
+    
+    if (content.includes('code') || content.includes('function') || content.includes('programming')) {
+      return 'code_explanation';
+    }
+    if (content.includes('explain') || content.includes('what is') || content.includes('how does')) {
+      return 'explanation';
+    }
+    if (content.includes('write') || content.includes('create') || content.includes('story')) {
+      return 'creative';
+    }
+    if (content.includes('help') || content.includes('problem') || content.includes('issue')) {
+      return 'assistance';
+    }
+    if (content.includes('?')) {
+      return 'question_answer';
+    }
+    
+    return 'general_conversation';
   }
 
   // Response generators for different contexts

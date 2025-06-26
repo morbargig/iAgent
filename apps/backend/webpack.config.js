@@ -2,8 +2,9 @@ const { NxAppWebpackPlugin } = require('@nx/webpack/app-plugin');
 const { join } = require('path');
 
 module.exports = {
+  mode: process.env.NODE_ENV === 'production' ? 'production' : 'development',
   output: {
-    path: join(__dirname, 'dist'),
+    path: join(__dirname, '../../dist/apps/backend'),
   },
   plugins: [
     new NxAppWebpackPlugin({

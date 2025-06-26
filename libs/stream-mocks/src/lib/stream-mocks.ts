@@ -318,23 +318,55 @@ export class StreamingClient {
     }
   }
 
-  // API streaming method
+  // API streaming method with structured chunk handling
   async streamChatAPI(
     messages: Message[],
     onToken: (token: string, metadata?: any) => void,
     onComplete: () => void,
     onError: (error: Error) => void,
-    baseUrl = 'http://localhost:3000'
+    baseUrl = 'http://localhost:3000',
+    authToken?: string,
+    chatId?: string,
+    tools?: any[],
+    dateFilter?: any,
+    selectedCountries?: string[]
   ): Promise<void> {
     this.abortController = new AbortController();
     
     try {
+      // Generate chat ID if not provided
+      const requestChatId = chatId || `chat_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+      
+      // Prepare request with enhanced structure
+      const requestBody = {
+        chatId: requestChatId,
+        auth: {
+          token: authToken || '',
+          userId: 'user_123456789' // Default for demo
+        },
+        messages: messages.map(msg => ({
+          id: msg.id,
+          role: msg.role,
+          content: msg.content,
+          timestamp: new Date().toISOString()
+        })),
+        tools: tools || [],
+        dateFilter: dateFilter || null,
+        selectedCountries: selectedCountries || [],
+        requestTimestamp: new Date().toISOString(),
+        clientInfo: {
+          userAgent: (globalThis as any)?.navigator?.userAgent || 'Unknown',
+          timestamp: Date.now()
+        }
+      };
+
       const response = await fetch(`${baseUrl}/api/chat/stream`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          ...(authToken && { 'Authorization': `Bearer ${authToken}` })
         },
-        body: JSON.stringify({ messages }),
+        body: JSON.stringify(requestBody),
         signal: this.abortController.signal,
       });
       
@@ -366,17 +398,41 @@ export class StreamingClient {
             for (const line of lines) {
               if (line.trim()) {
                 try {
-                  const jsonChunk: StreamTokenDto = JSON.parse(line);
+                  const structuredChunk = JSON.parse(line);
                   
-                  if (jsonChunk.error) {
-                    throw new Error(jsonChunk.error.message || 'Unknown streaming error');
-                  }
-                  
-                  onToken(jsonChunk.token, jsonChunk.metadata);
-                  
-                  if (jsonChunk.done) {
-                    onComplete();
-                    return;
+                  // Handle different chunk types
+                  switch (structuredChunk.chunkType) {
+                    case 'start':
+                      console.log('🚀 Stream started:', structuredChunk.data);
+                      break;
+                      
+                    case 'metadata':
+                      console.log('📊 Metadata:', structuredChunk.data);
+                      break;
+                      
+                    case 'token':
+                      // Send token to the UI
+                      onToken(structuredChunk.data.token, {
+                        ...structuredChunk.data,
+                        timestamp: structuredChunk.timestamp,
+                        sessionId: structuredChunk.sessionId
+                      });
+                      break;
+                      
+                    case 'progress':
+                      console.log('⏳ Progress:', structuredChunk.data.progress + '%');
+                      break;
+                      
+                    case 'complete':
+                      console.log('✅ Stream completed:', structuredChunk.data);
+                      onComplete();
+                      return;
+                      
+                    case 'error':
+                      throw new Error(structuredChunk.data.error.message || 'Unknown streaming error');
+                      
+                    default:
+                      console.warn('Unknown chunk type:', structuredChunk.chunkType);
                   }
                 } catch (parseError) {
                   console.warn('Failed to parse streaming chunk:', parseError);
@@ -405,7 +461,12 @@ export class StreamingClient {
     onError: (error: Error) => void,
     useMock = false,
     baseUrl = 'http://localhost:3000',
-    t?: TranslationFunction
+    t?: TranslationFunction,
+    authToken?: string,
+    chatId?: string,
+    tools?: any[],
+    dateFilter?: any,
+    selectedCountries?: string[]
   ): Promise<void> {
     if (useMock) {
       if (!t) {
@@ -413,7 +474,7 @@ export class StreamingClient {
       }
       await this.streamChatMock(messages, onToken, onComplete, onError, t);
     } else {
-      await this.streamChatAPI(messages, onToken, onComplete, onError, baseUrl);
+      await this.streamChatAPI(messages, onToken, onComplete, onError, baseUrl, authToken, chatId, tools, dateFilter, selectedCountries);
     }
   }
   

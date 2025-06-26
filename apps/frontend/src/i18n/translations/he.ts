@@ -160,6 +160,7 @@ const translations: Translation = {
     apply: 'החל',
     reset: 'איפוס',
   },
+
   actions: {
     toggleSidebar: 'החלף סרגל צד',
     toggleTheme: 'החלף ערכת נושא',

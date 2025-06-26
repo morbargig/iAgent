@@ -44,6 +44,8 @@ interface ChatAreaProps {
   onDeleteMessage?: (messageId: string) => void;
   onShareMessage?: (messageId: string, content: string) => void;
   inputAreaHeight?: number; // Add input area height prop
+  onLogout?: () => void;
+  userEmail?: string | null;
 }
 
 // Shared Header Component
@@ -52,13 +54,17 @@ const ChatHeader = ({
   isDarkMode, 
   onToggleTheme, 
   useMockMode, 
-  onToggleMockMode 
+  onToggleMockMode,
+  onLogout,
+  userEmail
 }: {
   onToggleSidebar: () => void;
   isDarkMode: boolean;
   onToggleTheme: () => void;
   useMockMode: boolean;
   onToggleMockMode: () => void;
+  onLogout?: () => void;
+  userEmail?: string | null;
 }) => {
   const theme = useTheme();
   const { t } = useTranslation();
@@ -175,6 +181,46 @@ const ChatHeader = ({
       >
         {isDarkMode ? <LightModeIcon sx={{ fontSize: '18px' }} /> : <DarkModeIcon sx={{ fontSize: '18px' }} />}
       </IconButton>
+
+      {/* User Info and Logout */}
+      {userEmail && (
+        <>
+          <Box sx={{ width: '1px', height: '16px', backgroundColor: theme.palette.divider, marginInline: '8px' }} />
+          <Typography variant="body2" sx={{ 
+            color: theme.palette.text.secondary,
+            fontSize: '12px',
+            marginInlineEnd: '8px'
+          }}>
+            {userEmail}
+          </Typography>
+          <Tooltip title="Logout">
+            <IconButton
+              onClick={onLogout}
+              className="no-rtl-transform"
+              aria-label="Logout"
+              sx={{
+                width: '36px',
+                height: '36px',
+                borderRadius: '8px',
+                border: `1px solid ${theme.palette.divider}`,
+                backgroundColor: 'transparent',
+                color: theme.palette.text.secondary,
+                transition: 'all 150ms cubic-bezier(0.4, 0, 0.2, 1)',
+                '&:hover': {
+                  backgroundColor: theme.palette.action.hover,
+                  borderColor: theme.palette.error.main,
+                  color: theme.palette.error.main,
+                },
+                '&:active': {
+                  transform: 'scale(0.95)',
+                },
+              }}
+            >
+              <PersonIcon sx={{ fontSize: '18px' }} />
+            </IconButton>
+          </Tooltip>
+        </>
+      )}
     </Box>
   );
 };
@@ -694,13 +740,15 @@ const TypingIndicator = ({ isDarkMode, theme }: { isDarkMode: boolean; theme: an
 };
 
 // Welcome Screen - Clean, centered
-const WelcomeScreen = ({ isDarkMode, theme, onToggleSidebar, onToggleTheme, useMockMode, onToggleMockMode }: {
+const WelcomeScreen = ({ isDarkMode, theme, onToggleSidebar, onToggleTheme, useMockMode, onToggleMockMode, onLogout, userEmail }: {
   isDarkMode: boolean;
   theme: any;
   onToggleSidebar: () => void;
   onToggleTheme: () => void;
   useMockMode: boolean;
   onToggleMockMode: () => void;
+  onLogout?: () => void;
+  userEmail?: string | null;
 }) => {
   const { t } = useTranslation();
   return (
@@ -722,6 +770,8 @@ const WelcomeScreen = ({ isDarkMode, theme, onToggleSidebar, onToggleTheme, useM
         onToggleTheme={onToggleTheme}
         useMockMode={useMockMode}
         onToggleMockMode={onToggleMockMode}
+        onLogout={onLogout}
+        userEmail={userEmail}
       />
 
       {/* Welcome Content */}
@@ -779,7 +829,7 @@ const WelcomeScreen = ({ isDarkMode, theme, onToggleSidebar, onToggleTheme, useM
   );
 };
 
-export function ChatArea({ messages, isLoading, onToggleSidebar, isDarkMode, onToggleTheme, useMockMode, onToggleMockMode, onRefreshMessage, onEditMessage, onDeleteMessage, onShareMessage, inputAreaHeight = 80 }: ChatAreaProps) {
+export function ChatArea({ messages, isLoading, onToggleSidebar, isDarkMode, onToggleTheme, useMockMode, onToggleMockMode, onRefreshMessage, onEditMessage, onDeleteMessage, onShareMessage, inputAreaHeight = 80, onLogout, userEmail }: ChatAreaProps) {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const theme = useTheme();
   const { t } = useTranslation();
@@ -826,6 +876,8 @@ export function ChatArea({ messages, isLoading, onToggleSidebar, isDarkMode, onT
         onToggleTheme={onToggleTheme}
         useMockMode={useMockMode}
         onToggleMockMode={onToggleMockMode}
+        onLogout={onLogout}
+        userEmail={userEmail}
       />
     );
   }
@@ -849,6 +901,8 @@ export function ChatArea({ messages, isLoading, onToggleSidebar, isDarkMode, onT
         onToggleTheme={onToggleTheme}
         useMockMode={useMockMode}
         onToggleMockMode={onToggleMockMode}
+        onLogout={onLogout}
+        userEmail={userEmail}
       />
 
       {/* Messages Container */}

@@ -128,14 +128,6 @@ const translations: Translation = {
       'أنشئ أفكار إبداعية لـ...'
     ],
   },
-  actions: {
-    toggleSidebar: 'تبديل الشريط الجانبي',
-    toggleTheme: 'تبديل المظهر',
-    newConversation: 'محادثة جديدة',
-    deleteConversation: 'حذف المحادثة',
-    shareConversation: 'مشاركة المحادثة',
-    exportConversation: 'تصدير المحادثة',
-  },
   mock: {
     greeting: `مرحباً! أنا مساعد ذكي اصطناعي من إنتاج Anthropic. أنا هنا لمساعدتك في مجموعة واسعة من المهام بما في ذلك:
 
@@ -282,6 +274,15 @@ const translations: Translation = {
     endDate: 'تاريخ النهاية',
     apply: 'تطبيق',
     reset: 'إعادة تعيين',
+  },
+
+  actions: {
+    toggleSidebar: 'تبديل الشريط الجانبي',
+    toggleTheme: 'تبديل السمة',
+    newConversation: 'محادثة جديدة',
+    deleteConversation: 'حذف المحادثة',
+    shareConversation: 'مشاركة المحادثة',
+    exportConversation: 'تصدير المحادثة',
   },
 };
 

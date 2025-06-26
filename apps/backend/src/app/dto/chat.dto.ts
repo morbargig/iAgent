@@ -1,48 +1,157 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { IsString, IsEnum, IsOptional, IsArray, IsDateString, IsUUID, IsBoolean } from 'class-validator';
+
+export class AuthTokenDto {
+  @ApiProperty({
+    description: 'JWT authentication token',
+    example: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...'
+  })
+  @IsString()
+  token!: string;
+
+  @ApiProperty({
+    description: 'User ID',
+    example: 'user_123456789'
+  })
+  @IsString()
+  userId!: string;
+}
+
+export class ToolSelectionDto {
+  @ApiProperty({
+    description: 'Tool identifier',
+    example: 'web_search'
+  })
+  @IsString()
+  toolId!: string;
+
+  @ApiProperty({
+    description: 'Tool name',
+    example: 'Web Search'
+  })
+  @IsString()
+  name!: string;
+
+  @ApiPropertyOptional({
+    description: 'Tool configuration parameters',
+    example: { maxResults: 5, language: 'en' }
+  })
+  @IsOptional()
+  parameters?: Record<string, any>;
+
+  @ApiProperty({
+    description: 'Whether the tool is enabled',
+    example: true
+  })
+  @IsBoolean()
+  enabled!: boolean;
+}
 
 export class ChatMessageDto {
   @ApiProperty({
     description: 'Unique identifier for the message',
-    example: '1638360000000',
-    required: false
+    example: 'msg_1638360000000_abc123'
   })
-  id?: string;
+  @IsString()
+  id!: string;
 
   @ApiProperty({
     description: 'Role of the message sender',
-    enum: ['user', 'assistant'],
+    enum: ['user', 'assistant', 'system'],
     example: 'user'
   })
-  role!: 'user' | 'assistant';
+  @IsEnum(['user', 'assistant', 'system'])
+  role!: 'user' | 'assistant' | 'system';
 
   @ApiProperty({
     description: 'Content of the message',
     example: 'Hello! Can you help me with TypeScript?'
   })
+  @IsString()
   content!: string;
 
   @ApiProperty({
-    description: 'Timestamp when the message was created',
-    example: '2024-01-01T12:00:00.000Z',
-    required: false
+    description: 'ISO timestamp when the message was created',
+    example: '2024-01-01T12:00:00.000Z'
   })
-  timestamp?: any;
+  @IsDateString()
+  timestamp!: string;
+
+  @ApiPropertyOptional({
+    description: 'Message metadata',
+    example: { 
+      edited: false, 
+      tokenCount: 25,
+      confidence: 0.95 
+    }
+  })
+  @IsOptional()
+  metadata?: Record<string, any>;
 }
 
 export class ChatRequestDto {
+  @ApiProperty({
+    description: 'Unique chat/conversation identifier',
+    example: 'chat_1638360000000_xyz789'
+  })
+  @IsString()
+  chatId!: string;
+
+  @ApiProperty({
+    description: 'User authentication token',
+    type: AuthTokenDto
+  })
+  auth!: AuthTokenDto;
+
   @ApiProperty({
     description: 'Array of chat messages representing the conversation history',
     type: [ChatMessageDto],
     example: [
       {
-        id: '1638360000000',
+        id: 'msg_1638360000000_abc123',
         role: 'user',
         content: 'Hello! Can you help me with TypeScript?',
         timestamp: '2024-01-01T12:00:00.000Z'
       }
     ]
   })
+  @IsArray()
   messages!: ChatMessageDto[];
+
+  @ApiPropertyOptional({
+    description: 'Selected tools for this conversation',
+    type: [ToolSelectionDto],
+    example: [
+      {
+        toolId: 'web_search',
+        name: 'Web Search',
+        enabled: true,
+        parameters: { maxResults: 5 }
+      }
+    ]
+  })
+  @IsOptional()
+  @IsArray()
+  tools?: ToolSelectionDto[];
+
+  @ApiPropertyOptional({
+    description: 'Request timestamp',
+    example: '2024-01-01T12:00:00.000Z'
+  })
+  @IsOptional()
+  @IsDateString()
+  requestTimestamp?: string;
+
+  @ApiPropertyOptional({
+    description: 'Client information',
+    example: {
+      userAgent: 'Mozilla/5.0...',
+      ip: '192.168.1.1',
+      sessionId: 'session_123'
+    }
+  })
+  @IsOptional()
+  clientInfo?: Record<string, any>;
 }
 
 export class ChatResponseDto {

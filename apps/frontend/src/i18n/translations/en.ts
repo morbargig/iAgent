@@ -160,6 +160,7 @@ const translations: Translation = {
     apply: 'Apply',
     reset: 'Reset',
   },
+
   actions: {
     toggleSidebar: 'Toggle sidebar',
     toggleTheme: 'Toggle theme',

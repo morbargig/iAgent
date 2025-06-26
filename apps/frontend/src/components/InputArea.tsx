@@ -24,6 +24,7 @@ import {
 import { useTranslation } from '../contexts/TranslationContext';
 import { Translate } from './Translate';
 import { useAnimatedPlaceholder } from '../hooks/useAnimatedPlaceholder';
+import { useToolToggles } from '../hooks/useToolToggles';
 import BasicDateRangePicker from './BasicDateRangePicker';
 
 // Helper function to detect text direction
@@ -36,10 +37,26 @@ const detectLanguage = (text: string): 'ltr' | 'rtl' => {
   return rtlRegex.test(text) ? 'rtl' : 'ltr';
 };
 
+export interface DateFilter {
+  type: 'custom' | 'picker';
+  customRange?: {
+    amount: number;
+    type: string;
+  };
+  dateRange?: [Dayjs | null, Dayjs | null];
+}
+
+export interface SendMessageData {
+  content: string;
+  dateFilter: DateFilter;
+  selectedCountries: string[];
+  enabledTools: string[];
+}
+
 interface InputAreaProps {
   value: string;
   onChange: (value: string) => void;
-  onSend: () => void;
+  onSend: (data: SendMessageData) => void;
   onStop?: () => void;
   onDiscard?: () => void;
   disabled: boolean;
@@ -116,6 +133,8 @@ export function InputArea({
   const translationContext = useTranslation();
   const { t } = translationContext;
 
+
+
   // Flag selection state with localStorage persistence
   const [selectedFlags, setSelectedFlags] = useState<string[]>(() => {
     try {
@@ -191,23 +210,8 @@ export function InputArea({
   // Track which tab's values are currently committed/active for display
   const [committedTab, setCommittedTab] = useState(initialSettings.committedTab);
 
-  // Tool toggles state with localStorage persistence
-  const [enabledTools, setEnabledTools] = useState<{ [key: string]: boolean }>(() => {
-    try {
-      const saved = localStorage.getItem('enabledTools');
-      return saved ? JSON.parse(saved) : {
-        'tool-x': false,
-        'tool-y': false,
-        'tool-z': false
-      };
-    } catch {
-      return {
-        'tool-x': false,
-        'tool-y': false,
-        'tool-z': false
-      };
-    }
-  });
+  // Tool toggles hook
+  const { enabledTools, toggleTool, isToolEnabled } = useToolToggles();
 
   // Save selected flags to localStorage with debouncing
   useEffect(() => {
@@ -222,18 +226,7 @@ export function InputArea({
     return () => clearTimeout(timeoutId);
   }, [selectedFlags]);
 
-  // Save enabled tools to localStorage with debouncing
-  useEffect(() => {
-    const timeoutId = setTimeout(() => {
-      try {
-        localStorage.setItem('enabledTools', JSON.stringify(enabledTools));
-      } catch (error) {
-        console.warn('Failed to save enabled tools to localStorage:', error);
-      }
-    }, 300);
 
-    return () => clearTimeout(timeoutId);
-  }, [enabledTools]);
 
   // Save all date range settings to single localStorage key with debouncing - Fixed to prevent infinite loops
   useEffect(() => {
@@ -399,7 +392,7 @@ export function InputArea({
     if (event.key === 'Enter' && !event.shiftKey) {
       event.preventDefault();
       if (value.trim() && !disabled && !isLoading) {
-        onSend();
+        handleSubmit();
       }
     }
   };
@@ -408,7 +401,25 @@ export function InputArea({
     if (isLoading && onStop) {
       onStop();
     } else if (value.trim() && !disabled) {
-      onSend();
+      // Prepare date filter data
+      const dateFilter: DateFilter = {
+        type: committedTab === 1 ? 'picker' : 'custom',
+        customRange: committedTab === 0 ? {
+          amount: rangeAmount,
+          type: rangeType
+        } : undefined,
+        dateRange: committedTab === 1 ? dateRange : undefined
+      };
+      
+      // Prepare send data
+      const sendData: SendMessageData = {
+        content: value,
+        dateFilter,
+        selectedCountries: selectedFlags,
+        enabledTools: Object.keys(enabledTools).filter(toolId => enabledTools[toolId])
+      };
+      
+      onSend(sendData);
     }
   };
 
@@ -517,10 +528,7 @@ export function InputArea({
 
   // Tool toggle handler
   const handleToolToggle = (toolId: string) => {
-    setEnabledTools(prev => ({
-      ...prev,
-      [toolId]: !prev[toolId]
-    }));
+    toggleTool(toolId);
   };
 
   return (

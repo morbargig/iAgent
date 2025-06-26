@@ -6,7 +6,8 @@ import { CssBaseline, Box } from '@mui/material';
 import { useTranslation } from '../contexts/TranslationContext';
 import { Sidebar } from '../components/Sidebar';
 import { ChatArea } from '../components/ChatArea';
-import { InputArea } from '../components/InputArea';
+import { InputArea, type SendMessageData } from '../components/InputArea';
+import { LoginForm } from '../components/LoginForm';
 
 import { StreamingClient, createMessage, createStreamingMessage, updateMessageContent, type Message, type Conversation } from '@iagent/stream-mocks';
 import { useMockMode } from '../hooks/useMockMode';
@@ -296,6 +297,12 @@ const App = () => {
   const sidebarRef = useRef<HTMLDivElement>(null);
   const [inputAreaHeight, setInputAreaHeight] = useState(80); // Track input area height
   
+  // Authentication state
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [authToken, setAuthToken] = useState<string | null>(null);
+  const [userId, setUserId] = useState<string | null>(null);
+  const [userEmail, setUserEmail] = useState<string | null>(null);
+  
   // Stop generation function
   const stopGeneration = () => {
     if (streamingClient.current) {
@@ -333,7 +340,8 @@ const App = () => {
     return conversations.find(conv => conv.id === currentConversationId) || null;
   }, [conversations, currentConversationId]);
 
-  const handleSendMessage = async (content: string) => {
+  const handleSendMessage = async (data: SendMessageData) => {
+    const { content, dateFilter, selectedCountries, enabledTools } = data;
     if (!content.trim() || isLoading) return;
 
     setIsLoading(true);
@@ -380,6 +388,16 @@ const App = () => {
         setCurrentConversationId(updatedConversation.id);
         setStreamingConversationId(updatedConversation.id); // Update streaming ID for new conversation
       }
+
+      // Generate chat ID for this conversation
+      const chatId = `chat_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+      
+      // Prepare tools array from enabled tools
+      const toolsArray = enabledTools.map(toolId => ({
+        id: toolId,
+        enabled: true,
+        settings: {} // Add any tool-specific settings if needed
+      }));
 
       // Stream the response
       await streamingClient.current.streamChat(
@@ -449,7 +467,12 @@ const App = () => {
         },
         isMockMode, // useMock
         'http://localhost:3000',
-        translation
+        translation,
+        authToken || undefined, // authToken
+        chatId, // chatId
+        toolsArray, // tools
+        dateFilter, // dateFilter
+        selectedCountries // selectedCountries
       );
 
     } catch (error) {
@@ -482,12 +505,54 @@ const App = () => {
 
   const currentTheme = isDarkMode ? darkTheme : lightTheme;
 
-  // Load conversations, theme preference, and sidebar state from localStorage on mount
+  // Authentication handlers
+  const handleLogin = (token: string, userId: string, email: string) => {
+    setAuthToken(token);
+    setUserId(userId);
+    setUserEmail(email);
+    setIsAuthenticated(true);
+    
+    // Save auth to localStorage
+    localStorage.setItem('chatbot-auth-token', token);
+    localStorage.setItem('chatbot-user-id', userId);
+    localStorage.setItem('chatbot-user-email', email);
+  };
+
+  const handleLogout = () => {
+    setAuthToken(null);
+    setUserId(null);
+    setUserEmail(null);
+    setIsAuthenticated(false);
+    
+    // Clear auth from localStorage
+    localStorage.removeItem('chatbot-auth-token');
+    localStorage.removeItem('chatbot-user-id');
+    localStorage.removeItem('chatbot-user-email');
+    
+    // Clear conversations and other data
+    setConversations([]);
+    setCurrentConversationId(null);
+    localStorage.removeItem('chatbot-conversations');
+    localStorage.removeItem('chatbot-current-conversation-id');
+  };
+
+  // Load conversations, theme preference, sidebar state, and auth from localStorage on mount
   useEffect(() => {
+    const savedToken = localStorage.getItem('chatbot-auth-token');
+    const savedUserId = localStorage.getItem('chatbot-user-id');
+    const savedUserEmail = localStorage.getItem('chatbot-user-email');
     const savedConversations = localStorage.getItem('chatbot-conversations');
     const savedCurrentId = localStorage.getItem('chatbot-current-conversation-id');
     const savedTheme = localStorage.getItem('chatbot-theme');
     const savedSidebarOpen = localStorage.getItem('chatbot-sidebar-open');
+    
+    // Restore authentication if available
+    if (savedToken && savedUserId && savedUserEmail) {
+      setAuthToken(savedToken);
+      setUserId(savedUserId);
+      setUserEmail(savedUserEmail);
+      setIsAuthenticated(true);
+    }
     
     if (savedConversations) {
       try {
@@ -747,7 +812,13 @@ const App = () => {
         // baseUrl for API mode
         'http://localhost:3000',
         // translation function
-        translation
+        translation,
+        // authToken for API mode
+        authToken || undefined,
+        // chatId for API mode
+        conversation.id,
+        // tools for API mode
+        []
       );
     } catch (error) {
       console.error('Failed to refresh message:', error);
@@ -858,12 +929,7 @@ const App = () => {
     // Additional share tracking or analytics could go here
   };
 
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault();
-      handleSendMessage(input);
-    }
-  };
+
 
   // Control button handlers
   const handleVoiceInput = () => {
@@ -882,6 +948,16 @@ const App = () => {
     console.log('Attachment clicked');
     // You can implement file upload here
   };
+
+  // Show login form if not authenticated
+  if (!isAuthenticated) {
+    return (
+      <ThemeProvider theme={currentTheme}>
+        <CssBaseline />
+        <LoginForm onLogin={handleLogin} isDarkMode={isDarkMode} />
+      </ThemeProvider>
+    );
+  }
 
   return (
     <ThemeProvider theme={currentTheme}>
@@ -938,11 +1014,13 @@ const App = () => {
               onDeleteMessage={deleteMessage}
               onShareMessage={shareMessage}
               inputAreaHeight={inputAreaHeight}
+              onLogout={handleLogout}
+              userEmail={userEmail}
             />
             <InputArea
               value={input}
               onChange={setInput}
-              onSend={() => handleSendMessage(input)}
+              onSend={handleSendMessage}
               onStop={stopGeneration}
               disabled={isLoading}
               isLoading={isLoading}
