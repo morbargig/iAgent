@@ -25,6 +25,7 @@ import { useTranslation } from '../contexts/TranslationContext';
 import { Translate } from './Translate';
 import { useAnimatedPlaceholder } from '../hooks/useAnimatedPlaceholder';
 import { useToolToggles } from '../hooks/useToolToggles';
+
 import BasicDateRangePicker from './BasicDateRangePicker';
 
 // Helper function to detect text direction
@@ -64,7 +65,7 @@ interface InputAreaProps {
   isDarkMode: boolean;
   isEditing?: boolean;
   sidebarOpen?: boolean; // Add sidebar state
-  sidebarRef?: React.RefObject<HTMLDivElement | null>; // Add sidebar ref
+  sidebarRef?: React.RefObject<HTMLDivElement | null>; // Add sidebar ref for timing
   onHeightChange?: (height: number) => void; // Callback for height changes
   // Control buttons
   onVoiceInput?: () => void; // Voice input callback
@@ -333,24 +334,17 @@ export function InputArea({
   const onHeightChangeRef = useRef(onHeightChange);
   onHeightChangeRef.current = onHeightChange;
 
-  // Stable callback for sidebar width update - use refs to avoid dependency issues
-  const sidebarRefCurrent = useRef(sidebarRef);
-  const sidebarOpenRef = useRef(sidebarOpen);
-  sidebarRefCurrent.current = sidebarRef;
-  sidebarOpenRef.current = sidebarOpen;
-  
+  // Calculate sidebar width with immediate response for both open and close
   const updateSidebarWidth = useCallback(() => {
-    if (sidebarRefCurrent.current?.current && sidebarOpenRef.current) {
-      const width = sidebarRefCurrent.current.current.offsetWidth;
-      setSidebarWidth(width);
-      // Debug: Log sidebar width updates
-      console.log('🔄 Sidebar width updated:', width);
+    if (sidebarOpen) {
+      // Always immediately set to standard width for instant opening response
+      // Don't wait for measurements during opening animation
+      setSidebarWidth(250);
     } else {
+      // Immediately set to 0 for instant close response
       setSidebarWidth(0);
-      // Debug: Log sidebar closed
-      console.log('🔄 Sidebar closed, width set to 0');
     }
-  }, []);
+  }, [sidebarOpen]);
 
   // Auto-resize textarea - simplified to prevent infinite loops
   useEffect(() => {
@@ -366,66 +360,43 @@ export function InputArea({
     }
   }, [value]);
 
-  // Measure input area height and sidebar width on window resize
-  useEffect(() => {
-    const handleResize = () => {
-      // Update input area height
-      if (inputContainerRef.current && onHeightChangeRef.current) {
-        const height = inputContainerRef.current.offsetHeight;
-        onHeightChangeRef.current(height);
-      }
-      
-      // Update sidebar width to ensure proper centering
-      updateSidebarWidth();
-    };
-
-    window.addEventListener('resize', handleResize);
-    
-    return () => {
-      window.removeEventListener('resize', handleResize);
-    };
-  }, [updateSidebarWidth]); // Include updateSidebarWidth in dependencies
-
-  // Initial sidebar width measurement on mount
-  useEffect(() => {
-    // Delay initial measurement to ensure DOM is ready
-    const timer = setTimeout(() => {
-      updateSidebarWidth();
-    }, 100);
-    
-    return () => clearTimeout(timer);
-  }, [updateSidebarWidth]);
-
-  // Measure sidebar width dynamically and on transitions
+  // Update sidebar width immediately when sidebarOpen changes
   useEffect(() => {
     updateSidebarWidth();
-    
-    const sidebarElement = sidebarRefCurrent.current?.current;
-    if (sidebarElement) {
-      // Add transition end listener for smooth width updates
+  }, [sidebarOpen, updateSidebarWidth]);
+
+  // Optional: Listen for sidebar transition end events for any fine-tuning
+  useEffect(() => {
+    const sidebarElement = sidebarRef?.current;
+    if (sidebarElement && sidebarOpen) {
       const handleTransitionEnd = () => {
-        updateSidebarWidth();
+        // Only perform measurement adjustment after opening is complete
+        const actualWidth = sidebarElement.offsetWidth;
+        if (actualWidth > 0 && actualWidth !== 250) {
+          setSidebarWidth(actualWidth);
+        }
       };
-      
-      // Add ResizeObserver for more robust width tracking
-      let resizeObserver: ResizeObserver | null = null;
-      if (window.ResizeObserver) {
-        resizeObserver = new ResizeObserver(() => {
-          updateSidebarWidth();
-        });
-        resizeObserver.observe(sidebarElement);
-      }
       
       sidebarElement.addEventListener('transitionend', handleTransitionEnd);
       
       return () => {
         sidebarElement.removeEventListener('transitionend', handleTransitionEnd);
-        if (resizeObserver) {
-          resizeObserver.disconnect();
-        }
       };
     }
-  }, [sidebarOpen, updateSidebarWidth]);
+  }, [sidebarRef, sidebarOpen]);
+
+  // Measure input area height on window resize
+  useEffect(() => {
+    const handleResize = () => {
+      if (inputContainerRef.current && onHeightChangeRef.current) {
+        const height = inputContainerRef.current.offsetHeight;
+        onHeightChangeRef.current(height);
+      }
+    };
+
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   const handleKeyDown = (event: React.KeyboardEvent) => {
     if (event.key === 'Enter' && !event.shiftKey) {
@@ -588,7 +559,7 @@ export function InputArea({
             : 'linear-gradient(180deg, rgba(255, 255, 255, 0) 0%, rgba(255, 255, 255, 0.8) 50%, #ffffff 100%)',
           paddingTop: '20px',
           paddingBottom: '20px',
-          transition: 'inset-inline-start 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+          transition: 'inset-inline-start 300ms cubic-bezier(0.4, 0, 0.2, 1)',
           '@media (max-width: 768px)': {
             insetInlineStart: 0,
             paddingBottom: 'env(safe-area-inset-bottom, 10px)',
@@ -607,7 +578,7 @@ export function InputArea({
             paddingInlineEnd: '20px',
             width: '100%',
             boxSizing: 'border-box',
-            transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+            transition: 'all 300ms cubic-bezier(0.4, 0, 0.2, 1)',
             '@media (max-width: 600px)': {
               paddingInlineStart: '10px',
               paddingInlineEnd: '10px',

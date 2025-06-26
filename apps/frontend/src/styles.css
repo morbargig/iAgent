@@ -23,8 +23,8 @@ html[dir="ltr"] {
   text-align: left;
 }
 
-/* Smooth transitions for layout changes */
-* {
+/* Smooth transitions for layout changes - exclude main layout components */
+*:not(#iagent-sidebar):not(#iagent-input-area):not(#iagent-input-content):not(#iagent-theme-toggle) {
   transition: margin 0.2s ease, padding 0.2s ease;
 }
 

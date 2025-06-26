@@ -474,7 +474,7 @@ export const Sidebar = React.forwardRef<HTMLDivElement, SidebarProps>(({
             fontSize: '14px',
             fontWeight: 400,
             textTransform: 'none',
-            transition: 'all 150ms cubic-bezier(0.4, 0, 0.2, 1)',
+            transition: 'background-color 300ms cubic-bezier(0.4, 0, 0.2, 1), color 300ms cubic-bezier(0.4, 0, 0.2, 1)',
             '&:hover': {
               backgroundColor: theme.palette.action.hover,
               color: theme.palette.text.primary,
@@ -533,7 +533,7 @@ export const Sidebar = React.forwardRef<HTMLDivElement, SidebarProps>(({
         width: open ? 250 : 0,
         flexShrink: 0,
         overflow: 'hidden',
-        transition: 'width 200ms cubic-bezier(0.4, 0, 0.2, 1)',
+        transition: 'width 300ms cubic-bezier(0.4, 0, 0.2, 1)',
         height: '100vh',
       }}
     >

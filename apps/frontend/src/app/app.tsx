@@ -11,6 +11,7 @@ import { LoginForm } from '../components/LoginForm';
 
 import { StreamingClient, createMessage, createStreamingMessage, updateMessageContent, type Message, type Conversation } from '@iagent/stream-mocks';
 import { useMockMode } from '../hooks/useMockMode';
+import { useSidebarState, useThemeMode } from '../hooks/useLocalStorage';
 import { LanguageSwitcher } from '../components/LanguageSwitcher';
 import { generateUniqueId } from '../utils/id-generator';
 
@@ -284,8 +285,8 @@ const lightTheme = createTheme({
 
 const App = () => {
   const { t } = useTranslation();
-  const [isDarkMode, setIsDarkMode] = useState(false);
-  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  const [isDarkMode, setIsDarkMode] = useThemeMode();
+  const [isSidebarOpen, setIsSidebarOpen] = useSidebarState();
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [currentConversationId, setCurrentConversationId] = useState<string | null>(null);
   const [input, setInput] = useState('');
@@ -601,18 +602,14 @@ const App = () => {
       setCurrentConversationId(savedCurrentId);
     }
     
-    if (savedTheme) {
-      setIsDarkMode(savedTheme === 'dark');
-    }
+    // Theme is now handled by useThemeMode hook
     
-    // Responsive sidebar state - hidden on mobile, visible on desktop
-    if (savedSidebarOpen !== null) {
-      setIsSidebarOpen(savedSidebarOpen === 'true');
-    } else {
+    // Sidebar state is now handled by useSidebarState hook
+    // Initialize responsive sidebar for new users only
+    if (savedSidebarOpen === null) {
       const isMobile = window.innerWidth < 768; // Mobile breakpoint
       const defaultSidebarState = !isMobile;
       setIsSidebarOpen(defaultSidebarState);
-      localStorage.setItem('chatbot-sidebar-open', defaultSidebarState.toString());
     }
   }, []);
 
@@ -632,18 +629,17 @@ const App = () => {
     }
   }, [currentConversationId]);
 
-  // Save theme preference to localStorage with smooth transitions
+  // Theme toggle now uses localStorage hook
   const toggleTheme = () => {
-    const newTheme = !isDarkMode;
-    setIsDarkMode(newTheme);
-    localStorage.setItem('chatbot-theme', newTheme ? 'dark' : 'light');
+    setIsDarkMode(!isDarkMode);
   };
 
-  // Toggle sidebar with smooth slide animation (300ms)
+  // Sidebar toggle now uses localStorage hook
   const toggleSidebar = () => {
-    const newSidebarState = !isSidebarOpen;
-    setIsSidebarOpen(newSidebarState);
-    localStorage.setItem('chatbot-sidebar-open', newSidebarState.toString());
+    const newState = !isSidebarOpen;
+    setIsSidebarOpen(newState);
+    // Force immediate localStorage update for synchronization
+    localStorage.setItem('chatbot-sidebar-open', newState.toString());
   };
 
   const createNewConversation = () => {
