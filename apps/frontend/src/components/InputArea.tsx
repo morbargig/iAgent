@@ -25,6 +25,8 @@ import { useTranslation } from '../contexts/TranslationContext';
 import { Translate } from './Translate';
 import { useAnimatedPlaceholder } from '../hooks/useAnimatedPlaceholder';
 import { useToolToggles } from '../hooks/useToolToggles';
+import { ToolSettingsDialog, ToolConfiguration } from './ToolSettingsDialog';
+import { useToolSchemas } from '../services/toolService';
 
 import BasicDateRangePicker from './BasicDateRangePicker';
 
@@ -93,9 +95,9 @@ const flagOptions = [
 
 // Tools list data
 const toolsList = [
-  { id: 'tool-x', nameKey: 'tools.toolX' },
-  { id: 'tool-y', nameKey: 'tools.toolY' },
-  { id: 'tool-z', nameKey: 'tools.toolZ' },
+  { id: 'tool-x', nameKey: 'tools.tool-x' },
+  { id: 'tool-y', nameKey: 'tools.tool-y' },
+  { id: 'tool-z', nameKey: 'tools.tool-z' },
 ];
 
 // Time range options
@@ -213,7 +215,22 @@ export function InputArea({
   const [committedTab, setCommittedTab] = useState(initialSettings.committedTab);
 
   // Tool toggles hook
-  const { enabledTools, toggleTool, isToolEnabled } = useToolToggles();
+  // Tool toggles and configurations
+  const { 
+    enabledTools, 
+    toggleTool, 
+    isToolEnabled, 
+    toolConfigurations,
+    setToolConfiguration,
+    setToolEnabled,
+    hasUnconfiguredTools,
+    isToolConfigured
+  } = useToolToggles();
+
+  // Tool schemas and settings dialog
+  const { toolSchemas, loading: toolSchemasLoading } = useToolSchemas();
+  const [toolSettingsOpen, setToolSettingsOpen] = useState(false);
+  const [shouldTriggerRing, setShouldTriggerRing] = useState(false);
 
   // Save selected flags to localStorage with debouncing
   useEffect(() => {
@@ -368,6 +385,22 @@ export function InputArea({
   const handleKeyDown = (event: React.KeyboardEvent) => {
     if (event.key === 'Enter' && !event.shiftKey) {
       event.preventDefault();
+      
+      // If tools need configuration, trigger ring animation
+      if (needsToolConfiguration && value.trim()) {
+        setShouldTriggerRing(true);
+        setTimeout(() => setShouldTriggerRing(false), 1500);
+        setToolSettingsOpen(true);
+        
+        // Show user-friendly alert
+        if (typeof window !== 'undefined') {
+          setTimeout(() => {
+            alert(t('input.configureTools'));
+          }, 100);
+        }
+        return;
+      }
+      
       if (value.trim() && !disabled && !isLoading) {
         handleSubmit();
       }
@@ -378,6 +411,23 @@ export function InputArea({
     if (isLoading && onStop) {
       onStop();
     } else if (value.trim() && !disabled) {
+      // Check if there are unconfigured tools before submitting
+      if (needsToolConfiguration) {
+        // Trigger ring animation and open settings dialog
+        setShouldTriggerRing(true);
+        setTimeout(() => setShouldTriggerRing(false), 1500);
+        setToolSettingsOpen(true);
+        
+        // Show user-friendly alert
+        if (typeof window !== 'undefined') {
+          // This ensures browser compatibility
+          setTimeout(() => {
+            alert(t('input.configureTools'));
+          }, 100);
+        }
+        return;
+      }
+
       // Prepare date filter data
       const dateFilter: DateFilter = {
         type: committedTab === 1 ? 'picker' : 'custom',
@@ -400,7 +450,10 @@ export function InputArea({
     }
   };
 
-  const canSend = value.trim() && !disabled;
+  // Check if there are unconfigured tools that need attention
+  const needsToolConfiguration = hasUnconfiguredTools(toolSchemas);
+  
+  const canSend = value.trim() && !disabled && !needsToolConfiguration;
   const showStopButton = isLoading;
   
   // Detect text direction for proper alignment - simplified to prevent infinite loops
@@ -505,8 +558,68 @@ export function InputArea({
 
   // Tool toggle handler
   const handleToolToggle = (toolId: string) => {
+    const isCurrentlyEnabled = enabledTools[toolId];
+    
+    // Toggle the tool
     toggleTool(toolId);
+    
+    // Update tool configuration to match the toggle state
+    const existingConfig = toolConfigurations[toolId];
+    const newConfig: ToolConfiguration = {
+      toolId,
+      enabled: !isCurrentlyEnabled,
+      parameters: existingConfig?.parameters || {},
+    };
+    
+    setToolConfiguration(toolId, newConfig);
   };
+
+  // Tool settings handlers
+  const handleToolSettingsOpen = () => {
+    setToolSettingsOpen(true);
+  };
+
+  const handleToolSettingsClose = () => {
+    setToolSettingsOpen(false);
+  };
+
+  const handleToolConfigurationChange = (toolId: string, config: ToolConfiguration) => {
+    setToolConfiguration(toolId, config);
+    
+    // Also sync with enabledTools state if the enabled state changed
+    if (enabledTools[toolId] !== config.enabled) {
+      setToolEnabled(toolId, config.enabled);
+    }
+  };
+
+  // Create synchronized configurations that match enabled tools
+  const synchronizedConfigurations = React.useMemo(() => {
+    const synced: { [toolId: string]: ToolConfiguration } = {};
+    
+    // Start with existing configurations
+    Object.keys(toolConfigurations).forEach(toolId => {
+      synced[toolId] = { ...toolConfigurations[toolId] };
+    });
+    
+    // Ensure all tools have configurations that match enabled state
+    toolsList.forEach(tool => {
+      if (!synced[tool.id]) {
+        synced[tool.id] = {
+          toolId: tool.id,
+          enabled: enabledTools[tool.id] || false,
+          parameters: {},
+        };
+      } else {
+        // Sync enabled state
+        synced[tool.id] = {
+          ...synced[tool.id],
+          enabled: enabledTools[tool.id] || false,
+        };
+      }
+    });
+    
+    return synced;
+  }, [toolConfigurations, enabledTools, toolsList]);
 
   return (
     <>
@@ -606,9 +719,16 @@ export function InputArea({
               onKeyDown={handleKeyDown}
               onFocus={() => setIsFocused(true)}
               onBlur={() => setIsFocused(false)}
-              placeholder={debugPlaceholder}
-              disabled={disabled}
-              style={textareaStyle}
+              placeholder={needsToolConfiguration ? t('input.disabledDueToConfig') : debugPlaceholder}
+              disabled={disabled || needsToolConfiguration}
+              style={{
+                ...textareaStyle,
+                opacity: needsToolConfiguration ? 0.6 : 1,
+                cursor: needsToolConfiguration ? 'not-allowed' : 'text',
+                color: needsToolConfiguration 
+                  ? (isDarkMode ? '#ff9800' : '#f57c00')
+                  : textareaStyle.color,
+              }}
             />
 
             {/* Input Controls Row */}
@@ -788,21 +908,61 @@ export function InputArea({
                 <IconButton
                   id="iagent-settings-button"
                   className="iagent-settings-control"
-                  sx={{
-                    backgroundColor: isDarkMode ? '#565869' : '#e5e7eb',
-                    border: `1px solid ${isDarkMode ? '#6b6d7a' : '#d1d5db'}`,
-                    borderRadius: '20px',
-                    width: '36px',
-                    height: '36px',
-                    color: isDarkMode ? '#ececf1' : '#374151',
-                    transition: 'all 0.2s ease',
-                    '&:hover': {
-                      backgroundColor: isDarkMode ? '#6b6d7a' : '#d1d5db',
-                      transform: 'scale(1.05)',
-                    },
-                  }}
+                                      onClick={handleToolSettingsOpen}
+                    title={needsToolConfiguration ? t('input.settingsRequired') : t('tools.settings.title')}
+                    sx={{
+                      backgroundColor: needsToolConfiguration 
+                        ? '#ff9800' 
+                        : (isDarkMode ? '#565869' : '#e5e7eb'),
+                      border: `1px solid ${needsToolConfiguration 
+                        ? '#ff9800' 
+                        : (isDarkMode ? '#6b6d7a' : '#d1d5db')}`,
+                      borderRadius: '20px',
+                      width: '36px',
+                      height: '36px',
+                      color: needsToolConfiguration 
+                        ? '#ffffff' 
+                        : (isDarkMode ? '#ececf1' : '#374151'),
+                      transition: 'all 0.2s ease',
+                      position: 'relative',
+                                             animation: (needsToolConfiguration || shouldTriggerRing) ? 'settingsRing 1.5s ease-in-out infinite' : 'none',
+                      '@keyframes settingsRing': {
+                        '0%': {
+                          boxShadow: '0 0 0 0 rgba(255, 152, 0, 0.8)',
+                          transform: 'scale(1)',
+                        },
+                        '50%': {
+                          boxShadow: '0 0 0 8px rgba(255, 152, 0, 0.2)',
+                          transform: 'scale(1.1)',
+                        },
+                        '100%': {
+                          boxShadow: '0 0 0 0 rgba(255, 152, 0, 0)',
+                          transform: 'scale(1)',
+                        },
+                      },
+                      '&:hover': {
+                        backgroundColor: needsToolConfiguration 
+                          ? '#f57c00' 
+                          : (isDarkMode ? '#6b6d7a' : '#d1d5db'),
+                        transform: needsToolConfiguration ? 'scale(1.15)' : 'scale(1.05)',
+                      },
+                    }}
                 >
                   <SettingsIcon sx={{ fontSize: '18px' }} />
+                  {needsToolConfiguration && (
+                    <Box
+                      sx={{
+                        position: 'absolute',
+                        top: -2,
+                        right: -2,
+                        width: 8,
+                        height: 8,
+                        borderRadius: '50%',
+                        backgroundColor: '#f44336',
+                        border: '1px solid #ffffff',
+                      }}
+                    />
+                  )}
                 </IconButton>
               </Box>
 
@@ -1492,6 +1652,17 @@ export function InputArea({
           />
         </Box>
       </Box>
+
+      {/* Tool Settings Dialog */}
+      <ToolSettingsDialog
+        open={toolSettingsOpen}
+        onClose={handleToolSettingsClose}
+        tools={toolSchemas}
+        configurations={synchronizedConfigurations}
+        onConfigurationChange={handleToolConfigurationChange}
+        isDarkMode={isDarkMode}
+        isLoading={toolSchemasLoading}
+      />
     </>
   );
 } 

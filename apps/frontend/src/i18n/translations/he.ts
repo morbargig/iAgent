@@ -115,6 +115,10 @@ const translations: Translation = {
     voice: 'קלט קולי',
     attachment: 'צרף קובץ',
     selectCountries: 'בחר מדינות',
+    configureTools: 'אנא הגדר כלים מופעלים לפני שליחה',
+    toolsNeedConfig: 'חלק מהכלים דורשים הגדרה',
+    settingsRequired: 'נדרשות הגדרות',
+    disabledDueToConfig: 'קלט מושבת - כלים דורשים הגדרה',
     examples: [
       'במה אתה יכול לעזור לי?',
       'הסבר מחשוב קוונטי בפשטות',
@@ -139,9 +143,9 @@ const translations: Translation = {
     israel: 'ישראל',
   },
   tools: {
-    toolX: 'כלי X',
-    toolY: 'כלי Y',
-    toolZ: 'כלי Z',
+    'tool-x': 'ToolT',
+    'tool-y': 'ToolH',
+    'tool-z': 'ToolF',
   },
   dateRange: {
     minutes: 'דקות',

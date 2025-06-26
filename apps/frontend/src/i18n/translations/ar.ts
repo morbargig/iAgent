@@ -115,6 +115,10 @@ const translations: Translation = {
     voice: 'إدخال صوتي',
     attachment: 'إرفاق ملف',
     selectCountries: 'اختر البلدان',
+    configureTools: 'يرجى تكوين الأدوات المفعلة قبل الإرسال',
+    toolsNeedConfig: 'بعض الأدوات تتطلب تكوين',
+    settingsRequired: 'الإعدادات مطلوبة',
+    disabledDueToConfig: 'الإدخال معطل - الأدوات تحتاج تكوين',
     examples: [
       'كيف يمكنك مساعدتي؟',
       'اشرح الحاسوب الكمي ببساطة',
@@ -254,9 +258,9 @@ const translations: Translation = {
     israel: 'إسرائيل',
   },
   tools: {
-    toolX: 'أداة X',
-    toolY: 'أداة Y',
-    toolZ: 'أداة Z',
+    'tool-x': 'ToolT',
+    'tool-y': 'ToolH',
+    'tool-z': 'ToolF',
   },
   dateRange: {
     minutes: 'دقائق',

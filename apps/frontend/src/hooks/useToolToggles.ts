@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import type { ToolConfiguration } from '../components/ToolSettingsDialog';
 
 export function useToolToggles() {
   const [enabledTools, setEnabledTools] = useState<{ [key: string]: boolean }>(() => {
@@ -9,6 +10,12 @@ export function useToolToggles() {
       'tool-y': false,
       'tool-z': false
     };
+  });
+
+  const [toolConfigurations, setToolConfigurations] = useState<{ [key: string]: ToolConfiguration }>(() => {
+    // Initialize configurations from localStorage
+    const stored = localStorage.getItem('chatbot-tool-configurations');
+    return stored ? JSON.parse(stored) : {};
   });
 
   const toggleTool = (toolId: string) => {
@@ -33,11 +40,60 @@ export function useToolToggles() {
     });
   };
 
+  const setToolConfiguration = (toolId: string, config: ToolConfiguration) => {
+    setToolConfigurations(prev => {
+      const newConfigs = { ...prev, [toolId]: config };
+      localStorage.setItem('chatbot-tool-configurations', JSON.stringify(newConfigs));
+      return newConfigs;
+    });
+
+    // Also update the enabled state
+    setToolEnabled(toolId, config.enabled);
+  };
+
+  const getToolConfiguration = (toolId: string): ToolConfiguration | undefined => {
+    return toolConfigurations[toolId];
+  };
+
+  const isToolConfigured = (toolId: string, toolSchema?: any): boolean => {
+    const config = toolConfigurations[toolId];
+    
+    if (!config?.enabled || !toolSchema?.requiresConfiguration) return true;
+    
+    // Check if required fields are configured
+    if (toolSchema.configurationFields?.pages?.required && 
+        (!config.parameters.pages?.selectedPages?.length)) {
+      return false;
+    }
+    
+    if (toolSchema.configurationFields?.requiredWords?.required && 
+        (!config.parameters.requiredWords?.length)) {
+      return false;
+    }
+    
+    return true;
+  };
+
+  const getEnabledToolsRequiringConfig = (toolSchemas: any[]): string[] => {
+    return toolSchemas
+      .filter(tool => {
+        const config = toolConfigurations[tool.id];
+        return config?.enabled && tool.requiresConfiguration && !isToolConfigured(tool.id, tool);
+      })
+      .map(tool => tool.id);
+  };
+
+  const hasUnconfiguredTools = (toolSchemas: any[]): boolean => {
+    return getEnabledToolsRequiringConfig(toolSchemas).length > 0;
+  };
+
   // Sync with localStorage changes from other tabs
   useEffect(() => {
     const handleStorageChange = (e: StorageEvent) => {
       if (e.key === 'chatbot-enabled-tools' && e.newValue) {
         setEnabledTools(JSON.parse(e.newValue));
+      } else if (e.key === 'chatbot-tool-configurations' && e.newValue) {
+        setToolConfigurations(JSON.parse(e.newValue));
       }
     };
 
@@ -47,8 +103,14 @@ export function useToolToggles() {
 
   return {
     enabledTools,
+    toolConfigurations,
     toggleTool,
     setToolEnabled,
+    setToolConfiguration,
+    getToolConfiguration,
+    isToolConfigured,
+    getEnabledToolsRequiringConfig,
+    hasUnconfiguredTools,
     isToolEnabled: (toolId: string) => enabledTools[toolId] || false
   };
 } 
