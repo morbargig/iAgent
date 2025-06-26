@@ -12,7 +12,7 @@ import {
   Menu as MenuIcon,
   LightMode as LightModeIcon,
   DarkMode as DarkModeIcon,
-  Person as PersonIcon,
+  Login as LoginIcon,
   ContentCopy as CopyIcon,
   Refresh as RefreshIcon,
   Edit as EditIcon,
@@ -216,7 +216,7 @@ const ChatHeader = ({
                 },
               }}
             >
-              <PersonIcon sx={{ fontSize: '18px' }} />
+              <LoginIcon sx={{ fontSize: '18px' }} />
             </IconButton>
           </Tooltip>
         </>

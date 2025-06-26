@@ -16,7 +16,7 @@ import {
 import {
   Visibility,
   VisibilityOff,
-  Login as LoginIcon,
+  VpnKey as LoginIcon,
   Psychology as BotIcon
 } from '@mui/icons-material';
 import { useTranslation } from '../contexts/TranslationContext';
@@ -210,7 +210,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onLogin, isDarkMode }) => 
                 }
               }}
             >
-              {isLoading ? 'Signing In...' : 'Sign In'}
+              {isLoading ? 'Logging In...' : 'Login'}
             </Button>
           </form>
 
