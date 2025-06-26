@@ -343,8 +343,12 @@ export function InputArea({
     if (sidebarRefCurrent.current?.current && sidebarOpenRef.current) {
       const width = sidebarRefCurrent.current.current.offsetWidth;
       setSidebarWidth(width);
+      // Debug: Log sidebar width updates
+      console.log('🔄 Sidebar width updated:', width);
     } else {
       setSidebarWidth(0);
+      // Debug: Log sidebar closed
+      console.log('🔄 Sidebar closed, width set to 0');
     }
   }, []);
 
@@ -362,13 +366,17 @@ export function InputArea({
     }
   }, [value]);
 
-  // Measure input area height on window resize only - fixed to prevent infinite loops
+  // Measure input area height and sidebar width on window resize
   useEffect(() => {
     const handleResize = () => {
+      // Update input area height
       if (inputContainerRef.current && onHeightChangeRef.current) {
         const height = inputContainerRef.current.offsetHeight;
         onHeightChangeRef.current(height);
       }
+      
+      // Update sidebar width to ensure proper centering
+      updateSidebarWidth();
     };
 
     window.addEventListener('resize', handleResize);
@@ -376,17 +384,48 @@ export function InputArea({
     return () => {
       window.removeEventListener('resize', handleResize);
     };
-  }, []); // Empty dependency array - no dependencies needed
+  }, [updateSidebarWidth]); // Include updateSidebarWidth in dependencies
 
-  // Measure sidebar width dynamically - simplified
+  // Initial sidebar width measurement on mount
   useEffect(() => {
-    if (sidebarRefCurrent.current?.current && sidebarOpenRef.current) {
-      const width = sidebarRefCurrent.current.current.offsetWidth;
-      setSidebarWidth(width);
-    } else {
-      setSidebarWidth(0);
+    // Delay initial measurement to ensure DOM is ready
+    const timer = setTimeout(() => {
+      updateSidebarWidth();
+    }, 100);
+    
+    return () => clearTimeout(timer);
+  }, [updateSidebarWidth]);
+
+  // Measure sidebar width dynamically and on transitions
+  useEffect(() => {
+    updateSidebarWidth();
+    
+    const sidebarElement = sidebarRefCurrent.current?.current;
+    if (sidebarElement) {
+      // Add transition end listener for smooth width updates
+      const handleTransitionEnd = () => {
+        updateSidebarWidth();
+      };
+      
+      // Add ResizeObserver for more robust width tracking
+      let resizeObserver: ResizeObserver | null = null;
+      if (window.ResizeObserver) {
+        resizeObserver = new ResizeObserver(() => {
+          updateSidebarWidth();
+        });
+        resizeObserver.observe(sidebarElement);
+      }
+      
+      sidebarElement.addEventListener('transitionend', handleTransitionEnd);
+      
+      return () => {
+        sidebarElement.removeEventListener('transitionend', handleTransitionEnd);
+        if (resizeObserver) {
+          resizeObserver.disconnect();
+        }
+      };
     }
-  }, [sidebarOpen]); // Only depend on sidebarOpen, not the callback
+  }, [sidebarOpen, updateSidebarWidth]);
 
   const handleKeyDown = (event: React.KeyboardEvent) => {
     if (event.key === 'Enter' && !event.shiftKey) {
@@ -549,6 +588,7 @@ export function InputArea({
             : 'linear-gradient(180deg, rgba(255, 255, 255, 0) 0%, rgba(255, 255, 255, 0.8) 50%, #ffffff 100%)',
           paddingTop: '20px',
           paddingBottom: '20px',
+          transition: 'inset-inline-start 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
           '@media (max-width: 768px)': {
             insetInlineStart: 0,
             paddingBottom: 'env(safe-area-inset-bottom, 10px)',
@@ -565,6 +605,9 @@ export function InputArea({
             margin: '0 auto',
             paddingInlineStart: '20px',
             paddingInlineEnd: '20px',
+            width: '100%',
+            boxSizing: 'border-box',
+            transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
             '@media (max-width: 600px)': {
               paddingInlineStart: '10px',
               paddingInlineEnd: '10px',
