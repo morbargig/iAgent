@@ -1,8 +1,12 @@
 /* You can add global styles to this file, and also import other style files */
 
 /* Fix Material-UI overlay components blocking touch interactions */
-.MuiDrawer-root, .MuiModal-root, .MuiBackdrop-root {
-  pointer-events: none !important;
+.MuiDrawer-root {
+  pointer-events: auto !important;
+}
+
+.MuiModal-root .MuiBackdrop-root {
+  pointer-events: auto !important;
 }
 
 .MuiDrawer-paper {

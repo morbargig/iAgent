@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   Box,
   Typography,
@@ -6,6 +6,14 @@ import {
   useTheme,
   Tooltip,
   Chip,
+  Popover,
+  List,
+  ListItem,
+  ListItemButton,
+  ListItemText,
+  ListItemIcon,
+  Divider,
+  Avatar,
 } from '@mui/material';
 import {
   SmartToy as BotIcon,
@@ -24,6 +32,9 @@ import {
   MoreVert as MoreVertIcon,
   Api as ApiIcon,
   Psychology as MockIcon,
+  Person as PersonIcon,
+  Logout as LogoutIcon,
+  AccountCircle as AccountCircleIcon,
 } from '@mui/icons-material';
 import { type Message } from '@iagent/stream-mocks';
 import { MarkdownRenderer } from './MarkdownRenderer';
@@ -68,6 +79,22 @@ const ChatHeader = ({
 }) => {
   const theme = useTheme();
   const { t } = useTranslation();
+  const [userMenuAnchor, setUserMenuAnchor] = useState<HTMLElement | null>(null);
+  
+  const handleUserMenuOpen = (event: React.MouseEvent<HTMLElement>) => {
+    setUserMenuAnchor(event.currentTarget);
+  };
+  
+  const handleUserMenuClose = () => {
+    setUserMenuAnchor(null);
+  };
+  
+  const handleLogout = () => {
+    handleUserMenuClose();
+    if (onLogout) {
+      onLogout();
+    }
+  };
 
   return (
     <Box sx={{ 
@@ -182,43 +209,128 @@ const ChatHeader = ({
         {isDarkMode ? <LightModeIcon sx={{ fontSize: '18px' }} /> : <DarkModeIcon sx={{ fontSize: '18px' }} />}
       </IconButton>
 
-      {/* User Info and Logout */}
+      {/* User Menu */}
       {userEmail && (
         <>
           <Box sx={{ width: '1px', height: '16px', backgroundColor: theme.palette.divider, marginInline: '8px' }} />
-          <Typography variant="body2" sx={{ 
-            color: theme.palette.text.secondary,
-            fontSize: '12px',
-            marginInlineEnd: '8px'
-          }}>
-            {userEmail}
-          </Typography>
-          <Tooltip title="Logout">
+          <Tooltip title={t('user.menu')}>
             <IconButton
-              onClick={onLogout}
+              onClick={handleUserMenuOpen}
               className="no-rtl-transform"
-              aria-label="Logout"
+              aria-label="User menu"
               sx={{
                 width: '36px',
                 height: '36px',
                 borderRadius: '8px',
                 border: `1px solid ${theme.palette.divider}`,
-                backgroundColor: 'transparent',
+                backgroundColor: userMenuAnchor ? theme.palette.action.selected : 'transparent',
                 color: theme.palette.text.secondary,
                 transition: 'all 150ms cubic-bezier(0.4, 0, 0.2, 1)',
                 '&:hover': {
                   backgroundColor: theme.palette.action.hover,
-                  borderColor: theme.palette.error.main,
-                  color: theme.palette.error.main,
+                  borderColor: theme.palette.text.secondary,
                 },
                 '&:active': {
                   transform: 'scale(0.95)',
                 },
               }}
             >
-              <LoginIcon sx={{ fontSize: '18px' }} />
+              <PersonIcon sx={{ fontSize: '18px' }} />
             </IconButton>
           </Tooltip>
+          
+          {/* User Menu Popover */}
+          <Popover
+            open={Boolean(userMenuAnchor)}
+            anchorEl={userMenuAnchor}
+            onClose={handleUserMenuClose}
+            anchorOrigin={{
+              vertical: 'bottom',
+              horizontal: 'right',
+            }}
+            transformOrigin={{
+              vertical: 'top',
+              horizontal: 'right',
+            }}
+            sx={{
+              '& .MuiPaper-root': {
+                mt: 1,
+                minWidth: 200,
+                borderRadius: '12px',
+                border: `1px solid ${theme.palette.divider}`,
+                boxShadow: isDarkMode 
+                  ? '0 8px 32px rgba(0, 0, 0, 0.4)'
+                  : '0 8px 32px rgba(0, 0, 0, 0.12)',
+                backgroundColor: theme.palette.background.paper,
+              }
+            }}
+          >
+            <List sx={{ padding: '8px' }}>
+              {/* User Info Section */}
+              <ListItem sx={{ padding: '12px 16px' }}>
+                <ListItemIcon sx={{ minWidth: '40px' }}>
+                  <Avatar 
+                    sx={{ 
+                      width: 32, 
+                      height: 32, 
+                      backgroundColor: theme.palette.primary.main,
+                      fontSize: '14px',
+                      fontWeight: 600,
+                    }}
+                  >
+                    {userEmail.charAt(0).toUpperCase()}
+                  </Avatar>
+                </ListItemIcon>
+                <ListItemText
+                  primary={userEmail}
+                  primaryTypographyProps={{
+                    variant: 'body2',
+                    fontWeight: 500,
+                    color: theme.palette.text.primary,
+                    noWrap: true,
+                  }}
+                  secondary="Signed in"
+                  secondaryTypographyProps={{
+                    variant: 'caption',
+                    color: theme.palette.text.secondary,
+                  }}
+                />
+              </ListItem>
+              
+              <Divider sx={{ margin: '4px 8px' }} />
+              
+              {/* Logout Option */}
+              <ListItem disablePadding>
+                <ListItemButton
+                  onClick={handleLogout}
+                  sx={{
+                    borderRadius: '8px',
+                    margin: '0 4px',
+                    padding: '8px 12px',
+                    transition: 'all 150ms cubic-bezier(0.4, 0, 0.2, 1)',
+                    '&:hover': {
+                      backgroundColor: theme.palette.action.hover,
+                    },
+                  }}
+                >
+                  <ListItemIcon sx={{ minWidth: '36px' }}>
+                    <LogoutIcon sx={{ 
+                      fontSize: '18px', 
+                      color: theme.palette.error.main 
+                    }} />
+                  </ListItemIcon>
+                  <ListItemText
+                    primary={t('auth.logout')}
+                    primaryTypographyProps={{
+                      variant: 'body2',
+                      color: theme.palette.error.main,
+                      fontWeight: 500,
+                    }}
+                  />
+                </ListItemButton>
+              </ListItem>
+            </List>
+          </Popover>
         </>
       )}
     </Box>

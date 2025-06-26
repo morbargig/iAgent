@@ -169,6 +169,19 @@ const translations: Translation = {
     shareConversation: 'Share conversation',
     exportConversation: 'Export conversation',
   },
+  user: {
+    menu: 'User menu',
+    profile: 'Profile',
+    settings: 'Settings',
+  },
+  auth: {
+    login: 'Login',
+    logout: 'Logout',
+    signIn: 'Sign in',
+    signOut: 'Sign out',
+    email: 'Email',
+    password: 'Password',
+  },
   mock: {
     greeting: `Hello! I'm an AI assistant created by Anthropic. I'm here to help you with a wide variety of tasks including:
 

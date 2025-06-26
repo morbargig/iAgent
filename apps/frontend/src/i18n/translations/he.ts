@@ -169,6 +169,19 @@ const translations: Translation = {
     shareConversation: 'שתף שיחה',
     exportConversation: 'ייצא שיחה',
   },
+  user: {
+    menu: 'תפריט משתמש',
+    profile: 'פרופיל',
+    settings: 'הגדרות',
+  },
+  auth: {
+    login: 'התחברות',
+    logout: 'התנתקות',
+    signIn: 'היכנס',
+    signOut: 'צא',
+    email: 'אימייל',
+    password: 'סיסמה',
+  },
   mock: {
     greeting: `שלום! אני עוזר בינה מלאכותית שנוצר על ידי Anthropic. אני כאן כדי לעזור לך במגוון רחב של משימות כולל:
 

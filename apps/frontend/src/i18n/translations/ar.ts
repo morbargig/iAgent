@@ -284,6 +284,19 @@ const translations: Translation = {
     shareConversation: 'مشاركة المحادثة',
     exportConversation: 'تصدير المحادثة',
   },
+  user: {
+    menu: 'قائمة المستخدم',
+    profile: 'الملف الشخصي',
+    settings: 'الإعدادات',
+  },
+  auth: {
+    login: 'تسجيل الدخول',
+    logout: 'تسجيل الخروج',
+    signIn: 'دخول',
+    signOut: 'خروج',
+    email: 'البريد الإلكتروني',
+    password: 'كلمة المرور',
+  },
 };
 
 export default translations; 

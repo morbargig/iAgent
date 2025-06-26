@@ -602,20 +602,230 @@ export const Sidebar = React.forwardRef<HTMLDivElement, SidebarProps>(({
         }}
         sx={{
           '& .MuiDrawer-paper': {
-            backgroundColor: theme.palette.background.default,
+            backgroundColor: isDarkMode ? '#171717' : '#f9fafb',
             width: '85%',
-            maxWidth: '300px',
-            height: '100%',
-            zIndex: 20,
-            boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)',
-            '@media (max-width: 600px)': {
-              paddingBottom: 'env(safe-area-inset-bottom, 20px)',
-            }
+            maxWidth: '320px',
+            height: '100vh',
+            zIndex: 1300,
+            boxShadow: isDarkMode 
+              ? '0 8px 32px rgba(0, 0, 0, 0.5)'
+              : '0 8px 32px rgba(0, 0, 0, 0.15)',
+            borderInlineEnd: 'none',
+            overflow: 'hidden',
+            display: 'flex',
+            flexDirection: 'column',
           },
-
+          '& .MuiBackdrop-root': {
+            backgroundColor: 'rgba(0, 0, 0, 0.5)',
+          }
         }}
       >
-        {sidebarContent}
+        {/* Mobile Sidebar Content with fixed header */}
+        <Box
+          sx={{
+            width: '100%',
+            height: '100vh',
+            backgroundColor: isDarkMode ? '#171717' : '#f9fafb',
+            display: 'flex',
+            flexDirection: 'column',
+            overflow: 'hidden',
+          }}
+        >
+          {/* Mobile Header */}
+          <Box 
+            sx={{ 
+              padding: '16px',
+              flexShrink: 0,
+              position: 'relative',
+              borderBottom: `1px solid ${theme.palette.divider}`,
+            }}
+          >
+            {/* Mobile close button - Fixed positioning */}
+            <IconButton
+              onClick={onToggle}
+              sx={{ 
+                position: 'absolute', 
+                insetInlineEnd: 12, 
+                top: 12,
+                color: theme.palette.text.secondary,
+                backgroundColor: theme.palette.background.paper,
+                borderRadius: '8px',
+                width: 36,
+                height: 36,
+                zIndex: 10,
+                boxShadow: '0 2px 8px rgba(0, 0, 0, 0.1)',
+                transition: 'all 150ms cubic-bezier(0.4, 0, 0.2, 1)',
+                '&:hover': {
+                  backgroundColor: theme.palette.action.hover,
+                  color: theme.palette.text.primary,
+                  transform: 'scale(1.05)',
+                },
+                '&:active': {
+                  transform: 'scale(0.95)',
+                },
+              }}
+            >
+              <CloseIcon fontSize="small" />
+            </IconButton>
+
+            {/* New Chat Button */}
+            <Button
+              onClick={onNewConversation}
+              variant="outlined"
+              fullWidth
+              sx={{ 
+                borderColor: theme.palette.divider,
+                color: theme.palette.text.primary,
+                backgroundColor: 'transparent',
+                padding: '8px 12px',
+                borderRadius: '8px',
+                fontSize: '14px',
+                fontWeight: 500,
+                textTransform: 'none',
+                transition: 'all 150ms cubic-bezier(0.4, 0, 0.2, 1)',
+                boxShadow: 'none',
+                marginTop: '8px',
+                '&:hover': {
+                  backgroundColor: theme.palette.action.hover,
+                  borderColor: theme.palette.text.secondary,
+                  boxShadow: 'none',
+                },
+              }}
+            >
+              <AddIcon sx={{ fontSize: 16, marginInlineEnd: '8px' }} />
+              {t('sidebar.newChat')}
+            </Button>
+          </Box>
+
+          {/* Conversations List */}
+          <Box 
+            sx={{ 
+              flex: 1, 
+              overflow: 'auto',
+              padding: '8px',
+              '&::-webkit-scrollbar': {
+                width: '4px',
+              },
+              '&::-webkit-scrollbar-track': {
+                backgroundColor: 'transparent',
+              },
+              '&::-webkit-scrollbar-thumb': {
+                backgroundColor: theme.palette.divider,
+                borderRadius: '2px',
+                '&:hover': {
+                  backgroundColor: theme.palette.text.secondary,
+                },
+              },
+            }}
+          >
+            {conversations.length === 0 ? (
+              <Box sx={{ 
+                padding: '24px 16px', 
+                textAlign: 'center',
+              }}>
+                <ChatIcon sx={{ 
+                  fontSize: 24, 
+                  marginBottom: '8px',
+                  color: theme.palette.text.secondary,
+                  opacity: 0.6,
+                }} />
+                <Typography variant="body2" sx={{ 
+                  fontSize: '14px', 
+                  color: theme.palette.text.secondary,
+                  opacity: 0.8,
+                  lineHeight: 1.4,
+                }}>
+                  {t('sidebar.emptyState')}
+                </Typography>
+              </Box>
+            ) : (
+              <List sx={{ padding: 0 }}>
+                {conversations.map((conversation) => (
+                  <ListItem key={conversation.id} disablePadding sx={{ marginBottom: '2px' }}>
+                    <ListItemButton
+                      onClick={() => {
+                        onSelectConversation(conversation.id);
+                        onToggle(); // Close sidebar on mobile after selection
+                      }}
+                      sx={{
+                        borderRadius: '8px',
+                        padding: '12px',
+                        minHeight: 'auto',
+                        backgroundColor: currentConversationId === conversation.id 
+                          ? theme.palette.action.selected
+                          : 'transparent',
+                        '&:hover': {
+                          backgroundColor: currentConversationId === conversation.id 
+                            ? theme.palette.action.selected
+                            : theme.palette.action.hover,
+                        },
+                      }}
+                    >
+                      <ChatIcon sx={{ 
+                        fontSize: 16, 
+                        marginInlineEnd: '12px',
+                        color: currentConversationId === conversation.id 
+                          ? theme.palette.primary.main
+                          : theme.palette.text.secondary,
+                        flexShrink: 0,
+                      }} />
+                      
+                      <ListItemText
+                        primary={conversation.titleKey ? t(conversation.titleKey) : conversation.title}
+                        primaryTypographyProps={{
+                          noWrap: true,
+                          variant: 'body2',
+                          fontSize: '14px',
+                          fontWeight: currentConversationId === conversation.id ? 500 : 400,
+                          color: currentConversationId === conversation.id 
+                            ? theme.palette.text.primary
+                            : theme.palette.text.secondary,
+                        }}
+                      />
+                    </ListItemButton>
+                  </ListItem>
+                ))}
+              </List>
+            )}
+          </Box>
+
+          {/* Mobile Footer */}
+          <Box 
+            sx={{ 
+              padding: '16px',
+              borderTop: `1px solid ${theme.palette.divider}`,
+              flexShrink: 0,
+              paddingBottom: 'max(16px, env(safe-area-inset-bottom))',
+            }}
+          >
+            <Button
+              onClick={onToggleTheme}
+              variant="text"
+              fullWidth
+              sx={{ 
+                justifyContent: 'flex-start',
+                padding: '12px',
+                borderRadius: '8px',
+                color: theme.palette.text.secondary,
+                fontSize: '14px',
+                fontWeight: 400,
+                textTransform: 'none',
+                transition: 'all 150ms cubic-bezier(0.4, 0, 0.2, 1)',
+                '&:hover': {
+                  backgroundColor: theme.palette.action.hover,
+                  color: theme.palette.text.primary,
+                },
+              }}
+            >
+              {isDarkMode ? (
+                <LightModeIcon sx={{ fontSize: 16, marginInlineEnd: '12px' }} />
+              ) : (
+                <DarkModeIcon sx={{ fontSize: 16, marginInlineEnd: '12px' }} />
+              )}
+              {isDarkMode ? t('theme.light') : t('theme.dark')}
+            </Button>
+          </Box>
+        </Box>
       </Drawer>
     );
   }
