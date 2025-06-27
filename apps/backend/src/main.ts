@@ -15,7 +15,7 @@ async function bootstrap() {
   app.enableCors({
     origin: ['http://localhost:4200', 'http://localhost:3000'], // Frontend ports
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'Cache-Control'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'Cache-Control', 'x-user-id'],
     credentials: true,
   });
   
@@ -33,8 +33,21 @@ async function bootstrap() {
       'contact@chatgptclone.dev'
     )
     .addTag('Chat', 'Chat and messaging endpoints')
+    .addTag('Authentication', 'Authentication endpoints')
+    .addTag('Chat Management', 'Chat CRUD operations')
     .addServer('http://localhost:3000', 'Development server')
     .addServer('https://your-production-domain.com', 'Production server')
+    .addBearerAuth(
+      {
+        type: 'http',
+        scheme: 'bearer',
+        bearerFormat: 'JWT',
+        name: 'JWT',
+        description: 'Enter JWT token',
+        in: 'header',
+      },
+      'JWT-auth', // This name here is important for matching up with @ApiBearerAuth() in your controller!
+    )
     .build();
 
   const document = SwaggerModule.createDocument(app, config);

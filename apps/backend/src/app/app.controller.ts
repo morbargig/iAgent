@@ -16,6 +16,8 @@ import {
   ApiUnauthorizedResponse
 } from '@nestjs/swagger';
 import { AppService } from './app.service';
+import { ChatService } from './services/chat.service';
+import { UserId, ApiJwtAuth } from './decorators/auth.decorator';
 // import { AuthService, LoginRequest, LoginResponse } from './auth/auth.service';
 // import { AuthGuard, AuthenticatedRequest } from './auth/auth.guard';
 import { 
@@ -44,7 +46,8 @@ interface MessageEvent {
 @Controller()
 export class AppController {
   constructor(
-    private readonly appService: AppService
+    private readonly appService: AppService,
+    private readonly chatService: ChatService
   ) {}
 
   @Get()
@@ -150,9 +153,10 @@ export class AppController {
   }
 
   @Post('chat')
+  @ApiJwtAuth()
   @ApiOperation({ 
     summary: 'Send a chat message',
-            description: 'Send a message to the AI assistant and receive a complete response. This endpoint returns the full response at once.'
+    description: 'Send a message to the AI assistant and receive a complete response. This endpoint returns the full response at once. Requires Bearer token authentication.'
   })
   @ApiConsumes('application/json')
   @ApiProduces('application/json')
@@ -177,7 +181,7 @@ export class AppController {
     }
   })
   @ApiBadRequestResponse({
-    description: 'Invalid request format or validation error',
+    description: 'Invalid request format, validation error, or missing x-user-id header',
     type: ErrorResponseDto,
     schema: {
       $ref: getSchemaPath(ErrorResponseDto)
@@ -187,8 +191,8 @@ export class AppController {
     description: 'Internal server error',
     type: ErrorResponseDto
   })
-  async chat(@Body() request: any): Promise<string> {
-    const { messages } = request;
+  async chat(@UserId() userId: string, @Body() request: any): Promise<string> {
+    const { messages, chatId } = request;
     
     // Convert DTOs to internal format with defaults
     const processedMessages: ChatMessage[] = messages.map((msg: any) => ({
@@ -199,6 +203,23 @@ export class AppController {
     }));
     
     const lastMessage = processedMessages[processedMessages.length - 1];
+    
+    // Save user message if it doesn't exist yet
+    try {
+      if (lastMessage.role === 'user') {
+        await this.chatService.addMessage({
+          id: lastMessage.id,
+          chatId: chatId || 'default-chat',
+          userId,
+          role: lastMessage.role,
+          content: lastMessage.content,
+          timestamp: lastMessage.timestamp,
+          metadata: {}
+        });
+      }
+    } catch (error: any) {
+      console.log('Failed to save user message (demo mode):', error.message);
+    }
     
     // Enhanced mock responses with markdown examples
     const responses = [
@@ -304,6 +325,25 @@ And here's a **table example**:
 
     // Add a realistic delay
     await new Promise(resolve => setTimeout(resolve, 500 + Math.random() * 1000));
+    
+    // Save assistant response
+    try {
+      const assistantMessageId = `msg_${Date.now()}_assistant`;
+      await this.chatService.addMessage({
+        id: assistantMessageId,
+        chatId: chatId || 'default-chat',
+        userId,
+        role: 'assistant',
+        content: response,
+        timestamp: new Date(),
+        metadata: { 
+          model: 'demo-assistant', 
+          tokens: response.split(' ').length 
+        }
+      });
+    } catch (error: any) {
+      console.log('Failed to save assistant message (demo mode):', error.message);
+    }
     
     return response;
   }
