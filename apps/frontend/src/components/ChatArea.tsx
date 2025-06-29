@@ -977,7 +977,7 @@ const FilterInfoPopover = ({ message, showFilterInfo, filterInfoAnchor, handleFi
                   padding: '12px',
                 }}
               >
-                No filter configuration available
+                {t('filter.noFilterConfigurationAvailable')}
               </Typography>
             )}
           </Box>
@@ -993,7 +993,7 @@ const FilterInfoPopover = ({ message, showFilterInfo, filterInfoAnchor, handleFi
             opacity: 0.7,
           }}
         >
-          Filter ID: {message?.filterSnapshot?.filterId || message?.filterId || 'Unknown'}
+          {t('filter.filterId')}: {message?.filterSnapshot?.filterId || message?.filterId || t('common.unknown')}
         </Typography>
         
         {/* Filter Action Buttons */}
@@ -1034,7 +1034,7 @@ const FilterInfoPopover = ({ message, showFilterInfo, filterInfoAnchor, handleFi
               },
             }}
           >
-            View
+            {t('filter.view')}
           </Button>
           
           <Button
@@ -1064,7 +1064,7 @@ const FilterInfoPopover = ({ message, showFilterInfo, filterInfoAnchor, handleFi
               },
             }}
           >
-            Apply
+            {t('filter.apply')}
           </Button>
             
           <Button
@@ -1098,7 +1098,7 @@ const FilterInfoPopover = ({ message, showFilterInfo, filterInfoAnchor, handleFi
               },
             }}
           >
-            Rename
+            {t('filter.rename')}
           </Button>
         </Box>
       </Box>

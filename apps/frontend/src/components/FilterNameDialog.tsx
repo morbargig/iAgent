@@ -75,14 +75,14 @@ export function FilterNameDialog({
       }}
     >
       <DialogTitle sx={{ color: isDarkMode ? '#ffffff' : '#000000', pb: 1 }}>
-        {mode === 'create' ? 'Save Filter' : 'Rename Filter'}
+        {mode === 'create' ? t('filter.saveFilter') : t('filter.renameFilter')}
       </DialogTitle>
       
       <DialogContent>
         <TextField
           autoFocus
           margin="dense"
-          label="Filter Name"
+          label={t('filter.filterName')}
           fullWidth
           variant="outlined"
           value={name}
@@ -132,10 +132,10 @@ export function FilterNameDialog({
               label={
                 <Box>
                   <Typography variant="body2" sx={{ color: isDarkMode ? '#ffffff' : '#000000' }}>
-                    Global Filter
+                    {t('filter.globalFilter')}
                   </Typography>
                   <Typography variant="caption" sx={{ color: isDarkMode ? '#aaaaaa' : '#666666' }}>
-                    {isGlobal ? 'Available across all chats' : 'Only for this chat'}
+                    {isGlobal ? t('filter.availableAcrossChats') : t('filter.onlyForThisChat')}
                   </Typography>
                 </Box>
               }
@@ -145,12 +145,12 @@ export function FilterNameDialog({
             {filterPreview && (
               <Box sx={{ mt: 2 }}>
                 <Typography variant="subtitle2" sx={{ color: isDarkMode ? '#ffffff' : '#000000', mb: 1 }}>
-                  Filter Settings:
+                  {t('filter.filterSettings')}:
                 </Typography>
                 <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
                   {filterPreview.countries.length > 0 && (
                     <Chip
-                      label={`${filterPreview.countries.length} countries`}
+                      label={`${filterPreview.countries.length} ${t('filter.countries')}`}
                       size="small"
                       sx={{
                         backgroundColor: isDarkMode ? '#1e3a8a' : '#dbeafe',
@@ -160,7 +160,7 @@ export function FilterNameDialog({
                   )}
                   {filterPreview.tools.length > 0 && (
                     <Chip
-                      label={`${filterPreview.tools.length} tools`}
+                      label={`${filterPreview.tools.length} ${t('filter.tools')}`}
                       size="small"
                       sx={{
                         backgroundColor: isDarkMode ? '#166534' : '#dcfce7',
@@ -190,7 +190,7 @@ export function FilterNameDialog({
           onClick={onClose}
           sx={{ color: isDarkMode ? '#cccccc' : '#666666' }}
         >
-          Cancel
+          {t('common.cancel')}
         </Button>
         <Button
           onClick={handleSave}
@@ -203,7 +203,7 @@ export function FilterNameDialog({
             },
           }}
         >
-          {mode === 'create' ? 'Save Filter' : 'Rename'}
+          {mode === 'create' ? t('filter.saveFilter') : t('filter.rename')}
         </Button>
       </DialogActions>
     </Dialog>

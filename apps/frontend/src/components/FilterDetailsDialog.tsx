@@ -77,12 +77,12 @@ export function FilterDetailsDialog({
       >
         <Box sx={{ display: 'flex', alignItems: 'center', flex: 1 }}>
           <Typography variant="h6" sx={{ mr: 2 }}>
-            {filter.name || 'Filter Details'}
+            {filter.name || t('filter.details')}
           </Typography>
           
           {filter.scope === 'global' && (
             <Chip 
-              label="Global" 
+              label={t('filter.global')} 
               size="small" 
               sx={{
                 height: '20px',
@@ -95,7 +95,7 @@ export function FilterDetailsDialog({
           
           {filter.isActive && (
             <Chip 
-              label="Active" 
+              label={t('filter.active')} 
               size="small" 
               sx={{
                 height: '20px',
@@ -134,7 +134,7 @@ export function FilterDetailsDialog({
                 mb: 1,
               }}
             >
-              Created: {new Date(filter.createdAt).toLocaleString()}
+              {t('filter.created')}: {new Date(filter.createdAt).toLocaleString()}
             </Typography>
           )}
           
@@ -145,7 +145,7 @@ export function FilterDetailsDialog({
               display: 'block',
             }}
           >
-            Scope: {filter.scope === 'global' ? 'Available across all chats' : 'Current chat only'}
+            {t('filter.scope')}: {filter.scope === 'global' ? t('filter.availableAcrossChats') : t('filter.currentChatOnly')}
           </Typography>
         </Box>
 
@@ -162,7 +162,7 @@ export function FilterDetailsDialog({
           onClick={onClose}
           sx={{ color: isDarkMode ? '#cccccc' : '#666666' }}
         >
-          Close
+          {t('common.close')}
         </Button>
         
         {showApplyButton && (
@@ -177,7 +177,7 @@ export function FilterDetailsDialog({
               },
             }}
           >
-            Apply Filter
+            {t('filter.applyFilter')}
           </Button>
         )}
       </DialogActions>

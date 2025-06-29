@@ -130,7 +130,7 @@ export function FilterPreview({
           py: 2
         }}
       >
-        No filter settings configured
+        {t('filter.noFilterConfigurationAvailable')}
       </Typography>
     );
   }
@@ -141,8 +141,8 @@ export function FilterPreview({
         <Chip
           icon={<CountryIcon sx={{ fontSize: '14px' }} />}
           label={filterConfig.selectedCountries?.length 
-            ? `${filterConfig.selectedCountries.length} countries`
-            : 'No countries selected'
+            ? `${filterConfig.selectedCountries.length} ${t('filter.countries')}`
+            : t('filter.noCountriesSelected')
           }
           size="small"
           sx={{
@@ -168,7 +168,7 @@ export function FilterPreview({
         {filterConfig.enabledTools?.length && (
           <Chip
             icon={<ToolIcon sx={{ fontSize: '14px' }} />}
-            label={`${filterConfig.enabledTools.length} tools`}
+            label={`${filterConfig.enabledTools.length} ${t('filter.tools')}`}
             size="small"
             sx={{
               height: '24px',
@@ -201,7 +201,7 @@ export function FilterPreview({
                 mb: 2,
               }}
             >
-              Filter Configuration
+              {t('filter.filterConfiguration')}
             </Typography>
             <Divider sx={{ mb: 2, backgroundColor: isDarkMode ? '#444444' : '#e0e0e0' }} />
           </>
@@ -214,7 +214,7 @@ export function FilterPreview({
               <CountryIcon sx={{ color: isDarkMode ? '#60a5fa' : '#1e40af' }} />
             </ListItemIcon>
             <ListItemText
-              primary="Selected Countries"
+              primary={t('filter.selectedCountries')}
               secondary={
                 filterConfig.selectedCountries?.length ? (
                   <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5, mt: 0.5 }}>
@@ -241,7 +241,7 @@ export function FilterPreview({
                       mt: 0.5,
                     }}
                   >
-                    No countries selected
+                    {t('filter.noCountriesSelected')}
                   </Typography>
                 )
               }
@@ -260,7 +260,7 @@ export function FilterPreview({
                 <DateIcon sx={{ color: isDarkMode ? '#fb923c' : '#9a3412' }} />
               </ListItemIcon>
               <ListItemText
-                primary="Date Range"
+                primary={t('filter.dateRange')}
                 secondary={formatDateFilter()}
                 primaryTypographyProps={{
                   variant: 'body2',
@@ -282,7 +282,7 @@ export function FilterPreview({
                 <ToolIcon sx={{ color: isDarkMode ? '#4ade80' : '#166534' }} />
               </ListItemIcon>
               <ListItemText
-                primary="Enabled Tools"
+                primary={t('filter.enabledTools')}
                 secondary={
                   <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5, mt: 0.5 }}>
                     {filterConfig.enabledTools.map((toolId) => (
@@ -316,7 +316,7 @@ export function FilterPreview({
                 <ConfigIcon sx={{ color: isDarkMode ? '#a78bfa' : '#7c3aed' }} />
               </ListItemIcon>
               <ListItemText
-                primary="Tool Configurations"
+                primary={t('filter.toolConfigurations')}
                 secondary={
                   <Box sx={{ mt: 0.5 }}>
                     {Object.entries(filterConfig.toolConfigurations).map(([toolId, config]) => (
@@ -333,7 +333,7 @@ export function FilterPreview({
                             {toolId}
                           </Typography>
                           <Chip
-                            label={config.enabled ? 'Enabled' : 'Disabled'}
+                            label={config.enabled ? t('filter.enabled') : t('filter.disabled')}
                             size="small"
                             sx={{
                               height: '16px',
@@ -359,7 +359,7 @@ export function FilterPreview({
                                 fontWeight: 500,
                               }}
                             >
-                              Configuration:
+                              {t('filter.configuration')}:
                             </Typography>
                             {Object.entries(config.parameters).map(([key, value]) => (
                               <Typography
