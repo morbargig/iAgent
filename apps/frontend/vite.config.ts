@@ -30,6 +30,10 @@ export default defineConfig({
 
   plugins: [react(), nxViteTsPaths()],
 
+  css: {
+    postcss: './postcss.config.js',
+  },
+
   // GitHub Pages deployment configuration
   base: '/iAgent/',
 

@@ -1004,7 +1004,7 @@ const App = () => {
       {/* Main App Container */}
       <Box
         id="iagent-app-root"
-        className="iagent-app-container"
+        className={`iagent-app-container ${isDarkMode ? 'dark' : ''}`}
         sx={{
           display: 'flex',
           flexDirection: 'column',

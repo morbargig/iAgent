@@ -1,5 +1,10 @@
 /* You can add global styles to this file, and also import other style files */
 
+/* Tailwind CSS directives */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
 /* Fix Material-UI overlay components blocking touch interactions */
 .MuiDrawer-root {
   pointer-events: auto !important;
