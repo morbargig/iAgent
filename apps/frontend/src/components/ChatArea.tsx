@@ -1007,7 +1007,6 @@ const FilterInfoPopover = ({ message, showFilterInfo, filterInfoAnchor, handleFi
           <Button
             variant="outlined"
             size="medium"
-            startIcon={<ViewIcon sx={{ fontSize: '16px' }} />}
             onClick={handleViewFilterDetails}
             sx={{
               borderColor: isDarkMode ? '#525252' : '#d1d5db',
@@ -1019,10 +1018,22 @@ const FilterInfoPopover = ({ message, showFilterInfo, filterInfoAnchor, handleFi
               height: '36px',
               borderRadius: '8px',
               px: 2,
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
               transition: 'all 0.2s ease-in-out',
               boxShadow: isDarkMode 
                 ? '0 1px 3px rgba(0, 0, 0, 0.3)' 
                 : '0 1px 3px rgba(0, 0, 0, 0.1)',
+              '& .button-icon': {
+                order: -1, // Icon first in LTR
+                fontSize: '16px',
+              },
+              'html[dir="rtl"] &': {
+                '& .button-icon': {
+                  order: 1, // Icon last in RTL
+                },
+              },
               '&:hover': {
                 backgroundColor: isDarkMode ? '#374151' : '#f9fafb',
                 borderColor: isDarkMode ? '#6b7280' : '#9ca3af',
@@ -1034,13 +1045,13 @@ const FilterInfoPopover = ({ message, showFilterInfo, filterInfoAnchor, handleFi
               },
             }}
           >
+            <ViewIcon className="button-icon" />
             {t('filter.view')}
           </Button>
           
           <Button
             variant="contained"
             size="medium"
-            startIcon={<ApplyIcon sx={{ fontSize: '16px' }} />}
             onClick={handleApplyFilterFromMessage}
             sx={{
               backgroundColor: '#10b981',
@@ -1052,8 +1063,20 @@ const FilterInfoPopover = ({ message, showFilterInfo, filterInfoAnchor, handleFi
               height: '36px',
               borderRadius: '8px',
               px: 2,
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
               transition: 'all 0.2s ease-in-out',
               boxShadow: '0 2px 4px rgba(16, 185, 129, 0.3)',
+              '& .button-icon': {
+                order: -1, // Icon first in LTR
+                fontSize: '16px',
+              },
+              'html[dir="rtl"] &': {
+                '& .button-icon': {
+                  order: 1, // Icon last in RTL
+                },
+              },
               '&:hover': {
                 backgroundColor: '#059669',
                 transform: 'translateY(-1px)',
@@ -1064,13 +1087,13 @@ const FilterInfoPopover = ({ message, showFilterInfo, filterInfoAnchor, handleFi
               },
             }}
           >
+            <ApplyIcon className="button-icon" />
             {t('filter.apply')}
           </Button>
             
           <Button
             variant="outlined"
             size="medium"
-            startIcon={<EditIcon sx={{ fontSize: '16px' }} />}
             onClick={handleRenameFilter}
             sx={{
               borderColor: '#3b82f6',
@@ -1082,10 +1105,22 @@ const FilterInfoPopover = ({ message, showFilterInfo, filterInfoAnchor, handleFi
               height: '36px',
               borderRadius: '8px',
               px: 2,
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
               transition: 'all 0.2s ease-in-out',
               boxShadow: isDarkMode 
                 ? '0 1px 3px rgba(59, 130, 246, 0.3)' 
                 : '0 1px 3px rgba(59, 130, 246, 0.2)',
+              '& .button-icon': {
+                order: -1, // Icon first in LTR
+                fontSize: '16px',
+              },
+              'html[dir="rtl"] &': {
+                '& .button-icon': {
+                  order: 1, // Icon last in RTL
+                },
+              },
               '&:hover': {
                 backgroundColor: '#3b82f6',
                 borderColor: '#3b82f6',
@@ -1098,6 +1133,7 @@ const FilterInfoPopover = ({ message, showFilterInfo, filterInfoAnchor, handleFi
               },
             }}
           >
+            <EditIcon className="button-icon" />
             {t('filter.rename')}
           </Button>
         </Box>

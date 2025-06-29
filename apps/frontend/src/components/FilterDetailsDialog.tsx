@@ -169,14 +169,26 @@ export function FilterDetailsDialog({
           <Button
             onClick={handleApply}
             variant="contained"
-            startIcon={<ApplyIcon />}
             sx={{
               backgroundColor: '#2196f3',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
               '&:hover': {
                 backgroundColor: '#1976d2',
               },
+              '& .button-icon': {
+                order: -1, // Icon first in LTR
+                fontSize: '16px',
+              },
+              'html[dir="rtl"] &': {
+                '& .button-icon': {
+                  order: 1, // Icon last in RTL
+                },
+              },
             }}
           >
+            <ApplyIcon className="button-icon" />
             {t('filter.applyFilter')}
           </Button>
         )}

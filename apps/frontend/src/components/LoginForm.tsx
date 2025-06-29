@@ -284,13 +284,24 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onLogin, isDarkMode }) => 
               variant="contained"
               size="large"
               disabled={isLoading}
-              startIcon={isLoading ? <CircularProgress size={20} /> : <LoginIcon />}
               sx={{
                 mb: 2,
                 py: 1.5,
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
                 background: isMockMode 
                   ? 'linear-gradient(45deg, #ff6b35 30%, #f7931e 90%)'
                   : 'linear-gradient(45deg, #667eea 30%, #764ba2 90%)',
+                '& .button-icon': {
+                  order: -1, // Icon first in LTR
+                  fontSize: '20px',
+                },
+                'html[dir="rtl"] &': {
+                  '& .button-icon': {
+                    order: 1, // Icon last in RTL
+                  },
+                },
                 '&:hover': {
                   background: isMockMode
                     ? 'linear-gradient(45deg, #e55a2b 30%, #de831a 90%)'
@@ -298,6 +309,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onLogin, isDarkMode }) => 
                 }
               }}
             >
+              {isLoading ? <CircularProgress size={20} className="button-icon" /> : <LoginIcon className="button-icon" />}
               {isLoading ? 'Logging In...' : isMockMode ? 'Mock Login' : 'Login'}
             </Button>
           </form>
