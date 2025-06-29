@@ -1,7 +1,7 @@
 import { Injectable, Logger, NotFoundException, Optional } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
-import { Chat, ChatDocument, ChatMessage, ChatMessageDocument } from '../schemas/chat.schema';
+import { Chat, ChatDocument, ChatMessage, ChatMessageDocument, ChatFilter, ChatFilterDocument } from '../schemas/chat.schema';
 
 export interface CreateChatDto {
   chatId: string;
@@ -19,6 +19,21 @@ export interface CreateMessageDto {
   content: string;
   timestamp?: Date;
   metadata?: Record<string, any>;
+  filterId?: string;
+  filterSnapshot?: {
+    filterId?: string;
+    name?: string;
+    config?: Record<string, any>;
+  };
+}
+
+export interface CreateFilterDto {
+  filterId: string;
+  name: string;
+  userId: string;
+  chatId: string;
+  filterConfig: Record<string, any>;
+  isActive?: boolean;
 }
 
 export interface UpdateChatDto {
@@ -31,6 +46,7 @@ export interface UpdateChatDto {
 // Demo mode storage (in-memory)
 const demoChats: Map<string, any> = new Map();
 const demoMessages: Map<string, any[]> = new Map();
+const demoFilters: Map<string, any> = new Map();
 
 @Injectable()
 export class ChatService {
@@ -40,9 +56,10 @@ export class ChatService {
   constructor(
     @Optional() @InjectModel(Chat.name) private chatModel: Model<ChatDocument>,
     @Optional() @InjectModel(ChatMessage.name) private messageModel: Model<ChatMessageDocument>,
+    @Optional() @InjectModel(ChatFilter.name) private filterModel: Model<ChatFilterDocument>,
   ) {
     // Check if MongoDB is available (demo mode detection)
-    this.isDemoMode = process.env.DEMO_MODE === 'true' || !process.env.MONGODB_URI || !this.chatModel || !this.messageModel;
+    this.isDemoMode = process.env.DEMO_MODE === 'true' || !process.env.MONGODB_URI || !this.chatModel || !this.messageModel || !this.filterModel;
     
     if (this.isDemoMode) {
       this.logger.warn('🚨 Running in DEMO MODE - data will not persist and MongoDB is disabled');
@@ -72,23 +89,84 @@ export class ChatService {
         chatId: 'demo-chat-001',
         userId: 'user_123456789',
         role: 'user' as const,
-        content: 'Hello! This is a demo message.',
+        content: 'Hello! This is a demo message with filter settings.',
         timestamp: new Date(Date.now() - 60000),
-        metadata: {}
+        metadata: {},
+        filterId: 'filter_demo_001',
+        filterSnapshot: {
+          filterId: 'filter_demo_001',
+          name: 'Demo Work Filter',
+          config: {
+            dateFilter: {
+              type: 'custom',
+              customRange: { amount: 7, type: 'days' }
+            },
+            selectedCountries: ['PS', 'LB', 'SA'],
+            enabledTools: ['tool-x', 'tool-y'],
+            filterText: 'work related queries',
+            selectedMode: 'flow',
+            excludeAmi: false,
+            includeAmi: true
+          }
+        }
       },
       {
         id: 'msg_demo_002',
         chatId: 'demo-chat-001',
         userId: 'user_123456789',
         role: 'assistant' as const,
-        content: 'Hello! Welcome to the demo. This chat is stored in memory and will reset when you restart the server.',
+        content: 'Hello! Welcome to the demo. This chat is stored in memory and will reset when you restart the server. 🎯 **Notice the info icon (ℹ️) on the user message above** - click it to see the filter configuration that was used!',
         timestamp: new Date(),
-        metadata: { model: 'demo-assistant', tokens: 25 }
+        metadata: { model: 'demo-assistant', tokens: 25 },
+        filterId: 'filter_demo_001',
+        filterSnapshot: {
+          filterId: 'filter_demo_001',
+          name: 'Demo Work Filter',
+          config: {
+            dateFilter: {
+              type: 'picker',
+              dateRange: {
+                start: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000),
+                end: new Date()
+              }
+            },
+            selectedCountries: ['PS', 'LB', 'SA'],
+            enabledTools: ['tool-x', 'tool-y'],
+            filterText: 'work related queries',
+            selectedMode: 'flow',
+            excludeAmi: false,
+            includeAmi: true
+          }
+        }
       }
     ];
 
     demoChats.set('demo-chat-001', demoChat);
     demoMessages.set('demo-chat-001', demoMessagesList);
+    
+    // Initialize demo filter
+    const demoFilter = {
+      filterId: 'filter_demo_001',
+      name: 'Demo Work Filter',
+      userId: 'user_123456789',
+      chatId: 'demo-chat-001',
+      filterConfig: {
+        dateFilter: {
+          type: 'custom',
+          customRange: { amount: 7, type: 'days' }
+        },
+        selectedCountries: ['PS', 'LB', 'SA'],
+        enabledTools: ['tool-x', 'tool-y'],
+        filterText: 'work related queries',
+        selectedMode: 'flow',
+        excludeAmi: false,
+        includeAmi: true
+      },
+      createdAt: new Date(Date.now() - 120000),
+      updatedAt: new Date(Date.now() - 120000),
+      isActive: true
+    };
+    demoFilters.set('filter_demo_001', demoFilter);
   }
 
   // ==================== CHAT MANAGEMENT ====================
@@ -197,10 +275,27 @@ export class ChatService {
 
   async addMessage(messageDto: CreateMessageDto): Promise<any> {
     if (this.isDemoMode) {
+      // Get current active filter for the chat
+      const chat = demoChats.get(messageDto.chatId);
+      let filterSnapshot = null;
+      
+      if (chat && chat.activeFilterId) {
+        const activeFilter = demoFilters.get(chat.activeFilterId);
+        if (activeFilter) {
+          filterSnapshot = {
+            filterId: activeFilter.filterId,
+            name: activeFilter.name,
+            config: activeFilter.filterConfig
+          };
+        }
+      }
+      
       const message = {
         ...messageDto,
         timestamp: messageDto.timestamp || new Date(),
-        metadata: messageDto.metadata || {}
+        metadata: messageDto.metadata || {},
+        filterId: chat?.activeFilterId || null,
+        filterSnapshot
       };
       
       const messages = demoMessages.get(messageDto.chatId) || [];
@@ -208,7 +303,6 @@ export class ChatService {
       demoMessages.set(messageDto.chatId, messages);
       
       // Update chat's lastMessageAt and messageCount
-      const chat = demoChats.get(messageDto.chatId);
       if (chat) {
         chat.lastMessageAt = message.timestamp;
         chat.messageCount = messages.length;
@@ -218,7 +312,28 @@ export class ChatService {
       return message;
     }
 
-    const message = new this.messageModel(messageDto);
+    // Get current active filter for the chat for non-demo mode
+    const chat = await this.chatModel.findOne({ chatId: messageDto.chatId, userId: messageDto.userId }).exec();
+    let filterSnapshot = null;
+    
+    if (chat && chat.activeFilterId) {
+      const activeFilter = await this.filterModel.findOne({ filterId: chat.activeFilterId, userId: messageDto.userId }).exec();
+      if (activeFilter) {
+        filterSnapshot = {
+          filterId: activeFilter.filterId,
+          name: activeFilter.name,
+          config: activeFilter.filterConfig
+        };
+      }
+    }
+    
+    const messageWithFilter = {
+      ...messageDto,
+      filterId: chat?.activeFilterId || null,
+      filterSnapshot
+    };
+    
+    const message = new this.messageModel(messageWithFilter);
     const savedMessage = await message.save();
     
     // Update chat's lastMessageAt and messageCount
@@ -312,6 +427,200 @@ export class ChatService {
       totalMessages,
       isDemoMode: false
     };
+  }
+
+  // ==================== FILTER MANAGEMENT ====================
+
+  async createFilter(createFilterDto: CreateFilterDto): Promise<any> {
+    if (this.isDemoMode) {
+      const filter = {
+        ...createFilterDto,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        isActive: createFilterDto.isActive ?? false
+      };
+      demoFilters.set(createFilterDto.filterId, filter);
+      
+      // Update chat's associated filters
+      const chat = demoChats.get(createFilterDto.chatId);
+      if (chat && chat.userId === createFilterDto.userId) {
+        if (!chat.associatedFilters) chat.associatedFilters = [];
+        if (!chat.associatedFilters.includes(createFilterDto.filterId)) {
+          chat.associatedFilters.push(createFilterDto.filterId);
+        }
+        demoChats.set(createFilterDto.chatId, chat);
+      }
+      
+      return filter;
+    }
+
+    const filter = new this.filterModel(createFilterDto);
+    const savedFilter = await filter.save();
+    
+    // Update chat's associated filters
+    await this.chatModel.findOneAndUpdate(
+      { chatId: createFilterDto.chatId, userId: createFilterDto.userId },
+      { 
+        $addToSet: { associatedFilters: createFilterDto.filterId }
+      }
+    ).exec();
+    
+    return savedFilter;
+  }
+
+  async getFiltersForChat(chatId: string, userId: string): Promise<any[]> {
+    if (this.isDemoMode) {
+      return Array.from(demoFilters.values())
+        .filter(filter => filter.chatId === chatId && filter.userId === userId)
+        .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+    }
+
+    return await this.filterModel
+      .find({ chatId, userId })
+      .sort({ createdAt: -1 })
+      .exec();
+  }
+
+  async getFilterById(filterId: string, userId: string): Promise<any> {
+    if (this.isDemoMode) {
+      const filter = demoFilters.get(filterId);
+      if (!filter || filter.userId !== userId) {
+        throw new NotFoundException(`Filter with ID ${filterId} not found`);
+      }
+      return filter;
+    }
+
+    const filter = await this.filterModel.findOne({ filterId, userId }).exec();
+    if (!filter) {
+      throw new NotFoundException(`Filter with ID ${filterId} not found`);
+    }
+    return filter;
+  }
+
+  async updateFilter(filterId: string, userId: string, updateData: Partial<CreateFilterDto>): Promise<any> {
+    if (this.isDemoMode) {
+      const filter = demoFilters.get(filterId);
+      if (!filter || filter.userId !== userId) {
+        throw new NotFoundException(`Filter with ID ${filterId} not found`);
+      }
+      Object.assign(filter, updateData, { updatedAt: new Date() });
+      demoFilters.set(filterId, filter);
+      return filter;
+    }
+
+    const filter = await this.filterModel
+      .findOneAndUpdate(
+        { filterId, userId },
+        { ...updateData, updatedAt: new Date() },
+        { new: true }
+      )
+      .exec();
+
+    if (!filter) {
+      throw new NotFoundException(`Filter with ID ${filterId} not found`);
+    }
+    return filter;
+  }
+
+  async deleteFilter(filterId: string, userId: string): Promise<void> {
+    if (this.isDemoMode) {
+      const filter = demoFilters.get(filterId);
+      if (!filter || filter.userId !== userId) {
+        throw new NotFoundException(`Filter with ID ${filterId} not found`);
+      }
+      demoFilters.delete(filterId);
+      
+      // Remove from chat's associated filters
+      const chat = demoChats.get(filter.chatId);
+      if (chat && chat.associatedFilters) {
+        chat.associatedFilters = chat.associatedFilters.filter((id: string) => id !== filterId);
+        demoChats.set(filter.chatId, chat);
+      }
+      
+      return;
+    }
+
+    const filter = await this.filterModel.findOneAndDelete({ filterId, userId }).exec();
+    if (!filter) {
+      throw new NotFoundException(`Filter with ID ${filterId} not found`);
+    }
+    
+    // Remove from chat's associated filters
+    await this.chatModel.findOneAndUpdate(
+      { chatId: filter.chatId, userId },
+      { $pull: { associatedFilters: filterId } }
+    ).exec();
+  }
+
+  async setActiveFilter(chatId: string, userId: string, filterId: string | null): Promise<any> {
+    if (this.isDemoMode) {
+      const chat = demoChats.get(chatId);
+      if (!chat || chat.userId !== userId) {
+        throw new NotFoundException(`Chat with ID ${chatId} not found`);
+      }
+      
+      // Deactivate all filters for this chat
+      Array.from(demoFilters.values())
+        .filter(f => f.chatId === chatId && f.userId === userId)
+        .forEach(f => {
+          f.isActive = false;
+          demoFilters.set(f.filterId, f);
+        });
+      
+      // Activate the selected filter
+      if (filterId) {
+        const filter = demoFilters.get(filterId);
+        if (filter && filter.userId === userId && filter.chatId === chatId) {
+          filter.isActive = true;
+          demoFilters.set(filterId, filter);
+          chat.activeFilterId = filterId;
+          chat.currentFilterConfig = filter.filterConfig;
+        }
+      } else {
+        chat.activeFilterId = null;
+        chat.currentFilterConfig = null;
+      }
+      
+      demoChats.set(chatId, chat);
+      return chat;
+    }
+
+    // Deactivate all filters for this chat
+    await this.filterModel.updateMany(
+      { chatId, userId },
+      { isActive: false }
+    ).exec();
+
+    // Activate the selected filter
+    let filterConfig = null;
+    if (filterId) {
+      const filter = await this.filterModel.findOneAndUpdate(
+        { filterId, userId, chatId },
+        { isActive: true },
+        { new: true }
+      ).exec();
+      
+      if (!filter) {
+        throw new NotFoundException(`Filter with ID ${filterId} not found`);
+      }
+      filterConfig = filter.filterConfig;
+    }
+
+    // Update chat with active filter
+    const chat = await this.chatModel.findOneAndUpdate(
+      { chatId, userId },
+      { 
+        activeFilterId: filterId,
+        currentFilterConfig: filterConfig 
+      },
+      { new: true }
+    ).exec();
+
+    if (!chat) {
+      throw new NotFoundException(`Chat with ID ${chatId} not found`);
+    }
+    
+    return chat;
   }
 
   getDemoStatus(): { isDemoMode: boolean; reason?: string } {

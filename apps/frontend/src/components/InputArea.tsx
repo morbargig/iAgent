@@ -7,6 +7,13 @@ import {
   TextField,
   Button,
   Tooltip,
+  Menu,
+  MenuItem,
+  ListItemText,
+  ListItemIcon,
+  Divider,
+  Badge,
+  Chip,
 } from '@mui/material';
 import dayjs, { Dayjs } from 'dayjs';
 import {
@@ -20,9 +27,19 @@ import {
   Mic as MicIcon,
   Clear as ClearIcon,
   AttachFile as AttachFileIcon,
+  FilterList as FilterListIcon,
+  Add as AddIcon,
+  Check as CheckIcon,
+  Edit as EditIcon,
+  PlayArrow as PickIcon,
+  Visibility as ViewIcon,
+  Delete as DeleteIcon,
 } from '@mui/icons-material';
 import { useTranslation } from '../contexts/TranslationContext';
 import { Translate } from './Translate';
+import { FilterNameDialog } from './FilterNameDialog';
+import { FilterDetailsDialog } from './FilterDetailsDialog';
+import { FilterPreview } from './FilterPreview';
 import { useAnimatedPlaceholder } from '../hooks/useAnimatedPlaceholder';
 import { useToolToggles } from '../hooks/useToolToggles';
 import { ToolSettingsDialog, ToolConfiguration } from './ToolSettingsDialog';
@@ -54,6 +71,36 @@ export interface SendMessageData {
   dateFilter: DateFilter;
   selectedCountries: string[];
   enabledTools: string[];
+  filterSnapshot?: {
+    filterId?: string;
+    name?: string;
+    config: {
+      dateFilter: {
+        type: 'custom' | 'picker';
+        customRange?: {
+          amount: number;
+          type: string;
+        };
+        dateRange?: {
+          start?: string;
+          end?: string;
+        };
+      };
+      selectedCountries: string[];
+      enabledTools: string[];
+      toolConfigurations: Record<string, any>;
+    };
+    isActive?: boolean;
+    createdAt?: string;
+  };
+}
+
+interface ChatFilter {
+  filterId: string;
+  name: string;
+  config: Record<string, any>;
+  isActive?: boolean;
+  createdAt: string;
 }
 
 interface InputAreaProps {
@@ -77,6 +124,9 @@ interface InputAreaProps {
   showVoiceButton?: boolean; // Show voice button
   showClearButton?: boolean; // Show clear button
   showAttachmentButton?: boolean; // Show attachment button
+  // Filter management
+  currentChatId?: string; // Current chat ID for filter management
+  authToken?: string; // Auth token for API calls
 }
 
 // ChatGPT-style Input Area - Matches official ChatGPT design
@@ -128,7 +178,10 @@ export function InputArea({
   onAttachment,
   showVoiceButton = false,
   showClearButton = true,
-  showAttachmentButton = false
+  showAttachmentButton = false,
+  // Filter management
+  currentChatId,
+  authToken
 }: InputAreaProps) {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const inputContainerRef = useRef<HTMLDivElement>(null);
@@ -232,6 +285,15 @@ export function InputArea({
   const [toolSettingsOpen, setToolSettingsOpen] = useState(false);
   const [settingsHintRing, setSettingsHintRing] = useState(false);
 
+  // Filter management state
+  const [chatFilters, setChatFilters] = useState<ChatFilter[]>([]);
+  const [activeFilter, setActiveFilter] = useState<ChatFilter | null>(null);
+  const [filterMenuAnchor, setFilterMenuAnchor] = useState<HTMLElement | null>(null);
+  const filterMenuOpen = Boolean(filterMenuAnchor);
+  const [filterNameDialogOpen, setFilterNameDialogOpen] = useState(false);
+  const [renameDialogFilter, setRenameDialogFilter] = useState<ChatFilter | null>(null);
+  const [filterDetailsDialogOpen, setFilterDetailsDialogOpen] = useState(false);
+  const [selectedFilterForDetails, setSelectedFilterForDetails] = useState<ChatFilter | null>(null);
 
   // Save selected flags to localStorage with debouncing
   useEffect(() => {
@@ -410,7 +472,7 @@ export function InputArea({
         return;
       }
 
-      // Prepare date filter data
+      // Prepare date filter data with proper serialization
       const dateFilter: DateFilter = {
         type: committedTab === 1 ? 'picker' : 'custom',
         customRange: committedTab === 0 ? {
@@ -420,12 +482,42 @@ export function InputArea({
         dateRange: committedTab === 1 ? dateRange : undefined
       };
       
+      // Create properly serialized date filter for the snapshot
+      const snapshotDateFilter = committedTab === 1 ? {
+        type: 'picker' as const,
+        dateRange: {
+          start: dateRange[0]?.toISOString(),
+          end: dateRange[1]?.toISOString()
+        }
+      } : {
+        type: 'custom' as const,
+        customRange: {
+          amount: rangeAmount,
+          type: rangeType
+        }
+      };
+      
+      // Create filter snapshot for the message
+      const filterSnapshot = {
+        filterId: activeFilter?.filterId,
+        name: activeFilter?.name || `Filter ${new Date().toLocaleDateString()}`,
+        config: {
+          dateFilter: snapshotDateFilter,
+          selectedCountries: selectedFlags,
+          enabledTools: Object.keys(enabledTools).filter(toolId => enabledTools[toolId]),
+          toolConfigurations: synchronizedConfigurations
+        },
+        isActive: !!activeFilter,
+        createdAt: new Date().toISOString()
+      };
+
       // Prepare send data
       const sendData: SendMessageData = {
         content: value,
         dateFilter,
         selectedCountries: selectedFlags,
-        enabledTools: Object.keys(enabledTools).filter(toolId => enabledTools[toolId])
+        enabledTools: Object.keys(enabledTools).filter(toolId => enabledTools[toolId]),
+        filterSnapshot
       };
       
       onSend(sendData);
@@ -605,6 +697,482 @@ export function InputArea({
     // Also sync with enabledTools state if the enabled state changed
     if (enabledTools[toolId] !== config.enabled) {
       setToolEnabled(toolId, config.enabled);
+    }
+  };
+
+  // Filter management functions
+  const loadChatFilters = useCallback(async () => {
+    if (!currentChatId) return;
+    
+    try {
+      // For demo mode, use localStorage to simulate saved filters
+      const demoFilters = localStorage.getItem(`chatFilters_${currentChatId}`);
+      if (demoFilters) {
+        const filters = JSON.parse(demoFilters);
+        setChatFilters(filters);
+        
+        // Set active filter if one exists
+        const active = filters.find((f: ChatFilter) => f.isActive);
+        if (active) {
+          setActiveFilter(active);
+          // Apply filter settings to current UI
+          applyFilterToUI(active);
+        }
+        return;
+      }
+
+      // If we have authToken, try API call
+      if (authToken) {
+        const response = await fetch(`http://localhost:3000/api/chats/${currentChatId}/filters`, {
+          headers: {
+            'Authorization': `Bearer ${authToken}`,
+            'Content-Type': 'application/json',
+          },
+        });
+        
+        if (response.ok) {
+          const filters = await response.json();
+          setChatFilters(filters);
+          
+          // Set active filter if one exists
+          const active = filters.find((f: ChatFilter) => f.isActive);
+          if (active) {
+            setActiveFilter(active);
+            // Apply filter settings to current UI
+            applyFilterToUI(active);
+          }
+        }
+      }
+    } catch (error) {
+      console.error('Failed to load chat filters:', error);
+      // Fallback to empty filters
+      setChatFilters([]);
+      setActiveFilter(null);
+    }
+  }, [currentChatId, authToken]);
+
+  const applyFilterToUI = (filter: ChatFilter) => {
+    const config = filter.config;
+    
+    console.log('🔄 Applying filter to UI:', filter.name, config);
+    
+    // Apply date filter
+    if (config.dateFilter) {
+      if (config.dateFilter.type === 'custom' && config.dateFilter.customRange) {
+        setRangeAmount(config.dateFilter.customRange.amount);
+        setRangeType(config.dateFilter.customRange.type);
+        setCommittedTab(0);
+        setDateRangeTab(0);
+      } else if (config.dateFilter.type === 'picker' && config.dateFilter.dateRange) {
+        setDateRange([
+          dayjs(config.dateFilter.dateRange[0]),
+          dayjs(config.dateFilter.dateRange[1])
+        ]);
+        setCommittedTab(1);
+        setDateRangeTab(1);
+      }
+    }
+    
+    // Apply selected countries
+    if (config.selectedCountries) {
+      setSelectedFlags(config.selectedCountries);
+    }
+    
+    // Reset all tools first, then enable the ones in the filter
+    Object.keys(enabledTools).forEach(toolId => {
+      if (enabledTools[toolId]) {
+        toggleTool(toolId); // Disable currently enabled tools
+      }
+    });
+    
+    // Apply enabled tools
+    if (config.enabledTools && config.enabledTools.length > 0) {
+      config.enabledTools.forEach((toolId: string) => {
+        if (!enabledTools[toolId]) {
+          toggleTool(toolId); // Enable tools from filter
+        }
+      });
+    }
+    
+    console.log('✅ Filter applied successfully');
+  };
+
+  const createNewFilter = () => {
+    setFilterMenuAnchor(null);
+    setFilterNameDialogOpen(true);
+  };
+
+  const handleSaveNewFilter = async (name: string, isGlobal: boolean) => {
+    if (!currentChatId) return;
+    
+    const filterConfig = {
+      dateFilter: dateRangeTab === 1 ? {
+        type: 'picker' as const,
+        dateRange: {
+          start: dateRange[0]?.toISOString(),
+          end: dateRange[1]?.toISOString()
+        }
+      } : {
+        type: 'custom' as const,
+        customRange: {
+          amount: rangeAmount,
+          type: rangeType
+        }
+      },
+      selectedCountries: selectedFlags,
+      enabledTools: Object.keys(enabledTools).filter(toolId => enabledTools[toolId]),
+      toolConfigurations: synchronizedConfigurations,
+      createdAt: new Date().toISOString(),
+      isGlobal: isGlobal
+    };
+
+    const filterId = `filter_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    
+    const newFilter: ChatFilter = {
+      filterId,
+      name: name,
+      config: filterConfig,
+      isActive: true,
+      createdAt: new Date().toISOString()
+    };
+
+    try {
+      // Save to localStorage (for both global and chat-specific)
+      const storageKey = isGlobal ? 'globalFilters' : `chatFilters_${currentChatId}`;
+      const existingFilters = localStorage.getItem(storageKey);
+      const filters = existingFilters ? JSON.parse(existingFilters) : [];
+      
+      // For chat-specific filters, mark all other filters as inactive
+      if (!isGlobal) {
+        filters.forEach((f: ChatFilter) => f.isActive = false);
+      }
+      
+      // Add new filter
+      filters.push(newFilter);
+      localStorage.setItem(storageKey, JSON.stringify(filters));
+      
+      // Update current chat filters and set as active
+      if (!isGlobal) {
+        setChatFilters(filters);
+      } else {
+        // For global filters, also add to current chat view
+        const currentFilters = [...chatFilters];
+        currentFilters.forEach(f => f.isActive = false);
+        setChatFilters([...currentFilters, newFilter]);
+      }
+      
+      setActiveFilter(newFilter);
+      
+      console.log(`✅ ${isGlobal ? 'Global' : 'Chat'} filter saved:`, name);
+
+      // If we have authToken, also try API call
+      if (authToken) {
+        const response = await fetch(`http://localhost:3000/api/chats/${currentChatId}/filters`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${authToken}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            name: name,
+            filterConfig: filterConfig,
+            isGlobal: isGlobal
+          }),
+        });
+        
+        if (response.ok) {
+          console.log('✅ Filter also saved to API');
+        }
+      }
+    } catch (error) {
+      console.error('Failed to create filter:', error);
+    }
+  };
+
+  const selectFilter = async (filter: ChatFilter) => {
+    if (!currentChatId) return;
+    
+    try {
+      // For demo mode, update localStorage
+      const existingFilters = localStorage.getItem(`chatFilters_${currentChatId}`);
+      if (existingFilters) {
+        const filters = JSON.parse(existingFilters);
+        
+        // Mark all filters as inactive
+        filters.forEach((f: ChatFilter) => f.isActive = false);
+        
+        // Mark selected filter as active
+        const selectedFilter = filters.find((f: ChatFilter) => f.filterId === filter.filterId);
+        if (selectedFilter) {
+          selectedFilter.isActive = true;
+        }
+        
+        localStorage.setItem(`chatFilters_${currentChatId}`, JSON.stringify(filters));
+        setChatFilters(filters);
+      }
+      
+      setActiveFilter(filter);
+      applyFilterToUI(filter);
+      setFilterMenuAnchor(null);
+      
+      console.log('✅ Filter activated:', filter.name);
+
+      // If we have authToken, also try API call
+      if (authToken) {
+        const response = await fetch(`http://localhost:3000/api/chats/${currentChatId}/active-filter`, {
+          method: 'PUT',
+          headers: {
+            'Authorization': `Bearer ${authToken}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            filterId: filter.filterId
+          }),
+        });
+        
+        if (response.ok) {
+          console.log('✅ Filter also activated via API');
+        }
+      }
+    } catch (error) {
+      console.error('Failed to set active filter:', error);
+    }
+  };
+
+  const handleFilterMenuOpen = (event: React.MouseEvent<HTMLElement>) => {
+    setFilterMenuAnchor(event.currentTarget);
+  };
+
+  const handleFilterMenuClose = () => {
+    setFilterMenuAnchor(null);
+  };
+
+  // Load both chat-specific and global filters
+  const loadAllFilters = useCallback(async () => {
+    if (!currentChatId) return;
+
+    try {
+      // Load chat-specific filters
+      const chatFilters = localStorage.getItem(`chatFilters_${currentChatId}`);
+      const chatFilterList = chatFilters ? JSON.parse(chatFilters) : [];
+
+      // Load global filters
+      const globalFilters = localStorage.getItem('globalFilters');
+      const globalFilterList = globalFilters ? JSON.parse(globalFilters) : [];
+
+      // Combine both lists
+      const allFilters = [
+        ...chatFilterList.map((f: ChatFilter) => ({ ...f, scope: 'chat' })),
+        ...globalFilterList.map((f: ChatFilter) => ({ ...f, scope: 'global' }))
+      ];
+
+      setChatFilters(allFilters);
+
+      // Find active filter
+      const activeFilter = allFilters.find((f: ChatFilter) => f.isActive);
+      setActiveFilter(activeFilter || null);
+
+      console.log(`✅ Loaded ${chatFilterList.length} chat filters + ${globalFilterList.length} global filters`);
+
+      // Also try API call if authenticated
+      if (authToken) {
+        const response = await fetch(`http://localhost:3000/api/chats/${currentChatId}/filters`, {
+          headers: {
+            'Authorization': `Bearer ${authToken}`,
+          },
+        });
+        
+        if (response.ok) {
+          const apiFilters = await response.json();
+          console.log('✅ API filters loaded:', apiFilters.length);
+        }
+      }
+    } catch (error) {
+      console.error('Failed to load filters:', error);
+    }
+  }, [currentChatId, authToken]);
+
+  // Load filters when chat changes
+  useEffect(() => {
+    if (currentChatId) {
+      loadAllFilters();
+    } else {
+      setChatFilters([]);
+      setActiveFilter(null);
+    }
+  }, [currentChatId, loadAllFilters]);
+
+  // Listen for filter application events from message popovers
+  useEffect(() => {
+    const handleApplyFilterFromMessage = (event: CustomEvent) => {
+      const { filter, chatId } = event.detail;
+      
+      if (chatId === currentChatId && filter) {
+        console.log('Received filter application request:', filter.name);
+        
+        // Apply the filter to the current UI
+        applyFilterToUI(filter);
+        setActiveFilter(filter);
+        
+        // Show feedback to user
+        console.log('✅ Applied filter from message:', filter.name);
+      }
+    };
+
+    const handleOpenFilterPopup = (event: CustomEvent) => {
+      // Open the filter menu popup
+      const filterButton = document.querySelector('[aria-label="Filter settings"]') as HTMLElement;
+      if (filterButton) {
+        setFilterMenuAnchor(filterButton);
+      } else {
+        // Fallback: use the input area container
+        const inputContainer = document.getElementById('iagent-input-area');
+        if (inputContainer) {
+          setFilterMenuAnchor(inputContainer);
+        }
+      }
+    };
+
+    window.addEventListener('applyFilterFromMessage', handleApplyFilterFromMessage as EventListener);
+    window.addEventListener('openFilterPopup', handleOpenFilterPopup as EventListener);
+    
+    return () => {
+      window.removeEventListener('applyFilterFromMessage', handleApplyFilterFromMessage as EventListener);
+      window.removeEventListener('openFilterPopup', handleOpenFilterPopup as EventListener);
+    };
+  }, [currentChatId]);
+
+  // Get current filter configuration for creating new filters
+  const getCurrentFilterConfig = () => {
+    const dateFilterConfig = dateRangeTab === 0 
+      ? {
+          type: 'custom' as const,
+          customRange: {
+            amount: rangeAmount,
+            type: rangeType
+          }
+        }
+      : {
+          type: 'picker' as const,
+          dateRange: {
+            start: dateRange[0]?.toDate(),
+            end: dateRange[1]?.toDate()
+          }
+        };
+
+    return {
+      dateFilter: dateFilterConfig,
+      selectedCountries: selectedFlags,
+      enabledTools: Object.keys(enabledTools).filter(toolId => enabledTools[toolId])
+    };
+  };
+
+  // Get filter preview for the dialog
+  const getFilterPreview = () => {
+    const dateText = dateRangeTab === 0 
+      ? `${rangeAmount} ${t(`dateRange.${rangeType}`)} ${t('dateRange.ago')}`
+      : dateRange[0] && dateRange[1] 
+        ? `${dateRange[0].format('MMM D')} - ${dateRange[1].format('MMM D')}`
+        : 'No date range';
+
+    return {
+      countries: selectedFlags,
+      tools: Object.keys(enabledTools).filter(toolId => enabledTools[toolId]),
+      dateRange: dateText
+    };
+  };
+
+  // Handle renaming a filter
+  const handleRenameFilter = (filter: ChatFilter) => {
+    setRenameDialogFilter(filter);
+    setFilterMenuAnchor(null);
+  };
+
+  const handleSaveRename = async (newName: string) => {
+    if (!renameDialogFilter || !currentChatId) return;
+
+    const isGlobal = renameDialogFilter.config?.isGlobal;
+    const storageKey = isGlobal ? 'globalFilters' : `chatFilters_${currentChatId}`;
+    
+    try {
+      // Update in localStorage
+      const existingFilters = localStorage.getItem(storageKey);
+      if (existingFilters) {
+        const filters = JSON.parse(existingFilters);
+        const filterIndex = filters.findIndex((f: ChatFilter) => f.filterId === renameDialogFilter.filterId);
+        
+        if (filterIndex !== -1) {
+          filters[filterIndex].name = newName;
+          localStorage.setItem(storageKey, JSON.stringify(filters));
+          
+          // Update UI
+          loadAllFilters();
+          
+          console.log('✅ Filter renamed:', newName);
+
+          // Also try API call if authenticated
+          if (authToken) {
+            await fetch(`http://localhost:3000/api/chats/filters/${renameDialogFilter.filterId}`, {
+              method: 'PUT',
+              headers: {
+                'Authorization': `Bearer ${authToken}`,
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({ name: newName }),
+            });
+          }
+        }
+      }
+    } catch (error) {
+      console.error('Failed to rename filter:', error);
+    }
+    
+    setRenameDialogFilter(null);
+  };
+
+  const handleViewFilter = (filter: ChatFilter) => {
+    setSelectedFilterForDetails(filter);
+    setFilterDetailsDialogOpen(true);
+    setFilterMenuAnchor(null);
+  };
+
+  const handlePickFilter = (filter: ChatFilter) => {
+    applyFilterToUI(filter);
+    setFilterMenuAnchor(null);
+  };
+
+  const handleApplyFilterFromDetails = () => {
+    if (selectedFilterForDetails) {
+      applyFilterToUI(selectedFilterForDetails);
+    }
+  };
+
+  const handleDeleteFilter = async (filter: ChatFilter) => {
+    try {
+      // Remove from localStorage
+      const isGlobal = (filter as any).scope === 'global';
+      const storageKey = isGlobal ? 'globalFilters' : `chatFilters_${currentChatId}`;
+      const existingFilters = JSON.parse(localStorage.getItem(storageKey) || '[]');
+      const updatedFilters = existingFilters.filter((f: ChatFilter) => f.filterId !== filter.filterId);
+      localStorage.setItem(storageKey, JSON.stringify(updatedFilters));
+      
+      // Update state
+      setChatFilters(updatedFilters);
+      
+      // If this was the active filter, clear it
+      if (activeFilter?.filterId === filter.filterId) {
+        setActiveFilter(null);
+      }
+      
+      // TODO: API call when backend is ready
+      // await fetch(`/api/filters/${filter.filterId}`, {
+      //   method: 'DELETE',
+      //   headers: { 'Authorization': `Bearer ${authToken}` }
+      // });
+      
+      console.log('Filter deleted:', filter.name);
+    } catch (error) {
+      console.error('Error deleting filter:', error);
     }
   };
 
@@ -988,6 +1556,52 @@ export function InputArea({
                     <SettingsIcon sx={{ fontSize: '18px' }} />
                   </IconButton>
                 )}
+
+                {/* Filter Button - Show saved filters for current chat */}
+                <Tooltip title={activeFilter ? `${t('filter.activeFilter')}: ${activeFilter.name}` : t('filter.manage')}>
+                  <Badge 
+                    badgeContent={chatFilters.length} 
+                    color="primary"
+                    sx={{
+                      '& .MuiBadge-badge': {
+                        fontSize: '10px',
+                        height: '16px',
+                        minWidth: '16px',
+                      }
+                    }}
+                  >
+                    <IconButton
+                      id="iagent-filter-button"
+                      className="iagent-filter-control"
+                      onClick={handleFilterMenuOpen}
+                      sx={{
+                        backgroundColor: activeFilter 
+                          ? (isDarkMode ? '#2563eb' : '#3b82f6')
+                          : (isDarkMode ? '#565869' : '#e5e7eb'),
+                        border: `1px solid ${
+                          activeFilter 
+                            ? (isDarkMode ? '#2563eb' : '#3b82f6')
+                            : (isDarkMode ? '#6b6d7a' : '#d1d5db')
+                        }`,
+                        borderRadius: '20px',
+                        width: '36px',
+                        height: '36px',
+                        color: activeFilter 
+                          ? '#ffffff'
+                          : (isDarkMode ? '#ececf1' : '#374151'),
+                        transition: 'all 0.2s ease',
+                        '&:hover': {
+                          backgroundColor: activeFilter
+                            ? (isDarkMode ? '#1d4ed8' : '#2563eb')
+                            : (isDarkMode ? '#6b6d7a' : '#d1d5db'),
+                          transform: 'scale(1.05)',
+                        },
+                      }}
+                    >
+                      <FilterListIcon sx={{ fontSize: '18px' }} />
+                    </IconButton>
+                  </Badge>
+                </Tooltip>
               </Box>
 
               {/* Right Control Group */}
@@ -1677,6 +2291,206 @@ export function InputArea({
         </Box>
       </Box>
 
+             {/* Filter Management Menu */}
+       <Menu
+         anchorEl={filterMenuAnchor}
+         open={filterMenuOpen}
+         onClose={handleFilterMenuClose}
+         PaperProps={{
+           sx: {
+             backgroundColor: isDarkMode ? '#2d2d2d' : '#ffffff',
+             border: `1px solid ${isDarkMode ? '#444444' : '#e0e0e0'}`,
+             borderRadius: '12px',
+             minWidth: '280px',
+             maxWidth: '400px',
+             boxShadow: isDarkMode
+               ? '0 8px 32px rgba(0, 0, 0, 0.4)'
+               : '0 8px 32px rgba(0, 0, 0, 0.12)',
+           },
+         }}
+         anchorOrigin={{
+           vertical: 'top',
+           horizontal: 'left',
+         }}
+         transformOrigin={{
+           vertical: 'bottom',
+           horizontal: 'left',
+         }}
+       >
+         {/* Create New Filter Option */}
+         <MenuItem onClick={createNewFilter}>
+           <ListItemIcon>
+             <AddIcon sx={{ color: isDarkMode ? '#ffffff' : '#000000' }} />
+           </ListItemIcon>
+           <ListItemText 
+             primary={t('filter.saveCurrentSettings')}
+             sx={{ color: isDarkMode ? '#ffffff' : '#000000' }}
+           />
+         </MenuItem>
+         
+         {chatFilters.length > 0 && <Divider sx={{ backgroundColor: isDarkMode ? '#444444' : '#e0e0e0' }} />}
+         
+         {/* Existing Filters */}
+         {chatFilters.map((filter) => (
+           <MenuItem 
+             key={filter.filterId}
+             sx={{
+               backgroundColor: activeFilter?.filterId === filter.filterId 
+                 ? (isDarkMode ? 'rgba(33, 150, 243, 0.2)' : 'rgba(33, 150, 243, 0.1)')
+                 : 'transparent',
+               display: 'block',
+               padding: '8px 16px',
+               '&:hover': {
+                 backgroundColor: isDarkMode ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.05)',
+               }
+             }}
+           >
+             {/* Filter Header */}
+             <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+               <Box 
+                 sx={{ display: 'flex', alignItems: 'center', flex: 1, cursor: 'pointer' }}
+                 onClick={() => selectFilter(filter)}
+               >
+                 <Box sx={{ mr: 1 }}>
+                   {activeFilter?.filterId === filter.filterId ? (
+                     <CheckIcon sx={{ color: '#2196f3', fontSize: 20 }} />
+                   ) : (
+                     <FilterListIcon sx={{ color: isDarkMode ? '#ffffff' : '#000000', fontSize: 20 }} />
+                   )}
+                 </Box>
+                 <Box sx={{ flex: 1 }}>
+                   <Typography 
+                     variant="body2" 
+                     sx={{ 
+                       color: isDarkMode ? '#ffffff' : '#000000',
+                       fontWeight: activeFilter?.filterId === filter.filterId ? 600 : 400,
+                       display: 'flex',
+                       alignItems: 'center',
+                       gap: 1
+                     }}
+                   >
+                     {filter.name}
+                     {(filter as any).scope === 'global' && (
+                       <Chip 
+                         label="Global" 
+                         size="small" 
+                         sx={{
+                           height: '16px',
+                           fontSize: '10px',
+                           backgroundColor: isDarkMode ? '#2563eb' : '#dbeafe',
+                           color: isDarkMode ? '#ffffff' : '#1e40af',
+                         }}
+                       />
+                     )}
+                   </Typography>
+                   <Typography 
+                     variant="caption" 
+                     sx={{ color: isDarkMode ? '#aaaaaa' : '#666666' }}
+                   >
+                     {new Date(filter.createdAt).toLocaleDateString()}
+                   </Typography>
+                 </Box>
+               </Box>
+               
+               <Box sx={{ display: 'flex', gap: 0.5 }}>
+                 <IconButton
+                   size="small"
+                   onClick={(e) => {
+                     e.stopPropagation();
+                     handleViewFilter(filter);
+                   }}
+                   sx={{
+                     color: isDarkMode ? '#aaaaaa' : '#666666',
+                     '&:hover': {
+                       backgroundColor: isDarkMode ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)',
+                     }
+                   }}
+                   title="View filter details"
+                 >
+                   <ViewIcon sx={{ fontSize: 16 }} />
+                 </IconButton>
+                 
+                 <IconButton
+                   size="small"
+                   onClick={(e) => {
+                     e.stopPropagation();
+                     handlePickFilter(filter);
+                   }}
+                   sx={{
+                     color: isDarkMode ? '#4ade80' : '#166534',
+                     '&:hover': {
+                       backgroundColor: isDarkMode ? 'rgba(74, 222, 128, 0.1)' : 'rgba(22, 101, 52, 0.1)',
+                     }
+                   }}
+                   title="Apply this filter"
+                 >
+                   <PickIcon sx={{ fontSize: 16 }} />
+                 </IconButton>
+                 
+                 <IconButton
+                   size="small"
+                   onClick={(e) => {
+                     e.stopPropagation();
+                     handleRenameFilter(filter);
+                   }}
+                   sx={{
+                     color: isDarkMode ? '#aaaaaa' : '#666666',
+                     '&:hover': {
+                       backgroundColor: isDarkMode ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)',
+                     }
+                   }}
+                   title="Rename filter"
+                 >
+                   <EditIcon sx={{ fontSize: 16 }} />
+                 </IconButton>
+                 
+                 <IconButton
+                   size="small"
+                   onClick={(e) => {
+                     e.stopPropagation();
+                     handleDeleteFilter(filter);
+                   }}
+                   sx={{
+                     color: isDarkMode ? '#ef4444' : '#dc2626',
+                     '&:hover': {
+                       backgroundColor: isDarkMode ? 'rgba(239, 68, 68, 0.1)' : 'rgba(220, 38, 38, 0.1)',
+                     }
+                   }}
+                   title="Delete filter"
+                 >
+                   <DeleteIcon sx={{ fontSize: 16 }} />
+                 </IconButton>
+               </Box>
+             </Box>
+
+             {/* Filter Configuration Preview */}
+             {filter.config && (
+               <Box sx={{ mt: 1.5, mx: -1 }}>
+                 <FilterPreview
+                   filterConfig={filter.config}
+                   isDarkMode={isDarkMode}
+                   showHeader={false}
+                   compact={true}
+                 />
+               </Box>
+             )}
+           </MenuItem>
+         ))}
+         
+         {chatFilters.length === 0 && (
+           <MenuItem disabled>
+             <ListItemText 
+               primary={t('filter.noFiltersForChat')}
+               sx={{ 
+                 color: isDarkMode ? '#aaaaaa' : '#666666',
+                 fontStyle: 'italic',
+                 textAlign: 'center'
+               }}
+             />
+           </MenuItem>
+         )}
+       </Menu>
+
       {/* Tool Settings Dialog */}
       <ToolSettingsDialog
         open={toolSettingsOpen}
@@ -1686,6 +2500,38 @@ export function InputArea({
         onConfigurationChange={handleToolConfigurationChange}
         isDarkMode={isDarkMode}
         isLoading={toolSchemasLoading}
+      />
+
+      {/* Filter Name Dialog for Creating Filters */}
+      <FilterNameDialog
+        open={filterNameDialogOpen}
+        onClose={() => setFilterNameDialogOpen(false)}
+        onSave={handleSaveNewFilter}
+        isDarkMode={isDarkMode}
+        mode="create"
+        filterPreview={getFilterPreview()}
+      />
+
+      {/* Filter Name Dialog for Renaming Filters */}
+      <FilterNameDialog
+        open={!!renameDialogFilter}
+        onClose={() => setRenameDialogFilter(null)}
+        onSave={(name) => handleSaveRename(name)}
+        isDarkMode={isDarkMode}
+        mode="rename"
+        currentName={renameDialogFilter?.name || ''}
+      />
+
+      {/* Filter Details Dialog */}
+      <FilterDetailsDialog
+        open={filterDetailsDialogOpen}
+        onClose={() => {
+          setFilterDetailsDialogOpen(false);
+          setSelectedFilterForDetails(null);
+        }}
+        onApply={handleApplyFilterFromDetails}
+        isDarkMode={isDarkMode}
+        filter={selectedFilterForDetails}
       />
     </>
   );

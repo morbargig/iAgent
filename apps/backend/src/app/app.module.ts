@@ -10,7 +10,7 @@ import { JwtStrategy } from './auth/jwt.strategy';
 import { JwtAuthGuard } from './auth/jwt-auth.guard';
 import { ChatController } from './controllers/chat.controller';
 import { ChatService } from './services/chat.service';
-import { Chat, ChatSchema, ChatMessage, ChatMessageSchema } from './schemas/chat.schema';
+import { Chat, ChatSchema, ChatMessage, ChatMessageSchema, ChatFilter, ChatFilterSchema } from './schemas/chat.schema';
 
 const isDemoMode = process.env.DEMO_MODE === 'true' || !process.env.MONGODB_URI;
 
@@ -38,7 +38,8 @@ const mongoDbConfig = {
     }),
     MongooseModule.forFeature([
       { name: Chat.name, schema: ChatSchema },
-      { name: ChatMessage.name, schema: ChatMessageSchema }
+      { name: ChatMessage.name, schema: ChatMessageSchema },
+      { name: ChatFilter.name, schema: ChatFilterSchema }
     ])
   ],
   ...baseModuleConfig,

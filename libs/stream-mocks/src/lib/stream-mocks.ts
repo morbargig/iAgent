@@ -9,6 +9,12 @@ export interface Message {
   timestamp: Date;
   isStreaming?: boolean;
   isInterrupted?: boolean; // Add flag to indicate if generation was stopped in the middle
+  filterId?: string | null; // Associated filter ID
+  filterSnapshot?: {
+    filterId?: string;
+    name?: string;
+    config?: Record<string, any>;
+  } | null; // Filter configuration snapshot at time of message creation
   metadata?: {
     index?: number;
     total_tokens?: number;
@@ -348,7 +354,9 @@ export class StreamingClient {
           id: msg.id,
           role: msg.role,
           content: msg.content,
-          timestamp: new Date().toISOString()
+          timestamp: new Date().toISOString(),
+          filterId: msg.filterId,
+          filterSnapshot: msg.filterSnapshot
         })),
         tools: tools || [],
         dateFilter: dateFilter || null,
@@ -490,14 +498,22 @@ export class StreamingClient {
 export function createMessage(
   role: 'user' | 'assistant',
   content: string,
-  isStreaming = false
+  isStreaming = false,
+  filterId?: string | null,
+  filterSnapshot?: {
+    filterId?: string;
+    name?: string;
+    config?: Record<string, any>;
+  } | null
 ): Message {
   return {
     id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
     role,
     content,
     timestamp: new Date(),
-    isStreaming
+    isStreaming,
+    filterId: filterId || null,
+    filterSnapshot: filterSnapshot || null,
   };
 }
 

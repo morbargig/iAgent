@@ -87,6 +87,33 @@ export class ChatMessageDto {
   })
   @IsOptional()
   metadata?: Record<string, any>;
+
+  @ApiPropertyOptional({
+    description: 'Filter ID associated with this message',
+    example: 'filter_1638360000000_def456'
+  })
+  @IsOptional()
+  @IsString()
+  filterId?: string;
+
+  @ApiPropertyOptional({
+    description: 'Filter configuration snapshot at time of message creation',
+    example: {
+      filterId: 'filter_1638360000000_def456',
+      name: 'Filter 12/1/2024, 2:00:00 PM',
+      config: {
+        dateFilter: { type: 'custom', customRange: { amount: 1, type: 'months' } },
+        selectedCountries: ['PS', 'LB'],
+        enabledTools: ['web_search', 'document_analyzer']
+      }
+    }
+  })
+  @IsOptional()
+  filterSnapshot?: {
+    filterId?: string;
+    name?: string;
+    config?: Record<string, any>;
+  };
 }
 
 export class ChatRequestDto {

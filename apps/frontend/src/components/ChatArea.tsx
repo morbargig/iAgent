@@ -14,6 +14,12 @@ import {
   ListItemIcon,
   Divider,
   Avatar,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  TextField,
+  Button,
 } from '@mui/material';
 import {
   SmartToy as BotIcon,
@@ -35,12 +41,19 @@ import {
   Person as PersonIcon,
   Logout as LogoutIcon,
   AccountCircle as AccountCircleIcon,
+  Info as InfoIcon,
+  FilterList as FilterIcon,
+  PlayArrow as ApplyIcon,
+  PlayArrow as PickIcon,
+  Visibility as ViewIcon,
 } from '@mui/icons-material';
 import { type Message } from '@iagent/stream-mocks';
 import { MarkdownRenderer } from './MarkdownRenderer';
 import { extractPlainTextFromMarkdown, copyToClipboard } from '../utils/textUtils';
 import { useTranslation } from '../contexts/TranslationContext';
 import { LanguageSwitcher } from './LanguageSwitcher';
+import { FilterDetailsDialog } from './FilterDetailsDialog';
+import { FilterPreview } from './FilterPreview';
 
 interface ChatAreaProps {
   messages: Message[];
@@ -57,6 +70,8 @@ interface ChatAreaProps {
   inputAreaHeight?: number; // Add input area height prop
   onLogout?: () => void;
   userEmail?: string | null;
+  currentChatId?: string; // Current chat ID for filter management
+  authToken?: string; // Auth token for API calls
 }
 
 // Shared Header Component
@@ -338,7 +353,7 @@ const ChatHeader = ({
 };
 
 // iagent-inspired Message Component - Clean, grid-based layout with comprehensive action buttons
-const MessageBubble = ({ message, isDarkMode, theme, onRefreshMessage, onEditMessage, onDeleteMessage, onShareMessage }: { 
+const MessageBubble = ({ message, isDarkMode, theme, onRefreshMessage, onEditMessage, onDeleteMessage, onShareMessage, currentChatId, authToken, onFilterInfo }: { 
   message: Message; 
   isDarkMode: boolean; 
   theme: any;
@@ -346,11 +361,15 @@ const MessageBubble = ({ message, isDarkMode, theme, onRefreshMessage, onEditMes
   onEditMessage?: (messageId: string) => void;
   onDeleteMessage?: (messageId: string) => void;
   onShareMessage?: (messageId: string, content: string) => void;
+  currentChatId?: string;
+  authToken?: string;
+  onFilterInfo?: (event: React.MouseEvent<HTMLElement>, message: any) => void;
 }) => {
   const { t } = useTranslation();
   const isUser = message.role === 'user';
   const [copied, setCopied] = React.useState(false);
   const [liked, setLiked] = React.useState<boolean | null>(null);
+
 
   const handleCopy = async () => {
     try {
@@ -426,6 +445,10 @@ const MessageBubble = ({ message, isDarkMode, theme, onRefreshMessage, onEditMes
     // console.log('More actions for message:', message.id);
   };
 
+
+
+
+
   if (isUser) {
     // User Message - Right-aligned with muted background
     return (
@@ -434,14 +457,14 @@ const MessageBubble = ({ message, isDarkMode, theme, onRefreshMessage, onEditMes
           display: 'grid',
           gridTemplateColumns: 'minmax(72px, 1fr) auto',
           gridTemplateRows: 'auto auto',
-                        gap: '8px',
-              width: '100%',
-              py: 2,
-              animation: 'messageSlideIn 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
-              '@keyframes messageSlideIn': {
-                '0%': { opacity: 0, transform: 'translateY(4px)' },
-                '100%': { opacity: 1, transform: 'translateY(0)' },
-              },
+          gap: '8px',
+          width: '100%',
+          py: 2,
+          animation: 'messageSlideIn 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
+          '@keyframes messageSlideIn': {
+            '0%': { opacity: 0, transform: 'translateY(4px)' },
+            '100%': { opacity: 1, transform: 'translateY(0)' },
+          },
           '&:hover .user-action-bar': {
             opacity: 1,
           },
@@ -451,11 +474,11 @@ const MessageBubble = ({ message, isDarkMode, theme, onRefreshMessage, onEditMes
         <Box
           className="message-container"
           sx={{
-                          gridColumn: '2',
-              gridRow: '1',
-              backgroundColor: isDarkMode ? '#404040' : '#f3f4f6',
-              color: theme.palette.text.primary,
-              borderRadius: '24px',
+            gridColumn: '2',
+            gridRow: '1',
+            backgroundColor: isDarkMode ? '#404040' : '#f3f4f6',
+            color: theme.palette.text.primary,
+            borderRadius: '24px',
             padding: '10px 20px',
             wordBreak: 'break-word',
             fontSize: '16px',
@@ -528,18 +551,41 @@ const MessageBubble = ({ message, isDarkMode, theme, onRefreshMessage, onEditMes
         <Box
           className="user-action-bar"
           sx={{
-                          gridColumn: '2',
-              gridRow: '2',
-              display: 'flex',
-              gap: '4px',
-              marginTop: '8px',
-              opacity: 0,
-              transition: 'opacity 150ms cubic-bezier(0.4, 0, 0.2, 1)',
+            gridColumn: '2',
+            gridRow: '2',
+            display: 'flex',
+            gap: '4px',
+            marginTop: '8px',
+            opacity: 0,
+            transition: 'opacity 150ms cubic-bezier(0.4, 0, 0.2, 1)',
             '&:hover': {
               opacity: 1,
             },
           }}
         >
+          {/* Filter Info Icon */}
+          {message.filterSnapshot && (
+            <Tooltip title={t('message.filterInfo')}>
+              <IconButton
+                onClick={(e) => onFilterInfo?.(e, message)}
+                size="small"
+                sx={{
+                  width: 28,
+                  height: 28,
+                  color: theme.palette.text.secondary,
+                  borderRadius: '6px',
+                  transition: 'all 150ms cubic-bezier(0.4, 0, 0.2, 1)',
+                  '&:hover': {
+                    backgroundColor: theme.palette.action.hover,
+                    color: theme.palette.text.primary,
+                  },
+                }}
+              >
+                <InfoIcon sx={{ fontSize: 14 }} />
+              </IconButton>
+            </Tooltip>
+          )}
+
           <Tooltip title={copied ? t('message.copied') : t('message.copy')}>
             <IconButton
               onClick={handleCopy}
@@ -725,6 +771,29 @@ const MessageBubble = ({ message, isDarkMode, theme, onRefreshMessage, onEditMes
           },
         }}
       >
+        {/* Filter Info Icon */}
+        {message.filterSnapshot && (
+          <Tooltip title={t('message.filterInfo')}>
+            <IconButton
+              onClick={(e) => onFilterInfo?.(e, message)}
+              size="small"
+              sx={{
+                width: 28,
+                height: 28,
+                color: theme.palette.text.secondary,
+                borderRadius: '6px',
+                transition: 'all 150ms cubic-bezier(0.4, 0, 0.2, 1)',
+                '&:hover': {
+                  backgroundColor: theme.palette.action.hover,
+                  color: theme.palette.text.primary,
+                },
+              }}
+            >
+              <InfoIcon sx={{ fontSize: 14 }} />
+            </IconButton>
+          </Tooltip>
+        )}
+
         {/* Copy Button */}
         <Tooltip title={copied ? t('message.copied') : t('message.copy')}>
           <IconButton
@@ -828,9 +897,285 @@ const MessageBubble = ({ message, isDarkMode, theme, onRefreshMessage, onEditMes
           {message.metadata.timestamp && new Date(message.metadata.timestamp).toLocaleTimeString()}
         </Typography>
       )}
+
     </Box>
   );
 };
+
+// Shared Filter Components (used by both user and assistant messages)
+const FilterInfoPopover = ({ message, showFilterInfo, filterInfoAnchor, handleFilterInfoClose, formatFilterConfig, handleViewFilterDetails, handleApplyFilterFromMessage, handleRenameFilter, isDarkMode, theme, t }: any) => (
+  <Popover
+    open={showFilterInfo}
+    anchorEl={filterInfoAnchor}
+    onClose={handleFilterInfoClose}
+    anchorOrigin={{
+      vertical: 'bottom',
+      horizontal: 'left',
+    }}
+    transformOrigin={{
+      vertical: 'top',
+      horizontal: 'left',
+    }}
+    sx={{
+      '& .MuiPopover-paper': {
+        backgroundColor: isDarkMode ? '#2d2d2d' : '#ffffff',
+        border: `1px solid ${isDarkMode ? '#444444' : '#e0e0e0'}`,
+        borderRadius: '12px',
+        maxWidth: '320px',
+        padding: '16px',
+        boxShadow: isDarkMode
+          ? '0 8px 32px rgba(0, 0, 0, 0.4)'
+          : '0 8px 32px rgba(0, 0, 0, 0.12)',
+      },
+    }}
+  >
+    {message?.filterSnapshot && (
+      <Box>
+        <Typography
+          variant="subtitle2"
+          sx={{
+            color: theme.palette.text.primary,
+            fontWeight: 600,
+            marginBottom: '12px',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px',
+          }}
+        >
+          <FilterIcon sx={{ fontSize: 16 }} />
+          {message.filterSnapshot.name || 'Filter Settings'}
+        </Typography>
+        
+        {message.filterSnapshot.config && (
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+            {formatFilterConfig(message.filterSnapshot.config).map((entry: any, index: number) => (
+              <Typography
+                key={index}
+                variant="body2"
+                sx={{
+                  color: theme.palette.text.secondary,
+                  fontSize: '13px',
+                  lineHeight: 1.4,
+                  padding: '6px 12px',
+                  backgroundColor: isDarkMode ? '#1e1e1e' : '#f8f9fa',
+                  borderRadius: '8px',
+                  fontFamily: 'monospace',
+                }}
+              >
+                {entry}
+              </Typography>
+            ))}
+            
+            {formatFilterConfig(message.filterSnapshot.config).length === 0 && (
+              <Typography
+                variant="body2"
+                sx={{
+                  color: theme.palette.text.secondary,
+                  fontSize: '13px',
+                  fontStyle: 'italic',
+                  textAlign: 'center',
+                  padding: '12px',
+                }}
+              >
+                No filter configuration available
+              </Typography>
+            )}
+          </Box>
+        )}
+        
+        <Typography
+          variant="caption"
+          sx={{
+            color: theme.palette.text.secondary,
+            fontSize: '11px',
+            marginTop: '12px',
+            display: 'block',
+            opacity: 0.7,
+          }}
+        >
+          Filter ID: {message?.filterSnapshot?.filterId || message?.filterId || 'Unknown'}
+        </Typography>
+        
+        {/* Filter Action Buttons */}
+        <Box sx={{ 
+          display: 'flex', 
+          justifyContent: 'center', 
+          gap: '12px', 
+          marginTop: '20px', 
+          flexWrap: 'wrap' 
+        }}>
+          <Button
+            variant="outlined"
+            size="medium"
+            startIcon={<ViewIcon sx={{ fontSize: '16px' }} />}
+            onClick={handleViewFilterDetails}
+            sx={{
+              borderColor: isDarkMode ? '#525252' : '#d1d5db',
+              color: isDarkMode ? '#e5e7eb' : '#374151',
+              fontSize: '13px',
+              fontWeight: 500,
+              textTransform: 'none',
+              minWidth: '90px',
+              height: '36px',
+              borderRadius: '8px',
+              px: 2,
+              transition: 'all 0.2s ease-in-out',
+              boxShadow: isDarkMode 
+                ? '0 1px 3px rgba(0, 0, 0, 0.3)' 
+                : '0 1px 3px rgba(0, 0, 0, 0.1)',
+              '&:hover': {
+                backgroundColor: isDarkMode ? '#374151' : '#f9fafb',
+                borderColor: isDarkMode ? '#6b7280' : '#9ca3af',
+                color: isDarkMode ? '#f3f4f6' : '#111827',
+                transform: 'translateY(-1px)',
+                boxShadow: isDarkMode 
+                  ? '0 4px 12px rgba(0, 0, 0, 0.4)' 
+                  : '0 4px 12px rgba(0, 0, 0, 0.15)',
+              },
+            }}
+          >
+            View
+          </Button>
+          
+          <Button
+            variant="contained"
+            size="medium"
+            startIcon={<ApplyIcon sx={{ fontSize: '16px' }} />}
+            onClick={handleApplyFilterFromMessage}
+            sx={{
+              backgroundColor: '#10b981',
+              color: '#ffffff',
+              fontSize: '13px',
+              fontWeight: 600,
+              textTransform: 'none',
+              minWidth: '90px',
+              height: '36px',
+              borderRadius: '8px',
+              px: 2,
+              transition: 'all 0.2s ease-in-out',
+              boxShadow: '0 2px 4px rgba(16, 185, 129, 0.3)',
+              '&:hover': {
+                backgroundColor: '#059669',
+                transform: 'translateY(-1px)',
+                boxShadow: '0 4px 12px rgba(16, 185, 129, 0.4)',
+              },
+              '&:active': {
+                transform: 'translateY(0)',
+              },
+            }}
+          >
+            Apply
+          </Button>
+            
+          <Button
+            variant="outlined"
+            size="medium"
+            startIcon={<EditIcon sx={{ fontSize: '16px' }} />}
+            onClick={handleRenameFilter}
+            sx={{
+              borderColor: '#3b82f6',
+              color: '#3b82f6',
+              fontSize: '13px',
+              fontWeight: 500,
+              textTransform: 'none',
+              minWidth: '90px',
+              height: '36px',
+              borderRadius: '8px',
+              px: 2,
+              transition: 'all 0.2s ease-in-out',
+              boxShadow: isDarkMode 
+                ? '0 1px 3px rgba(59, 130, 246, 0.3)' 
+                : '0 1px 3px rgba(59, 130, 246, 0.2)',
+              '&:hover': {
+                backgroundColor: '#3b82f6',
+                borderColor: '#3b82f6',
+                color: '#ffffff',
+                transform: 'translateY(-1px)',
+                boxShadow: '0 4px 12px rgba(59, 130, 246, 0.4)',
+              },
+              '&:active': {
+                transform: 'translateY(0)',
+              },
+            }}
+          >
+            Rename
+          </Button>
+        </Box>
+      </Box>
+    )}
+  </Popover>
+);
+
+const RenameFilterDialog = ({ renameDialogOpen, setRenameDialogOpen, newFilterName, setNewFilterName, saveFilterName, isDarkMode, t }: any) => (
+  <Dialog
+    open={renameDialogOpen}
+    onClose={() => setRenameDialogOpen(false)}
+    maxWidth="sm"
+    fullWidth
+    PaperProps={{
+      sx: {
+        backgroundColor: isDarkMode ? '#2d2d2d' : '#ffffff',
+        borderRadius: '12px',
+      },
+    }}
+  >
+    <DialogTitle sx={{ color: isDarkMode ? '#ffffff' : '#000000' }}>
+      {t('filter.renameFilter')}
+    </DialogTitle>
+    <DialogContent>
+      <TextField
+        autoFocus
+        margin="dense"
+        label={t('filter.filterName')}
+        fullWidth
+        variant="outlined"
+        value={newFilterName}
+        onChange={(e) => setNewFilterName(e.target.value)}
+        sx={{
+          '& .MuiOutlinedInput-root': {
+            color: isDarkMode ? '#ffffff' : '#000000',
+            '& fieldset': {
+              borderColor: isDarkMode ? '#666666' : '#cccccc',
+            },
+            '&:hover fieldset': {
+              borderColor: isDarkMode ? '#888888' : '#999999',
+            },
+            '&.Mui-focused fieldset': {
+              borderColor: '#2196f3',
+            },
+          },
+          '& .MuiInputLabel-root': {
+            color: isDarkMode ? '#cccccc' : '#666666',
+            '&.Mui-focused': {
+              color: '#2196f3',
+            },
+          },
+        }}
+      />
+    </DialogContent>
+    <DialogActions>
+      <Button
+        onClick={() => setRenameDialogOpen(false)}
+        sx={{ color: isDarkMode ? '#cccccc' : '#666666' }}
+      >
+        {t('common.cancel')}
+      </Button>
+      <Button
+        onClick={saveFilterName}
+        variant="contained"
+        disabled={!newFilterName.trim()}
+        sx={{
+          backgroundColor: '#2196f3',
+          '&:hover': {
+            backgroundColor: '#1976d2',
+          },
+        }}
+      >
+        {t('common.save')}
+      </Button>
+    </DialogActions>
+  </Dialog>
+);
 
 // Loading Indicator - Clean, minimal
 const TypingIndicator = ({ isDarkMode, theme }: { isDarkMode: boolean; theme: any }) => {
@@ -958,10 +1303,124 @@ const WelcomeScreen = ({ isDarkMode, theme, onToggleSidebar, onToggleTheme, useM
   );
 };
 
-export function ChatArea({ messages, isLoading, onToggleSidebar, isDarkMode, onToggleTheme, useMockMode, onToggleMockMode, onRefreshMessage, onEditMessage, onDeleteMessage, onShareMessage, inputAreaHeight = 80, onLogout, userEmail }: ChatAreaProps) {
+export function ChatArea({ messages, isLoading, onToggleSidebar, isDarkMode, onToggleTheme, useMockMode, onToggleMockMode, onRefreshMessage, onEditMessage, onDeleteMessage, onShareMessage, inputAreaHeight = 80, onLogout, userEmail, currentChatId, authToken }: ChatAreaProps) {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const theme = useTheme();
   const { t } = useTranslation();
+
+  // Shared filter state for all messages
+  const [filterInfoAnchor, setFilterInfoAnchor] = React.useState<HTMLElement | null>(null);
+  const [activeMessage, setActiveMessage] = React.useState<any>(null);
+  const [renameDialogOpen, setRenameDialogOpen] = React.useState(false);
+  const [newFilterName, setNewFilterName] = React.useState('');
+  const [filterDetailsDialogOpen, setFilterDetailsDialogOpen] = React.useState(false);
+  const showFilterInfo = Boolean(filterInfoAnchor);
+
+  // Shared filter handlers
+  const handleFilterInfo = (event: React.MouseEvent<HTMLElement>, message: any) => {
+    setFilterInfoAnchor(event.currentTarget);
+    setActiveMessage(message);
+  };
+
+  const handleFilterInfoClose = () => {
+    setFilterInfoAnchor(null);
+    setActiveMessage(null);
+  };
+
+  const formatFilterConfig = (config: Record<string, any>) => {
+    const entries = [];
+    
+    if (config.dateFilter) {
+      if (config.dateFilter.type === 'custom' && config.dateFilter.customRange) {
+        entries.push(`📅 ${config.dateFilter.customRange.amount} ${config.dateFilter.customRange.type} ago`);
+      } else if (config.dateFilter.type === 'picker' && config.dateFilter.dateRange) {
+        entries.push(`📅 ${new Date(config.dateFilter.dateRange.start).toLocaleDateString()} - ${new Date(config.dateFilter.dateRange.end).toLocaleDateString()}`);
+      }
+    }
+    
+    if (config.selectedCountries && config.selectedCountries.length > 0) {
+      entries.push(`🌍 Countries: ${config.selectedCountries.join(', ')}`);
+    }
+    
+    if (config.enabledTools && config.enabledTools.length > 0) {
+      entries.push(`🔧 Tools: ${config.enabledTools.join(', ')}`);
+    }
+    
+    if (config.filterText) {
+      entries.push(`📝 Filter: "${config.filterText}"`);
+    }
+    
+    if (config.selectedMode) {
+      entries.push(`⚙️ Mode: ${config.selectedMode}`);
+    }
+    
+    if (config.excludeAmi !== undefined) {
+      entries.push(`🚫 Exclude AMI: ${config.excludeAmi ? 'Yes' : 'No'}`);
+    }
+    
+    if (config.includeAmi !== undefined) {
+      entries.push(`✅ Include AMI: ${config.includeAmi ? 'Yes' : 'No'}`);
+    }
+    
+    return entries;
+  };
+
+  const handleViewFilterDetails = () => {
+    if (activeMessage?.filterSnapshot) {
+      setFilterDetailsDialogOpen(true);
+      setFilterInfoAnchor(null);
+    }
+  };
+
+  const handleApplyFilterFromMessage = () => {
+    if (activeMessage?.filterSnapshot && currentChatId) {
+      console.log('Applying filter from message:', activeMessage.filterSnapshot.name);
+      
+      const event = new CustomEvent('applyFilterFromMessage', {
+        detail: {
+          filter: activeMessage.filterSnapshot,
+          chatId: currentChatId
+        }
+      });
+      window.dispatchEvent(event);
+      
+      setFilterInfoAnchor(null);
+    }
+  };
+
+  const handleRenameFilter = () => {
+    if (activeMessage?.filterSnapshot?.name) {
+      setNewFilterName(activeMessage.filterSnapshot.name);
+      setRenameDialogOpen(true);
+    }
+    setFilterInfoAnchor(null);
+  };
+
+  const saveFilterName = async () => {
+    if (!activeMessage?.filterSnapshot?.filterId || !newFilterName.trim()) return;
+    
+    try {
+      const response = await fetch(`/api/chats/filters/${activeMessage.filterSnapshot.filterId}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('authToken')}`
+        },
+        body: JSON.stringify({ name: newFilterName.trim() })
+      });
+      
+      if (response.ok) {
+        console.log(t('filter.renameSuccess'));
+      } else {
+        console.error(t('filter.renameFailed'));
+      }
+    } catch (error) {
+      console.error('Failed to rename filter:', error);
+    }
+    
+    setRenameDialogOpen(false);
+    setNewFilterName('');
+  };
 
   const scrollToBottom = () => {
     if (messagesEndRef.current) {
@@ -1081,6 +1540,9 @@ export function ChatArea({ messages, isLoading, onToggleSidebar, isDarkMode, onT
                 onEditMessage={onEditMessage}
                 onDeleteMessage={onDeleteMessage}
                 onShareMessage={onShareMessage}
+                currentChatId={currentChatId}
+                authToken={authToken}
+                onFilterInfo={handleFilterInfo}
               />
             </Box>
           ))}
@@ -1110,6 +1572,45 @@ export function ChatArea({ messages, isLoading, onToggleSidebar, isDarkMode, onT
           ref={messagesEndRef} 
         />
       </Box>
+
+      {/* Shared Filter Components */}
+      <FilterInfoPopover
+        message={activeMessage}
+        showFilterInfo={showFilterInfo}
+        filterInfoAnchor={filterInfoAnchor}
+        handleFilterInfoClose={handleFilterInfoClose}
+        formatFilterConfig={formatFilterConfig}
+        handleViewFilterDetails={handleViewFilterDetails}
+        handleApplyFilterFromMessage={handleApplyFilterFromMessage}
+        handleRenameFilter={handleRenameFilter}
+        isDarkMode={isDarkMode}
+        theme={theme}
+        t={t}
+      />
+
+      <RenameFilterDialog
+        renameDialogOpen={renameDialogOpen}
+        setRenameDialogOpen={setRenameDialogOpen}
+        newFilterName={newFilterName}
+        setNewFilterName={setNewFilterName}
+        saveFilterName={saveFilterName}
+        isDarkMode={isDarkMode}
+        t={t}
+      />
+
+      {/* Filter Details Dialog */}
+      <FilterDetailsDialog
+        open={filterDetailsDialogOpen}
+        onClose={() => setFilterDetailsDialogOpen(false)}
+        onApply={handleApplyFilterFromMessage}
+        isDarkMode={isDarkMode}
+        filter={activeMessage?.filterSnapshot ? {
+          ...activeMessage.filterSnapshot,
+          isActive: false,
+          createdAt: activeMessage.timestamp?.toISOString() || new Date().toISOString(),
+          scope: 'chat' as const
+        } : null}
+      />
     </Box>
   );
 } 

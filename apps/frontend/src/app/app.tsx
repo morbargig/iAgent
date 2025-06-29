@@ -343,7 +343,7 @@ const App = () => {
   }, [conversations, currentConversationId]);
 
   const handleSendMessage = async (data: SendMessageData) => {
-    const { content, dateFilter, selectedCountries, enabledTools } = data;
+    const { content, dateFilter, selectedCountries, enabledTools, filterSnapshot } = data;
     if (!content.trim() || isLoading) return;
 
     setIsLoading(true);
@@ -352,8 +352,20 @@ const App = () => {
     setInput(''); // Clear input immediately when sending
 
     try {
-      const userMessage = createMessage('user', content);
-      const assistantMessage = createStreamingMessage('assistant');
+      // Use the filter snapshot from the InputArea, or create a basic one if not provided
+      const messageFilterSnapshot = filterSnapshot || {
+        filterId: `filter_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+        name: `Filter ${new Date().toLocaleString()}`,
+        config: {
+          dateFilter,
+          selectedCountries,
+          enabledTools,
+          toolConfigurations: {}
+        }
+      };
+
+      const userMessage = createMessage('user', content, false, messageFilterSnapshot.filterId, messageFilterSnapshot);
+      const assistantMessage = createMessage('assistant', '', true, messageFilterSnapshot.filterId, messageFilterSnapshot);
 
       // Update conversation with new messages and generate title if needed
       const shouldGenerateTitle = currentConversation && currentConversation.titleKey === 'sidebar.newChatTitle';
@@ -389,10 +401,34 @@ const App = () => {
       if (!currentConversation) {
         setCurrentConversationId(updatedConversation.id);
         setStreamingConversationId(updatedConversation.id); // Update streaming ID for new conversation
+        
+        // Auto-create initial filter for new chat with current settings
+        setTimeout(() => {
+          const initialFilterConfig = {
+            dateFilter,
+            selectedCountries,
+            enabledTools,
+            createdAt: new Date().toISOString(),
+            mode: 'assistant',
+            ami: { includeAMI: true, excludeAMI: false }
+          };
+          
+          const initialFilter = {
+            filterId: `filter_${Date.now()}_initial`,
+            name: 'Initial Settings',
+            config: initialFilterConfig,
+            isActive: true,
+            createdAt: new Date().toISOString()
+          };
+          
+          // Save to localStorage for new chat
+          localStorage.setItem(`chatFilters_${updatedConversation.id}`, JSON.stringify([initialFilter]));
+          console.log('🎯 Auto-created initial filter for new chat:', updatedConversation.id);
+        }, 100);
       }
 
-      // Generate chat ID for this conversation
-      const chatId = `chat_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+      // Generate chat ID for this conversation - use conversation ID if available
+      const chatId = currentConversation?.id || `chat_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
       
       // Prepare tools array from enabled tools
       const toolsArray = enabledTools.map(toolId => ({
@@ -1053,6 +1089,9 @@ const App = () => {
               showVoiceButton={false} // Enable when voice functionality is ready
               showClearButton={true}  // Always show clear button
               showAttachmentButton={false} // Enable when attachment functionality is ready
+              // Filter management
+              currentChatId={currentConversationId || undefined}
+              authToken={authToken || undefined}
             />
           </Box>
         </Box>

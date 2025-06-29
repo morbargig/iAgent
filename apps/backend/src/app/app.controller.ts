@@ -427,6 +427,53 @@ And here's a **table example**:
     
     const lastMessage = processedMessages[processedMessages.length - 1];
     const sessionId = `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+
+    // Save user message with filter data if it's a user message
+    if (lastMessage.role === 'user') {
+      try {
+        // Check if the message has filter data (from frontend)
+        const messageWithFilter = messages[messages.length - 1];
+        let filterId = null;
+        let filterSnapshot = null;
+
+                 if (messageWithFilter.filterId && messageWithFilter.filterSnapshot) {
+           // Create/save the filter for this chat
+           const filterData = {
+             filterId: messageWithFilter.filterId,
+             name: messageWithFilter.filterSnapshot.name || 'Unnamed Filter',
+             filterConfig: messageWithFilter.filterSnapshot.config || {},
+             chatId: chatId,
+             userId: auth.userId
+           };
+
+           const savedFilter = await this.chatService.createFilter(filterData);
+           filterId = savedFilter.filterId;
+           filterSnapshot = messageWithFilter.filterSnapshot;
+           
+           // Set as active filter for the chat
+           await this.chatService.setActiveFilter(chatId, filterId, auth.userId);
+           
+           console.log('💾 Filter saved and set as active:', filterId);
+         }
+
+        // Save the user message with filter information
+        await this.chatService.addMessage({
+          id: lastMessage.id,
+          chatId: chatId,
+          userId: auth.userId,
+          role: lastMessage.role,
+          content: lastMessage.content,
+          timestamp: lastMessage.timestamp,
+          metadata: {},
+          filterId,
+          filterSnapshot: filterSnapshot || undefined
+        });
+
+        console.log('💬 User message saved with filter data');
+      } catch (error) {
+        console.error('Failed to save user message with filter data:', error);
+      }
+    }
     
     // Set streaming headers for JSON
     res.setHeader('Content-Type', 'application/json; charset=utf-8');
