@@ -1,0 +1,74 @@
+{
+  "name": "iAgent Development Container",
+  "image": "mcr.microsoft.com/devcontainers/typescript-node:1-20-bullseye",
+  "features": {
+    "ghcr.io/devcontainers/features/docker-in-docker:2": {},
+    "ghcr.io/devcontainers/features/git:1": {}
+  },
+  "forwardPorts": [
+    3000, // Backend API server
+    4200, // Frontend dev server  
+    4300 // Frontend preview server
+  ],
+  "portsAttributes": {
+    "3000": {
+      "label": "Backend API",
+      "onAutoForward": "openBrowser"
+    },
+    "4200": {
+      "label": "Frontend Dev Server",
+      "onAutoForward": "openBrowser"
+    },
+    "4300": {
+      "label": "Frontend Preview",
+      "onAutoForward": "notify"
+    }
+  },
+  "runArgs": [
+    "--network=host"
+  ],
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "nrwl.angular-console",
+        "bradlc.vscode-tailwindcss",
+        "esbenp.prettier-vscode",
+        "dbaeumer.vscode-eslint",
+        "ms-vscode.vscode-typescript-next",
+        "ms-vscode.vscode-json",
+        "ms-vscode.vscode-npm",
+        "christian-kohler.path-intellisense",
+        "formulahendry.auto-rename-tag",
+        "ms-vscode.vscode-css-peek",
+        "bradlc.vscode-tailwindcss",
+        "ms-vscode.material-icon-theme",
+        "PKief.material-icon-theme",
+        "ms-vscode.vscode-jest",
+        "ms-vscode.test-adapter-converter",
+        "hbenl.vscode-test-explorer",
+        "ms-playwright.playwright",
+        "usernamehw.errorlens",
+        "streetsidesoftware.code-spell-checker"
+      ],
+      "settings": {
+        "typescript.preferences.includePackageJsonAutoImports": "on",
+        "npm.packageManager": "npm",
+        "eslint.workingDirectories": [
+          "apps/frontend",
+          "apps/backend"
+        ],
+        "editor.formatOnSave": true,
+        "editor.defaultFormatter": "esbenp.prettier-vscode",
+        "editor.codeActionsOnSave": {
+          "source.fixAll.eslint": "explicit"
+        },
+        "terminal.integrated.defaultProfile.linux": "bash",
+        "git.openRepositoryInParentFolders": "always"
+      }
+    }
+  },
+  "postCreateCommand": "npm install",
+  "postStartCommand": "echo '🚀 iAgent Development Environment Ready! Frontend: http://localhost:4200 | Backend: http://localhost:3000/api | Docs: http://localhost:3000/api/docs'",
+  "remoteUser": "node",
+  "workspaceFolder": "/workspaces/iagent"
+}

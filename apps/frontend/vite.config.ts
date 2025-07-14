@@ -9,7 +9,7 @@ export default defineConfig({
 
   server: {
     port: 4200,
-    host: 'localhost',
+    host: '0.0.0.0',
     watch: {
       // Prevent watching files that could cause infinite rebuilds
       ignored: [
@@ -25,7 +25,7 @@ export default defineConfig({
 
   preview: {
     port: 4300,
-    host: 'localhost',
+    host: '0.0.0.0',
   },
 
   plugins: [react(), nxViteTsPaths()],
