@@ -45,6 +45,7 @@
     "@radix-ui/react-separator": "^1.1.7",
     "@radix-ui/react-slot": "^1.2.3",
     "@radix-ui/react-switch": "^1.2.5",
+    "autoprefixer": "^10.4.21",
     "axios": "^1.10.0",
     "class-transformer": "^0.5.1",
     "class-validator": "^0.14.2",
@@ -63,6 +64,7 @@
     "rxjs": "^7.8.0",
     "swagger-ui-express": "^5.0.1",
     "tailwind-merge": "^3.3.1",
+    "tailwindcss": "^3.4.17",
     "tslib": "^2.3.0"
   },
   "devDependencies": {
@@ -93,7 +95,6 @@
     "@types/react-syntax-highlighter": "^15.5.13",
     "@vitejs/plugin-react": "^4.2.0",
     "@vitest/ui": "^3.0.0",
-    "autoprefixer": "^10.4.21",
     "babel-jest": "^30.0.0",
     "concurrently": "^9.1.2",
     "eslint": "^9.29.0",
@@ -110,7 +111,6 @@
     "nx": "^21.2.0",
     "postcss": "^8.5.5",
     "prettier": "^3.5.3",
-    "tailwindcss": "^4.1.10",
     "ts-jest": "^29.4.0",
     "ts-node": "^10.9.2",
     "typescript": "~5.8.3",
