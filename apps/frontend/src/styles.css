@@ -1,9 +1,7 @@
 /* You can add global styles to this file, and also import other style files */
 
-/* Tailwind CSS directives */
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+/* Tailwind CSS v4+ import */
+@import "tailwindcss";
 
 /* Fix Material-UI overlay components blocking touch interactions */
 .MuiDrawer-root {
@@ -33,8 +31,12 @@ html[dir="ltr"] {
 }
 
 /* Smooth transitions for layout changes - exclude main layout components */
-*:not(#iagent-sidebar):not(#iagent-input-area):not(#iagent-input-content):not(#iagent-theme-toggle) {
-  transition: margin 0.2s ease, padding 0.2s ease;
+*:not(#iagent-sidebar):not(#iagent-input-area):not(#iagent-input-content):not(
+    #iagent-theme-toggle
+  ) {
+  transition:
+    margin 0.2s ease,
+    padding 0.2s ease;
 }
 
 /* Fix for Material-UI components in RTL */
