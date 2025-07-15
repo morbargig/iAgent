@@ -1,19 +1,51 @@
-name: Deploy to GitHub Pages
+# 🚨 DEPRECATED - This workflow has been replaced by the new CI/CD pipeline
+# 
+# The new CI/CD setup consists of:
+# - ci.yml: Continuous Integration (testing, linting, building)
+# - cd.yml: Continuous Deployment (automated deployment after CI success)
+# 
+# This file is kept for reference but should not be used.
+# To deploy, push to main branch and the new CD pipeline will handle deployment automatically.
+
+name: 🚨 [DEPRECATED] Deploy to GitHub Pages
 
 on:
-  push:
-    branches: [ main ]
+  # Disabled - use new CI/CD pipeline instead
+  # push:
+  #   branches: [ main ]
   workflow_dispatch:
+    inputs:
+      force_deploy:
+        description: 'Force deployment using legacy workflow'
+        required: true
+        default: 'false'
+        type: choice
+        options:
+          - 'false'
+          - 'true'
 
 jobs:
-  build-and-deploy:
+  legacy-deploy:
     runs-on: ubuntu-latest
+    if: github.event.inputs.force_deploy == 'true'
     permissions:
       contents: write
       pages: write
       id-token: write
     
     steps:
+      - name: ⚠️ Legacy Deployment Warning
+        run: |
+          echo "⚠️ WARNING: You are using the legacy deployment workflow!"
+          echo "🔄 Please use the new CI/CD pipeline instead:"
+          echo "1. Push changes to main branch"
+          echo "2. CI workflow will run automatically"  
+          echo "3. CD workflow will deploy after CI success"
+          echo ""
+          echo "🔗 New workflows:"
+          echo "- CI: .github/workflows/ci.yml"
+          echo "- CD: .github/workflows/cd.yml"
+        
       - name: Checkout
         uses: actions/checkout@v4
         
@@ -27,7 +59,7 @@ jobs:
         run: npm ci
         
       - name: Build frontend
-        run: npx nx build frontend --prod
+        run: npx nx build frontend --configuration=production
         env:
           VITE_BASE_URL: /iAgent/
           
@@ -36,4 +68,10 @@ jobs:
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_dir: ./dist/apps/frontend
-          # cname: your-domain.com # Add your custom domain if you have one 
+          commit_message: '🚨 [LEGACY] Deploy ${{ github.sha }}'
+          # cname: your-domain.com # Add your custom domain if you have one
+          
+      - name: 📢 Legacy Deployment Notice
+        run: |
+          echo "✅ Legacy deployment completed"
+          echo "🔄 Please migrate to new CI/CD pipeline for future deployments" 

@@ -131,7 +131,7 @@ export class AuthService {
   }
 
   // Demo method to create a token for testing
-  createDemoToken(userId: string = 'user_123456789'): string {
+  createDemoToken(userId = 'user_123456789'): string {
     const user = this.users.find(u => u.userId === userId);
     if (!user) {
       throw new Error('User not found');

@@ -1,0 +1,463 @@
+name: 🚀 Continuous Deployment (CD)
+
+on:
+  # Trigger CD after successful CI on main branch
+  workflow_run:
+    workflows: ["🔍 Continuous Integration (CI)"]
+    types: [completed]
+    branches: [main]
+  
+  # Allow manual deployment
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Environment to deploy to'
+        required: true
+        default: 'production'
+        type: choice
+        options:
+          - production
+          - staging
+      skip_tests:
+        description: 'Skip running tests before deployment'
+        required: false
+        default: false
+        type: boolean
+
+# Ensure only one deployment runs at a time
+concurrency:
+  group: deployment-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  NODE_VERSION: '18'
+  # Environment-specific configurations
+  PRODUCTION_URL: 'https://your-username.github.io/iAgent'
+  STAGING_URL: 'https://staging.your-domain.com'
+
+jobs:
+  # Job 1: Pre-deployment Checks
+  pre-deployment:
+    name: 🔍 Pre-deployment Verification
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    
+    # Only run if CI passed or manual trigger
+    if: ${{ github.event.workflow_run.conclusion == 'success' || github.event_name == 'workflow_dispatch' }}
+    
+    outputs:
+      should_deploy: ${{ steps.check.outputs.should_deploy }}
+      target_environment: ${{ steps.check.outputs.environment }}
+      deployment_url: ${{ steps.check.outputs.deployment_url }}
+    
+    steps:
+      - name: 📥 Checkout repository
+        uses: actions/checkout@v4
+
+      - name: 🔍 Check deployment conditions
+        id: check
+        run: |
+          echo "🔍 Checking deployment conditions..."
+          
+          # Determine target environment
+          if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+            ENVIRONMENT="${{ github.event.inputs.environment }}"
+          elif [[ "${{ github.ref }}" == "refs/heads/main" ]]; then
+            ENVIRONMENT="production"
+          else
+            ENVIRONMENT="staging"
+          fi
+          
+          echo "environment=${ENVIRONMENT}" >> $GITHUB_OUTPUT
+          
+          # Set deployment URL based on environment
+          if [[ "${ENVIRONMENT}" == "production" ]]; then
+            echo "deployment_url=${{ env.PRODUCTION_URL }}" >> $GITHUB_OUTPUT
+          else
+            echo "deployment_url=${{ env.STAGING_URL }}" >> $GITHUB_OUTPUT
+          fi
+          
+          echo "should_deploy=true" >> $GITHUB_OUTPUT
+          echo "🎯 Target environment: ${ENVIRONMENT}"
+
+      - name: 📋 Display deployment info
+        run: |
+          echo "📋 Deployment Information:"
+          echo "Environment: ${{ steps.check.outputs.environment }}"
+          echo "URL: ${{ steps.check.outputs.deployment_url }}"
+          echo "Branch: ${{ github.ref_name }}"
+          echo "Commit: ${{ github.sha }}"
+
+  # Job 2: Build for Production
+  build-production:
+    name: 🏗️ Production Build
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    needs: [pre-deployment]
+    if: needs.pre-deployment.outputs.should_deploy == 'true'
+    
+    strategy:
+      matrix:
+        project: ['frontend', 'backend']
+    
+    steps:
+      - name: 📥 Checkout repository
+        uses: actions/checkout@v4
+
+      - name: 🔧 Setup Node.js ${{ env.NODE_VERSION }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: 📦 Install dependencies
+        run: npm ci --prefer-offline --no-audit --production=false
+
+      - name: 🔍 Cache Nx computation cache
+        uses: actions/cache@v4
+        with:
+          path: .nx/cache
+          key: nx-${{ runner.os }}-${{ hashFiles('**/package-lock.json') }}-${{ github.sha }}
+          restore-keys: |
+            nx-${{ runner.os }}-${{ hashFiles('**/package-lock.json') }}-
+
+      - name: 🏗️ Build ${{ matrix.project }} for production
+        run: |
+          echo "🏗️ Building ${{ matrix.project }} for production..."
+          if [[ "${{ matrix.project }}" == "frontend" ]]; then
+            npx nx build frontend --configuration=production
+          else
+            npx nx build backend --configuration=production
+          fi
+        env:
+          # Frontend-specific environment variables
+          VITE_BASE_URL: ${{ needs.pre-deployment.outputs.deployment_url }}
+          VITE_API_BASE_URL: ${{ needs.pre-deployment.outputs.deployment_url }}/api
+          VITE_ENVIRONMENT: ${{ needs.pre-deployment.outputs.target_environment }}
+          
+          # Backend-specific environment variables
+          NODE_ENV: production
+
+      - name: 📊 Analyze build output (${{ matrix.project }})
+        run: |
+          echo "📊 Analyzing build output for ${{ matrix.project }}..."
+          if [[ -d "dist/apps/${{ matrix.project }}" ]]; then
+            echo "📁 Build directory contents:"
+            ls -la dist/apps/${{ matrix.project }}
+            echo "📏 Build size:"
+            du -sh dist/apps/${{ matrix.project }}
+            
+            if [[ "${{ matrix.project }}" == "frontend" ]]; then
+              echo "🗂️ Frontend assets:"
+              find dist/apps/frontend -name "*.js" -o -name "*.css" | head -10
+            fi
+          else
+            echo "❌ Build directory not found!"
+            exit 1
+          fi
+
+      - name: 🧪 Smoke test build (${{ matrix.project }})
+        run: |
+          echo "🧪 Running smoke tests for ${{ matrix.project }}..."
+          if [[ "${{ matrix.project }}" == "frontend" ]]; then
+            # Check if main files exist
+            if [[ -f "dist/apps/frontend/index.html" ]]; then
+              echo "✅ Frontend HTML file exists"
+            else
+              echo "❌ Frontend HTML file missing"
+              exit 1
+            fi
+          elif [[ "${{ matrix.project }}" == "backend" ]]; then
+            # Check if main.js exists
+            if [[ -f "dist/apps/backend/main.js" ]]; then
+              echo "✅ Backend main.js exists"
+            else
+              echo "❌ Backend main.js missing"
+              exit 1
+            fi
+          fi
+
+      - name: 📦 Create deployment package
+        run: |
+          echo "📦 Creating deployment package for ${{ matrix.project }}..."
+          cd dist/apps/${{ matrix.project }}
+          tar -czf ../../../${{ matrix.project }}-deployment.tar.gz .
+          cd ../../..
+          echo "📏 Package size: $(du -sh ${{ matrix.project }}-deployment.tar.gz)"
+
+      - name: 📋 Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: production-build-${{ matrix.project }}
+          path: |
+            dist/apps/${{ matrix.project }}
+            ${{ matrix.project }}-deployment.tar.gz
+          retention-days: 30
+
+  # Job 3: Security & Quality Checks for Production
+  production-quality-gate:
+    name: 🛡️ Production Quality Gate
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    needs: [build-production]
+    
+    steps:
+      - name: 📥 Checkout repository
+        uses: actions/checkout@v4
+
+      - name: 📥 Download frontend build
+        uses: actions/download-artifact@v4
+        with:
+          name: production-build-frontend
+          path: dist/apps/frontend
+
+      - name: 🔒 Security scan on production build
+        run: |
+          echo "🔒 Scanning production build for security issues..."
+          
+          # Check for sensitive information in built files
+          echo "🔍 Checking for sensitive data..."
+          if grep -r "password\|secret\|key\|token" dist/apps/frontend/ --exclude-dir=node_modules || true; then
+            echo "⚠️ Potential sensitive data found in build"
+          else
+            echo "✅ No obvious sensitive data found"
+          fi
+
+      - name: 📊 Performance audit on build
+        run: |
+          echo "📊 Analyzing production build performance..."
+          
+          # Check bundle sizes
+          echo "📏 Bundle size analysis:"
+          find dist/apps/frontend -name "*.js" -exec wc -c {} + | sort -n
+          
+          # Check for large files (> 1MB)
+          echo "🔍 Checking for large files (>1MB):"
+          find dist/apps/frontend -size +1M -type f || echo "✅ No large files found"
+
+      - name: 🧪 Final smoke tests
+        run: |
+          echo "🧪 Running final smoke tests..."
+          
+          # Validate HTML structure
+          if [[ -f "dist/apps/frontend/index.html" ]]; then
+            echo "✅ HTML file exists"
+            
+            # Check for required meta tags
+            if grep -q "viewport" dist/apps/frontend/index.html; then
+              echo "✅ Viewport meta tag found"
+            else
+              echo "⚠️ Viewport meta tag missing"
+            fi
+          fi
+
+  # Job 4: Deploy to GitHub Pages (Production)
+  deploy-production:
+    name: 🌐 Deploy to Production
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    needs: [pre-deployment, build-production, production-quality-gate]
+    if: needs.pre-deployment.outputs.target_environment == 'production'
+    
+    environment:
+      name: production
+      url: ${{ needs.pre-deployment.outputs.deployment_url }}
+    
+    permissions:
+      contents: write
+      pages: write
+      id-token: write
+    
+    steps:
+      - name: 📥 Checkout repository
+        uses: actions/checkout@v4
+
+      - name: 📥 Download frontend build
+        uses: actions/download-artifact@v4
+        with:
+          name: production-build-frontend
+          path: dist/apps/frontend
+
+      - name: 🔧 Prepare deployment files
+        run: |
+          echo "🔧 Preparing files for deployment..."
+          
+          # Create CNAME file if custom domain is used
+          # echo "your-domain.com" > dist/apps/frontend/CNAME
+          
+          # Create .nojekyll file to bypass Jekyll processing
+          touch dist/apps/frontend/.nojekyll
+          
+          # Create robots.txt
+          cat > dist/apps/frontend/robots.txt << EOF
+          User-agent: *
+          Allow: /
+          Sitemap: ${{ needs.pre-deployment.outputs.deployment_url }}/sitemap.xml
+          EOF
+          
+          echo "✅ Deployment files prepared"
+
+      - name: 🚀 Deploy to GitHub Pages
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./dist/apps/frontend
+          # Custom domain setup (uncomment if needed)
+          # cname: your-domain.com
+          
+          # Git commit settings
+          commit_message: '🚀 Deploy ${{ github.sha }}'
+          user_name: 'github-actions[bot]'
+          user_email: 'github-actions[bot]@users.noreply.github.com'
+
+      - name: 📋 Deployment summary
+        run: |
+          echo "📋 Deployment Summary:"
+          echo "✅ Frontend deployed to: ${{ needs.pre-deployment.outputs.deployment_url }}"
+          echo "📊 Build size: $(du -sh dist/apps/frontend)"
+          echo "🕐 Deployed at: $(date)"
+          echo "📝 Commit: ${{ github.sha }}"
+
+  # Job 5: Deploy to Staging (Alternative environment)
+  deploy-staging:
+    name: 🧪 Deploy to Staging
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    needs: [pre-deployment, build-production]
+    if: needs.pre-deployment.outputs.target_environment == 'staging'
+    
+    environment:
+      name: staging
+      url: ${{ needs.pre-deployment.outputs.deployment_url }}
+    
+    steps:
+      - name: 📥 Checkout repository
+        uses: actions/checkout@v4
+
+      - name: 📥 Download frontend build
+        uses: actions/download-artifact@v4
+        with:
+          name: production-build-frontend
+          path: dist/apps/frontend
+
+      - name: 🧪 Deploy to staging environment
+        run: |
+          echo "🧪 Deploying to staging environment..."
+          echo "📍 Staging URL: ${{ needs.pre-deployment.outputs.deployment_url }}"
+          echo "ℹ️ This is a placeholder for staging deployment"
+          echo "🔧 In a real scenario, this would deploy to your staging server"
+          
+          # Example staging deployment commands:
+          # rsync -avz dist/apps/frontend/ user@staging-server:/var/www/html/
+          # ssh user@staging-server "sudo systemctl reload nginx"
+
+  # Job 6: Post-deployment Tests
+  post-deployment-tests:
+    name: 🧪 Post-deployment Testing
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    needs: [deploy-production, pre-deployment]
+    if: always() && (needs.deploy-production.result == 'success' || needs.deploy-staging.result == 'success')
+    
+    steps:
+      - name: 📥 Checkout repository
+        uses: actions/checkout@v4
+
+      - name: 🔧 Setup Node.js ${{ env.NODE_VERSION }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: 🌐 Wait for deployment to be available
+        run: |
+          echo "🌐 Waiting for deployment to be available..."
+          DEPLOYMENT_URL="${{ needs.pre-deployment.outputs.deployment_url }}"
+          
+          for i in {1..10}; do
+            if curl -s --head "$DEPLOYMENT_URL" | head -n 1 | grep -q "200 OK"; then
+              echo "✅ Deployment is live!"
+              break
+            else
+              echo "⏳ Waiting for deployment... (attempt $i/10)"
+              sleep 30
+            fi
+          done
+
+      - name: 🧪 Run end-to-end tests
+        run: |
+          echo "🧪 Running end-to-end tests against deployed application..."
+          DEPLOYMENT_URL="${{ needs.pre-deployment.outputs.deployment_url }}"
+          
+          # Basic connectivity test
+          if curl -s "$DEPLOYMENT_URL" | grep -q "iAgent"; then
+            echo "✅ Basic connectivity test passed"
+          else
+            echo "❌ Basic connectivity test failed"
+            exit 1
+          fi
+
+      - name: 🏎️ Performance testing
+        run: |
+          echo "🏎️ Running performance tests..."
+          npm install -g lighthouse
+          
+          DEPLOYMENT_URL="${{ needs.pre-deployment.outputs.deployment_url }}"
+          lighthouse "$DEPLOYMENT_URL" --only-categories=performance --output=json --output-path=./lighthouse-results.json || true
+          
+          if [[ -f "./lighthouse-results.json" ]]; then
+            echo "📊 Lighthouse results generated"
+          fi
+
+      - name: 📋 Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: post-deployment-test-results
+          path: |
+            lighthouse-results.json
+            test-results.xml
+          retention-days: 30
+
+  # Job 7: Deployment Notification
+  notify-deployment:
+    name: 📢 Deployment Notification
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    needs: [pre-deployment, deploy-production, deploy-staging, post-deployment-tests]
+    if: always()
+    
+    steps:
+      - name: 📢 Success notification
+        if: contains(needs.*.result, 'success') && !contains(needs.*.result, 'failure')
+        run: |
+          echo "📢 Deployment Success Notification"
+          echo "✅ Deployment completed successfully!"
+          echo "🌐 URL: ${{ needs.pre-deployment.outputs.deployment_url }}"
+          echo "🎯 Environment: ${{ needs.pre-deployment.outputs.target_environment }}"
+          echo "📝 Commit: ${{ github.sha }}"
+          echo "👤 Triggered by: ${{ github.actor }}"
+          echo "🕐 Time: $(date)"
+
+      - name: 📢 Failure notification
+        if: contains(needs.*.result, 'failure')
+        run: |
+          echo "📢 Deployment Failure Notification"
+          echo "❌ Deployment failed!"
+          echo "🔍 Please check the workflow logs for details"
+          echo "🎯 Environment: ${{ needs.pre-deployment.outputs.target_environment }}"
+          echo "📝 Commit: ${{ github.sha }}"
+          echo "👤 Triggered by: ${{ github.actor }}"
+          
+          # In a real scenario, you might send notifications to Slack, Discord, email, etc.
+          # curl -X POST -H 'Content-type: application/json' \
+          #   --data '{"text":"Deployment failed for iAgent"}' \
+          #   ${{ secrets.SLACK_WEBHOOK_URL }}
+
+      - name: 📊 Deployment summary
+        if: always()
+        run: |
+          echo "📊 Deployment Pipeline Summary:"
+          echo "Pre-deployment: ${{ needs.pre-deployment.result }}"
+          echo "Production Deploy: ${{ needs.deploy-production.result }}"
+          echo "Staging Deploy: ${{ needs.deploy-staging.result }}"
+          echo "Post-deployment Tests: ${{ needs.post-deployment-tests.result }}" 
