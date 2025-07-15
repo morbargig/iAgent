@@ -57,12 +57,15 @@ describe('AppController', () => {
   });
 
   describe('getData', () => {
-    it('should return API information', () => {
+    it('should return API health information', () => {
       const result = controller.getData();
       expect(result).toBeDefined();
-      expect(result.message).toBe('Hello API');
       expect(result.status).toBe('ok');
-      expect(mockAppService.getData).toHaveBeenCalled();
+      expect(result.version).toBe('1.0.0');
+      expect(typeof result.uptime).toBe('number');
+      expect(result.endpoints).toBeDefined();
+      expect(result.endpoints.health).toBe('/api');
+      expect(result.endpoints.docs).toBe('/api/docs');
     });
   });
 
