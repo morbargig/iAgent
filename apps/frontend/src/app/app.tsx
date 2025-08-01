@@ -8,6 +8,8 @@ import { Sidebar } from '../components/Sidebar';
 import { ChatArea } from '../components/ChatArea';
 import { InputArea, type SendMessageData } from '../components/InputArea';
 import { LoginForm } from '../components/LoginForm';
+import { ReportDetailsPanel, type ReportData, fetchReportDetails } from '../components/ReportDetailsPanel';
+import { parseReportId } from '../utils/reportLinks';
 
 import { StreamingClient, createMessage, createStreamingMessage, updateMessageContent, type Message, type Conversation } from '@iagent/stream-mocks';
 import { useMockMode } from '../hooks/useMockMode';
@@ -304,6 +306,12 @@ const App = () => {
   const [authToken, setAuthToken] = useState<string | null>(null);
   const [userId, setUserId] = useState<string | null>(null);
   const [userEmail, setUserEmail] = useState<string | null>(null);
+  
+  // Report panel state
+  const [isReportPanelOpen, setIsReportPanelOpen] = useState(false);
+  const [reportData, setReportData] = useState<ReportData | null>(null);
+  const [reportPanelWidth, setReportPanelWidth] = useState(350);
+  const [isReportLoading, setIsReportLoading] = useState(false);
   
   // Stop generation function
   const stopGeneration = () => {
@@ -987,6 +995,42 @@ const App = () => {
     // You can implement file upload here
   };
 
+  // Report panel handlers
+
+  const closeReportPanel = () => {
+    setIsReportPanelOpen(false);
+    setReportData(null);
+  };
+
+  const handleReportPanelWidthChange = (width: number) => {
+    setReportPanelWidth(width);
+  };
+
+  // Function to open report from URL (for links in messages)
+  const openReportFromUrl = async (url: string) => {
+    const reportId = parseReportId(url);
+    if (!reportId) {
+      console.error('Invalid report URL:', url);
+      return;
+    }
+
+    setIsReportPanelOpen(true);
+    setIsReportLoading(true);
+    setReportData(null);
+
+    try {
+      const data = await fetchReportDetails(reportId);
+      setReportData(data);
+    } catch (error) {
+      console.error('Failed to load report:', error);
+      setReportData(null);
+    } finally {
+      setIsReportLoading(false);
+    }
+  };
+
+
+
   // Show login form if not authenticated
   if (!isAuthenticated) {
     return (
@@ -1067,6 +1111,7 @@ const App = () => {
               inputAreaHeight={inputAreaHeight}
               onLogout={handleLogout}
               userEmail={userEmail}
+              onOpenReport={openReportFromUrl}
             />
             
             {/* Input Area */}
@@ -1081,6 +1126,8 @@ const App = () => {
               sidebarOpen={isSidebarOpen}
               sidebarRef={sidebarRef}
               sidebarWidth={sidebarWidth}
+              reportPanelOpen={isReportPanelOpen}
+              reportPanelWidth={reportPanelWidth}
               onHeightChange={setInputAreaHeight}
               // Control buttons
               onVoiceInput={handleVoiceInput}
@@ -1094,7 +1141,20 @@ const App = () => {
               authToken={authToken || undefined}
             />
           </Box>
+          
+                    {/* Report Details Panel */}
+          <ReportDetailsPanel
+            open={isReportPanelOpen}
+            onClose={closeReportPanel}
+            isDarkMode={isDarkMode}
+            reportData={reportData}
+            isLoading={isReportLoading}
+            width={reportPanelWidth}
+            onWidthChange={handleReportPanelWidthChange}
+          />
         </Box>
+        
+
       </Box>
     </ThemeProvider>
   );

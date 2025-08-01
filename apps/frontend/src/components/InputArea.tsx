@@ -116,6 +116,8 @@ interface InputAreaProps {
   sidebarOpen?: boolean; // Add sidebar state
   sidebarRef?: React.RefObject<HTMLDivElement | null>; // Add sidebar ref for timing
   sidebarWidth?: number; // Dynamic sidebar width
+  reportPanelOpen?: boolean; // report panel state
+  reportPanelWidth?: number; // Dynamic report panel width
   onHeightChange?: (height: number) => void; // Callback for height changes
   // Control buttons
   onVoiceInput?: () => void; // Voice input callback
@@ -171,6 +173,8 @@ export function InputArea({
   sidebarOpen = false,
   sidebarRef,
   sidebarWidth = 250,
+  reportPanelOpen = false,
+  reportPanelWidth = 350,
   onHeightChange,
   // Control buttons
   onVoiceInput,
@@ -415,8 +419,9 @@ export function InputArea({
   const onHeightChangeRef = useRef(onHeightChange);
   onHeightChangeRef.current = onHeightChange;
 
-  // Calculate the effective sidebar width for positioning
+  // Calculate the effective sidebar and report panel widths for positioning
   const effectiveSidebarWidth = sidebarOpen ? sidebarWidth : 0;
+  const effectiveReportPanelWidth = reportPanelOpen ? reportPanelWidth : 0;
 
   // Auto-resize textarea - simplified to prevent infinite loops
   useEffect(() => {
@@ -1216,16 +1221,17 @@ export function InputArea({
           position: 'fixed',
           bottom: 0,
           insetInlineStart: effectiveSidebarWidth > 0 ? `${effectiveSidebarWidth}px` : '0',
-          insetInlineEnd: 0,
+          insetInlineEnd: effectiveReportPanelWidth > 0 ? `${effectiveReportPanelWidth}px` : '0',
           zIndex: 10,
           background: isDarkMode 
             ? 'linear-gradient(180deg, rgba(52, 53, 65, 0) 0%, rgba(52, 53, 65, 0.8) 50%, #343541 100%)'
             : 'linear-gradient(180deg, rgba(255, 255, 255, 0) 0%, rgba(255, 255, 255, 0.8) 50%, #ffffff 100%)',
           paddingTop: '20px',
           paddingBottom: '20px',
-          transition: 'inset-inline-start 300ms cubic-bezier(0.4, 0, 0.2, 1)',
+          transition: 'inset-inline-start 300ms cubic-bezier(0.4, 0, 0.2, 1), inset-inline-end 300ms cubic-bezier(0.4, 0, 0.2, 1)',
           '@media (max-width: 768px)': {
             insetInlineStart: 0,
+            insetInlineEnd: 0,
             paddingBottom: 'env(safe-area-inset-bottom, 10px)',
             paddingTop: '10px',
           }

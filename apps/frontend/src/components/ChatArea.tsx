@@ -75,6 +75,7 @@ interface ChatAreaProps {
   userEmail?: string | null;
   currentChatId?: string; // Current chat ID for filter management
   authToken?: string; // Auth token for API calls
+  onOpenReport?: (url: string) => void; // Handler for opening report links
 }
 
 // Shared Header Component
@@ -406,6 +407,7 @@ const MessageBubble = ({
   currentChatId,
   authToken,
   onFilterInfo,
+  onOpenReport,
 }: {
   message: Message;
   isDarkMode: boolean;
@@ -417,6 +419,7 @@ const MessageBubble = ({
   currentChatId?: string;
   authToken?: string;
   onFilterInfo?: (event: React.MouseEvent<HTMLElement>, message: any) => void;
+  onOpenReport?: (url: string) => void;
 }) => {
   const { t } = useTranslation();
   const isUser = message.role === "user";
@@ -533,7 +536,7 @@ const MessageBubble = ({
             lineHeight: 1.7,
           }}
         >
-          <MarkdownRenderer content={message.content} isDarkMode={isDarkMode} />
+          <MarkdownRenderer content={message.content} isDarkMode={isDarkMode} onOpenReport={onOpenReport} />
 
           {message.isStreaming && (
             <Box
@@ -743,7 +746,7 @@ const MessageBubble = ({
           borderRadius: "24px",
         }}
       >
-        <MarkdownRenderer content={message.content} isDarkMode={isDarkMode} />
+        <MarkdownRenderer content={message.content} isDarkMode={isDarkMode} onOpenReport={onOpenReport} />
 
         {message.isStreaming && (
           <Box
@@ -1475,6 +1478,7 @@ export function ChatArea({
   userEmail,
   currentChatId,
   authToken,
+  onOpenReport,
 }: ChatAreaProps) {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const theme = useTheme();
@@ -1731,6 +1735,7 @@ export function ChatArea({
                 currentChatId={currentChatId}
                 authToken={authToken}
                 onFilterInfo={handleFilterInfo}
+                onOpenReport={onOpenReport}
               />
             </Box>
           ))}

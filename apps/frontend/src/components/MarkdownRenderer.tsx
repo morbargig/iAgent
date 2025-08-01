@@ -8,14 +8,97 @@ import 'highlight.js/styles/github-dark.css';
 interface MarkdownRendererProps {
   content: string;
   isDarkMode?: boolean;
-  
+  onOpenReport?: (url: string) => void;
 }
+
 
 export const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({ 
   content, 
-  isDarkMode = true 
+  isDarkMode = true,
+  onOpenReport
 }) => {
   const theme = useTheme();
+  
+  // Define available reports with numbers
+  const availableReports = [
+    {
+      id: 1,
+      title: 'Q4 2024 Security Audit Report',
+      url: 'report://security-audit-2024',
+      keywords: ['security', 'audit', 'vulnerability']
+    },
+    {
+      id: 2,
+      title: 'System Performance Analysis Report', 
+      url: 'report://performance-analysis-2024',
+      keywords: ['performance', 'metrics', 'system', 'monitoring']
+    }
+  ];
+
+  // Function to add report references to content
+  const processContentWithReferences = (text: string) => {
+    let processedContent = text;
+    const foundReports: typeof availableReports = [];
+
+    // Check which reports are relevant based on content
+    availableReports.forEach(report => {
+      const isRelevant = report.keywords.some(keyword => 
+        text.toLowerCase().includes(keyword)
+      );
+      
+      if (isRelevant) {
+        foundReports.push(report);
+      }
+    });
+
+    // Add references to the end if any reports are relevant
+    if (foundReports.length > 0) {
+      const references = foundReports.map(report => 
+        `[${report.id}] ${report.title}`
+      ).join('\n');
+      
+      processedContent += `\n\n**References:**\n${references}`;
+    }
+
+    return { processedContent, foundReports };
+  };
+
+  const { processedContent, foundReports } = processContentWithReferences(content);
+
+  // Component for clickable report references
+  const ReportReference = ({ reportId, reportUrl }: { reportId: number, reportUrl: string }) => (
+    <Box
+      component="span"
+      onClick={(e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        if (onOpenReport) {
+          onOpenReport(reportUrl);
+        }
+      }}
+      sx={{
+        display: 'inline-block',
+        backgroundColor: theme.palette.primary.main,
+        color: theme.palette.primary.contrastText,
+        padding: '2px 6px',
+        borderRadius: '4px',
+        fontSize: '0.8em',
+        fontWeight: 600,
+        cursor: 'pointer',
+        marginInline: '2px',
+        transition: 'all 0.2s ease',
+        '&:hover': {
+          backgroundColor: theme.palette.primary.dark,
+          transform: 'scale(1.1)',
+        },
+        '&:active': {
+          transform: 'scale(0.95)',
+        },
+      }}
+    >
+      [{reportId}]
+    </Box>
+  );
 
   return (
     <Box
@@ -54,7 +137,7 @@ export const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({
         },
         '& ul, & ol': {
           margin: '0.5em 0',
-                      paddingInlineStart: '1.5em',
+          paddingInlineStart: '1.5em',
         },
         '& li': {
           margin: '0.25em 0',
@@ -118,13 +201,6 @@ export const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({
           borderTop: `1px solid ${theme.palette.divider}`,
           margin: '1.5em 0',
         },
-        '& a': {
-          color: theme.palette.primary.main,
-          textDecoration: 'none',
-          '&:hover': {
-            textDecoration: 'underline',
-          },
-        },
         '& strong': {
           fontWeight: 600,
         },
@@ -137,7 +213,7 @@ export const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({
         },
         // Task list styling
         '& input[type="checkbox"]': {
-                      marginInlineEnd: '0.5em',
+          marginInlineEnd: '0.5em',
         },
         // Math support placeholder
         '& .math': {
@@ -149,23 +225,42 @@ export const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({
         remarkPlugins={[remarkGfm]}
         rehypePlugins={[rehypeHighlight]}
         components={{
-          // Custom component overrides if needed
-          code: ({ node, className, children, ...props }: any) => {
-            const match = /language-(\w+)/.exec(className || '');
-            const isInline = !match;
-            return isInline ? (
-              <code className={className} {...props}>
-                {children}
-              </code>
-            ) : (
-              <code className={className} {...props}>
-                {children}
-              </code>
-            );
+          // Custom component to handle [1], [2] references in markdown
+          p: ({ children, ...props }: any) => {
+            // Check if this paragraph contains [number] patterns
+            const content = React.Children.toArray(children).join('');
+            
+            // Replace [number] with clickable components
+            const processedChildren = React.Children.map(children, (child) => {
+              if (typeof child === 'string') {
+                // Split by [number] pattern and create clickable refs
+                const parts = child.split(/(\[\d+\])/g);
+                return parts.map((part, index) => {
+                  const match = part.match(/^\[(\d+)\]$/);
+                  if (match) {
+                    const reportId = parseInt(match[1]);
+                    const report = foundReports.find(r => r.id === reportId);
+                    if (report) {
+                      return (
+                        <ReportReference 
+                          key={`ref-${reportId}-${index}`}
+                          reportId={reportId} 
+                          reportUrl={report.url} 
+                        />
+                      );
+                    }
+                  }
+                  return part;
+                });
+              }
+              return child;
+            });
+
+            return <p {...props}>{processedChildren}</p>;
           },
         }}
       >
-        {content}
+        {processedContent}
       </ReactMarkdown>
     </Box>
   );

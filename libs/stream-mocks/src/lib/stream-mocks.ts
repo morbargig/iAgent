@@ -84,25 +84,91 @@ const MOCK_RESPONSES = (t: TranslationFunction) => ({
 });
 
 export const generateMockResponse = (input: string, t: TranslationFunction): string => {
+  const inputLower = input.toLowerCase();
+  
+  // PRIORITY: Check for report-related keywords FIRST and return specialized responses with report links
+  if (inputLower.includes('security') || inputLower.includes('audit') || inputLower.includes('vulnerability')) {
+    return `I have the latest security audit information for you. Here's our detailed [Q4 2024 Security Audit Report](report://security-audit-2024) that covers network security, application vulnerabilities, and compliance status.
+
+**Key Highlights:**
+- Network Security: ✅ Strong performance
+- Application Security: ⚠️ 3 medium-priority vulnerabilities identified  
+- Compliance: ✅ SOC 2, GDPR, and ISO 27001 standards met
+
+The report includes specific recommendations for immediate actions and long-term improvements. Click the link above to view the full analysis with detailed findings and remediation steps.`;
+  }
+  
+  if (inputLower.includes('performance') || inputLower.includes('metrics') || inputLower.includes('system') || inputLower.includes('monitoring')) {
+    return `Here's our comprehensive [System Performance Analysis Report](report://performance-analysis-2024) showing system performance across all critical infrastructure components.
+
+**Performance Overview:**
+- Average Response Time: 120ms
+- Database Query Time: 45ms (within target)
+- System Throughput: 2,450 requests/second
+- Error Rate: 0.02%
+
+**Key Improvements:**
+- 15% faster response times vs last quarter
+- 22% throughput increase  
+- 60% reduction in error rate
+
+The report identifies specific bottlenecks and provides immediate, short-term, and long-term optimization recommendations. View the complete analysis by clicking the link above.`;
+  }
+  
+  if (inputLower.includes('report') || inputLower.includes('analysis') || inputLower.includes('dashboard')) {
+    return `I have access to detailed reports and analysis dashboards. Here are our latest reports:
+
+📊 **Available Reports:**
+
+1. [Q4 2024 Security Audit Report](report://security-audit-2024)
+   - Comprehensive security assessment
+   - Network, application, and compliance analysis
+   - **Priority:** High | **Status:** Published
+
+2. [System Performance Analysis Report](report://performance-analysis-2024)
+   - System performance metrics and optimization
+   - Infrastructure analysis and recommendations  
+   - **Priority:** Medium | **Status:** Published
+
+Click on any report link to view the full details, including metrics, findings, recommendations, and downloadable attachments. Each report includes detailed technical analysis and actionable insights.`;
+  }
+  
+  // Fall back to translation-based responses only if no report keywords match
   const responses = MOCK_RESPONSES(t);
   
-  if (input.toLowerCase().includes('hello') || input.toLowerCase().includes('hi')) {
+  if (inputLower.includes('hello') || inputLower.includes('hi')) {
     return responses.greeting;
   }
   
-  if (input.toLowerCase().includes('technical') || input.toLowerCase().includes('programming')) {
+  if (inputLower.includes('technical') || inputLower.includes('programming')) {
     return responses.technical;
   }
   
-  if (input.toLowerCase().includes('explain') || input.toLowerCase().includes('how does')) {
+  if (inputLower.includes('explain') || inputLower.includes('how does')) {
     return responses.explanation;
   }
   
-  if (input.toLowerCase().includes('creative') || input.toLowerCase().includes('write')) {
+  if (inputLower.includes('creative') || inputLower.includes('write')) {
     return responses.creative;
   }
   
-  return responses.default(input);
+  // For any other input, return a response with sample report links
+  return `I can help you with various topics! Here are some sample reports you can explore:
+
+📊 **Available Reports:**
+
+1. [Q4 2024 Security Audit Report](report://security-audit-2024)
+   - Click to view security analysis and compliance status
+
+2. [System Performance Analysis Report](report://performance-analysis-2024)  
+   - Click to view performance metrics and optimization recommendations
+
+**Try asking about:**
+- "security audit" - Get security-related information
+- "system performance" - Get performance analysis
+- "show me reports" - See all available reports
+
+Click any report link above to open the detailed report panel!`;
 };
 
 export const streamMockResponse = async (
