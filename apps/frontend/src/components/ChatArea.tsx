@@ -520,7 +520,7 @@ const MessageBubble = ({
       >
         {/* User message bubble */}
         <Box
-          className="message-container !p-20"
+          className="message-container"
           sx={{
             gridColumn: "2",
             gridRow: "1",
