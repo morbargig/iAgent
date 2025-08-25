@@ -368,7 +368,9 @@ export default function BasicDateRangePicker({
     const clearing = !newValue[0] && !newValue[1];
 
     if (clearing) {
-      try { localStorage.removeItem("dateRangePicker"); } catch {}
+      try { localStorage.removeItem("dateRangePicker"); } catch {
+        console.error("Failed to remove date range picker from localStorage");
+      }
     } else {
       try {
         localStorage.setItem("dateRangePicker", JSON.stringify({
@@ -376,7 +378,9 @@ export default function BasicDateRangePicker({
           end: newValue[1]?.toISOString() || null,
           updated: new Date().toISOString(),
         }));
-      } catch {}
+      } catch {
+        console.error("Failed to set date range picker in localStorage");
+      }
     }
 
     if (!value) setInternalValue(newValue);
