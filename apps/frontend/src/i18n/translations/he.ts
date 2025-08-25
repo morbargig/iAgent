@@ -239,6 +239,13 @@ const translations: Translation = {
     endDate: 'תאריך סיום',
     apply: 'החל',
     reset: 'איפוס',
+    errors: {
+      startDateFuture: 'תאריך ההתחלה לא יכול להיות בעתיד',
+      endDateFuture: 'תאריך הסיום לא יכול להיות בעתיד',
+      startAfterEnd: 'תאריך ההתחלה חייב להיות לפני תאריך הסיום',
+      invalidDate: 'תאריך לא תקין',
+      invalidInput: 'קלט תאריך לא תקין',
+    },
   },
   actions: {
     toggleSidebar: 'החלף סרגל צד',

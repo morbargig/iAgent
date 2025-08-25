@@ -1,0 +1,322 @@
+/* Enhanced hover effects for react-day-picker using correct CSS classes */
+
+/* Override CSS variables for consistent theming - Light mode */
+.rdp-root {
+  /* Range colors */
+  --rdp-accent-color: #3b82f6;
+  --rdp-accent-background-color: #dbeafe;
+  --rdp-range_middle-background-color: #dbeafe;
+  --rdp-range_middle-color: #1e40af;
+  --rdp-range_start-color: #ffffff;
+  --rdp-range_start-background: #3b82f6;
+  --rdp-range_end-color: #ffffff;
+  --rdp-range_end-background: #3b82f6;
+  
+  /* Preview colors - muted versions */
+  --rdp-preview-opacity: 0.6;
+  --rdp-preview-start-background: rgba(59, 130, 246, 0.6);
+  --rdp-preview-middle-background: rgba(219, 234, 254, 0.6);
+  --rdp-preview-end-background: rgba(59, 130, 246, 0.6);
+  
+  /* Today and navigation */
+  --rdp-today-color: #3b82f6;
+  --rdp-day-height: 36px;
+  --rdp-day-width: 36px;
+  --rdp-nav-button-height: 32px;
+  --rdp-nav-button-width: 32px;
+  
+  /* Dropdown styling */
+  --rdp-dropdown-background: #ffffff;
+  --rdp-dropdown-border: #e5e7eb;
+  --rdp-dropdown-color: #374151;
+  --rdp-dropdown-hover-background: #f9fafb;
+}
+
+/* Dark theme overrides */
+[data-theme="dark"] .rdp-root {
+  /* Range colors for dark mode */
+  --rdp-accent-color: #60a5fa;
+  --rdp-accent-background-color: #1e3a8a;
+  --rdp-range_middle-background-color: #1e3a8a;
+  --rdp-range_middle-color: #dbeafe;
+  --rdp-range_start-color: #ffffff;
+  --rdp-range_start-background: #60a5fa;
+  --rdp-range_end-color: #ffffff;
+  --rdp-range_end-background: #60a5fa;
+  
+  /* Preview colors for dark mode */
+  --rdp-preview-start-background: rgba(96, 165, 250, 0.6);
+  --rdp-preview-middle-background: rgba(30, 58, 138, 0.6);
+  --rdp-preview-end-background: rgba(96, 165, 250, 0.6);
+  
+  /* Today and dropdown for dark mode */
+  --rdp-today-color: #60a5fa;
+  --rdp-dropdown-background: #374151;
+  --rdp-dropdown-border: #4b5563;
+  --rdp-dropdown-color: #f3f4f6;
+  --rdp-dropdown-hover-background: #4b5563;
+}
+
+/* Enhanced hover effects for day buttons */
+.rdp-day:hover:not([disabled]):not(.rdp-day_selected) {
+  background-color: #f3f4f6 !important;
+  border-color: #3b82f6 !important;
+  transform: translateY(-1px) !important;
+  box-shadow: 0 2px 8px rgba(59, 130, 246, 0.15) !important;
+  z-index: 1 !important;
+  transition: all 0.2s ease-in-out !important;
+}
+
+.rdp-day:active:not([disabled]) {
+  transform: translateY(0) !important;
+  box-shadow: 0 1px 3px rgba(59, 130, 246, 0.2) !important;
+}
+
+/* Dark mode hover effects for days */
+[data-theme="dark"] .rdp-day:hover:not([disabled]):not(.rdp-day_selected) {
+  background-color: #374151 !important;
+  border-color: #60a5fa !important;
+}
+
+/* Navigation button hover effects */
+.rdp-nav_button:hover {
+  background-color: #f3f4f6 !important;
+  border-color: #3b82f6 !important;
+  transform: translateY(-1px) !important;
+  box-shadow: 0 2px 4px rgba(59, 130, 246, 0.1) !important;
+  transition: all 0.2s ease-in-out !important;
+}
+
+[data-theme="dark"] .rdp-nav_button:hover {
+  background-color: #374151 !important;
+  border-color: #60a5fa !important;
+}
+
+/* Selected range styling */
+.rdp-day_range_start,
+.rdp-day_range_end {
+  background-color: #3b82f6 !important;
+  color: #ffffff !important;
+  border-color: #3b82f6 !important;
+  font-weight: 600 !important;
+}
+
+.rdp-day_range_middle {
+  background-color: #dbeafe !important;
+  color: #1e40af !important;
+  border-color: #dbeafe !important;
+}
+
+/* Range middle hover effect - muted version of selected colors */
+.rdp-day_range_middle:hover {
+  background-color: rgba(59, 130, 246, 0.6) !important;
+  color: #ffffff !important;
+  border-color: rgba(59, 130, 246, 0.6) !important;
+  transform: translateY(-1px) !important;
+  box-shadow: 0 2px 4px rgba(59, 130, 246, 0.2) !important;
+}
+
+/* Today styling */
+.rdp-day_today {
+  font-weight: 600 !important;
+  color: #3b82f6 !important;
+  border: 2px solid #3b82f6 !important;
+}
+
+[data-theme="dark"] .rdp-day_today {
+  color: #60a5fa !important;
+  border-color: #60a5fa !important;
+}
+
+/* Disabled days */
+.rdp-day:disabled,
+.rdp-day[disabled] {
+  opacity: 0.3 !important;
+  cursor: not-allowed !important;
+}
+
+.rdp-day:disabled:hover,
+.rdp-day[disabled]:hover {
+  background-color: transparent !important;
+  transform: none !important;
+  box-shadow: none !important;
+}
+
+/* Outside month days */
+.rdp-day_outside {
+  opacity: 0.4 !important;
+  color: #9ca3af !important;
+}
+
+/* Focus states for accessibility */
+.rdp-day:focus-visible,
+.rdp-nav_button:focus-visible {
+  outline: 2px solid #3b82f6 !important;
+  outline-offset: 2px !important;
+  z-index: 2 !important;
+}
+
+[data-theme="dark"] .rdp-day:focus-visible,
+[data-theme="dark"] .rdp-nav_button:focus-visible {
+  outline-color: #60a5fa !important;
+}
+
+/* Hover effect for potential range selection (preview) */
+.rdp-day:hover:not([disabled]):not(.rdp-day_selected):not(.rdp-day_range_start):not(.rdp-day_range_end):not(.rdp-day_range_middle) {
+  background-color: rgba(59, 130, 246, 0.1) !important;
+  border-color: rgba(59, 130, 246, 0.3) !important;
+}
+
+[data-theme="dark"] .rdp-day:hover:not([disabled]):not(.rdp-day_selected):not(.rdp-day_range_start):not(.rdp-day_range_end):not(.rdp-day_range_middle) {
+  background-color: rgba(96, 165, 250, 0.1) !important;
+  border-color: rgba(96, 165, 250, 0.3) !important;
+}
+
+/* Preview range styles - comprehensive start/middle/end modifiers */
+.rdp-day--preview_start {
+  background-color: var(--rdp-preview-start-background) !important;
+  color: var(--rdp-range_start-color) !important;
+  border-radius: 50% !important;
+  font-weight: 600 !important;
+  position: relative !important;
+}
+
+.rdp-day--preview_middle {
+  background-color: var(--rdp-preview-middle-background) !important;
+  color: var(--rdp-range_middle-color) !important;
+  opacity: var(--rdp-preview-opacity) !important;
+  border-radius: 0 !important;
+}
+
+.rdp-day--preview_end {
+  background-color: var(--rdp-preview-end-background) !important;
+  color: var(--rdp-range_end-color) !important;
+  border-radius: 50% !important;
+  font-weight: 600 !important;
+  position: relative !important;
+}
+
+/* Subtle pattern overlay for preview distinction */
+.rdp-day--preview_start::after,
+.rdp-day--preview_end::after,
+.rdp-day--preview_middle::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: repeating-linear-gradient(
+    45deg,
+    transparent,
+    transparent 2px,
+    rgba(255, 255, 255, 0.1) 2px,
+    rgba(255, 255, 255, 0.1) 4px
+  );
+  pointer-events: none;
+  border-radius: inherit;
+}
+
+/* Smooth transitions for all interactive elements */
+.rdp-day,
+.rdp-nav_button {
+  transition: all 0.2s ease-in-out !important;
+}
+
+/* Caption dropdown hover effects */
+.rdp-caption_dropdowns select:hover {
+  border-color: #3b82f6 !important;
+}
+
+[data-theme="dark"] .rdp-caption_dropdowns select:hover {
+  border-color: #60a5fa !important;
+}
+
+/* Enhanced dropdown styling - minimal, cross-browser, RTL-ready */
+.rdp-caption_dropdowns {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  justify-content: center;
+}
+
+.rdp-dropdown {
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  background-color: var(--rdp-dropdown-background);
+  border: 1px solid var(--rdp-dropdown-border);
+  border-radius: 6px;
+  padding: 6px 24px 6px 8px;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--rdp-dropdown-color);
+  cursor: pointer;
+  transition: all 0.2s ease-in-out;
+  min-width: 80px;
+  
+  /* Custom arrow using SVG background */
+  background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath fill='%23374151' d='M1.41 0L6 4.59L10.59 0L12 1.41L6 7.41L0 1.41z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 8px center;
+  background-size: 12px 8px;
+}
+
+/* RTL support for dropdown arrow */
+[dir="rtl"] .rdp-dropdown {
+  padding: 6px 8px 6px 24px;
+  background-position: left 8px center;
+}
+
+/* Dark theme arrow */
+[data-theme="dark"] .rdp-dropdown {
+  background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath fill='%23f3f4f6' d='M1.41 0L6 4.59L10.59 0L12 1.41L6 7.41L0 1.41z'/%3E%3C/svg%3E");
+}
+
+/* Hover and focus states */
+.rdp-dropdown:hover {
+  background-color: var(--rdp-dropdown-hover-background);
+  border-color: var(--rdp-accent-color);
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.rdp-dropdown:focus {
+  outline: none;
+  border-color: var(--rdp-accent-color);
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+[data-theme="dark"] .rdp-dropdown:focus {
+  box-shadow: 0 0 0 3px rgba(96, 165, 250, 0.1);
+}
+
+/* Active state */
+.rdp-dropdown:active {
+  transform: translateY(0);
+}
+
+/* Disable browser default styling on option elements */
+.rdp-dropdown option {
+  background-color: var(--rdp-dropdown-background);
+  color: var(--rdp-dropdown-color);
+  padding: 4px 8px;
+}
+
+/* High contrast support */
+@media (prefers-contrast: high) {
+  .rdp-dropdown {
+    border-width: 2px;
+  }
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+  .rdp-dropdown {
+    transition: none;
+  }
+  
+  .rdp-dropdown:hover {
+    transform: none;
+  }
+}

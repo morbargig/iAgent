@@ -15,7 +15,7 @@ import {
   Badge,
   Chip,
 } from '@mui/material';
-import dayjs, { Dayjs } from 'dayjs';
+import { parseISO } from 'date-fns';
 import {
   Send as SendIcon,
   Stop as StopIcon,
@@ -63,7 +63,7 @@ export interface DateFilter {
     amount: number;
     type: string;
   };
-  dateRange?: [Dayjs | null, Dayjs | null];
+  dateRange?: [Date | null, Date | null];
 }
 
 export interface SendMessageData {
@@ -226,8 +226,8 @@ export function InputArea({
             type: settings.customRange?.type || 'days'
           },
           datePicker: {
-            startDate: settings.datePicker?.startDate ? dayjs(settings.datePicker.startDate) : null,
-            endDate: settings.datePicker?.endDate ? dayjs(settings.datePicker.endDate) : null
+            startDate: settings.datePicker?.startDate || null,
+            endDate: settings.datePicker?.endDate || null
           }
         };
       }
@@ -236,8 +236,8 @@ export function InputArea({
     }
     
     // Default settings
-    const today = dayjs();
-    const oneMonthAgo = today.subtract(1, 'month');
+    const today = new Date();
+    const oneMonthAgo = new Date(today.getFullYear(), today.getMonth() - 1, today.getDate());
     return {
       activeTab: 0,
       committedTab: 0,
@@ -246,8 +246,8 @@ export function InputArea({
         type: 'months'
       },
       datePicker: {
-        startDate: oneMonthAgo,
-        endDate: today
+        startDate: oneMonthAgo.toISOString(),
+        endDate: today.toISOString()
       }
     };
   };
@@ -257,15 +257,15 @@ export function InputArea({
   const [rangeAmount, setRangeAmount] = useState(initialSettings.customRange.amount);
   const [rangeType, setRangeType] = useState(initialSettings.customRange.type);
   const [rangeTypeOpen, setRangeTypeOpen] = useState(false);
-  const [dateRange, setDateRange] = useState<[Dayjs | null, Dayjs | null]>([
-    initialSettings.datePicker.startDate,
-    initialSettings.datePicker.endDate
+  const [dateRange, setDateRange] = useState<[Date | null, Date | null]>([
+    initialSettings.datePicker.startDate ? parseISO(initialSettings.datePicker.startDate) : null,
+    initialSettings.datePicker.endDate ? parseISO(initialSettings.datePicker.endDate) : null
   ]);
   
   // Temporary state for date picker (only committed on Apply)
-  const [tempDateRange, setTempDateRange] = useState<[Dayjs | null, Dayjs | null]>([
-    initialSettings.datePicker.startDate,
-    initialSettings.datePicker.endDate
+  const [tempDateRange, setTempDateRange] = useState<[Date | null, Date | null]>([
+    initialSettings.datePicker.startDate ? parseISO(initialSettings.datePicker.startDate) : null,
+    initialSettings.datePicker.endDate ? parseISO(initialSettings.datePicker.endDate) : null
   ]);
   
   // Track which tab's values are currently committed/active for display
@@ -626,8 +626,10 @@ export function InputArea({
   const getDateRangeButtonText = () => {
     if (committedTab === 1 && dateRange[0] && dateRange[1]) {
       // DateTime picker format - use committed dateRange
-      const start = dateRange[0].format('DD/MM HH:mm');
-      const end = dateRange[1].format('DD/MM HH:mm');
+      const start = dateRange[0].toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit' }) + ' ' + 
+                   dateRange[0].toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', hour12: false });
+      const end = dateRange[1].toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit' }) + ' ' + 
+                 dateRange[1].toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', hour12: false });
       return `${start} - ${end}`;
     } else {
       // Custom range format
@@ -640,8 +642,8 @@ export function InputArea({
     setRangeAmount(1);
     setRangeType('months');
     // Reset date range to default: one month ago to today
-    const today = dayjs();
-    const oneMonthAgo = today.subtract(1, 'month');
+    const today = new Date();
+    const oneMonthAgo = new Date(today.getFullYear(), today.getMonth() - 1, today.getDate());
     setDateRange([oneMonthAgo, today]);
     setTempDateRange([null, null]); // Reset temp state to empty for date picker
     setDateRangeTab(0); // Switch back to custom range tab
@@ -770,8 +772,8 @@ export function InputArea({
         setDateRangeTab(0);
       } else if (config.dateFilter.type === 'picker' && config.dateFilter.dateRange) {
         setDateRange([
-          dayjs(config.dateFilter.dateRange[0]),
-          dayjs(config.dateFilter.dateRange[1])
+          parseISO(config.dateFilter.dateRange[0]),
+          parseISO(config.dateFilter.dateRange[1])
         ]);
         setCommittedTab(1);
         setDateRangeTab(1);
@@ -1077,7 +1079,7 @@ export function InputArea({
     const dateText = dateRangeTab === 0 
       ? `${rangeAmount} ${t(`dateRange.${rangeType}`)} ${t('dateRange.ago')}`
       : dateRange[0] && dateRange[1] 
-        ? `${dateRange[0].format('MMM D')} - ${dateRange[1].format('MMM D')}`
+        ? `${dateRange[0].toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} - ${dateRange[1].toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`
         : 'No date range';
 
     return {
@@ -1954,88 +1956,92 @@ export function InputArea({
                       ? '0 4px 20px rgba(0, 0, 0, 0.4)' 
                       : '0 4px 20px rgba(0, 0, 0, 0.1)',
                     padding: '0',
-                    minWidth: '500px',
-                    maxWidth: '600px',
+                    minWidth: '550px',
+                    maxWidth: '650px',
                     zIndex: 9999,
                     overflow: 'hidden',
+                    display: 'flex',
+                    flexDirection: 'column',
                   }}
                   onClick={(e) => {
                     e.stopPropagation();
                   }}
                 >
-                  {/* Tabs */}
-                  <Box
-                    sx={{
-                      display: 'flex',
-                      backgroundColor: isDarkMode ? '#1a1a1a' : '#f8f9fa',
-                      borderRadius: '6px',
-                      padding: '4px',
-                      margin: '16px 16px 0 16px',
-                      gap: '4px',
-                    }}
-                  >
+                  {/* Main content area with side tabs */}
+                  <Box sx={{ display: 'flex', flex: 1 }}>
+                    {/* Side Tab Buttons */}
                     <Box
-                      onClick={() => setDateRangeTab(0)}
                       sx={{
-                        flex: 1,
-                        textAlign: 'center',
-                        padding: '8px 12px',
-                        borderRadius: '4px',
-                        fontSize: '13px',
-                        fontWeight: 500,
-                        cursor: 'pointer',
-                        transition: 'all 0.2s ease',
-                        backgroundColor: dateRangeTab === 0 
-                          ? (isDarkMode ? '#ffffff' : '#ffffff')
-                          : 'transparent',
-                        color: dateRangeTab === 0
-                          ? (isDarkMode ? '#000000' : '#000000')
-                          : (isDarkMode ? '#a0a0a0' : '#6b7280'),
-                        boxShadow: dateRangeTab === 0 
-                          ? '0 1px 3px rgba(0, 0, 0, 0.12)' 
-                          : 'none',
-                        '&:hover': {
+                        display: 'flex',
+                        flexDirection: 'column',
+                        width: '140px',
+                        backgroundColor: isDarkMode ? '#1a1a1a' : '#f8f9fa',
+                        borderRadius: '6px 0 0 0',
+                        padding: '16px 8px',
+                        gap: '8px',
+                        justifyContent: 'flex-end', // Float tabs to bottom
+                      }}
+                    >
+                      <Box
+                        onClick={() => setDateRangeTab(0)}
+                        sx={{
+                          padding: '12px 8px',
+                          borderRadius: '4px',
+                          fontSize: '12px',
+                          fontWeight: 500,
+                          cursor: 'pointer',
+                          transition: 'all 0.2s ease',
+                          textAlign: 'center',
                           backgroundColor: dateRangeTab === 0 
                             ? (isDarkMode ? '#ffffff' : '#ffffff')
-                            : (isDarkMode ? '#2a2a2a' : '#f1f3f4'),
-                        },
-                      }}
-                    >
-                      {t('dateRange.customRange')}
-                    </Box>
-                    <Box
-                      onClick={() => setDateRangeTab(1)}
-                      sx={{
-                        flex: 1,
-                        textAlign: 'center',
-                        padding: '8px 12px',
-                        borderRadius: '4px',
-                        fontSize: '13px',
-                        fontWeight: 500,
-                        cursor: 'pointer',
-                        transition: 'all 0.2s ease',
-                        backgroundColor: dateRangeTab === 1 
-                          ? (isDarkMode ? '#ffffff' : '#ffffff')
-                          : 'transparent',
-                        color: dateRangeTab === 1
-                          ? (isDarkMode ? '#000000' : '#000000')
-                          : (isDarkMode ? '#a0a0a0' : '#6b7280'),
-                        boxShadow: dateRangeTab === 1 
-                          ? '0 1px 3px rgba(0, 0, 0, 0.12)' 
-                          : 'none',
-                        '&:hover': {
+                            : 'transparent',
+                          color: dateRangeTab === 0
+                            ? (isDarkMode ? '#000000' : '#000000')
+                            : (isDarkMode ? '#a0a0a0' : '#6b7280'),
+                          boxShadow: dateRangeTab === 0 
+                            ? '0 1px 3px rgba(0, 0, 0, 0.12)' 
+                            : 'none',
+                          '&:hover': {
+                            backgroundColor: dateRangeTab === 0 
+                              ? (isDarkMode ? '#ffffff' : '#ffffff')
+                              : (isDarkMode ? '#2a2a2a' : '#f1f3f4'),
+                          },
+                        }}
+                      >
+                        {t('dateRange.customRange')}
+                      </Box>
+                      <Box
+                        onClick={() => setDateRangeTab(1)}
+                        sx={{
+                          padding: '12px 8px',
+                          borderRadius: '4px',
+                          fontSize: '12px',
+                          fontWeight: 500,
+                          cursor: 'pointer',
+                          transition: 'all 0.2s ease',
+                          textAlign: 'center',
                           backgroundColor: dateRangeTab === 1 
                             ? (isDarkMode ? '#ffffff' : '#ffffff')
-                            : (isDarkMode ? '#2a2a2a' : '#f1f3f4'),
-                        },
-                      }}
-                    >
-                      {t('dateRange.datePicker')}
+                            : 'transparent',
+                          color: dateRangeTab === 1
+                            ? (isDarkMode ? '#000000' : '#000000')
+                            : (isDarkMode ? '#a0a0a0' : '#6b7280'),
+                          boxShadow: dateRangeTab === 1 
+                            ? '0 1px 3px rgba(0, 0, 0, 0.12)' 
+                            : 'none',
+                          '&:hover': {
+                            backgroundColor: dateRangeTab === 1 
+                              ? (isDarkMode ? '#ffffff' : '#ffffff')
+                              : (isDarkMode ? '#2a2a2a' : '#f1f3f4'),
+                          },
+                        }}
+                      >
+                        {t('dateRange.datePicker')}
+                      </Box>
                     </Box>
-                  </Box>
 
-                  {/* Tab Content */}
-                  <Box sx={{ padding: '16px' }}>
+                    {/* Content Area */}
+                    <Box sx={{ flex: 1, padding: '16px', paddingBottom: '8px' }}>
                     {dateRangeTab === 0 ? (
                       // Custom Range Tab
                       <Box sx={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
@@ -2219,59 +2225,83 @@ export function InputArea({
                           isDarkMode={isDarkMode}
                           startLabel={t('dateRange.startDate')}
                           endLabel={t('dateRange.endDate')}
+                          language="he"
+                          testMode={true} // Force test mode for development/testing
+                          t={t}
                         />
                       </Box>
                     )}
-
-                    {/* Action Buttons */}
-                    <Box sx={{ display: 'flex', justifyContent: 'space-between', marginTop: '16px', paddingTop: '16px', borderTop: `1px solid ${isDarkMode ? '#3a3a3a' : '#e5e7eb'}` }}>
-                      <Button
-                        onClick={handleDateRangeReset}
-                        variant="outlined"
-                        size="small"
-                        sx={{
-                          borderColor: isDarkMode ? '#555555' : '#d1d5db',
-                          color: isDarkMode ? '#f1f1f1' : '#374151',
-                          fontSize: '13px',
-                          fontWeight: 500,
-                          textTransform: 'none',
-                          borderRadius: '6px',
-                          padding: '8px 16px',
-                          boxShadow: 'none',
-                          '&:hover': {
-                            borderColor: isDarkMode ? '#666666' : '#9ca3af',
-                            backgroundColor: isDarkMode ? '#404040' : '#f9fafb',
-                            boxShadow: 'none',
-                          },
-                        }}
-                      >
-                        {t('dateRange.reset')}
-                      </Button>
-                      <Button
-                        onClick={handleDateRangeApply}
-                        variant="contained"
-                        size="small"
-                        sx={{
-                          backgroundColor: '#10a37f',
-                          color: 'white',
-                          fontSize: '13px',
-                          fontWeight: 500,
-                          textTransform: 'none',
-                          borderRadius: '6px',
-                          padding: '8px 16px',
-                          boxShadow: 'none',
-                          '&:hover': {
-                            backgroundColor: '#0d8b70',
-                            boxShadow: 'none',
-                          },
-                          '&:active': {
-                            backgroundColor: '#0b7a63',
-                          },
-                        }}
-                      >
-                        {t('dateRange.apply')}
-                      </Button>
                     </Box>
+                  </Box>
+
+                  {/* Bottom Action Buttons - Option 1: Bottom Left */}
+                  <Box 
+                    sx={{ 
+                      display: 'flex', 
+                      justifyContent: 'flex-start', // Bottom left positioning
+                      gap: '8px',
+                      padding: '16px',
+                      paddingTop: '8px',
+                      borderTop: `1px solid ${isDarkMode ? '#3a3a3a' : '#e5e7eb'}`,
+                      backgroundColor: isDarkMode ? '#2f2f2f' : '#ffffff',
+                    }}
+                  >
+                    <Button
+                      onClick={handleDateRangeReset}
+                      variant="text"
+                      size="small"
+                      sx={{
+                        color: isDarkMode ? '#9ca3af' : '#6b7280',
+                        fontSize: '13px',
+                        fontWeight: 500,
+                        textTransform: 'none',
+                        borderRadius: '8px',
+                        padding: '8px 12px',
+                        minWidth: 'auto',
+                        backgroundColor: 'transparent',
+                        border: 'none',
+                        transition: 'all 0.2s ease-in-out',
+                        '&:hover': {
+                          backgroundColor: isDarkMode ? '#374151' : '#f3f4f6',
+                          color: isDarkMode ? '#d1d5db' : '#374151',
+                          transform: 'translateY(-1px)',
+                        },
+                        '&:active': {
+                          transform: 'translateY(0)',
+                        },
+                      }}
+                    >
+                      {t('dateRange.reset')}
+                    </Button>
+                    
+                    <Button
+                      onClick={handleDateRangeApply}
+                      variant="contained"
+                      size="small"
+                      sx={{
+                        backgroundColor: '#3b82f6',
+                        color: 'white',
+                        fontSize: '13px',
+                        fontWeight: 600,
+                        textTransform: 'none',
+                        borderRadius: '8px',
+                        padding: '10px 20px',
+                        minWidth: '80px',
+                        boxShadow: '0 1px 3px rgba(59, 130, 246, 0.2)',
+                        transition: 'all 0.2s ease-in-out',
+                        '&:hover': {
+                          backgroundColor: '#2563eb',
+                          transform: 'translateY(-1px)',
+                          boxShadow: '0 4px 12px rgba(59, 130, 246, 0.3)',
+                        },
+                        '&:active': {
+                          transform: 'translateY(0)',
+                          backgroundColor: '#1d4ed8',
+                        },
+                      }}
+                    >
+                      {t('dateRange.apply')}
+                    </Button>
                   </Box>
                 </Box>
               </Box>

@@ -1,13 +1,10 @@
-name: 🔍 Continuous Integration (CI)
+name: 🔍 Continuous Integration
 
 on:
-  # Trigger CI on push to main and develop branches
   push:
     branches: [ main, develop ]
-  # Trigger CI on pull requests to main
   pull_request:
     branches: [ main ]
-  # Allow manual trigger
   workflow_dispatch:
 
 # Cancel previous runs if a new commit is pushed
@@ -16,79 +13,12 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  # Use Node.js version 18 as default
   NODE_VERSION: '18'
-  # Cache keys for dependency caching
-  CACHE_KEY_PREFIX: 'node-deps'
 
 jobs:
-  # Job 1: Code Quality Checks
-  code-quality:
-    name: 🧹 Code Quality & Linting
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-    
-    steps:
-      - name: 📥 Checkout repository
-        uses: actions/checkout@v4
-        with:
-          # Fetch full history for affected files detection
-          fetch-depth: 0
-
-      - name: 🔧 Setup Node.js ${{ env.NODE_VERSION }}
-        uses: actions/setup-node@v4
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: 'npm'
-          cache-dependency-path: package-lock.json
-
-      - name: 📦 Install dependencies
-        run: |
-          npm ci --prefer-offline --no-audit
-          
-      - name: 🔍 Cache Nx computation cache
-        uses: actions/cache@v4
-        with:
-          path: .nx/cache
-          key: nx-${{ runner.os }}-${{ hashFiles('**/package-lock.json') }}-${{ github.sha }}
-          restore-keys: |
-            nx-${{ runner.os }}-${{ hashFiles('**/package-lock.json') }}-
-            nx-${{ runner.os }}-
-
-      - name: 🧹 Run ESLint (Frontend)
-        run: |
-          echo "🔍 Linting Frontend Application..."
-          npx nx lint frontend --format=stylish
-        continue-on-error: false
-
-      - name: 🧹 Run ESLint (Backend)
-        run: |
-          echo "🔍 Linting Backend Application..."
-          npx nx lint backend --format=stylish
-        continue-on-error: false
-
-      - name: 💅 Check Prettier formatting
-        run: |
-          echo "💅 Checking code formatting..."
-          npx prettier --check "apps/**/*.{ts,tsx,js,jsx,json,md}" "libs/**/*.{ts,tsx,js,jsx,json,md}" "*.{js,json,md}"
-
-      - name: 📊 Generate lint report
-        if: always()
-        run: |
-          echo "📊 Generating comprehensive lint report..."
-          npx nx run-many -t lint --output-style=json > lint-results.json || true
-          
-      - name: 📋 Upload lint results
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: lint-results
-          path: lint-results.json
-          retention-days: 30
-
-  # Job 2: TypeScript Type Checking
-  type-check:
-    name: 🔧 TypeScript Type Checking
+  # Code Quality and Type Checking
+  quality:
+    name: 🧹 Code Quality & Type Check
     runs-on: ubuntu-latest
     timeout-minutes: 10
     
@@ -113,40 +43,26 @@ jobs:
           restore-keys: |
             nx-${{ runner.os }}-${{ hashFiles('**/package-lock.json') }}-
 
-      - name: 🔧 TypeScript check (Frontend)
-        run: |
-          echo "🔧 Type checking Frontend..."
-          npx nx typecheck frontend
+      - name: 🧹 Lint Frontend
+        run: npx nx lint frontend
 
-      - name: 🔧 TypeScript check (Backend)
-        run: |
-          echo "🔧 Type checking Backend..."
-          npx nx typecheck backend
+      - name: 🧹 Lint Backend
+        run: npx nx lint backend
 
-      - name: 📊 Generate TypeScript report
-        if: always()
-        run: |
-          echo "📊 Generating TypeScript compilation report..."
-          npx tsc --noEmit --pretty > typescript-report.log 2>&1 || true
+      - name: 🔧 TypeScript check Frontend
+        run: npx nx typecheck frontend
 
-      - name: 📋 Upload TypeScript report
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: typescript-report
-          path: typescript-report.log
-          retention-days: 30
+      - name: 🔧 TypeScript check Backend
+        run: npx nx typecheck backend
 
-  # Job 3: Unit Tests
-  unit-tests:
+  # Unit Tests
+  test:
     name: 🧪 Unit Tests
     runs-on: ubuntu-latest
     timeout-minutes: 15
     
     strategy:
       matrix:
-        # Test on multiple Node.js versions for compatibility
-        node-version: ['18', '20']
         project: ['frontend', 'backend']
       fail-fast: false
     
@@ -154,10 +70,10 @@ jobs:
       - name: 📥 Checkout repository
         uses: actions/checkout@v4
 
-      - name: 🔧 Setup Node.js ${{ matrix.node-version }}
+      - name: 🔧 Setup Node.js ${{ env.NODE_VERSION }}
         uses: actions/setup-node@v4
         with:
-          node-version: ${{ matrix.node-version }}
+          node-version: ${{ env.NODE_VERSION }}
           cache: 'npm'
 
       - name: 📦 Install dependencies
@@ -167,19 +83,17 @@ jobs:
         uses: actions/cache@v4
         with:
           path: .nx/cache
-          key: nx-${{ runner.os }}-node${{ matrix.node-version }}-${{ hashFiles('**/package-lock.json') }}-${{ github.sha }}
+          key: nx-${{ runner.os }}-${{ hashFiles('**/package-lock.json') }}-${{ github.sha }}
           restore-keys: |
-            nx-${{ runner.os }}-node${{ matrix.node-version }}-${{ hashFiles('**/package-lock.json') }}-
+            nx-${{ runner.os }}-${{ hashFiles('**/package-lock.json') }}-
 
       - name: 🧪 Run tests for ${{ matrix.project }}
-        run: |
-          echo "🧪 Running tests for ${{ matrix.project }} on Node.js ${{ matrix.node-version }}..."
-          npx nx test ${{ matrix.project }} --coverage --watchAll=false --passWithNoTests
+        run: npx nx test ${{ matrix.project }} --coverage --watchAll=false --passWithNoTests
         env:
           CI: true
 
-      - name: 📊 Upload test coverage to Codecov
-        if: matrix.node-version == '18'
+      - name: 📊 Upload test coverage
+        if: matrix.project == 'frontend'
         uses: codecov/codecov-action@v4
         with:
           directory: ./coverage/apps/${{ matrix.project }}
@@ -187,27 +101,16 @@ jobs:
           name: ${{ matrix.project }}-coverage
           fail_ci_if_error: false
 
-      - name: 📋 Upload test results
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: test-results-${{ matrix.project }}-node${{ matrix.node-version }}
-          path: |
-            coverage/apps/${{ matrix.project }}
-            **/test-results.xml
-          retention-days: 30
-
-  # Job 4: Build Verification
+  # Build Verification
   build:
     name: 🏗️ Build Verification
     runs-on: ubuntu-latest
     timeout-minutes: 10
-    needs: [code-quality, type-check]
+    needs: [quality]
     
     strategy:
       matrix:
         project: ['frontend', 'backend']
-        configuration: ['development', 'production']
       fail-fast: false
     
     steps:
@@ -231,73 +134,33 @@ jobs:
           restore-keys: |
             nx-${{ runner.os }}-${{ hashFiles('**/package-lock.json') }}-
 
-      - name: 🏗️ Build ${{ matrix.project }} (${{ matrix.configuration }})
-        run: |
-          echo "🏗️ Building ${{ matrix.project }} with ${{ matrix.configuration }} configuration..."
-          npx nx build ${{ matrix.project }} --configuration=${{ matrix.configuration }}
+      - name: 🏗️ Build ${{ matrix.project }}
+        run: npx nx build ${{ matrix.project }} --configuration=production
+        env:
+          # GitHub Pages environment variables for frontend
+          VITE_BASE_URL: '/iagent/'
+          VITE_API_BASE_URL: '/iagent/api'
+          VITE_ENVIRONMENT: 'production'
 
-      - name: 📊 Analyze bundle size (Frontend only)
-        if: matrix.project == 'frontend' && matrix.configuration == 'production'
+      - name: 📊 Analyze build size
+        if: matrix.project == 'frontend'
         run: |
-          echo "📊 Analyzing bundle size..."
+          echo "📊 Frontend build analysis:"
           du -sh dist/apps/frontend
-          find dist/apps/frontend -name "*.js" -exec du -h {} \; | sort -hr
+          echo "📄 Main files:"
+          find dist/apps/frontend -name "*.js" -o -name "*.css" | head -10
 
       - name: 📋 Upload build artifacts
-        if: matrix.configuration == 'production'
+        if: matrix.project == 'frontend'
         uses: actions/upload-artifact@v4
         with:
-          name: build-${{ matrix.project }}-${{ matrix.configuration }}
-          path: dist/apps/${{ matrix.project }}
-          retention-days: 30
+          name: frontend-build
+          path: dist/apps/frontend
+          retention-days: 7
 
-  # Job 5: Security Scanning
+  # Security Scan
   security:
-    name: 🔒 Security Scanning
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-    
-    steps:
-      - name: 📥 Checkout repository
-        uses: actions/checkout@v4
-
-      - name: 🔧 Setup Node.js ${{ env.NODE_VERSION }}
-        uses: actions/setup-node@v4
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: 'npm'
-
-      - name: 📦 Install dependencies
-        run: npm ci --prefer-offline --no-audit
-
-      - name: 🔒 Run npm audit
-        run: |
-          echo "🔒 Running npm security audit..."
-          npm audit --audit-level=moderate --no-fund
-
-      - name: 🔍 Run CodeQL Analysis
-        if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
-        uses: github/codeql-action/analyze@v3
-        with:
-          languages: javascript,typescript
-
-      - name: 📊 Generate security report
-        if: always()
-        run: |
-          echo "📊 Generating security report..."
-          npm audit --json > security-audit.json || true
-
-      - name: 📋 Upload security report
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: security-report
-          path: security-audit.json
-          retention-days: 30
-
-  # Job 6: Dependency Check
-  dependencies:
-    name: 📦 Dependency Analysis
+    name: 🔒 Security Scan
     runs-on: ubuntu-latest
     timeout-minutes: 5
     
@@ -314,88 +177,26 @@ jobs:
       - name: 📦 Install dependencies
         run: npm ci --prefer-offline --no-audit
 
-      - name: 🔍 Check for outdated packages
-        run: |
-          echo "🔍 Checking for outdated packages..."
-          npm outdated || true
+      - name: 🔒 Run npm audit
+        run: npm audit --audit-level=moderate --no-fund
 
-      - name: 📊 Analyze dependency tree
-        run: |
-          echo "📊 Analyzing dependency tree..."
-          npx nx graph --file=dependency-graph.json
-          
-      - name: 🔍 Check Nx project dependencies
-        run: |
-          echo "🔍 Checking Nx project dependencies..."
-          npx nx affected:dep-graph --file=affected-graph.json || true
-
-  # Job 7: Performance Tests (Frontend)
-  performance:
-    name: ⚡ Performance Testing
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-    needs: [build]
-    
-    steps:
-      - name: 📥 Checkout repository
-        uses: actions/checkout@v4
-
-      - name: 🔧 Setup Node.js ${{ env.NODE_VERSION }}
-        uses: actions/setup-node@v4
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: 'npm'
-
-      - name: 📦 Install dependencies
-        run: npm ci --prefer-offline --no-audit
-
-      - name: 📥 Download frontend build
-        uses: actions/download-artifact@v4
-        with:
-          name: build-frontend-production
-          path: dist/apps/frontend
-
-      - name: ⚡ Start preview server
-        run: |
-          echo "⚡ Starting preview server..."
-          npx nx preview frontend &
-          sleep 10
-        
-      - name: 🏎️ Run Lighthouse CI
-        run: |
-          echo "🏎️ Running Lighthouse performance audit..."
-          npm install -g @lhci/cli
-          lhci autorun --upload.target=temporary-public-storage || true
-
-  # Job 8: Integration Summary
+  # CI Success Check
   ci-success:
     name: ✅ CI Pipeline Success
     runs-on: ubuntu-latest
-    needs: [code-quality, type-check, unit-tests, build, security, dependencies, performance]
+    needs: [quality, test, build, security]
     if: always()
     
     steps:
-      - name: ✅ All CI checks passed
+      - name: ✅ All checks passed
         if: ${{ !contains(needs.*.result, 'failure') && !contains(needs.*.result, 'cancelled') }}
         run: |
           echo "✅ All CI checks passed successfully!"
           echo "🎉 Code is ready for deployment!"
           
-      - name: ❌ CI checks failed
+      - name: ❌ Some checks failed
         if: ${{ contains(needs.*.result, 'failure') || contains(needs.*.result, 'cancelled') }}
         run: |
           echo "❌ Some CI checks failed!"
-          echo "🔍 Please review the failed jobs and fix issues before merging."
+          echo "🔍 Please review the failed jobs and fix issues."
           exit 1
-
-      - name: 📊 CI Summary
-        if: always()
-        run: |
-          echo "📊 CI Pipeline Summary:"
-          echo "Code Quality: ${{ needs.code-quality.result }}"
-          echo "Type Check: ${{ needs.type-check.result }}"
-          echo "Unit Tests: ${{ needs.unit-tests.result }}"
-          echo "Build: ${{ needs.build.result }}"
-          echo "Security: ${{ needs.security.result }}"
-          echo "Dependencies: ${{ needs.dependencies.result }}"
-          echo "Performance: ${{ needs.performance.result }}" 

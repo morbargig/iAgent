@@ -1,0 +1,159 @@
+name: 🚀 Deploy to GitHub Pages
+
+on:
+  # Deploy on push to main branch (after CI passes)
+  push:
+    branches: [ main ]
+  
+  # Allow manual deployment
+  workflow_dispatch:
+
+# Ensure only one deployment runs at a time
+concurrency:
+  group: gh-pages-deployment
+  cancel-in-progress: false
+
+env:
+  NODE_VERSION: '18'
+  # GitHub Pages configuration
+  BASE_URL: '/iagent/'
+  
+jobs:
+  deploy:
+    name: 🚀 Deploy Frontend to GitHub Pages
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    
+    # Required permissions for GitHub Pages deployment
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    
+    # Use GitHub Pages environment
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    
+    steps:
+      - name: 📥 Checkout repository
+        uses: actions/checkout@v4
+
+      - name: 🔧 Setup Node.js ${{ env.NODE_VERSION }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: 📦 Install dependencies
+        run: npm ci --prefer-offline --no-audit --production=false
+
+      - name: 🔍 Cache Nx computation cache
+        uses: actions/cache@v4
+        with:
+          path: .nx/cache
+          key: nx-${{ runner.os }}-${{ hashFiles('**/package-lock.json') }}-${{ github.sha }}
+          restore-keys: |
+            nx-${{ runner.os }}-${{ hashFiles('**/package-lock.json') }}-
+
+      - name: 🏗️ Build frontend for production
+        run: npx nx build frontend --configuration=production
+        env:
+          # GitHub Pages specific environment variables
+          VITE_BASE_URL: ${{ env.BASE_URL }}
+          VITE_API_BASE_URL: ${{ env.BASE_URL }}api/
+          VITE_ENVIRONMENT: production
+          NODE_ENV: production
+
+      - name: 📊 Verify build output
+        run: |
+          echo "📊 Build verification:"
+          echo "📁 Build directory: dist/apps/frontend"
+          echo "📏 Total size: $(du -sh dist/apps/frontend)"
+          
+          # Check if required files exist
+          if [[ -f "dist/apps/frontend/index.html" ]]; then
+            echo "✅ index.html exists"
+          else
+            echo "❌ index.html missing"
+            exit 1
+          fi
+          
+          # List main files
+          echo "📄 Main files:"
+          ls -la dist/apps/frontend
+
+      - name: 🔧 Prepare deployment files
+        run: |
+          cd dist/apps/frontend
+          
+          # Create .nojekyll to bypass Jekyll processing
+          touch .nojekyll
+          
+          # Create robots.txt for SEO
+          cat > robots.txt << EOF
+          User-agent: *
+          Allow: /
+          Sitemap: https://${{ github.repository_owner }}.github.io${{ env.BASE_URL }}sitemap.xml
+          EOF
+          
+          # Create a simple 404 page that redirects to index
+          cat > 404.html << 'EOF'
+          <!DOCTYPE html>
+          <html>
+          <head>
+            <meta charset="utf-8">
+            <title>Redirecting...</title>
+            <script>
+              // Redirect to index.html for SPA routing
+              window.location.href = '/iagent/';
+            </script>
+          </head>
+          <body>
+            <p>Redirecting to <a href="/iagent/">iAgent</a>...</p>
+          </body>
+          </html>
+          EOF
+          
+          echo "✅ Deployment files prepared"
+
+      - name: 🔧 Setup GitHub Pages
+        uses: actions/configure-pages@v4
+
+      - name: 📦 Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: ./dist/apps/frontend
+
+      - name: 🚀 Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
+
+      - name: 📋 Deployment summary
+        run: |
+          echo "📋 Deployment Summary:"
+          echo "✅ Frontend deployed successfully!"
+          echo "🌐 URL: ${{ steps.deployment.outputs.page_url }}"
+          echo "📊 Build size: $(du -sh dist/apps/frontend)"
+          echo "🕐 Deployed at: $(date)"
+          echo "📝 Commit: ${{ github.sha }}"
+          echo "👤 Triggered by: ${{ github.actor }}"
+
+      - name: 🌐 Verify deployment
+        run: |
+          echo "🌐 Verifying deployment accessibility..."
+          DEPLOYMENT_URL="${{ steps.deployment.outputs.page_url }}"
+          
+          # Wait for deployment to propagate
+          echo "⏳ Waiting 30 seconds for deployment to propagate..."
+          sleep 30
+          
+          # Test basic connectivity
+          if curl -sL --fail "$DEPLOYMENT_URL" > /dev/null; then
+            echo "✅ Deployment is accessible!"
+            echo "🎉 Visit your app at: $DEPLOYMENT_URL"
+          else
+            echo "⚠️ Deployment verification inconclusive"
+            echo "🌐 Please check manually: $DEPLOYMENT_URL"
+            echo "ℹ️ It may take a few minutes for GitHub Pages to update"
+          fi
