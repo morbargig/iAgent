@@ -1,11 +1,12 @@
 {
   "name": "@iagent/backend",
-  "root": "apps/backend",
-  "projectType": "application",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
   "targets": {
     "build": {
       "executor": "@nx/webpack:webpack",
-      "outputs": ["{options.outputPath}"],
+      "outputs": [
+        "{options.outputPath}"
+      ],
       "defaultConfiguration": "production",
       "options": {
         "outputPath": "dist/apps/backend",
@@ -27,9 +28,12 @@
       }
     },
     "serve": {
+      "continuous": true,
       "executor": "@nx/js:node",
       "defaultConfiguration": "development",
-      "dependsOn": ["build"],
+      "dependsOn": [
+        "build"
+      ],
       "options": {
         "buildTarget": "@iagent/backend:build",
         "runBuildTargetDependencies": false
@@ -45,7 +49,9 @@
     },
     "test": {
       "executor": "@nx/jest:jest",
-      "outputs": ["{workspaceRoot}/coverage/apps/backend"],
+      "outputs": [
+        "{workspaceRoot}/coverage/apps/backend"
+      ],
       "options": {
         "jestConfig": "apps/backend/jest.config.js",
         "passWithNoTests": true
@@ -53,11 +59,19 @@
     },
     "lint": {
       "executor": "@nx/eslint:lint",
-      "outputs": ["{options.outputFile}"],
+      "outputs": [
+        "{options.outputFile}"
+      ],
       "options": {
-        "lintFilePatterns": ["apps/backend/**/*.{ts,js}"]
+        "lintFilePatterns": [
+          "apps/backend/**/*.{ts,js}"
+        ]
       }
     }
   },
-  "tags": ["scope:backend", "type:app"]
-} 
+  "projectType": "application",
+  "tags": [
+    "scope:backend",
+    "type:app"
+  ]
+}
