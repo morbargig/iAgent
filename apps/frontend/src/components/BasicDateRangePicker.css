@@ -1,9 +1,9 @@
-/* Root variables (light) */
+/* Light theme tokens */
 .rdp-root {
   --rdp-accent-color: #3b82f6;
   --rdp-accent-background-color: #dbeafe;
 
-  /* Range (committed or preview — we reuse native classes via selected={displayRange}) */
+  /* Range colors (applies to both draft + committed since we render selected={displayRange}) */
   --rdp-range_middle-background-color: #e8f0fe;
   --rdp-range_middle-color: #1f2937;
   --rdp-range_start-background: #3b82f6;
@@ -15,14 +15,14 @@
   --rdp-day-width: 36px;
   --rdp-today-color: #3b82f6;
 
-  /* Dropdowns */
+  /* Dropdown */
   --rdp-dropdown-background: #ffffff;
   --rdp-dropdown-border: #e5e7eb;
   --rdp-dropdown-color: #374151;
   --rdp-dropdown-hover-background: #f9fafb;
 }
 
-/* Dark overrides */
+/* Dark theme overrides */
 [data-theme="dark"] .rdp-root {
   --rdp-accent-color: #60a5fa;
   --rdp-accent-background-color: #1e3a8a;
@@ -42,7 +42,7 @@
   --rdp-dropdown-hover-background: #4b5563;
 }
 
-/* Day hover (only when not already selected) */
+/* Hover (only when not already selected) */
 .rdp-day:hover:not([disabled]):not(.rdp-day_selected) {
   background-color: rgba(59, 130, 246, 0.12);
   transition: background-color 0.15s ease-in-out, transform 0.15s ease-in-out;
@@ -53,7 +53,7 @@
   background-color: rgba(96, 165, 250, 0.15);
 }
 
-/* Selected range (these class names are added by DayPicker v9) */
+/* Selected range — DayPicker v9 classes */
 .rdp-day_range_start,
 .rdp-day_range_end {
   background-color: var(--rdp-range_start-background);
@@ -84,14 +84,14 @@
   opacity: 0.5;
 }
 
-/* Focus states */
+/* Focus accessibility */
 .rdp-day:focus-visible,
 .rdp-nav_button:focus-visible {
   outline: 2px solid var(--rdp-accent-color);
   outline-offset: 2px;
 }
 
-/* Caption dropdowns: minimal, cross-browser, RTL-safe */
+/* Caption dropdowns — minimal, cross-browser, RTL-safe */
 .rdp-caption_dropdowns {
   display: flex;
   gap: 8px;
@@ -103,17 +103,22 @@
   appearance: none;
   -webkit-appearance: none;
   -moz-appearance: none;
+
   background-color: var(--rdp-dropdown-background);
   border: 1px solid var(--rdp-dropdown-border);
   color: var(--rdp-dropdown-color);
+
   border-radius: 8px;
   padding: 6px 24px 6px 8px;
   min-width: 90px;
+
   font-size: 14px;
   font-weight: 500;
   cursor: pointer;
+
   transition: all 0.15s ease-in-out;
 
+  /* custom arrow */
   background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath fill='%23374151' d='M1.41 0L6 4.59L10.59 0L12 1.41L6 7.41L0 1.41z'/%3E%3C/svg%3E");
   background-repeat: no-repeat;
   background-position: right 8px center;
@@ -149,7 +154,7 @@
   transform: translateY(0);
 }
 
-/* Reduce motion */
+/* Reduced motion */
 @media (prefers-reduced-motion: reduce) {
   .rdp-day,
   .rdp-nav_button,
