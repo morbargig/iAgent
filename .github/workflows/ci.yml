@@ -138,8 +138,8 @@ jobs:
         run: npx nx build ${{ matrix.project }} --configuration=production
         env:
           # GitHub Pages environment variables for frontend
-          VITE_BASE_URL: '/iagent/'
-          VITE_API_BASE_URL: '/iagent/api'
+          VITE_BASE_URL: '/iAgent/'
+          VITE_API_BASE_URL: '/iAgent/api'
           VITE_ENVIRONMENT: 'production'
 
       - name: 📊 Analyze build size

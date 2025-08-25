@@ -16,7 +16,7 @@ concurrency:
 env:
   NODE_VERSION: '18'
   # GitHub Pages configuration
-  BASE_URL: '/iagent/'
+  BASE_URL: '/iAgent/'
   
 jobs:
   deploy:
@@ -106,11 +106,11 @@ jobs:
             <title>Redirecting...</title>
             <script>
               // Redirect to index.html for SPA routing
-              window.location.href = '/iagent/';
+              window.location.href = '/iAgent/';
             </script>
           </head>
           <body>
-            <p>Redirecting to <a href="/iagent/">iAgent</a>...</p>
+            <p>Redirecting to <a href="/iAgent/">iAgent</a>...</p>
           </body>
           </html>
           EOF
