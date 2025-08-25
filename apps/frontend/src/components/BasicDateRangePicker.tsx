@@ -5,7 +5,6 @@ import {
   Stack,
   TextField,
   Button,
-
   Alert,
 } from "@mui/material";
 import { DayPicker, DateRange } from "react-day-picker";
@@ -24,9 +23,11 @@ import {
   addDays as addDaysToDate,
   addMonths,
   addYears,
+  min as minDate,
+  max as maxDate,
 } from "date-fns";
 import { he, ar } from "date-fns/locale";
-import 'react-day-picker/style.css'
+import "react-day-picker/style.css";
 import "./BasicDateRangePicker.css";
 
 interface BasicDateRangePickerProps {
@@ -51,68 +52,43 @@ export default function BasicDateRangePicker({
   timezone = "Asia/Jerusalem",
   t,
 }: BasicDateRangePickerProps) {
-
   const [internalValue, setInternalValue] = React.useState<
     [Date | null, Date | null]
   >([null, null]);
-  const [selectedRange, setSelectedRange] = React.useState<
-    DateRange | undefined
-  >(undefined);
+
+  // The COMMITTED selection (what host cares about)
+  const [selectedRange, setSelectedRange] = React.useState<DateRange | undefined>(
+    undefined
+  );
+
+  // Local preview state (hover-driven). Never leaves this component.
+  const [draftRange, setDraftRange] = React.useState<DateRange | undefined>(
+    undefined
+  );
+
   const [validationError, setValidationError] = React.useState<string | null>(
     null
   );
-  
-  // New state for input values and debouncing
-  const [inputValues, setInputValues] = React.useState<[string, string]>(["", ""]);
-  const [isTyping, setIsTyping] = React.useState<[boolean, boolean]>([false, false]);
+
+  // Text inputs + debounce
+  const [inputValues, setInputValues] = React.useState<[string, string]>([
+    "",
+    "",
+  ]);
+  const [isTyping, setIsTyping] = React.useState<[boolean, boolean]>([
+    false,
+    false,
+  ]);
   const debounceTimeoutRef = React.useRef<NodeJS.Timeout | null>(null);
-  
-  // Refs for input elements to manage cursor position
+
+  // Refs for cursor preservation
   const startInputRef = React.useRef<HTMLInputElement>(null);
   const endInputRef = React.useRef<HTMLInputElement>(null);
-  
-  // State for hover range preview
-  const [hoveredDay, setHoveredDay] = React.useState<Date | null>(null);
 
-  // Use controlled value if provided, otherwise use internal state
+  // Controlled vs internal
   const currentValue = value || internalValue;
 
-  // Calculate hover range for preview with proper start/middle/end detection
-  const getPreviewRange = React.useCallback(() => {
-    if (!hoveredDay || !currentValue[0] || currentValue[1]) {
-      return undefined; // Only show preview when we have start date but no end date
-    }
-    
-    const startDate = currentValue[0];
-    const endDate = hoveredDay;
-    
-    // Ensure the range is in correct order
-    const from = endDate < startDate ? endDate : startDate;
-    const to = endDate < startDate ? startDate : endDate;
-    
-    return { from, to };
-  }, [hoveredDay, currentValue]);
-
-  // Create preview modifiers for start, middle, and end
-  const previewRange = getPreviewRange();
-  const previewModifiers = React.useMemo(() => {
-    if (!previewRange) return {};
-    
-    return {
-      preview_start: (date: Date) => {
-        return previewRange.from && date.getTime() === previewRange.from.getTime();
-      },
-      preview_end: (date: Date) => {
-        return previewRange.to && date.getTime() === previewRange.to.getTime();
-      },
-      preview_middle: (date: Date) => {
-        if (!previewRange.from || !previewRange.to) return false;
-        return date > previewRange.from && date < previewRange.to;
-      }
-    };
-  }, [previewRange]);
-
-  // Load from localStorage on component mount
+  // Load from localStorage on mount
   React.useEffect(() => {
     const saved = localStorage.getItem("dateRangePicker");
     if (saved) {
@@ -123,10 +99,9 @@ export default function BasicDateRangePicker({
         if (startDate && endDate && isValid(startDate) && isValid(endDate)) {
           setInternalValue([startDate, endDate]);
           setSelectedRange({ from: startDate, to: endDate });
-          // Update input values
           setInputValues([
             format(startDate, "dd/MM/yyyy HH:mm"),
-            format(endDate, "dd/MM/yyyy HH:mm")
+            format(endDate, "dd/MM/yyyy HH:mm"),
           ]);
         }
       } catch (error) {
@@ -135,14 +110,13 @@ export default function BasicDateRangePicker({
     }
   }, []);
 
-  // Sync selectedRange with currentValue when it changes externally
+  // Sync in when parent value changes
   React.useEffect(() => {
     if (currentValue[0] && currentValue[1]) {
       setSelectedRange({ from: currentValue[0], to: currentValue[1] });
-      // Update input values
       setInputValues([
         format(currentValue[0], "dd/MM/yyyy HH:mm"),
-        format(currentValue[1], "dd/MM/yyyy HH:mm")
+        format(currentValue[1], "dd/MM/yyyy HH:mm"),
       ]);
     }
   }, [currentValue]);
@@ -160,109 +134,117 @@ export default function BasicDateRangePicker({
 
   const isRTL = language === "he" || language === "ar";
 
+  // What we render: draft (hover) takes precedence while picking
+  const displayRange: DateRange | undefined = draftRange ?? selectedRange;
+
   const validateDateRange = (startDate: Date, endDate: Date): string | null => {
     const now = new Date();
 
     if (isAfter(startDate, now)) {
-      return t ? t('dateRange.errors.startDateFuture') : "Start date cannot be in the future";
+      return t ? t("dateRange.errors.startDateFuture") : "Start date cannot be in the future";
     }
 
     if (isAfter(endDate, now)) {
-      return t ? t('dateRange.errors.endDateFuture') : "End date cannot be in the future";
+      return t ? t("dateRange.errors.endDateFuture") : "End date cannot be in the future";
     }
 
     if (isAfter(startDate, endDate)) {
-      return t ? t('dateRange.errors.startAfterEnd') : "Start date must be before end date";
+      return t ? t("dateRange.errors.startAfterEnd") : "Start date must be before end date";
     }
 
     return null;
   };
 
-  const handleRangeSelect = (range: DateRange | undefined) => {
-    if (!range) return;
+  // Commit on click only (no commits on hover)
+  const handleSelectCommit = (range: DateRange | undefined) => {
+    // Stop preview when user clicks
+    setDraftRange(undefined);
 
-    setSelectedRange(range);
-
-    if (range.from && range.to) {
-      // Set default times: start at 00:00, end at 23:59
+    if (range?.from && range?.to) {
+      // Normalize to full-day bounds
       const startDate = new Date(range.from);
       startDate.setHours(0, 0, 0, 0);
 
       const endDate = new Date(range.to);
       endDate.setHours(23, 59, 59, 999);
 
-      // Validate the range
       const error = validateDateRange(startDate, endDate);
       setValidationError(error);
 
       if (!error) {
         const newValue: [Date | null, Date | null] = [startDate, endDate];
+        // Update committed state
+        setSelectedRange({ from: startDate, to: endDate });
+        // Reflect to inputs/localStorage/parent
         handleChange(newValue);
-        
-        // Update input values
         setInputValues([
           format(startDate, "dd/MM/yyyy HH:mm"),
-          format(endDate, "dd/MM/yyyy HH:mm")
+          format(endDate, "dd/MM/yyyy HH:mm"),
         ]);
+      }
+    } else {
+      // Starting a fresh selection
+      if (range?.from && !range?.to) {
+        setSelectedRange({ from: range.from, to: undefined });
+      } else {
+        setSelectedRange(undefined);
       }
     }
   };
 
-  // Mouse event handlers for hover range preview
-  const handleDayMouseEnter = (date: Date) => {
-    // Only show preview when we have a start date but no end date
-    if (currentValue[0] && !currentValue[1]) {
-      setHoveredDay(date);
+  // Hover → update draft (only when picking second day)
+  const handleDayMouseEnter = (day: Date) => {
+    const from = selectedRange?.from;
+    const to = selectedRange?.to;
+    if (from && !to) {
+      const start = minDate([from, day]);
+      const end = maxDate([from, day]);
+      setDraftRange({ from: start, to: end });
     }
   };
 
+  // Stop preview when leaving the grid (still only in “choose end” phase)
   const handleDayMouseLeave = () => {
-    setHoveredDay(null);
+    const from = selectedRange?.from;
+    const to = selectedRange?.to;
+    if (from && !to) setDraftRange(undefined);
   };
 
-  // Enhanced date input change handler with debouncing
+  // --- Inputs logic (unchanged except where needed) ---
   const handleDateInputChange = (type: "start" | "end", value: string) => {
     const index = type === "start" ? 0 : 1;
-    
-    // Update input value immediately
-    setInputValues(prev => {
-      const newValues = [...prev] as [string, string];
-      newValues[index] = value;
-      return newValues;
-    });
-    
-    // Set typing state
-    setIsTyping(prev => {
-      const newTyping = [...prev] as [boolean, boolean];
-      newTyping[index] = true;
-      return newTyping;
+
+    setInputValues((prev) => {
+      const next = [...prev] as [string, string];
+      next[index] = value;
+      return next;
     });
 
-    // Clear previous timeout
-    if (debounceTimeoutRef.current) {
-      clearTimeout(debounceTimeoutRef.current);
-    }
+    setIsTyping((prev) => {
+      const next = [...prev] as [boolean, boolean];
+      next[index] = true;
+      return next;
+    });
 
-    // Set new debounced timeout
+    if (debounceTimeoutRef.current) clearTimeout(debounceTimeoutRef.current);
+
     debounceTimeoutRef.current = setTimeout(() => {
-    try {
-      // Parse date in dd/mm/yyyy hh:mm format
-      const parseDate = (dateStr: string): Date | null => {
-        // Handle dd/mm/yyyy hh:mm format
-        const match = dateStr.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})\s+(\d{1,2}):(\d{1,2})$/);
-        if (match) {
-          const [, day, month, year, hour, minute] = match;
-          const date = new Date(
-            parseInt(year),
-            parseInt(month) - 1, // Month is 0-indexed
-            parseInt(day),
-            parseInt(hour),
-            parseInt(minute)
+      try {
+        const parseDate = (dateStr: string): Date | null => {
+          const match = dateStr.match(
+            /^(\d{1,2})\/(\d{1,2})\/(\d{4})\s+(\d{1,2}):(\d{1,2})$/
           );
-          return isValid(date) ? date : null;
-        }
-        
-        // Fallback: try to parse as ISO string
+          if (match) {
+            const [, day, month, year, hour, minute] = match;
+            const date = new Date(
+              parseInt(year),
+              parseInt(month) - 1,
+              parseInt(day),
+              parseInt(hour),
+              parseInt(minute)
+            );
+            return isValid(date) ? date : null;
+          }
           const parsedDate = new Date(value);
           return isValid(parsedDate) ? parsedDate : null;
         };
@@ -284,46 +266,40 @@ export default function BasicDateRangePicker({
             }
           }
         }
-        
-        // Clear typing state
-        setIsTyping(prev => {
-          const newTyping = [...prev] as [boolean, boolean];
-          newTyping[index] = false;
-          return newTyping;
+
+        setIsTyping((prev) => {
+          const next = [...prev] as [boolean, boolean];
+          next[index] = false;
+          return next;
         });
       } catch (error) {
         console.warn("Invalid date input:", error);
-        // Clear typing state on error
-        setIsTyping(prev => {
-          const newTyping = [...prev] as [boolean, boolean];
-          newTyping[index] = false;
-          return newTyping;
+        setIsTyping((prev) => {
+          const next = [...prev] as [boolean, boolean];
+          next[index] = false;
+          return next;
         });
       }
-    }, 1000); // 1 second debounce
+    }, 1000);
   };
 
-  // Handle input blur - validate immediately
   const handleInputBlur = (type: "start" | "end") => {
     const index = type === "start" ? 0 : 1;
     const value = inputValues[index];
-    
-    // Clear typing state
-    setIsTyping(prev => {
-      const newTyping = [...prev] as [boolean, boolean];
-      newTyping[index] = false;
-      return newTyping;
+
+    setIsTyping((prev) => {
+      const next = [...prev] as [boolean, boolean];
+      next[index] = false;
+      return next;
     });
 
-    // Clear any pending debounce
-    if (debounceTimeoutRef.current) {
-      clearTimeout(debounceTimeoutRef.current);
-    }
+    if (debounceTimeoutRef.current) clearTimeout(debounceTimeoutRef.current);
 
-    // Validate immediately on blur
     try {
       const parseDate = (dateStr: string): Date | null => {
-        const match = dateStr.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})\s+(\d{1,2}):(\d{1,2})$/);
+        const match = dateStr.match(
+          /^(\d{1,2})\/(\d{1,2})\/(\d{4})\s+(\d{1,2}):(\d{1,2})$/
+        );
         if (match) {
           const [, day, month, year, hour, minute] = match;
           const date = new Date(
@@ -335,7 +311,6 @@ export default function BasicDateRangePicker({
           );
           return isValid(date) ? date : null;
         }
-        
         const parsedDate = new Date(value);
         return isValid(parsedDate) ? parsedDate : null;
       };
@@ -362,14 +337,16 @@ export default function BasicDateRangePicker({
     }
   };
 
-  // Handle arrow key navigation with immediate validation and cursor position preservation
-  const handleArrowKeyNavigation = (type: "start" | "end", direction: "up" | "down", field: "day" | "month" | "year" | "hour" | "minute", inputElement: HTMLInputElement) => {
+  const handleArrowKeyNavigation = (
+    type: "start" | "end",
+    direction: "up" | "down",
+    field: "day" | "month" | "year" | "hour" | "minute",
+    inputElement: HTMLInputElement
+  ) => {
     const index = type === "start" ? 0 : 1;
     const currentDate = currentValue[index];
-    
     if (!currentDate) return;
 
-    // Store current cursor position
     const cursorPosition = inputElement.selectionStart || 0;
 
     let newDate = new Date(currentDate);
@@ -393,11 +370,8 @@ export default function BasicDateRangePicker({
         break;
     }
 
-    // Immediately validate and update
     const newValue: [Date | null, Date | null] =
-      type === "start"
-        ? [newDate, currentValue[1]]
-        : [currentValue[0], newDate];
+      type === "start" ? [newDate, currentValue[1]] : [currentValue[0], newDate];
 
     if (newValue[0] && newValue[1]) {
       const error = validateDateRange(newValue[0], newValue[1]);
@@ -406,21 +380,16 @@ export default function BasicDateRangePicker({
       if (!error) {
         handleChange(newValue);
         setSelectedRange({ from: newValue[0], to: newValue[1] });
-        
-        // Update input values
+
         const newFormattedValues: [string, string] = [
           format(newValue[0], "dd/MM/yyyy HH:mm"),
-          format(newValue[1], "dd/MM/yyyy HH:mm")
+          format(newValue[1], "dd/MM/yyyy HH:mm"),
         ];
         setInputValues(newFormattedValues);
-        
-        // Restore cursor position after state update
+
         requestAnimationFrame(() => {
           if (inputElement && document.activeElement === inputElement) {
-            // Ensure cursor stays in the same field area, but adjust for potential format changes
             let newCursorPos = cursorPosition;
-            
-            // If we're in a specific field, ensure cursor stays in that field's range
             switch (field) {
               case "day":
                 newCursorPos = Math.min(Math.max(cursorPosition, 0), 2);
@@ -438,8 +407,6 @@ export default function BasicDateRangePicker({
                 newCursorPos = Math.min(Math.max(cursorPosition, 14), 16);
                 break;
             }
-            
-            // Ensure cursor position is within bounds
             newCursorPos = Math.min(newCursorPos, newFormattedValues[index].length);
             inputElement.setSelectionRange(newCursorPos, newCursorPos);
           }
@@ -448,36 +415,32 @@ export default function BasicDateRangePicker({
     }
   };
 
-  // Handle key down events for arrow navigation
-  const handleKeyDown = (type: "start" | "end", event: React.KeyboardEvent<HTMLDivElement>) => {
+  const handleKeyDown = (
+    type: "start" | "end",
+    event: React.KeyboardEvent<HTMLDivElement>
+  ) => {
     const { key, ctrlKey, shiftKey, altKey } = event;
-    
-    // Only handle arrow keys without modifiers
     if (ctrlKey || shiftKey || altKey) return;
 
     let field: "day" | "month" | "year" | "hour" | "minute" | null = null;
     let direction: "up" | "down" | null = null;
 
-    if (key === "ArrowUp") {
-      direction = "up";
-    } else if (key === "ArrowDown") {
-      direction = "down";
-    }
+    if (key === "ArrowUp") direction = "up";
+    else if (key === "ArrowDown") direction = "down";
 
     if (direction) {
-      // Get the correct input element using refs
-      const inputElement = type === "start" ? startInputRef.current : endInputRef.current;
+      const inputElement =
+        type === "start" ? startInputRef.current : endInputRef.current;
       if (!inputElement) return;
-      
+
       const cursorPos = inputElement.selectionStart || 0;
-      
-      // Improved logic to determine field based on cursor position
-      // Format: dd/mm/yyyy hh:mm (16 characters total)
-      if (cursorPos <= 2) field = "day";           // positions 0-2: day
-      else if (cursorPos <= 5) field = "month";    // positions 3-5: month
-      else if (cursorPos <= 10) field = "year";    // positions 6-10: year
-      else if (cursorPos <= 13) field = "hour";    // positions 11-13: hour
-      else if (cursorPos <= 16) field = "minute";  // positions 14-16: minute
+
+      // dd/mm/yyyy hh:mm
+      if (cursorPos <= 2) field = "day";
+      else if (cursorPos <= 5) field = "month";
+      else if (cursorPos <= 10) field = "year";
+      else if (cursorPos <= 13) field = "hour";
+      else if (cursorPos <= 16) field = "minute";
 
       if (field && direction && inputElement) {
         event.preventDefault();
@@ -487,18 +450,15 @@ export default function BasicDateRangePicker({
   };
 
   const handleChange = (newValue: [Date | null, Date | null]) => {
-    // Check if this is a clear action (both values are null)
     const isClearing = !newValue[0] && !newValue[1];
 
     if (isClearing) {
-      // Clear localStorage when clearing
       try {
         localStorage.removeItem("dateRangePicker");
       } catch (error) {
         console.warn("Failed to clear localStorage:", error);
       }
     } else {
-      // Save to localStorage when setting values
       try {
         localStorage.setItem(
           "dateRangePicker",
@@ -513,35 +473,24 @@ export default function BasicDateRangePicker({
       }
     }
 
-    // Update internal state if not controlled
-    if (!value) {
-      setInternalValue(newValue);
-    }
-
-    // Call parent onChange if provided
-    if (onChange) {
-      onChange(newValue);
-    }
+    if (!value) setInternalValue(newValue);
+    if (onChange) onChange(newValue);
   };
 
-  // Clear both date pickers
   const handleClear = () => {
     setSelectedRange(undefined);
+    setDraftRange(undefined);
     setValidationError(null);
     setInputValues(["", ""]);
     setIsTyping([false, false]);
     handleChange([null, null]);
   };
 
-  // Validation: end date cannot be in the future
   const getDisabledDays = () => {
     const today = new Date();
-    return [
-      { after: today }, // Disable future dates
-    ];
+    return [{ after: today }];
   };
 
-  // Calculate duration in a readable format
   const getDurationText = (startDate: Date, endDate: Date): string => {
     const years = differenceInYears(endDate, startDate);
     const months = differenceInMonths(endDate, startDate) % 12;
@@ -555,7 +504,6 @@ export default function BasicDateRangePicker({
     if (days > 0) parts.push(`${days}d`);
     if (hours > 0) parts.push(`${hours}h`);
     if (minutes > 0) parts.push(`${minutes}min`);
-
     return parts.length > 0 ? parts.join(" ") : "0min";
   };
 
@@ -588,12 +536,12 @@ export default function BasicDateRangePicker({
     <Box
       sx={{
         width: "100%",
-        maxWidth: "360px", // More compact
-        p: 1.5, // Reduced padding
-        position: "relative", // For absolute positioning of X button
+        maxWidth: "360px",
+        p: 1.5,
+        position: "relative",
       }}
     >
-      {/* Small X Clear Button - Top Right */}
+      {/* Small X Clear Button */}
       <Button
         onClick={handleClear}
         size="small"
@@ -612,44 +560,38 @@ export default function BasicDateRangePicker({
           zIndex: 10,
           transition: "all 0.2s ease-in-out",
           "&:hover": {
-            backgroundColor: isDarkMode ? "#ef4444" : "#ef4444",
-            borderColor: isDarkMode ? "#ef4444" : "#ef4444",
+            backgroundColor: "#ef4444",
+            borderColor: "#ef4444",
             color: "#ffffff",
             transform: "scale(1.1)",
           },
-          "&:active": {
-            transform: "scale(0.95)",
-          },
+          "&:active": { transform: "scale(0.95)" },
         }}
       >
-        <Typography
-          sx={{
-            fontSize: "14px",
-            fontWeight: 600,
-            lineHeight: 1,
-          }}
-        >
+        <Typography sx={{ fontSize: "14px", fontWeight: 600, lineHeight: 1 }}>
           ×
         </Typography>
       </Button>
 
-      <Stack spacing={1.5}> {/* Reduced spacing */}
-        {/* Date Picker - More Space */}
+      <Stack spacing={1.5}>
+        {/* Calendar */}
         <Box
           sx={{
             backgroundColor: isDarkMode ? "#2d2d2d" : "#f8f9fa",
             border: `1px solid ${isDarkMode ? "#444444" : "#e1e5e9"}`,
             borderRadius: "8px",
-            p: 1, // Minimal padding to give more space to calendar
+            p: 1,
             display: "flex",
             justifyContent: "center",
-            minHeight: "320px", // Ensure consistent height
+            minHeight: "320px",
           }}
+          onMouseLeave={handleDayMouseLeave}
         >
           <DayPicker
             mode="range"
-            selected={selectedRange}
-            onSelect={handleRangeSelect}
+            selected={displayRange}                // <- hover preview OR committed
+            onSelect={handleSelectCommit}          // <- commit only on click
+            onDayMouseEnter={handleDayMouseEnter}  // <- update preview while hovering
             disabled={getDisabledDays()}
             captionLayout="dropdown"
             dir={isRTL ? "rtl" : "ltr"}
@@ -658,20 +600,12 @@ export default function BasicDateRangePicker({
             reverseYears
             showOutsideDays
             locale={getLocale()}
-            onDayMouseEnter={handleDayMouseEnter}
-            onDayMouseLeave={handleDayMouseLeave}
-            modifiers={previewModifiers}
-            modifiersClassNames={{
-              preview_start: 'rdp-day--preview_start',
-              preview_middle: 'rdp-day--preview_middle', 
-              preview_end: 'rdp-day--preview_end'
-            }}
             data-theme={isDarkMode ? "dark" : "light"}
           />
         </Box>
 
-        {/* Compact Date Input Fields */}
-        <Stack spacing={1}> {/* Reduced spacing */}
+        {/* Inputs */}
+        <Stack spacing={1}>
           <TextField
             label={startLabel}
             type="text"
@@ -684,22 +618,19 @@ export default function BasicDateRangePicker({
             inputRef={startInputRef}
             sx={{
               ...textFieldStyles,
-              "& input": { 
+              "& input": {
                 fontSize: "13px",
-                '&::-webkit-calendar-picker-indicator': {
-                  display: 'none'
-                }
+                "&::-webkit-calendar-picker-indicator": { display: "none" },
               },
               "& .MuiOutlinedInput-root": {
                 ...textFieldStyles["& .MuiOutlinedInput-root"],
                 height: "40px",
-                // Show typing state with different border color
                 ...(isTyping[0] && {
                   "& fieldset": {
                     borderColor: isDarkMode ? "#60a5fa" : "#3b82f6",
                     borderWidth: "2px",
-                  }
-                })
+                  },
+                }),
               },
             }}
           />
@@ -716,35 +647,32 @@ export default function BasicDateRangePicker({
             inputRef={endInputRef}
             sx={{
               ...textFieldStyles,
-              "& input": { 
+              "& input": {
                 fontSize: "13px",
-                '&::-webkit-calendar-picker-indicator': {
-                  display: 'none'
-                }
+                "&::-webkit-calendar-picker-indicator": { display: "none" },
               },
               "& .MuiOutlinedInput-root": {
                 ...textFieldStyles["& .MuiOutlinedInput-root"],
                 height: "40px",
-                // Show typing state with different border color
                 ...(isTyping[1] && {
                   "& fieldset": {
                     borderColor: isDarkMode ? "#60a5fa" : "#3b82f6",
                     borderWidth: "2px",
-                  }
-                })
+                  },
+                }),
               },
             }}
           />
         </Stack>
 
-        {/* Compact Validation Error */}
+        {/* Error */}
         {validationError && (
           <Alert
             severity="error"
             sx={{
               borderRadius: "6px",
-              fontSize: "11px", // Smaller font
-              py: 0.5, // Reduced padding
+              fontSize: "11px",
+              py: 0.5,
               "& .MuiAlert-message": {
                 color: isDarkMode ? "#fca5a5" : "#dc2626",
               },
@@ -754,11 +682,11 @@ export default function BasicDateRangePicker({
           </Alert>
         )}
 
-        {/* Compact Duration Display */}
+        {/* Duration */}
         {currentValue[0] && currentValue[1] && (
           <Box
             sx={{
-              p: 1, // Reduced padding
+              p: 1,
               borderRadius: "6px",
               backgroundColor: isDarkMode ? "#1e1e1e" : "#f8f9fa",
               border: `1px solid ${isDarkMode ? "#333333" : "#e9ecef"}`,
@@ -770,8 +698,8 @@ export default function BasicDateRangePicker({
                 color: isDarkMode ? "#cccccc" : "#666666",
                 fontWeight: 600,
                 display: "block",
-                mb: 0.5, // Reduced margin
-                fontSize: "11px", // Smaller font
+                mb: 0.5,
+                fontSize: "11px",
               }}
             >
               Duration: {getDurationText(currentValue[0], currentValue[1])}
