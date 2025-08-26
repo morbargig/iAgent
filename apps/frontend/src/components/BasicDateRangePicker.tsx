@@ -148,26 +148,31 @@ export default function BasicDateRangePicker({
   };
 
   // Helper function to ensure end time is valid when today is selected
-  const ensureValidEndTime = (startDate: Date, endDate: Date, isStartToday: boolean, isEndToday: boolean): Date => {
+  const ensureValidEndTime = (
+    startDate: Date,
+    endDate: Date,
+    isStartToday: boolean,
+    isEndToday: boolean
+  ): Date => {
     const adjustedEndDate = new Date(endDate);
-    
+
     if (isEndToday) {
       const now = new Date();
       adjustedEndDate.setHours(now.getHours(), now.getMinutes(), 0, 0);
-      
+
       // If both dates are today, ensure end time is after start time
       if (isStartToday) {
         const startTime = startDate.getTime();
         const endTime = adjustedEndDate.getTime();
         if (endTime <= startTime) {
           // Set end time to be at least 1 hour after start time
-          adjustedEndDate.setTime(startTime + (60 * 60 * 1000));
+          adjustedEndDate.setTime(startTime + 60 * 60 * 1000);
         }
       }
     } else {
       adjustedEndDate.setHours(23, 59, 59, 999);
     }
-    
+
     return adjustedEndDate;
   };
 
@@ -202,7 +207,12 @@ export default function BasicDateRangePicker({
       }
 
       // Use helper function to ensure end time is valid
-      const endDate = ensureValidEndTime(startDate, range.to, isStartToday, isEndToday);
+      const endDate = ensureValidEndTime(
+        startDate,
+        range.to,
+        isStartToday,
+        isEndToday
+      );
 
       const err = validateDateRange(startDate, endDate);
       setValidationError(err);
@@ -235,26 +245,28 @@ export default function BasicDateRangePicker({
     const to = committedRange?.to;
     if (from && !to) {
       const now = new Date();
-      const isFromToday = from.getDate() === now.getDate() && 
-                         from.getMonth() === now.getMonth() && 
-                         from.getFullYear() === now.getFullYear();
-      const isDayToday = day.getDate() === now.getDate() && 
-                        day.getMonth() === now.getMonth() && 
-                        day.getFullYear() === now.getFullYear();
-      
+      const isFromToday =
+        from.getDate() === now.getDate() &&
+        from.getMonth() === now.getMonth() &&
+        from.getFullYear() === now.getFullYear();
+      const isDayToday =
+        day.getDate() === now.getDate() &&
+        day.getMonth() === now.getMonth() &&
+        day.getFullYear() === now.getFullYear();
+
       let start = minDate([from, day]);
       let end = maxDate([from, day]);
-      
+
       // If start date is today, use current time
       if (isFromToday) {
         start.setHours(now.getHours(), now.getMinutes(), 0, 0);
       } else {
         start.setHours(0, 0, 0, 0);
       }
-      
+
       // Use helper function to ensure end time is valid
       end = ensureValidEndTime(start, day, isFromToday, isDayToday);
-      
+
       setDraftRange({ from: start, to: end });
     }
   };
@@ -595,6 +607,7 @@ export default function BasicDateRangePicker({
         p: 1.5,
         position: "relative",
         direction: isRTL ? "rtl" : "ltr",
+        textAlign: isRTL ? "right" : "left",
       }}
     >
       {/* Clear */}
@@ -641,6 +654,7 @@ export default function BasicDateRangePicker({
             justifyContent: "center",
             minHeight: 320,
             direction: isRTL ? "rtl" : "ltr",
+            textAlign: isRTL ? "right" : "left",
           }}
           onMouseLeave={handleCalendarMouseLeave}
         >
@@ -675,7 +689,10 @@ export default function BasicDateRangePicker({
             inputRef={startInputRef}
             inputProps={{
               dir: isRTL ? "rtl" : "ltr",
-              style: { textAlign: isRTL ? "right" : "left" },
+              style: {
+                textAlign: isRTL ? "right" : "left",
+                direction: isRTL ? "rtl" : "ltr",
+              },
             }}
             sx={{
               ...textFieldStyles,
@@ -708,7 +725,10 @@ export default function BasicDateRangePicker({
             inputRef={endInputRef}
             inputProps={{
               dir: isRTL ? "rtl" : "ltr",
-              style: { textAlign: isRTL ? "right" : "left" },
+              style: {
+                textAlign: isRTL ? "right" : "left",
+                direction: isRTL ? "rtl" : "ltr",
+              },
             }}
             sx={{
               ...textFieldStyles,

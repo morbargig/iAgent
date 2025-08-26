@@ -30,6 +30,86 @@ html[dir="ltr"] {
   text-align: left;
 }
 
+/* Global RTL support for all elements */
+html[dir="rtl"] * {
+  direction: rtl;
+}
+
+html[dir="ltr"] * {
+  direction: ltr;
+}
+
+/* RTL-aware flexbox and grid */
+html[dir="rtl"] .flex,
+html[dir="rtl"] .grid {
+  direction: rtl;
+}
+
+/* RTL-aware margins and paddings */
+html[dir="rtl"] .ml-auto {
+  margin-left: unset !important;
+  margin-right: auto !important;
+}
+
+html[dir="rtl"] .mr-auto {
+  margin-right: unset !important;
+  margin-left: auto !important;
+}
+
+/* RTL-aware positioning */
+html[dir="rtl"] .left-0 {
+  left: unset !important;
+  right: 0 !important;
+}
+
+html[dir="rtl"] .right-0 {
+  right: unset !important;
+  left: 0 !important;
+}
+
+/* RTL-aware text alignment */
+html[dir="rtl"] .text-left {
+  text-align: right !important;
+}
+
+html[dir="rtl"] .text-right {
+  text-align: left !important;
+}
+
+/* RTL-aware Material-UI components */
+html[dir="rtl"] .MuiTextField-root input {
+  text-align: right !important;
+  direction: rtl !important;
+}
+
+html[dir="rtl"] .MuiTextField-root label {
+  text-align: right !important;
+  direction: rtl !important;
+}
+
+html[dir="rtl"] .MuiInputBase-input {
+  text-align: right !important;
+  direction: rtl !important;
+}
+
+/* RTL-aware form elements */
+html[dir="rtl"] input,
+html[dir="rtl"] textarea,
+html[dir="rtl"] select {
+  text-align: right !important;
+  direction: rtl !important;
+}
+
+/* RTL-aware buttons */
+html[dir="rtl"] button {
+  direction: rtl;
+}
+
+/* RTL-aware typography */
+html[dir="rtl"] .MuiTypography-root {
+  direction: rtl;
+}
+
 /* Smooth transitions for layout changes - exclude main layout components */
 *:not(#iagent-sidebar):not(#iagent-input-area):not(#iagent-input-content):not(
     #iagent-theme-toggle

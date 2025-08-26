@@ -99,6 +99,26 @@
   justify-content: center;
 }
 
+/* RTL support for calendar navigation */
+[dir="rtl"] .rdp-nav_button {
+  transform: scaleX(-1);
+}
+
+/* RTL support for month/year dropdowns */
+[dir="rtl"] .rdp-caption_dropdowns {
+  flex-direction: row-reverse;
+}
+
+/* RTL support for day grid */
+[dir="rtl"] .rdp-day {
+  text-align: center;
+}
+
+/* RTL support for week header */
+[dir="rtl"] .rdp-head_cell {
+  text-align: center;
+}
+
 .rdp-dropdown {
   appearance: none;
   -webkit-appearance: none;
