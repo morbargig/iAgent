@@ -122,13 +122,17 @@ jobs:
 
       - name: 🚀 Deploy to GitHub Pages
         id: deployment
-        uses: actions/deploy-pages@v4
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./dist/apps/frontend
+          cname: ${{ github.repository_owner }}.github.io
 
       - name: 📋 Deployment summary
         run: |
           echo "📋 Deployment Summary:"
           echo "✅ Frontend deployed successfully!"
-          echo "🌐 URL: ${{ steps.deployment.outputs.page_url }}"
+          echo "🌐 URL: https://${{ github.repository_owner }}.github.io/iAgent/"
           echo "📊 Build size: $(du -sh dist/apps/frontend)"
           echo "🕐 Deployed at: $(date)"
           echo "📝 Commit: ${{ github.sha }}"
@@ -137,7 +141,7 @@ jobs:
       - name: 🌐 Verify deployment
         run: |
           echo "🌐 Verifying deployment accessibility..."
-          DEPLOYMENT_URL="${{ steps.deployment.outputs.page_url }}"
+          DEPLOYMENT_URL="https://${{ github.repository_owner }}.github.io/iAgent/"
 
           # Wait for deployment to propagate
           echo "⏳ Waiting 30 seconds for deployment to propagate..."
