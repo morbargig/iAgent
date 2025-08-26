@@ -350,7 +350,7 @@ export function FilterPreview({
               <ListItem sx={{ px: 0, py: 1 }}>
                 <ListItemIcon sx={{ minWidth: "36px" }}>
                   <ConfigIcon
-                    sx={{ color: isDarkMode ? "#a78bfa" : "#7c3aed" }}
+                    sx={{ color: isDarkMode ? "#60a5fa" : "#3b82f6" }}
                   />
                 </ListItemIcon>
                 <ListItemText
