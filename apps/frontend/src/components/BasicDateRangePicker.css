@@ -372,93 +372,13 @@
 /* RTL Input Fields Support - Fixed */
 /* ========================================== */
 
-/* RTL Input Fields - Proper Material-UI Override */
-.rtl-inputs .MuiInputLabel-root {
-  left: auto !important;
-  right: 14px !important;
-  transform-origin: top right !important;
-}
+/* RTL Input Fields - Moved to BasicDateRangePicker.rtl.css */
 
-.rtl-inputs .MuiInputLabel-root.MuiInputLabel-shrink {
-  transform: translate(14px, -9px) scale(0.75) !important;
-}
+/* RTL Input Direction - Moved to BasicDateRangePicker.rtl.css */
 
-.ltr-inputs .MuiInputLabel-root {
-  left: 14px !important;
-  right: auto !important;
-  transform-origin: top left !important;
-}
+/* Enhanced RTL/LTR TextField Support - Moved to BasicDateRangePicker.rtl.css */
 
-.ltr-inputs .MuiInputLabel-root.MuiInputLabel-shrink {
-  transform: translate(-14px, -9px) scale(0.75) !important;
-}
-
-/* RTL Input Direction */
-.rtl-inputs .MuiOutlinedInput-root {
-  direction: rtl !important;
-}
-
-.rtl-inputs .MuiOutlinedInput-root input {
-  text-align: right !important;
-  direction: rtl !important;
-  padding-right: 14px !important;
-  padding-left: 14px !important;
-}
-
-.ltr-inputs .MuiOutlinedInput-root {
-  direction: ltr !important;
-}
-
-.ltr-inputs .MuiOutlinedInput-root input {
-  text-align: left !important;
-  direction: ltr !important;
-  padding-left: 14px !important;
-  padding-right: 14px !important;
-}
-
-/* Enhanced RTL/LTR TextField Support */
-.rtl-inputs .MuiTextField-root {
-  direction: rtl !important;
-}
-
-.rtl-inputs .MuiTextField-root .MuiInputBase-input {
-  text-align: right !important;
-  direction: rtl !important;
-}
-
-.rtl-inputs .MuiTextField-root .MuiInputLabel-root {
-  text-align: right !important;
-  direction: rtl !important;
-}
-
-.ltr-inputs .MuiTextField-root {
-  direction: ltr !important;
-}
-
-.ltr-inputs .MuiTextField-root .MuiInputBase-input {
-  text-align: left !important;
-  direction: ltr !important;
-}
-
-.ltr-inputs .MuiTextField-root .MuiInputLabel-root {
-  text-align: left !important;
-  direction: ltr !important;
-}
-
-/* Force RTL/LTR on all input elements */
-.rtl-inputs input,
-.rtl-inputs textarea,
-.rtl-inputs select {
-  text-align: right !important;
-  direction: rtl !important;
-}
-
-.ltr-inputs input,
-.ltr-inputs textarea,
-.ltr-inputs select {
-  text-align: left !important;
-  direction: ltr !important;
-}
+/* Force RTL/LTR on all input elements - Moved to BasicDateRangePicker.rtl.css */
 
 /* ========================================== */
 /* Responsive Design */
@@ -501,48 +421,7 @@
 }
 
 /* ========================================== */
-/* Global Material-UI RTL/LTR Support */
+/* Global Material-UI RTL/LTR Support - Moved to BasicDateRangePicker.rtl.css */
 /* ========================================== */
 
-/* Ensure Material-UI components respect RTL/LTR */
-[dir="rtl"] .MuiTextField-root .MuiInputBase-input {
-  text-align: right !important;
-  direction: rtl !important;
-}
-
-[dir="rtl"] .MuiTextField-root .MuiInputLabel-root {
-  text-align: right !important;
-  direction: rtl !important;
-}
-
-[dir="ltr"] .MuiTextField-root .MuiInputBase-input {
-  text-align: left !important;
-  direction: ltr !important;
-}
-
-[dir="ltr"] .MuiTextField-root .MuiInputLabel-root {
-  text-align: left !important;
-  direction: ltr !important;
-}
-
-/* RTL/LTR support for Select components */
-[dir="rtl"] .MuiSelect-select {
-  text-align: right !important;
-  direction: rtl !important;
-}
-
-[dir="ltr"] .MuiSelect-select {
-  text-align: left !important;
-  direction: ltr !important;
-}
-
-/* RTL/LTR support for Menu items */
-[dir="rtl"] .MuiMenuItem-root {
-  text-align: right !important;
-  direction: rtl !important;
-}
-
-[dir="ltr"] .MuiMenuItem-root {
-  text-align: left !important;
-  direction: ltr !important;
-}
+/* RTL/LTR support for Menu items - Moved to BasicDateRangePicker.rtl.css */

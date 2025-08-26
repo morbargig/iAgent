@@ -37,6 +37,8 @@ import {
 import { he, ar } from "date-fns/locale";
 import "react-day-picker/style.css";
 import "./BasicDateRangePicker.css";
+import "./BasicDateRangePicker.rtl.css";
+import { useTranslation } from "../contexts/TranslationContext";
 
 interface BasicDateRangePickerProps {
   value?: [Date | null, Date | null];
@@ -54,12 +56,28 @@ export default function BasicDateRangePicker({
   value,
   onChange,
   isDarkMode = false,
-  startLabel = "Start Date & Time",
-  endLabel = "End Date & Time",
-  language = "en",
+  startLabel,
+  endLabel,
+  language,
   timezone = "Asia/Jerusalem",
   t,
 }: BasicDateRangePickerProps) {
+  // Get current language from translation context if not provided
+  const translationContext = useTranslation();
+  const currentLanguage = language || translationContext.currentLang;
+
+  // Use translation context's t function if prop is not provided
+  const translationFunction = t || translationContext.t;
+
+  // Use translations for labels if available, otherwise use defaults
+  const defaultStartLabel = translationFunction
+    ? translationFunction("dateRange.startDate")
+    : "Start Date & Time";
+  const defaultEndLabel = translationFunction
+    ? translationFunction("dateRange.endDate")
+    : "End Date & Time";
+  const finalStartLabel = startLabel || defaultStartLabel;
+  const finalEndLabel = endLabel || defaultEndLabel;
   // Internal value fallback for uncontrolled usage
   const [internalValue, setInternalValue] = React.useState<
     [Date | null, Date | null]
@@ -143,8 +161,8 @@ export default function BasicDateRangePicker({
   }, [currentValue]);
 
   const getLocale = () =>
-    language === "he" ? he : language === "ar" ? ar : undefined;
-  const isRTL = language === "he" || language === "ar";
+    currentLanguage === "he" ? he : currentLanguage === "ar" ? ar : undefined;
+  const isRTL = currentLanguage === "he" || currentLanguage === "ar";
 
   // Helper function to get all days in a range for preview
   const getDaysInRange = (start: Date, end: Date): Date[] => {
@@ -210,16 +228,16 @@ export default function BasicDateRangePicker({
   const validateDateRange = (startDate: Date, endDate: Date): string | null => {
     const now = new Date();
     if (isAfter(startDate, now))
-      return t
-        ? t("dateRange.errors.startDateFuture")
+      return translationFunction
+        ? translationFunction("dateRange.errors.startDateFuture")
         : "Start date cannot be in the future";
     if (isAfter(endDate, now))
-      return t
-        ? t("dateRange.errors.endDateFuture")
+      return translationFunction
+        ? translationFunction("dateRange.errors.endDateFuture")
         : "End date cannot be in the future";
     if (isAfter(startDate, endDate))
-      return t
-        ? t("dateRange.errors.startAfterEnd")
+      return translationFunction
+        ? translationFunction("dateRange.errors.startAfterEnd")
         : "Start date must be before end date";
     return null;
   };
@@ -709,16 +727,32 @@ export default function BasicDateRangePicker({
     const hours = differenceInHours(endDate, startDate) % 24;
     const minutes = differenceInMinutes(endDate, startDate) % 60;
 
-    if (t) {
+    if (translationFunction) {
       // Use translation function if available
       const parts = [];
-      if (years) parts.push(t("dateRange.duration.years", { count: years }));
-      if (months) parts.push(t("dateRange.duration.months", { count: months }));
-      if (days) parts.push(t("dateRange.duration.days", { count: days }));
-      if (hours) parts.push(t("dateRange.duration.hours", { count: hours }));
+      if (years)
+        parts.push(
+          translationFunction("dateRange.duration.years", { count: years })
+        );
+      if (months)
+        parts.push(
+          translationFunction("dateRange.duration.months", { count: months })
+        );
+      if (days)
+        parts.push(
+          translationFunction("dateRange.duration.days", { count: days })
+        );
+      if (hours)
+        parts.push(
+          translationFunction("dateRange.duration.hours", { count: hours })
+        );
       if (minutes)
-        parts.push(t("dateRange.duration.minutes", { count: minutes }));
-      return parts.length ? parts.join(" ") : t("dateRange.duration.zero");
+        parts.push(
+          translationFunction("dateRange.duration.minutes", { count: minutes })
+        );
+      return parts.length
+        ? parts.join(" ")
+        : translationFunction("dateRange.duration.zero");
     }
 
     // Fallback to English
@@ -754,14 +788,30 @@ export default function BasicDateRangePicker({
     setCurrentMonth(newMonth);
   };
 
-  // Generate month options
+  // Generate month options using translation service
   const getMonthOptions = () => {
     const months = [];
+    const monthNames = [
+      "january",
+      "february",
+      "march",
+      "april",
+      "may",
+      "june",
+      "july",
+      "august",
+      "september",
+      "october",
+      "november",
+      "december",
+    ];
+
     for (let i = 0; i < 12; i++) {
-      const monthDate = new Date(2024, i, 1);
       months.push({
         value: i,
-        label: format(monthDate, "MMMM", { locale: getLocale() }),
+        label: translationFunction
+          ? translationFunction(`dateRange.monthNames.${monthNames[i]}`)
+          : monthNames[i],
       });
     }
     return months;
@@ -778,7 +828,10 @@ export default function BasicDateRangePicker({
   };
 
   // Memoize month options to update when language changes
-  const monthOptions = React.useMemo(() => getMonthOptions(), [language]);
+  const monthOptions = React.useMemo(
+    () => getMonthOptions(),
+    [currentLanguage, translationFunction]
+  );
   const yearOptions = React.useMemo(() => getYearOptions(), []);
 
   const textFieldStyles = {
@@ -794,23 +847,7 @@ export default function BasicDateRangePicker({
     "& .MuiInputLabel-root": {
       color: isDarkMode ? "#cccccc" : "#666666",
       "&.Mui-focused": { color: "#3b82f6" },
-      // RTL support using CSS custom properties (most reliable approach)
-      ...(isRTL && {
-        left: "auto",
-        right: "14px",
-        transformOrigin: "top right",
-        "&.MuiInputLabel-shrink": {
-          transform: "translate(14px, -9px) scale(0.75)",
-        },
-      }),
-      ...(!isRTL && {
-        left: "14px",
-        right: "auto",
-        transformOrigin: "top left",
-        "&.MuiInputLabel-shrink": {
-          transform: "translate(-14px, -9px) scale(0.75)",
-        },
-      }),
+      // RTL label positioning handled by CSS classes
     },
   };
 
@@ -829,8 +866,6 @@ export default function BasicDateRangePicker({
       padding: "8px 12px",
       fontSize: "14px",
       fontWeight: 500,
-      textAlign: isRTL ? "right" : "left",
-      direction: isRTL ? "rtl" : "ltr",
     },
     "& .MuiSelect-icon": {
       color: isDarkMode ? "#cccccc" : "#666666",
@@ -863,8 +898,6 @@ export default function BasicDateRangePicker({
         maxWidth: "360px",
         p: 2,
         position: "relative",
-        direction: isRTL ? "rtl" : "ltr",
-        textAlign: isRTL ? "right" : "left",
         // RTL-aware margins
         ml: isRTL ? 0 : 0,
         mr: isRTL ? 0 : 0,
@@ -930,12 +963,12 @@ export default function BasicDateRangePicker({
               pb: 0.5,
             }}
           >
-            {/* Left Arrow */}
+            {/* Previous Month Arrow */}
             <IconButton
               onClick={handlePreviousMonth}
               sx={{
                 position: "absolute",
-                left: 0,
+                [isRTL ? "right" : "left"]: 0,
                 color: "#3b82f6",
                 backgroundColor: "transparent",
                 border: "none",
@@ -962,7 +995,7 @@ export default function BasicDateRangePicker({
                   color: "#3b82f6",
                 }}
               >
-                ‹
+                {isRTL ? "›" : "‹"}
               </Typography>
             </IconButton>
 
@@ -1100,12 +1133,12 @@ export default function BasicDateRangePicker({
               </FormControl>
             </Box>
 
-            {/* Right Arrow */}
+            {/* Next Month Arrow */}
             <IconButton
               onClick={handleNextMonth}
               sx={{
                 position: "absolute",
-                right: 0,
+                [isRTL ? "left" : "right"]: 0,
                 color: "#3b82f6",
                 backgroundColor: "transparent",
                 border: "none",
@@ -1132,7 +1165,7 @@ export default function BasicDateRangePicker({
                   color: "#3b82f6",
                 }}
               >
-                ›
+                {isRTL ? "‹" : "›"}
               </Typography>
             </IconButton>
           </Box>
@@ -1230,7 +1263,7 @@ export default function BasicDateRangePicker({
         {/* Inputs */}
         <Stack spacing={1} className={isRTL ? "rtl-inputs" : "ltr-inputs"}>
           <TextField
-            label={startLabel}
+            label={finalStartLabel}
             type="text"
             value={inputValues[0]}
             onChange={(e) => handleDateInputChange("start", e.target.value)}
@@ -1239,20 +1272,12 @@ export default function BasicDateRangePicker({
             size="small"
             placeholder={isRTL ? "hh:mm yyyy/mm/dd" : "dd/mm/yyyy hh:mm"}
             inputRef={startInputRef}
-            inputProps={{
-              dir: isRTL ? "rtl" : "ltr",
-              style: {
-                textAlign: isRTL ? "right" : "left",
-                direction: isRTL ? "rtl" : "ltr",
-              },
-            }}
+            inputProps={{}}
             sx={{
               ...textFieldStyles,
               "& input": {
                 fontSize: 13,
                 "&::-webkit-calendar-picker-indicator": { display: "none" },
-                textAlign: isRTL ? "right" : "left",
-                direction: isRTL ? "rtl" : "ltr",
               },
               "& .MuiOutlinedInput-root": {
                 ...textFieldStyles["& .MuiOutlinedInput-root"],
@@ -1263,46 +1288,13 @@ export default function BasicDateRangePicker({
                     borderWidth: 2,
                   },
                 }),
-                // RTL input field alignment
-                ...(isRTL && {
-                  "& input": {
-                    paddingRight: "14px",
-                    paddingLeft: "14px",
-                  },
-                }),
-                ...(!isRTL && {
-                  "& input": {
-                    paddingLeft: "14px",
-                    paddingRight: "14px",
-                  },
-                }),
               },
-              // RTL label support with proper positioning
-              "& .MuiInputLabel-root": {
-                direction: isRTL ? "rtl" : "ltr",
-                textAlign: isRTL ? "right" : "left",
-                ...(isRTL && {
-                  left: "auto",
-                  right: "14px",
-                  transformOrigin: "top right",
-                  "&.MuiInputLabel-shrink": {
-                    transform: "translate(14px, -9px) scale(0.75)",
-                  },
-                }),
-                ...(!isRTL && {
-                  left: "14px",
-                  right: "auto",
-                  transformOrigin: "top left",
-                  "&.MuiInputLabel-shrink": {
-                    transform: "translate(-14px, -9px) scale(0.75)",
-                  },
-                }),
-              },
+              // RTL label support - handled by CSS classes
             }}
           />
 
           <TextField
-            label={endLabel}
+            label={finalEndLabel}
             type="text"
             value={inputValues[1]}
             onChange={(e) => handleDateInputChange("end", e.target.value)}
@@ -1311,20 +1303,12 @@ export default function BasicDateRangePicker({
             size="small"
             placeholder={isRTL ? "hh:mm yyyy/mm/dd" : "dd/mm/yyyy hh:mm"}
             inputRef={endInputRef}
-            inputProps={{
-              dir: isRTL ? "rtl" : "ltr",
-              style: {
-                textAlign: isRTL ? "right" : "left",
-                direction: isRTL ? "rtl" : "ltr",
-              },
-            }}
+            inputProps={{}}
             sx={{
               ...textFieldStyles,
               "& input": {
                 fontSize: 13,
                 "&::-webkit-calendar-picker-indicator": { display: "none" },
-                textAlign: isRTL ? "right" : "left",
-                direction: isRTL ? "rtl" : "ltr",
               },
               "& .MuiOutlinedInput-root": {
                 ...textFieldStyles["& .MuiOutlinedInput-root"],
@@ -1335,41 +1319,9 @@ export default function BasicDateRangePicker({
                     borderWidth: 2,
                   },
                 }),
-                // RTL input field alignment
-                ...(isRTL && {
-                  "& input": {
-                    paddingRight: "14px",
-                    paddingLeft: "14px",
-                  },
-                }),
-                ...(!isRTL && {
-                  "& input": {
-                    paddingLeft: "14px",
-                    paddingRight: "14px",
-                  },
-                }),
+                // RTL input field alignment - handled by CSS classes
               },
-              // RTL label support with proper positioning
-              "& .MuiInputLabel-root": {
-                direction: isRTL ? "rtl" : "ltr",
-                textAlign: isRTL ? "right" : "left",
-                ...(isRTL && {
-                  left: "auto",
-                  right: "14px",
-                  transformOrigin: "top right",
-                  "&.MuiInputLabel-shrink": {
-                    transform: "translate(14px, -9px) scale(0.75)",
-                  },
-                }),
-                ...(!isRTL && {
-                  left: "14px",
-                  right: "auto",
-                  transformOrigin: "top left",
-                  "&.MuiInputLabel-shrink": {
-                    transform: "translate(-14px, -9px) scale(0.75)",
-                  },
-                }),
-              },
+              // RTL label support - handled by CSS classes
             }}
           />
         </Stack>
@@ -1399,7 +1351,6 @@ export default function BasicDateRangePicker({
               borderRadius: 1,
               backgroundColor: isDarkMode ? "#1e1e1e" : "#f8f9fa",
               border: `1px solid ${isDarkMode ? "#333333" : "#e9ecef"}`,
-              direction: isRTL ? "rtl" : "ltr",
             }}
           >
             <Typography
@@ -1410,11 +1361,12 @@ export default function BasicDateRangePicker({
                 display: "block",
                 mb: 0.5,
                 fontSize: 11,
-                textAlign: isRTL ? "right" : "left",
               }}
             >
-              {t ? t("dateRange.duration.label") : "Duration"}:{" "}
-              {getDurationText(currentValue[0], currentValue[1])}
+              {translationFunction
+                ? translationFunction("dateRange.duration.label")
+                : "Duration"}
+              : {getDurationText(currentValue[0], currentValue[1])}
             </Typography>
           </Box>
         )}

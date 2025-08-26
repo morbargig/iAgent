@@ -17,7 +17,7 @@ export interface TranslationState {
 
 export interface TranslationContextType extends TranslationState {
   changeLanguage: (lang: string) => Promise<void>;
-  t: (key: string, params?: Record<string, string>) => string;
+  t: (key: string, params?: Record<string, string | number>) => string;
 }
 
 export const SUPPORTED_LANGUAGES: LanguageConfig[] = [
