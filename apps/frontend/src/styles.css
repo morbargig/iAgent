@@ -110,6 +110,57 @@ html[dir="rtl"] .MuiTypography-root {
   direction: rtl;
 }
 
+/* RTL-aware form controls */
+html[dir="rtl"] .MuiFormControl-root {
+  direction: rtl;
+}
+
+html[dir="rtl"] .MuiFormLabel-root {
+  direction: rtl;
+}
+
+/* RTL-aware input groups */
+html[dir="rtl"] .MuiInputAdornment-root {
+  direction: rtl;
+}
+
+/* RTL-aware select components */
+html[dir="rtl"] .MuiSelect-select {
+  text-align: right !important;
+  direction: rtl !important;
+}
+
+/* RTL-aware menu items */
+html[dir="rtl"] .MuiMenuItem-root {
+  text-align: right;
+  direction: rtl;
+}
+
+/* RTL-aware dialog content */
+html[dir="rtl"] .MuiDialogContent-root {
+  direction: rtl;
+}
+
+/* RTL-aware card content */
+html[dir="rtl"] .MuiCardContent-root {
+  direction: rtl;
+}
+
+/* RTL-aware list items */
+html[dir="rtl"] .MuiListItem-root {
+  direction: rtl;
+}
+
+/* RTL-aware list item text */
+html[dir="rtl"] .MuiListItemText-root {
+  direction: rtl;
+}
+
+/* RTL-aware list item button */
+html[dir="rtl"] .MuiListItemButton-root {
+  direction: rtl;
+}
+
 /* Smooth transitions for layout changes - exclude main layout components */
 *:not(#iagent-sidebar):not(#iagent-input-area):not(#iagent-input-content):not(
     #iagent-theme-toggle

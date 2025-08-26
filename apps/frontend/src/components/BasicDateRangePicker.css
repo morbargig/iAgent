@@ -119,6 +119,119 @@
   text-align: center;
 }
 
+/* Enhanced RTL support for DayPicker */
+[dir="rtl"] .rdp-root {
+  direction: rtl;
+}
+
+[dir="rtl"] .rdp-caption {
+  text-align: center;
+}
+
+[dir="rtl"] .rdp-caption_label {
+  text-align: center;
+  direction: rtl;
+}
+
+/* RTL-aware week day headers */
+[dir="rtl"] .rdp-head_row {
+  direction: rtl;
+}
+
+[dir="rtl"] .rdp-head_cell {
+  direction: rtl;
+  text-align: center;
+}
+
+/* RTL-aware day grid */
+[dir="rtl"] .rdp-tbody {
+  direction: rtl;
+}
+
+[dir="rtl"] .rdp-row {
+  direction: rtl;
+}
+
+[dir="rtl"] .rdp-cell {
+  direction: rtl;
+}
+
+/* RTL-aware navigation buttons */
+[dir="rtl"] .rdp-nav {
+  direction: rtl;
+}
+
+[dir="rtl"] .rdp-nav_button {
+  direction: rtl;
+}
+
+/* RTL-aware dropdowns */
+[dir="rtl"] .rdp-dropdown {
+  direction: rtl;
+  text-align: right;
+}
+
+/* Hebrew and Arabic specific improvements */
+[dir="rtl"] .rdp-day {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+}
+
+/* RTL-aware focus states */
+[dir="rtl"] .rdp-day:focus-visible {
+  outline-offset: -2px;
+}
+
+/* Custom RTL calendar classes */
+.rtl-calendar {
+  direction: rtl;
+}
+
+.rtl-calendar .rdp-root {
+  direction: rtl;
+}
+
+.rtl-calendar .rdp-caption {
+  direction: rtl;
+}
+
+.rtl-calendar .rdp-nav {
+  direction: rtl;
+}
+
+.rtl-calendar .rdp-nav_button {
+  direction: rtl;
+}
+
+.rtl-calendar .rdp-caption_dropdowns {
+  direction: rtl;
+}
+
+.rtl-calendar .rdp-dropdown {
+  direction: rtl;
+  text-align: right;
+}
+
+.rtl-calendar .rdp-head_row {
+  direction: rtl;
+}
+
+.rtl-calendar .rdp-tbody {
+  direction: rtl;
+}
+
+.rtl-calendar .rdp-row {
+  direction: rtl;
+}
+
+/* LTR calendar classes */
+.ltr-calendar {
+  direction: ltr;
+}
+
+.ltr-calendar .rdp-root {
+  direction: ltr;
+}
+
 .rdp-dropdown {
   appearance: none;
   -webkit-appearance: none;

@@ -254,7 +254,7 @@ export default function BasicDateRangePicker({
         day.getMonth() === now.getMonth() &&
         day.getFullYear() === now.getFullYear();
 
-      let start = minDate([from, day]);
+      const start = minDate([from, day]);
       let end = maxDate([from, day]);
 
       // If start date is today, use current time
@@ -668,10 +668,15 @@ export default function BasicDateRangePicker({
             dir={isRTL ? "rtl" : "ltr"}
             numberOfMonths={1}
             navLayout="around"
-            reverseYears
+            reverseYears={isRTL}
             showOutsideDays
             locale={getLocale()}
             data-theme={isDarkMode ? "dark" : "light"}
+            weekStartsOn={isRTL ? 0 : 1} // Sunday for RTL, Monday for LTR
+            fixedWeeks
+            showWeekNumber={false}
+            // Enhanced RTL support
+            className={isRTL ? "rtl-calendar" : "ltr-calendar"}
           />
         </Box>
 
