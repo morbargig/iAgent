@@ -53,20 +53,34 @@ export default function BasicDateRangePicker({
   t,
 }: BasicDateRangePickerProps) {
   // Internal value fallback for uncontrolled usage
-  const [internalValue, setInternalValue] = React.useState<[Date | null, Date | null]>([null, null]);
+  const [internalValue, setInternalValue] = React.useState<
+    [Date | null, Date | null]
+  >([null, null]);
 
   // 1) committed range (what the host cares about; saved on click)
-  const [committedRange, setCommittedRange] = React.useState<DateRange | undefined>(undefined);
+  const [committedRange, setCommittedRange] = React.useState<
+    DateRange | undefined
+  >(undefined);
 
   // 2) draft range (hover preview only while picking the second day)
-  const [draftRange, setDraftRange] = React.useState<DateRange | undefined>(undefined);
+  const [draftRange, setDraftRange] = React.useState<DateRange | undefined>(
+    undefined
+  );
 
   // any form error
-  const [validationError, setValidationError] = React.useState<string | null>(null);
+  const [validationError, setValidationError] = React.useState<string | null>(
+    null
+  );
 
   // inputs + debounce
-  const [inputValues, setInputValues] = React.useState<[string, string]>(["", ""]);
-  const [isTyping, setIsTyping] = React.useState<[boolean, boolean]>([false, false]);
+  const [inputValues, setInputValues] = React.useState<[string, string]>([
+    "",
+    "",
+  ]);
+  const [isTyping, setIsTyping] = React.useState<[boolean, boolean]>([
+    false,
+    false,
+  ]);
   const debounceTimeoutRef = React.useRef<NodeJS.Timeout | null>(null);
 
   // input refs for caret restoration
@@ -109,7 +123,8 @@ export default function BasicDateRangePicker({
     }
   }, [currentValue]);
 
-  const getLocale = () => (language === "he" ? he : language === "ar" ? ar : undefined);
+  const getLocale = () =>
+    language === "he" ? he : language === "ar" ? ar : undefined;
   const isRTL = language === "he" || language === "ar";
 
   // what we render: draft wins while choosing end; otherwise committed
@@ -117,9 +132,18 @@ export default function BasicDateRangePicker({
 
   const validateDateRange = (startDate: Date, endDate: Date): string | null => {
     const now = new Date();
-    if (isAfter(startDate, now)) return t ? t("dateRange.errors.startDateFuture") : "Start date cannot be in the future";
-    if (isAfter(endDate, now)) return t ? t("dateRange.errors.endDateFuture") : "End date cannot be in the future";
-    if (isAfter(startDate, endDate)) return t ? t("dateRange.errors.startAfterEnd") : "Start date must be before end date";
+    if (isAfter(startDate, now))
+      return t
+        ? t("dateRange.errors.startDateFuture")
+        : "Start date cannot be in the future";
+    if (isAfter(endDate, now))
+      return t
+        ? t("dateRange.errors.endDateFuture")
+        : "End date cannot be in the future";
+    if (isAfter(startDate, endDate))
+      return t
+        ? t("dateRange.errors.startAfterEnd")
+        : "Start date must be before end date";
     return null;
   };
 
@@ -129,11 +153,39 @@ export default function BasicDateRangePicker({
     setDraftRange(undefined);
 
     if (range?.from && range?.to) {
-      // normalize to full-day bounds
+      const now = new Date();
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+
+      // Check if start date is today
+      const isStartToday =
+        range.from.getDate() === now.getDate() &&
+        range.from.getMonth() === now.getMonth() &&
+        range.from.getFullYear() === now.getFullYear();
+
+      // Check if end date is today
+      const isEndToday =
+        range.to.getDate() === now.getDate() &&
+        range.to.getMonth() === now.getMonth() &&
+        range.to.getFullYear() === now.getFullYear();
+
+      // Set start date - use current time if today, otherwise 00:00
       const startDate = new Date(range.from);
-      startDate.setHours(0, 0, 0, 0);
+      if (isStartToday) {
+        startDate.setHours(now.getHours(), now.getMinutes(), 0, 0);
+      } else {
+        startDate.setHours(0, 0, 0, 0);
+      }
+
+      // Set end date - use current time if today, otherwise 23:59:59
       const endDate = new Date(range.to);
-      endDate.setHours(23, 59, 59, 999);
+      if (isEndToday) {
+        endDate.setHours(now.getHours(), now.getMinutes(), 0, 0);
+        // Add 1 hour to end time to ensure it's after start time
+        endDate.setHours(endDate.getHours() + 1);
+      } else {
+        endDate.setHours(23, 59, 59, 999);
+      }
 
       const err = validateDateRange(startDate, endDate);
       setValidationError(err);
@@ -165,8 +217,32 @@ export default function BasicDateRangePicker({
     const from = committedRange?.from;
     const to = committedRange?.to;
     if (from && !to) {
-      const start = minDate([from, day]);
-      const end = maxDate([from, day]);
+      const now = new Date();
+      const isFromToday = from.getDate() === now.getDate() && 
+                         from.getMonth() === now.getMonth() && 
+                         from.getFullYear() === now.getFullYear();
+      const isDayToday = day.getDate() === now.getDate() && 
+                        day.getMonth() === now.getMonth() && 
+                        day.getFullYear() === now.getFullYear();
+      
+      let start = minDate([from, day]);
+      let end = maxDate([from, day]);
+      
+      // If start date is today, use current time
+      if (isFromToday) {
+        start.setHours(now.getHours(), now.getMinutes(), 0, 0);
+      } else {
+        start.setHours(0, 0, 0, 0);
+      }
+      
+      // If end date is today, use current time + 1 hour
+      if (isDayToday) {
+        end.setHours(now.getHours(), now.getMinutes(), 0, 0);
+        end.setHours(end.getHours() + 1);
+      } else {
+        end.setHours(23, 59, 59, 999);
+      }
+      
       setDraftRange({ from: start, to: end });
     }
   };
@@ -197,10 +273,18 @@ export default function BasicDateRangePicker({
     debounceTimeoutRef.current = setTimeout(() => {
       try {
         const parseDate = (dateStr: string): Date | null => {
-          const m = dateStr.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})\s+(\d{1,2}):(\d{1,2})$/);
+          const m = dateStr.match(
+            /^(\d{1,2})\/(\d{1,2})\/(\d{4})\s+(\d{1,2}):(\d{1,2})$/
+          );
           if (m) {
             const [, d, mo, y, h, mi] = m;
-            const dt = new Date(parseInt(y), parseInt(mo) - 1, parseInt(d), parseInt(h), parseInt(mi));
+            const dt = new Date(
+              parseInt(y),
+              parseInt(mo) - 1,
+              parseInt(d),
+              parseInt(h),
+              parseInt(mi)
+            );
             return isValid(dt) ? dt : null;
           }
           const parsed = new Date(valueStr);
@@ -210,7 +294,9 @@ export default function BasicDateRangePicker({
         const parsedDate = parseDate(valueStr);
         if (parsedDate) {
           const newValue: [Date | null, Date | null] =
-            type === "start" ? [parsedDate, currentValue[1]] : [currentValue[0], parsedDate];
+            type === "start"
+              ? [parsedDate, currentValue[1]]
+              : [currentValue[0], parsedDate];
 
           if (newValue[0] && newValue[1]) {
             const err = validateDateRange(newValue[0], newValue[1]);
@@ -251,10 +337,18 @@ export default function BasicDateRangePicker({
 
     try {
       const parseDate = (dateStr: string): Date | null => {
-        const m = dateStr.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})\s+(\d{1,2}):(\d{1,2})$/);
+        const m = dateStr.match(
+          /^(\d{1,2})\/(\d{1,2})\/(\d{4})\s+(\d{1,2}):(\d{1,2})$/
+        );
         if (m) {
           const [, d, mo, y, h, mi] = m;
-          const dt = new Date(parseInt(y), parseInt(mo) - 1, parseInt(d), parseInt(h), parseInt(mi));
+          const dt = new Date(
+            parseInt(y),
+            parseInt(mo) - 1,
+            parseInt(d),
+            parseInt(h),
+            parseInt(mi)
+          );
           return isValid(dt) ? dt : null;
         }
         const parsed = new Date(valueStr);
@@ -264,7 +358,9 @@ export default function BasicDateRangePicker({
       const parsedDate = parseDate(valueStr);
       if (parsedDate) {
         const newValue: [Date | null, Date | null] =
-          type === "start" ? [parsedDate, currentValue[1]] : [currentValue[0], parsedDate];
+          type === "start"
+            ? [parsedDate, currentValue[1]]
+            : [currentValue[0], parsedDate];
 
         if (newValue[0] && newValue[1]) {
           const err = validateDateRange(newValue[0], newValue[1]);
@@ -295,15 +391,27 @@ export default function BasicDateRangePicker({
     let newDate = new Date(currentDate);
     const inc = direction === "up" ? 1 : -1;
     switch (field) {
-      case "day": newDate = addDaysToDate(newDate, inc); break;
-      case "month": newDate = addMonths(newDate, inc); break;
-      case "year": newDate = addYears(newDate, inc); break;
-      case "hour": newDate = addHours(newDate, inc); break;
-      case "minute": newDate = addMinutes(newDate, inc); break;
+      case "day":
+        newDate = addDaysToDate(newDate, inc);
+        break;
+      case "month":
+        newDate = addMonths(newDate, inc);
+        break;
+      case "year":
+        newDate = addYears(newDate, inc);
+        break;
+      case "hour":
+        newDate = addHours(newDate, inc);
+        break;
+      case "minute":
+        newDate = addMinutes(newDate, inc);
+        break;
     }
 
     const newValue: [Date | null, Date | null] =
-      type === "start" ? [newDate, currentValue[1]] : [currentValue[0], newDate];
+      type === "start"
+        ? [newDate, currentValue[1]]
+        : [currentValue[0], newDate];
 
     if (newValue[0] && newValue[1]) {
       const err = validateDateRange(newValue[0], newValue[1]);
@@ -321,11 +429,21 @@ export default function BasicDateRangePicker({
           if (inputElement && document.activeElement === inputElement) {
             let newPos = cursorPosition;
             switch (field) {
-              case "day": newPos = Math.min(Math.max(cursorPosition, 0), 2); break;
-              case "month": newPos = Math.min(Math.max(cursorPosition, 3), 5); break;
-              case "year": newPos = Math.min(Math.max(cursorPosition, 6), 10); break;
-              case "hour": newPos = Math.min(Math.max(cursorPosition, 11), 13); break;
-              case "minute": newPos = Math.min(Math.max(cursorPosition, 14), 16); break;
+              case "day":
+                newPos = Math.min(Math.max(cursorPosition, 0), 2);
+                break;
+              case "month":
+                newPos = Math.min(Math.max(cursorPosition, 3), 5);
+                break;
+              case "year":
+                newPos = Math.min(Math.max(cursorPosition, 6), 10);
+                break;
+              case "hour":
+                newPos = Math.min(Math.max(cursorPosition, 11), 13);
+                break;
+              case "minute":
+                newPos = Math.min(Math.max(cursorPosition, 14), 16);
+                break;
             }
             newPos = Math.min(newPos, nextInputs[index].length);
             inputElement.setSelectionRange(newPos, newPos);
@@ -335,7 +453,10 @@ export default function BasicDateRangePicker({
     }
   };
 
-  const handleKeyDown = (type: "start" | "end", e: React.KeyboardEvent<HTMLDivElement>) => {
+  const handleKeyDown = (
+    type: "start" | "end",
+    e: React.KeyboardEvent<HTMLDivElement>
+  ) => {
     const { key, ctrlKey, shiftKey, altKey } = e;
     if (ctrlKey || shiftKey || altKey) return;
 
@@ -346,7 +467,8 @@ export default function BasicDateRangePicker({
     else if (key === "ArrowDown") dir = "down";
 
     if (dir) {
-      const input = type === "start" ? startInputRef.current : endInputRef.current;
+      const input =
+        type === "start" ? startInputRef.current : endInputRef.current;
       if (!input) return;
       const pos = input.selectionStart || 0;
 
@@ -368,16 +490,21 @@ export default function BasicDateRangePicker({
     const clearing = !newValue[0] && !newValue[1];
 
     if (clearing) {
-      try { localStorage.removeItem("dateRangePicker"); } catch {
+      try {
+        localStorage.removeItem("dateRangePicker");
+      } catch {
         console.error("Failed to remove date range picker from localStorage");
       }
     } else {
       try {
-        localStorage.setItem("dateRangePicker", JSON.stringify({
-          start: newValue[0]?.toISOString() || null,
-          end: newValue[1]?.toISOString() || null,
-          updated: new Date().toISOString(),
-        }));
+        localStorage.setItem(
+          "dateRangePicker",
+          JSON.stringify({
+            start: newValue[0]?.toISOString() || null,
+            end: newValue[1]?.toISOString() || null,
+            updated: new Date().toISOString(),
+          })
+        );
       } catch {
         console.error("Failed to set date range picker in localStorage");
       }
@@ -396,7 +523,12 @@ export default function BasicDateRangePicker({
     handleChange([null, null]);
   };
 
-  const getDisabledDays = () => [{ after: new Date() }];
+  const getDisabledDays = () => {
+    // Allow today but disable future dates
+    const today = new Date();
+    today.setHours(23, 59, 59, 999); // End of today
+    return [{ after: today }];
+  };
 
   const getDurationText = (startDate: Date, endDate: Date): string => {
     const years = differenceInYears(endDate, startDate);
@@ -404,7 +536,7 @@ export default function BasicDateRangePicker({
     const days = differenceInDays(endDate, startDate) % 30;
     const hours = differenceInHours(endDate, startDate) % 24;
     const minutes = differenceInMinutes(endDate, startDate) % 60;
-    
+
     if (t) {
       // Use translation function if available
       const parts = [];
@@ -412,10 +544,11 @@ export default function BasicDateRangePicker({
       if (months) parts.push(t("dateRange.duration.months", { count: months }));
       if (days) parts.push(t("dateRange.duration.days", { count: days }));
       if (hours) parts.push(t("dateRange.duration.hours", { count: hours }));
-      if (minutes) parts.push(t("dateRange.duration.minutes", { count: minutes }));
+      if (minutes)
+        parts.push(t("dateRange.duration.minutes", { count: minutes }));
       return parts.length ? parts.join(" ") : t("dateRange.duration.zero");
     }
-    
+
     // Fallback to English
     const parts = [];
     if (years) parts.push(`${years}y`);
@@ -443,13 +576,15 @@ export default function BasicDateRangePicker({
   };
 
   return (
-    <Box sx={{ 
-      width: "100%", 
-      maxWidth: "360px", 
-      p: 1.5, 
-      position: "relative",
-      direction: isRTL ? "rtl" : "ltr"
-    }}>
+    <Box
+      sx={{
+        width: "100%",
+        maxWidth: "360px",
+        p: 1.5,
+        position: "relative",
+        direction: isRTL ? "rtl" : "ltr",
+      }}
+    >
       {/* Clear */}
       <Button
         onClick={handleClear}
@@ -477,7 +612,9 @@ export default function BasicDateRangePicker({
           "&:active": { transform: "scale(0.95)" },
         }}
       >
-        <Typography sx={{ fontSize: 14, fontWeight: 600, lineHeight: 1 }}>×</Typography>
+        <Typography sx={{ fontSize: 14, fontWeight: 600, lineHeight: 1 }}>
+          ×
+        </Typography>
       </Button>
 
       <Stack spacing={1.5}>
@@ -497,9 +634,9 @@ export default function BasicDateRangePicker({
         >
           <DayPicker
             mode="range"
-            selected={displayRange}                 // <- show draft OR committed
-            onSelect={handleSelectCommit}           // <- commit only on click
-            onDayMouseEnter={handleDayMouseEnter}   // <- live preview while picking
+            selected={displayRange} // <- show draft OR committed
+            onSelect={handleSelectCommit} // <- commit only on click
+            onDayMouseEnter={handleDayMouseEnter} // <- live preview while picking
             disabled={getDisabledDays()}
             captionLayout="dropdown"
             dir={isRTL ? "rtl" : "ltr"}
@@ -526,15 +663,23 @@ export default function BasicDateRangePicker({
             inputRef={startInputRef}
             inputProps={{
               dir: isRTL ? "rtl" : "ltr",
-              style: { textAlign: isRTL ? "right" : "left" }
+              style: { textAlign: isRTL ? "right" : "left" },
             }}
             sx={{
               ...textFieldStyles,
-              "& input": { fontSize: 13, "&::-webkit-calendar-picker-indicator": { display: "none" } },
+              "& input": {
+                fontSize: 13,
+                "&::-webkit-calendar-picker-indicator": { display: "none" },
+              },
               "& .MuiOutlinedInput-root": {
                 ...textFieldStyles["& .MuiOutlinedInput-root"],
                 height: 40,
-                ...(isTyping[0] && { "& fieldset": { borderColor: isDarkMode ? "#60a5fa" : "#3b82f6", borderWidth: 2 } }),
+                ...(isTyping[0] && {
+                  "& fieldset": {
+                    borderColor: isDarkMode ? "#60a5fa" : "#3b82f6",
+                    borderWidth: 2,
+                  },
+                }),
               },
             }}
           />
@@ -551,15 +696,23 @@ export default function BasicDateRangePicker({
             inputRef={endInputRef}
             inputProps={{
               dir: isRTL ? "rtl" : "ltr",
-              style: { textAlign: isRTL ? "right" : "left" }
+              style: { textAlign: isRTL ? "right" : "left" },
             }}
             sx={{
               ...textFieldStyles,
-              "& input": { fontSize: 13, "&::-webkit-calendar-picker-indicator": { display: "none" } },
+              "& input": {
+                fontSize: 13,
+                "&::-webkit-calendar-picker-indicator": { display: "none" },
+              },
               "& .MuiOutlinedInput-root": {
                 ...textFieldStyles["& .MuiOutlinedInput-root"],
                 height: 40,
-                ...(isTyping[1] && { "& fieldset": { borderColor: isDarkMode ? "#60a5fa" : "#3b82f6", borderWidth: 2 } }),
+                ...(isTyping[1] && {
+                  "& fieldset": {
+                    borderColor: isDarkMode ? "#60a5fa" : "#3b82f6",
+                    borderWidth: 2,
+                  },
+                }),
               },
             }}
           />
@@ -573,7 +726,9 @@ export default function BasicDateRangePicker({
               borderRadius: 1,
               fontSize: 11,
               py: 0.5,
-              "& .MuiAlert-message": { color: isDarkMode ? "#fca5a5" : "#dc2626" },
+              "& .MuiAlert-message": {
+                color: isDarkMode ? "#fca5a5" : "#dc2626",
+              },
             }}
           >
             {validationError}
@@ -602,7 +757,8 @@ export default function BasicDateRangePicker({
                 textAlign: isRTL ? "right" : "left",
               }}
             >
-              {t ? t("dateRange.duration.label") : "Duration"}: {getDurationText(currentValue[0], currentValue[1])}
+              {t ? t("dateRange.duration.label") : "Duration"}:{" "}
+              {getDurationText(currentValue[0], currentValue[1])}
             </Typography>
           </Box>
         )}
