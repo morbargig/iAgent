@@ -3,8 +3,8 @@ name: 🚀 Deploy to GitHub Pages
 on:
   # Deploy on push to main branch (after CI passes)
   push:
-    branches: [ main ]
-  
+    branches: [main]
+
   # Allow manual deployment
   workflow_dispatch:
 
@@ -14,27 +14,22 @@ concurrency:
   cancel-in-progress: false
 
 env:
-  NODE_VERSION: '18'
+  NODE_VERSION: "18"
   # GitHub Pages configuration
-  BASE_URL: '/iAgent/'
-  
+  BASE_URL: "/iAgent/"
+
 jobs:
   deploy:
     name: 🚀 Deploy Frontend to GitHub Pages
     runs-on: ubuntu-latest
     timeout-minutes: 15
-    
+
     # Required permissions for GitHub Pages deployment
     permissions:
-      contents: read
+      contents: write
       pages: write
       id-token: write
-    
-    # Use GitHub Pages environment
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-    
+
     steps:
       - name: 📥 Checkout repository
         uses: actions/checkout@v4
@@ -43,7 +38,7 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
-          cache: 'npm'
+          cache: "npm"
 
       - name: 📦 Install dependencies
         run: npm ci --prefer-offline --no-audit --production=false
@@ -70,7 +65,7 @@ jobs:
           echo "📊 Build verification:"
           echo "📁 Build directory: dist/apps/frontend"
           echo "📏 Total size: $(du -sh dist/apps/frontend)"
-          
+
           # Check if required files exist
           if [[ -f "dist/apps/frontend/index.html" ]]; then
             echo "✅ index.html exists"
@@ -78,7 +73,7 @@ jobs:
             echo "❌ index.html missing"
             exit 1
           fi
-          
+
           # List main files
           echo "📄 Main files:"
           ls -la dist/apps/frontend
@@ -86,17 +81,17 @@ jobs:
       - name: 🔧 Prepare deployment files
         run: |
           cd dist/apps/frontend
-          
+
           # Create .nojekyll to bypass Jekyll processing
           touch .nojekyll
-          
+
           # Create robots.txt for SEO
           cat > robots.txt << EOF
           User-agent: *
           Allow: /
           Sitemap: https://${{ github.repository_owner }}.github.io${{ env.BASE_URL }}sitemap.xml
           EOF
-          
+
           # Create a simple 404 page that redirects to index
           cat > 404.html << 'EOF'
           <!DOCTYPE html>
@@ -114,7 +109,7 @@ jobs:
           </body>
           </html>
           EOF
-          
+
           echo "✅ Deployment files prepared"
 
       - name: 🔧 Setup GitHub Pages
@@ -143,11 +138,11 @@ jobs:
         run: |
           echo "🌐 Verifying deployment accessibility..."
           DEPLOYMENT_URL="${{ steps.deployment.outputs.page_url }}"
-          
+
           # Wait for deployment to propagate
           echo "⏳ Waiting 30 seconds for deployment to propagate..."
           sleep 30
-          
+
           # Test basic connectivity
           if curl -sL --fail "$DEPLOYMENT_URL" > /dev/null; then
             echo "✅ Deployment is accessible!"

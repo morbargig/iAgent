@@ -1,11 +1,10 @@
-import React, { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, MouseEvent } from "react";
 import {
   Box,
   Typography,
   IconButton,
   useTheme,
   Tooltip,
-  Chip,
   Popover,
   List,
   ListItem,
@@ -26,25 +25,19 @@ import {
   Menu as MenuIcon,
   LightMode as LightModeIcon,
   DarkMode as DarkModeIcon,
-  Login as LoginIcon,
   ContentCopy as CopyIcon,
   Refresh as RefreshIcon,
   Edit as EditIcon,
   Check as CheckIcon,
   ThumbUp as ThumbUpIcon,
   ThumbDown as ThumbDownIcon,
-  Delete as DeleteIcon,
-  Share as ShareIcon,
-  MoreVert as MoreVertIcon,
   Api as ApiIcon,
   Psychology as MockIcon,
   Person as PersonIcon,
   Logout as LogoutIcon,
-  AccountCircle as AccountCircleIcon,
   Info as InfoIcon,
   FilterList as FilterIcon,
   PlayArrow as ApplyIcon,
-  PlayArrow as PickIcon,
   Visibility as ViewIcon,
 } from "@mui/icons-material";
 import { type Message } from "@iagent/stream-mocks";
@@ -56,7 +49,6 @@ import {
 import { useTranslation } from "../contexts/TranslationContext";
 import { LanguageSwitcher } from "./LanguageSwitcher";
 import { FilterDetailsDialog } from "./FilterDetailsDialog";
-import { FilterPreview } from "./FilterPreview";
 
 interface ChatAreaProps {
   messages: Message[];
@@ -102,7 +94,7 @@ const ChatHeader = ({
     null
   );
 
-  const handleUserMenuOpen = (event: React.MouseEvent<HTMLElement>) => {
+  const handleUserMenuOpen = (event: MouseEvent<HTMLElement>) => {
     setUserMenuAnchor(event.currentTarget);
   };
 
@@ -423,8 +415,8 @@ const MessageBubble = ({
 }) => {
   const { t } = useTranslation();
   const isUser = message.role === "user";
-  const [copied, setCopied] = React.useState(false);
-  const [liked, setLiked] = React.useState<boolean | null>(null);
+  const [copied, setCopied] = useState(false);
+  const [liked, setLiked] = useState<boolean | null>(null);
 
   const handleCopy = async () => {
     try {
@@ -463,43 +455,6 @@ const MessageBubble = ({
     // console.log(`${liked === false ? 'Removed dislike' : 'Disliked'} message:`, message.id);
   };
 
-  const handleDelete = () => {
-    if (onDeleteMessage) {
-      onDeleteMessage(message.id);
-    }
-    // console.log('Delete message:', message.id);
-  };
-
-  const handleShare = async () => {
-    const plainText = extractPlainTextFromMarkdown(message.content);
-
-    // Try native Web Share API first
-    if (navigator.share) {
-      try {
-        await navigator.share({
-          title: t("chat.shareTitle"),
-          text: plainText,
-        });
-      } catch (error) {
-        // Fallback to copy if share is cancelled or fails
-        await handleCopy();
-      }
-    } else {
-      // Fallback to copy if Web Share API is not available
-      await handleCopy();
-    }
-
-    if (onShareMessage) {
-      onShareMessage(message.id, plainText);
-    }
-    // console.log('Share message:', message.id);
-  };
-
-  const handleMoreActions = () => {
-    // TODO: Implement more actions menu (pin, forward, etc.)
-    // console.log('More actions for message:', message.id);
-  };
-
   if (isUser) {
     // User Message - Right-aligned with muted background
     return (
@@ -536,7 +491,11 @@ const MessageBubble = ({
             lineHeight: 1.7,
           }}
         >
-          <MarkdownRenderer content={message.content} isDarkMode={isDarkMode} onOpenReport={onOpenReport} />
+          <MarkdownRenderer
+            content={message.content}
+            isDarkMode={isDarkMode}
+            onOpenReport={onOpenReport}
+          />
 
           {message.isStreaming && (
             <Box
@@ -746,7 +705,11 @@ const MessageBubble = ({
           borderRadius: "24px",
         }}
       >
-        <MarkdownRenderer content={message.content} isDarkMode={isDarkMode} onOpenReport={onOpenReport} />
+        <MarkdownRenderer
+          content={message.content}
+          isDarkMode={isDarkMode}
+          onOpenReport={onOpenReport}
+        />
 
         {message.isStreaming && (
           <Box
@@ -1485,13 +1448,13 @@ export function ChatArea({
   const { t } = useTranslation();
 
   // Shared filter state for all messages
-  const [filterInfoAnchor, setFilterInfoAnchor] =
-    React.useState<HTMLElement | null>(null);
-  const [activeMessage, setActiveMessage] = React.useState<any>(null);
-  const [renameDialogOpen, setRenameDialogOpen] = React.useState(false);
-  const [newFilterName, setNewFilterName] = React.useState("");
-  const [filterDetailsDialogOpen, setFilterDetailsDialogOpen] =
-    React.useState(false);
+  const [filterInfoAnchor, setFilterInfoAnchor] = useState<HTMLElement | null>(
+    null
+  );
+  const [activeMessage, setActiveMessage] = useState<any>(null);
+  const [renameDialogOpen, setRenameDialogOpen] = useState(false);
+  const [newFilterName, setNewFilterName] = useState("");
+  const [filterDetailsDialogOpen, setFilterDetailsDialogOpen] = useState(false);
   const showFilterInfo = Boolean(filterInfoAnchor);
 
   // Shared filter handlers

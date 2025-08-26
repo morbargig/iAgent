@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import {
   Box,
   TextField,
@@ -11,12 +11,12 @@ import {
   Chip,
   Menu,
   MenuItem,
-  useTheme,
+
 } from '@mui/material';
 import {
   Settings as SettingsIcon,
   CalendarMonth as CalendarIcon,
-  Search as SearchIcon,
+
 } from '@mui/icons-material';
 import { useTranslation } from '../contexts/TranslationContext';
 
@@ -29,8 +29,8 @@ export function AdvancedSearchInterface({
   isDarkMode,
   onSearch 
 }: AdvancedSearchInterfaceProps) {
-  const theme = useTheme();
-  const { t, changeLanguage, currentLang } = useTranslation();
+
+  const { changeLanguage, currentLang } = useTranslation();
   
   // State management
   const [searchQuery, setSearchQuery] = useState('');

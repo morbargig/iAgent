@@ -67,6 +67,14 @@
           "apps/backend/**/*.{ts,js}"
         ]
       }
+    },
+    "typecheck": {
+      "executor": "@nx/js:tsc",
+      "options": {
+        "tsConfig": "apps/backend/tsconfig.app.json",
+        "main": "apps/backend/src/main.ts",
+        "outputPath": "dist/apps/backend"
+      }
     }
   },
   "projectType": "application",

@@ -1,5 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsString, IsEnum, IsOptional, IsArray, IsDateString, IsUUID, IsBoolean } from 'class-validator';
+import { IsString, IsEnum, IsOptional, IsArray, IsDateString, IsBoolean } from 'class-validator';
 
 export class AuthTokenDto {
   @ApiProperty({

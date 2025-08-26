@@ -1,10 +1,10 @@
-import { Controller, Get, Post, Body, Sse, Res, Headers, HttpStatus, ValidationPipe, UsePipes, UseGuards } from '@nestjs/common';
-import { Observable, interval, map, take, switchMap, of, delay, from } from 'rxjs';
+import { Controller, Get, Post, Body, Sse, Res, HttpStatus } from '@nestjs/common';
+import { Observable, switchMap, of, delay } from 'rxjs';
 import type { Response } from 'express';
-import { 
-  ApiTags, 
-  ApiOperation, 
-  ApiResponse, 
+import {
+  ApiTags,
+  ApiOperation,
+  ApiResponse,
   ApiBody,
   ApiExtraModels,
   getSchemaPath,
@@ -12,19 +12,19 @@ import {
   ApiConsumes,
   ApiBadRequestResponse,
   ApiInternalServerErrorResponse,
-  ApiBearerAuth,
+
   ApiUnauthorizedResponse
 } from '@nestjs/swagger';
-import { AppService } from './app.service';
+
 import { ChatService } from './services/chat.service';
 import { UserId, ApiJwtAuth } from './decorators/auth.decorator';
 // import { AuthService, LoginRequest, LoginResponse } from './auth/auth.service';
 // import { AuthGuard, AuthenticatedRequest } from './auth/auth.guard';
-import { 
-  ChatRequestDto, 
-  ChatResponseDto, 
-  StreamTokenDto, 
-  ErrorResponseDto, 
+import {
+  ChatRequestDto,
+  ChatResponseDto,
+  StreamTokenDto,
+  ErrorResponseDto,
   HealthCheckDto,
   AuthTokenDto,
   ToolSelectionDto
@@ -46,17 +46,16 @@ interface MessageEvent {
 @Controller()
 export class AppController {
   constructor(
-    private readonly appService: AppService,
     private readonly chatService: ChatService
-  ) {}
+  ) { }
 
   @Get()
-  @ApiOperation({ 
+  @ApiOperation({
     summary: 'Health check',
     description: 'Returns the health status and available endpoints of the API'
   })
-  @ApiResponse({ 
-    status: HttpStatus.OK, 
+  @ApiResponse({
+    status: HttpStatus.OK,
     description: 'Service is healthy',
     type: HealthCheckDto,
     schema: {
@@ -154,21 +153,21 @@ export class AppController {
 
   @Post('chat')
   @ApiJwtAuth()
-  @ApiOperation({ 
+  @ApiOperation({
     summary: 'Send a chat message',
     description: 'Send a message to the AI assistant and receive a complete response. This endpoint returns the full response at once. Requires Bearer token authentication.'
   })
   @ApiConsumes('application/json')
   @ApiProduces('application/json')
-  @ApiBody({ 
+  @ApiBody({
     type: ChatRequestDto,
     description: 'Chat request containing conversation history',
     schema: {
       $ref: getSchemaPath(ChatRequestDto)
     }
   })
-  @ApiResponse({ 
-    status: HttpStatus.OK, 
+  @ApiResponse({
+    status: HttpStatus.OK,
     description: 'Successfully generated AI response',
     type: String,
     content: {
@@ -193,7 +192,7 @@ export class AppController {
   })
   async chat(@UserId() userId: string, @Body() request: any): Promise<string> {
     const { messages, chatId } = request;
-    
+
     // Convert DTOs to internal format with defaults
     const processedMessages: ChatMessage[] = messages.map((msg: any) => ({
       id: msg.id || Date.now().toString(),
@@ -201,9 +200,9 @@ export class AppController {
       content: msg.content,
       timestamp: msg.timestamp || new Date()
     }));
-    
+
     const lastMessage = processedMessages[processedMessages.length - 1];
-    
+
     // Save user message if it doesn't exist yet
     try {
       if (lastMessage.role === 'user') {
@@ -220,7 +219,7 @@ export class AppController {
     } catch (error: any) {
       console.log('Failed to save user message (demo mode):', error.message);
     }
-    
+
     // Enhanced mock responses with markdown examples
     const responses = [
       `Hello! I'm a **ChatGPT Clone** built with React and NestJS in an Nx monorepo. How can I help you today?
@@ -308,7 +307,7 @@ And here's a **table example**:
     // Simple response logic based on user input
     let response: string;
     const userContent = lastMessage.content.toLowerCase();
-    
+
     if (userContent.includes('hello') || userContent.includes('hi')) {
       response = responses[0];
     } else if (userContent.includes('code') || userContent.includes('typescript') || userContent.includes('programming')) {
@@ -325,7 +324,7 @@ And here's a **table example**:
 
     // Add a realistic delay
     await new Promise(resolve => setTimeout(resolve, 500 + Math.random() * 1000));
-    
+
     // Save assistant response
     try {
       const assistantMessageId = `msg_${Date.now()}_assistant`;
@@ -336,46 +335,46 @@ And here's a **table example**:
         role: 'assistant',
         content: response,
         timestamp: new Date(),
-        metadata: { 
-          model: 'demo-assistant', 
-          tokens: response.split(' ').length 
+        metadata: {
+          model: 'demo-assistant',
+          tokens: response.split(' ').length
         }
       });
     } catch (error: any) {
       console.log('Failed to save assistant message (demo mode):', error.message);
     }
-    
+
     return response;
   }
 
   @Post('chat/stream')
   // @UseGuards(AuthGuard)
   // @ApiBearerAuth()
-  @ApiOperation({ 
+  @ApiOperation({
     summary: 'Send a chat message with structured streaming response',
     description: 'Send a message to the AI assistant and receive a streaming response with structured chunks. Each chunk has a specific type (start, token, metadata, progress, complete, error) for better control and visualization. Requires authentication.'
   })
   @ApiConsumes('application/json')
   @ApiProduces('application/json')
-  @ApiBody({ 
+  @ApiBody({
     type: ChatRequestDto,
     description: 'Chat request with authentication, chat ID, messages, and optional tools'
   })
-  @ApiResponse({ 
-    status: HttpStatus.OK, 
+  @ApiResponse({
+    status: HttpStatus.OK,
     description: 'Successfully started structured streaming response',
     content: {
       'application/json': {
-        schema: { 
+        schema: {
           type: 'object',
           properties: {
-            chunkType: { 
-              type: 'string', 
+            chunkType: {
+              type: 'string',
               enum: ['start', 'token', 'metadata', 'progress', 'complete', 'error'],
               example: 'token',
               description: 'Type of chunk being sent'
             },
-            data: { 
+            data: {
               type: 'object',
               example: {
                 token: 'Hello',
@@ -387,12 +386,12 @@ And here's a **table example**:
               },
               description: 'Chunk-specific data payload'
             },
-            timestamp: { 
-              type: 'string', 
+            timestamp: {
+              type: 'string',
               format: 'date-time',
               example: '2024-01-01T12:00:00Z'
             },
-            sessionId: { 
+            sessionId: {
               type: 'string',
               example: 'session_1640995200000_abc123',
               description: 'Unique session identifier for this streaming response'
@@ -406,8 +405,8 @@ And here's a **table example**:
     description: 'Authentication required'
   })
   async streamChat(@Body() request: ChatRequestDto, @Res() res: Response) {
-    const { chatId, auth, messages, tools, requestTimestamp, clientInfo } = request;
-    
+    const { chatId, auth, messages, tools, requestTimestamp } = request;
+
     // Log the enhanced request data
     console.log('🔥 Enhanced Chat Request:', {
       chatId,
@@ -416,7 +415,7 @@ And here's a **table example**:
       toolsEnabled: tools?.length || 0,
       timestamp: requestTimestamp || new Date().toISOString()
     });
-    
+
     // Convert DTOs to internal format with proper typing
     const processedMessages: ChatMessage[] = messages.map((msg) => ({
       id: msg.id,
@@ -424,7 +423,7 @@ And here's a **table example**:
       content: msg.content,
       timestamp: new Date(msg.timestamp)
     }));
-    
+
     const lastMessage = processedMessages[processedMessages.length - 1];
     const sessionId = `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 
@@ -436,25 +435,25 @@ And here's a **table example**:
         let filterId = null;
         let filterSnapshot = null;
 
-                 if (messageWithFilter.filterId && messageWithFilter.filterSnapshot) {
-           // Create/save the filter for this chat
-           const filterData = {
-             filterId: messageWithFilter.filterId,
-             name: messageWithFilter.filterSnapshot.name || 'Unnamed Filter',
-             filterConfig: messageWithFilter.filterSnapshot.config || {},
-             chatId: chatId,
-             userId: auth.userId
-           };
+        if (messageWithFilter.filterId && messageWithFilter.filterSnapshot) {
+          // Create/save the filter for this chat
+          const filterData = {
+            filterId: messageWithFilter.filterId,
+            name: messageWithFilter.filterSnapshot.name || 'Unnamed Filter',
+            filterConfig: messageWithFilter.filterSnapshot.config || {},
+            chatId: chatId,
+            userId: auth.userId
+          };
 
-           const savedFilter = await this.chatService.createFilter(filterData);
-           filterId = savedFilter.filterId;
-           filterSnapshot = messageWithFilter.filterSnapshot;
-           
-           // Set as active filter for the chat
-           await this.chatService.setActiveFilter(chatId, filterId, auth.userId);
-           
-           console.log('💾 Filter saved and set as active:', filterId);
-         }
+          const savedFilter = await this.chatService.createFilter(filterData);
+          filterId = savedFilter.filterId;
+          filterSnapshot = messageWithFilter.filterSnapshot;
+
+          // Set as active filter for the chat
+          await this.chatService.setActiveFilter(chatId, filterId, auth.userId);
+
+          console.log('💾 Filter saved and set as active:', filterId);
+        }
 
         // Save the user message with filter information
         await this.chatService.addMessage({
@@ -474,7 +473,7 @@ And here's a **table example**:
         console.error('Failed to save user message with filter data:', error);
       }
     }
-    
+
     // Set streaming headers for JSON
     res.setHeader('Content-Type', 'application/json; charset=utf-8');
     res.setHeader('Cache-Control', 'no-cache');
@@ -497,19 +496,19 @@ And here's a **table example**:
         sessionId
       };
       res.write(JSON.stringify(startChunk) + '\n');
-      
+
       // Generate contextual response based on conversation
       const response = await this.generateContextualResponse(processedMessages);
-      
+
       // Tokenize the response for realistic streaming
       const tokens = this.tokenizeResponse(response);
       const startTime = new Date();
-      
+
       // Initial thinking delay (like real AI processing)
       await new Promise(resolve => setTimeout(resolve, 800 + Math.random() * 400));
-      
+
       let currentContent = '';
-      
+
       // Send metadata chunk with generation info
       const metadataChunk = {
         chunkType: 'metadata',
@@ -524,14 +523,14 @@ And here's a **table example**:
         sessionId
       };
       res.write(JSON.stringify(metadataChunk) + '\n');
-      
+
       // Stream tokens one by one
       for (let i = 0; i < tokens.length; i++) {
         const token = tokens[i];
         const isLast = i === tokens.length - 1;
-        
+
         currentContent += token;
-        
+
         // Create token chunk with structured data
         const tokenChunk = {
           chunkType: 'token',
@@ -548,10 +547,10 @@ And here's a **table example**:
           timestamp: new Date().toISOString(),
           sessionId
         };
-        
+
         // Send token chunk
         res.write(JSON.stringify(tokenChunk) + '\n');
-        
+
         // Send periodic progress metadata (every 10 tokens)
         if (i > 0 && i % 10 === 0 && !isLast) {
           const progressChunk = {
@@ -569,14 +568,14 @@ And here's a **table example**:
           };
           res.write(JSON.stringify(progressChunk) + '\n');
         }
-        
+
         // Realistic streaming delays based on token type
         if (!isLast) {
           const delay = this.calculateStreamingDelay(token, i, tokens);
           await new Promise(resolve => setTimeout(resolve, delay));
         }
       }
-      
+
       // Send completion chunk
       const completeChunk = {
         chunkType: 'complete',
@@ -601,11 +600,11 @@ And here's a **table example**:
         sessionId
       };
       res.write(JSON.stringify(completeChunk) + '\n');
-      
+
       res.end();
     } catch (error) {
       console.error('Streaming error:', error);
-      
+
       // Send error chunk
       const errorChunk = {
         chunkType: 'error',
@@ -621,7 +620,7 @@ And here's a **table example**:
         timestamp: new Date().toISOString(),
         sessionId: sessionId || 'unknown'
       };
-      
+
       res.write(JSON.stringify(errorChunk) + '\n');
       res.end();
     }
@@ -634,10 +633,10 @@ And here's a **table example**:
     const lastMessage = messages[messages.length - 1];
     const userContent = lastMessage.content.toLowerCase();
     const conversationContext = messages.slice(-5); // More context for better responses
-    
+
     // Enhanced conversation analysis
-    const hasCodeContext = conversationContext.some(m => 
-      m.content.includes('```') || 
+    const hasCodeContext = conversationContext.some(m =>
+      m.content.includes('```') ||
       m.content.toLowerCase().includes('code') ||
       m.content.toLowerCase().includes('function') ||
       m.content.toLowerCase().includes('typescript') ||
@@ -645,20 +644,20 @@ And here's a **table example**:
       m.content.toLowerCase().includes('react') ||
       m.content.toLowerCase().includes('nestjs')
     );
-    
+
     const hasProjectContext = conversationContext.some(m =>
       m.content.toLowerCase().includes('nx') ||
       m.content.toLowerCase().includes('monorepo') ||
       m.content.toLowerCase().includes('project') ||
       m.content.toLowerCase().includes('setup')
     );
-    
+
     const isFollowUp = messages.length > 1;
     const isGreeting = userContent.match(/\b(hello|hi|hey|good morning|good afternoon|start|begin)\b/);
     const isQuestion = userContent.includes('?') || userContent.match(/\b(what|how|why|when|where|can|could|would|should)\b/);
     const isProblemSolving = userContent.match(/\b(error|issue|problem|bug|fix|help|stuck|trouble)\b/);
     const isCompliment = userContent.match(/\b(good|great|nice|excellent|perfect|awesome|thanks|thank you)\b/);
-    
+
     // Smart response selection based on enhanced context
     if (isGreeting && !isFollowUp) {
       return this.getGreetingResponse();
@@ -688,10 +687,10 @@ And here's a **table example**:
    */
   private tokenizeResponse(text: string): string[] {
     const tokens: string[] = [];
-    
+
     // Split by natural boundaries while preserving formatting
     const parts = text.split(/(\s+|[\n\r]+|[.,!?;:]|```|`|\*\*|\*|##|#|\|)/);
-    
+
     for (const part of parts) {
       if (part.trim()) {
         // Handle different token types for more natural streaming
@@ -720,7 +719,7 @@ And here's a **table example**:
         tokens.push(part);
       }
     }
-    
+
     return tokens.filter(token => token.length > 0);
   }
 
@@ -730,9 +729,9 @@ And here's a **table example**:
   private calculateStreamingDelay(token: string, index: number, allTokens: string[]): number {
     const baseDelay = 15; // Faster base delay for more responsive feel
     const randomFactor = Math.random() * 25; // Add randomness
-    
+
     let delay = baseDelay + randomFactor;
-    
+
     // Different delays based on content type
     if (/[.!?]$/.test(token)) {
       delay += 200 + Math.random() * 300; // Longer pause after sentences
@@ -755,10 +754,10 @@ And here's a **table example**:
     } else if (/^\d+\./.test(token)) {
       delay += 100 + Math.random() * 150; // List items
     }
-    
+
     // Dynamic speed adjustment based on position
     const progressRatio = index / allTokens.length;
-    
+
     if (progressRatio < 0.1) {
       // Slower start (thinking time)
       delay *= 1.5;
@@ -769,14 +768,14 @@ And here's a **table example**:
       // Slightly slower towards end (wrapping up thoughts)
       delay *= 1.1;
     }
-    
+
     // Add some variety to prevent mechanical feeling
     if (Math.random() < 0.1) {
       delay *= 0.5; // Occasional quick bursts
     } else if (Math.random() < 0.05) {
       delay *= 2; // Occasional pauses for "thinking"
     }
-    
+
     return Math.round(Math.max(10, delay)); // Minimum 10ms delay
   }
 
@@ -784,7 +783,7 @@ And here's a **table example**:
    * Count tokens in messages for usage stats
    */
   private countTokens(messages: ChatMessage[]): number {
-    return messages.reduce((total, msg) => 
+    return messages.reduce((total, msg) =>
       total + msg.content.split(/\s+/).length, 0
     );
   }
@@ -795,7 +794,7 @@ And here's a **table example**:
   private categorizeContent(content: string): string[] {
     const categories: string[] = [];
     const lower = content.toLowerCase();
-    
+
     if (lower.match(/\b(code|function|class|typescript|javascript|programming)\b/)) {
       categories.push('programming', 'technical');
     }
@@ -808,7 +807,7 @@ And here's a **table example**:
     if (lower.match(/\b(math|calculate|equation|formula)\b/)) {
       categories.push('mathematical', 'analytical');
     }
-    
+
     return categories.length > 0 ? categories : ['general'];
   }
 
@@ -834,7 +833,7 @@ And here's a **table example**:
    */
   private getResponseType(userContent: string): string {
     const content = userContent.toLowerCase();
-    
+
     if (content.includes('code') || content.includes('function') || content.includes('programming')) {
       return 'code_explanation';
     }
@@ -850,7 +849,7 @@ And here's a **table example**:
     if (content.includes('?')) {
       return 'question_answer';
     }
-    
+
     return 'general_conversation';
   }
 
@@ -939,7 +938,7 @@ export const UserProfile: React.FC<UserProfileProps> = ({
 
 This shows proper TypeScript typing, React hooks, and performance optimization with useCallback.`
     ];
-    
+
     return codeResponses[Math.floor(Math.random() * codeResponses.length)];
   }
 
@@ -1058,7 +1057,7 @@ This methodology works well whether you're:
 
 What would you like to dive deeper into?`
     ];
-    
+
     return responses[Math.floor(Math.random() * responses.length)];
   }
 
@@ -1095,7 +1094,7 @@ This demo showcases several interesting technical concepts:
 
 What would you like to explore next?`
     ];
-    
+
     return responses[Math.floor(Math.random() * responses.length)];
   }
 
@@ -1156,8 +1155,8 @@ lsof -i :4200
 
 What's the specific issue you're facing?`
     ];
-    
-    return responses[Math.floor(Math.random() * responses.length)];
+
+    return responses[Math.floor(Math.random() * responses.length)] as string;
   }
 
   private getProjectResponse(userContent: string): string {
@@ -1199,106 +1198,91 @@ nx test frontend
 
 What aspect of the Nx setup interests you most?`,
 
-      `Excellent! You're asking about the **monorepo architecture**. 🏗️
-
-This setup showcases how to organize a **full-stack TypeScript application**:
-
-### **Backend (NestJS):**
-- RESTful API with `/api` prefix
-- Server-Sent Events for streaming
-- Swagger documentation at `/api/docs`
-- CORS enabled for frontend communication
-
-### **Frontend (React):**
-- Modern React 19 with hooks
-- Material-UI components
-- Real-time streaming integration
-- Responsive ChatGPT-like interface
-
-### **Development Workflow:**
-1. **Start both apps**: \`nx run-many --target=serve --projects=backend,frontend\`
-2. **Parallel development**: Changes auto-reload
-3. **Shared types**: Type safety across frontend/backend
-4. **Consistent tooling**: Same ESLint, Prettier, Jest config
-
-### **Production Ready:**
-- Built with \`nx build\` for optimized bundles
-- Environment-specific configurations
-- Docker-ready setup
-
-Want to know more about any specific part?`
+      'Excellent! You\'re asking about the **monorepo architecture**. 🏗️\n\n' +
+      'This setup showcases how to organize a **full-stack TypeScript application**:\n\n' +
+      '### **Backend (NestJS):**\n' +
+      '- RESTful API with /api prefix\n' +
+      '- Server-Sent Events for streaming\n' +
+      '- Swagger documentation at /api/docs\n' +
+      '- CORS enabled for frontend communication\n\n' +
+      '### **Frontend (React):**\n' +
+      '- Modern React 19 with hooks\n' +
+      '- Material-UI components\n' +
+      '- Real-time streaming integration\n' +
+      '- Responsive ChatGPT-like interface\n\n' +
+      '### **Development Workflow:**\n' +
+      '1. **Start both apps**: nx run-many --target=serve --projects=backend,frontend\n' +
+      '2. **Parallel development**: Changes auto-reload\n' +
+      '3. **Shared types**: Type safety across frontend/backend\n' +
+      '4. **Consistent tooling**: Same ESLint, Prettier, Jest config\n\n' +
+      '### **Production Ready:**\n' +
+      '- Built with nx build for optimized bundles\n' +
+      '- Environment-specific configurations\n' +
+      '- Docker-ready setup\n\n' +
+      'Want to know more about any specific part?'
     ];
-    
-    return responses[Math.floor(Math.random() * responses.length)];
+
+    return responses[Math.floor(Math.random() * responses.length)] as string;
   }
 
   private getQuestionResponse(userContent: string): string {
     const responses = [
-      `That's a thoughtful question! 🤔 Let me provide a comprehensive answer:
+      'That\'s a thoughtful question! 🤔 Let me provide a comprehensive answer:\n\n' +
+      'The approach depends on what you\'re trying to accomplish. In general, I recommend:\n\n' +
+      '**For Learning:**\n' +
+      '- Start with the fundamentals\n' +
+      '- Practice with small projects\n' +
+      '- Build up complexity gradually\n' +
+      '- Learn from real-world examples (like this project!)\n\n' +
+      '**For Problem Solving:**\n' +
+      '- Break the problem into smaller parts\n' +
+      '- Research existing solutions\n' +
+      '- Prototype quickly\n' +
+      '- Iterate based on feedback\n\n' +
+      '**For This Demo Specifically:**\n' +
+      '- Explore the codebase structure\n' +
+      '- Test different input types\n' +
+      '- Check out the Swagger docs at /api/docs\n' +
+      '- Try the streaming functionality\n\n' +
+      'What specific aspect would you like me to elaborate on?',
 
-The approach depends on what you're trying to accomplish. In general, I recommend:
-
-**For Learning:**
-- Start with the fundamentals
-- Practice with small projects  
-- Build up complexity gradually
-- Learn from real-world examples (like this project!)
-
-**For Problem Solving:**
-- Break the problem into smaller parts
-- Research existing solutions
-- Prototype quickly
-- Iterate based on feedback
-
-**For This Demo Specifically:**
-- Explore the codebase structure
-- Test different input types
-- Check out the Swagger docs at \`/api/docs\`
-- Try the streaming functionality
-
-What specific aspect would you like me to elaborate on?`,
-
-      `Interesting question! 💭 Here's how I'd approach it:
-
-**Context Matters:** The best solution depends on:
-- Your specific use case
-- Available resources and constraints
-- Timeline and complexity requirements
-- Team expertise and preferences
-
-**For Web Development Projects:**
-1. **Choose the right stack** (like React + NestJS here)
-2. **Plan your architecture** (monorepo vs separate repos)
-3. **Set up good development practices** (linting, testing, CI/CD)
-4. **Focus on user experience** (responsive design, performance)
-
-**For This Type of Chat Application:**
-- **Real-time communication** (WebSockets or SSE)
-- **State management** (context, reducers, or external libraries)
-- **Error handling** (graceful degradation)
-- **Accessibility** (keyboard navigation, screen readers)
-
-Would you like me to dive deeper into any of these areas?`
+      'Interesting question! 💭 Here\'s how I\'d approach it:\n\n' +
+      '**Context Matters:** The best solution depends on:\n' +
+      '- Your specific use case\n' +
+      '- Available resources and constraints\n' +
+      '- Timeline and complexity requirements\n' +
+      '- Team expertise and preferences\n\n' +
+      '**For Web Development Projects:**\n' +
+      '1. **Choose the right stack** (like React + NestJS here)\n' +
+      '2. **Plan your architecture** (monorepo vs separate repos)\n' +
+      '3. **Set up good development practices** (linting, testing, CI/CD)\n' +
+      '4. **Focus on user experience** (responsive design, performance)\n\n' +
+      '**For This Type of Chat Application:**\n' +
+      '- **Real-time communication** (WebSockets or SSE)\n' +
+      '- **State management** (context, reducers, or external libraries)\n' +
+      '- **Error handling** (graceful degradation)\n' +
+      '- **Accessibility** (keyboard navigation, screen readers)\n\n' +
+      'Would you like me to dive deeper into any of these areas?'
     ];
-    
-    return responses[Math.floor(Math.random() * responses.length)];
+
+    return responses[Math.floor(Math.random() * responses.length)] as string;
   }
 
   @Sse('chat/sse-stream')
-  @ApiOperation({ 
+  @ApiOperation({
     summary: 'Send a chat message with Server-Sent Events streaming',
     description: 'Send a message to the AI assistant and receive a streaming response via Server-Sent Events (SSE). Each token is sent as a separate event with metadata.'
   })
   @ApiProduces('text/event-stream')
-  @ApiResponse({ 
-    status: HttpStatus.OK, 
+  @ApiResponse({
+    status: HttpStatus.OK,
     description: 'Successfully started SSE streaming',
     content: {
       'text/event-stream': {
-        schema: { 
+        schema: {
           type: 'object',
           properties: {
-            data: { 
+            data: {
               type: 'string',
               description: 'JSON stringified StreamTokenDto containing token and metadata',
               example: '{"token": "Hello", "done": false, "metadata": {"index": 1, "total_tokens": 150}}'
@@ -1318,24 +1302,24 @@ Would you like me to dive deeper into any of these areas?`
   })
   async sseStreamChat(@Body() request: any): Promise<Observable<MessageEvent>> {
     const { messages } = request;
-    
+
     // Use the enhanced contextual response generation
     const response = await this.generateContextualResponse(messages);
-    
+
     // Use the improved tokenization
     const tokens = this.tokenizeResponse(response);
-    
+
     return of(null).pipe(
       delay(200), // Initial thinking delay
       switchMap(() => {
         let tokenIndex = 0;
-        
+
         return new Observable<MessageEvent>((subscriber) => {
           const sendNextToken = () => {
             if (tokenIndex < tokens.length) {
               const token = tokens[tokenIndex];
               const delay = this.calculateStreamingDelay(token, tokenIndex, tokens);
-              
+
               // Send the current token
               const tokenEvent: MessageEvent = {
                 data: JSON.stringify({
@@ -1345,14 +1329,14 @@ Would you like me to dive deeper into any of these areas?`
                     index: tokenIndex + 1,
                     total_tokens: tokens.length,
                     progress: Math.round((tokenIndex / tokens.length) * 100),
-                                         estimated_remaining_ms: Math.round((tokens.length - tokenIndex) * 80)
+                    estimated_remaining_ms: Math.round((tokens.length - tokenIndex) * 80)
                   }
                 })
               };
-              
+
               subscriber.next(tokenEvent);
               tokenIndex++;
-              
+
               // Schedule next token
               setTimeout(sendNextToken, delay);
             } else {
@@ -1369,12 +1353,12 @@ Would you like me to dive deeper into any of these areas?`
                   }
                 })
               };
-              
+
               subscriber.next(completeEvent);
               subscriber.complete();
             }
           };
-          
+
           // Start the streaming
           setTimeout(sendNextToken, 100);
         });

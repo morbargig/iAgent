@@ -1,5 +1,5 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { Document, Types } from 'mongoose';
+import { Document } from 'mongoose';
 
 export type ChatMessageDocument = ChatMessage & Document;
 export type ChatDocument = Chat & Document;
@@ -9,19 +9,19 @@ export type ChatFilterDocument = ChatFilter & Document;
 @Schema({ timestamps: true })
 export class ChatFilter {
   @Prop({ required: true, unique: true })
-  filterId: string;
+  filterId!: string;
 
   @Prop({ required: true })
-  name: string;
+  name!: string;
 
   @Prop({ required: true })
-  userId: string;
+  userId!: string;
 
   @Prop({ required: true })
-  chatId: string;
+  chatId!: string;
 
   @Prop({ type: Object, required: true })
-  filterConfig: {
+  filterConfig!: {
     // Date filter
     dateFilter?: {
       type: 'custom' | 'picker';
@@ -34,63 +34,63 @@ export class ChatFilter {
         end: Date;
       };
     };
-    
+
     // Country filter
     selectedCountries?: string[];
-    
+
     // Tools filter
     enabledTools?: string[];
-    
+
     // Advanced filters
     filterText?: string;
     excludeAmi?: boolean;
     includeAmi?: boolean;
     selectedMode?: 'free' | 'flow' | 'product';
-    
+
     // Any additional custom filters
     customFilters?: Record<string, any>;
   };
 
   @Prop({ default: Date.now })
-  createdAt: Date;
+  createdAt!: Date;
 
   @Prop({ default: Date.now })
-  updatedAt: Date;
+  updatedAt!: Date;
 
   @Prop({ default: false })
-  isActive: boolean;
+  isActive!: boolean;
 }
 
 @Schema({ timestamps: true })
 export class ChatMessage {
   @Prop({ required: true })
-  id: string;
+  id!: string;
 
   @Prop({ required: true, enum: ['user', 'assistant', 'system'] })
-  role: 'user' | 'assistant' | 'system';
+  role!: 'user' | 'assistant' | 'system';
 
   @Prop({ required: true })
-  content: string;
+  content!: string;
 
   @Prop({ default: Date.now })
-  timestamp: Date;
+  timestamp!: Date;
 
   @Prop({ type: Object, default: {} })
-  metadata: Record<string, any>;
+  metadata!: Record<string, any>;
 
   @Prop({ required: true })
-  chatId: string;
+  chatId!: string;
 
   @Prop({ required: true })
-  userId: string;
+  userId!: string;
 
   // Associate message with filter
   @Prop({ type: String, default: null })
-  filterId: string | null;
+  filterId!: string | null;
 
   // Store the filter config snapshot at the time of message creation
   @Prop({ type: Object, default: null })
-  filterSnapshot: {
+  filterSnapshot!: {
     filterId?: string;
     name?: string;
     config?: Record<string, any>;
@@ -100,43 +100,43 @@ export class ChatMessage {
 @Schema({ timestamps: true })
 export class Chat {
   @Prop({ required: true, unique: true })
-  chatId: string;
+  chatId!: string;
 
   @Prop({ required: true })
-  name: string;
+  name!: string;
 
   @Prop({ required: true })
-  userId: string;
+  userId!: string;
 
   @Prop({ default: Date.now })
-  createdAt: Date;
+  createdAt!: Date;
 
   @Prop({ default: Date.now })
-  lastMessageAt: Date;
+  lastMessageAt!: Date;
 
   @Prop({ type: Object, default: {} })
-  settings: Record<string, any>;
+  settings!: Record<string, any>;
 
   @Prop({ type: [String], default: [] })
-  tags: string[];
+  tags!: string[];
 
   @Prop({ default: false })
-  archived: boolean;
+  archived!: boolean;
 
   @Prop({ default: 0 })
-  messageCount: number;
+  messageCount!: number;
 
   // Current active filter for this chat
   @Prop({ type: String, default: null })
-  activeFilterId: string | null;
+  activeFilterId!: string | null;
 
   // Array of all filter IDs associated with this chat
   @Prop({ type: [String], default: [] })
-  associatedFilters: string[];
+  associatedFilters!: string[];
 
   // Current filter configuration (for quick access)
   @Prop({ type: Object, default: null })
-  currentFilterConfig: Record<string, any> | null;
+  currentFilterConfig!: Record<string, any> | null;
 }
 
 export const ChatFilterSchema = SchemaFactory.createForClass(ChatFilter);

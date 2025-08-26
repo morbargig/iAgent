@@ -1,4 +1,4 @@
-import { ReportData, fetchReportDetails } from '../components/ReportDetailsPanel';
+
 
 // Simple report link format: report://report-id
 export function createReportLink(reportId: string): string {

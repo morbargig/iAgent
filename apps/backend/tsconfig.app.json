@@ -3,7 +3,7 @@
   "compilerOptions": {
     "outDir": "dist",
     "module": "Node16",
-    "types": ["node"],
+    "types": ["node", "jest"],
     "rootDir": "src",
     "moduleResolution": "Node16",
     "tsBuildInfoFile": "dist/tsconfig.app.tsbuildinfo",

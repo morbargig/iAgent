@@ -1,4 +1,3 @@
-import React from 'react';
 import {
   Dialog,
   DialogTitle,
@@ -9,13 +8,13 @@ import {
   Typography,
   Chip,
   IconButton,
-} from '@mui/material';
+} from "@mui/material";
 import {
   Close as CloseIcon,
   PlayArrow as ApplyIcon,
-} from '@mui/icons-material';
-import { useTranslation } from '../contexts/TranslationContext';
-import { FilterPreview } from './FilterPreview';
+} from "@mui/icons-material";
+import { useTranslation } from "../contexts/TranslationContext";
+import { FilterPreview } from "./FilterPreview";
 
 interface FilterDetailsDialogProps {
   open: boolean;
@@ -28,7 +27,7 @@ interface FilterDetailsDialogProps {
     config?: Record<string, any>;
     isActive?: boolean;
     createdAt?: string;
-    scope?: 'global' | 'chat';
+    scope?: "global" | "chat";
   } | null;
   showApplyButton?: boolean;
 }
@@ -60,92 +59,98 @@ export function FilterDetailsDialog({
       fullWidth
       PaperProps={{
         sx: {
-          backgroundColor: isDarkMode ? '#2d2d2d' : '#ffffff',
-          borderRadius: '12px',
-          maxHeight: '90vh',
+          backgroundColor: isDarkMode ? "#2d2d2d" : "#ffffff",
+          borderRadius: "12px",
+          maxHeight: "90vh",
         },
       }}
     >
-      <DialogTitle 
-        sx={{ 
-          color: isDarkMode ? '#ffffff' : '#000000',
+      <DialogTitle
+        sx={{
+          color: isDarkMode ? "#ffffff" : "#000000",
           pb: 1,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
         }}
       >
-        <Box sx={{ display: 'flex', alignItems: 'center', flex: 1 }}>
+        <Box sx={{ display: "flex", alignItems: "center", flex: 1 }}>
           <Typography variant="h6" sx={{ mr: 2 }}>
-            {filter.name || t('filter.details')}
+            {filter.name || t("filter.details")}
           </Typography>
-          
-          {filter.scope === 'global' && (
-            <Chip 
-              label={t('filter.global')} 
-              size="small" 
+
+          {filter.scope === "global" && (
+            <Chip
+              label={t("filter.global")}
+              size="small"
               sx={{
-                height: '20px',
-                fontSize: '11px',
-                backgroundColor: isDarkMode ? '#2563eb' : '#dbeafe',
-                color: isDarkMode ? '#ffffff' : '#1e40af',
+                height: "20px",
+                fontSize: "11px",
+                backgroundColor: isDarkMode ? "#2563eb" : "#dbeafe",
+                color: isDarkMode ? "#ffffff" : "#1e40af",
               }}
             />
           )}
-          
+
           {filter.isActive && (
-            <Chip 
-              label={t('filter.active')} 
-              size="small" 
+            <Chip
+              label={t("filter.active")}
+              size="small"
               sx={{
-                height: '20px',
-                fontSize: '11px',
-                backgroundColor: isDarkMode ? '#059669' : '#d1fae5',
-                color: isDarkMode ? '#ffffff' : '#065f46',
+                height: "20px",
+                fontSize: "11px",
+                backgroundColor: isDarkMode ? "#059669" : "#d1fae5",
+                color: isDarkMode ? "#ffffff" : "#065f46",
                 ml: 1,
               }}
             />
           )}
         </Box>
-        
+
         <IconButton
           onClick={onClose}
           size="small"
           sx={{
-            color: isDarkMode ? '#aaaaaa' : '#666666',
-            '&:hover': {
-              backgroundColor: isDarkMode ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)',
-            }
+            color: isDarkMode ? "#aaaaaa" : "#666666",
+            "&:hover": {
+              backgroundColor: isDarkMode
+                ? "rgba(255, 255, 255, 0.1)"
+                : "rgba(0, 0, 0, 0.1)",
+            },
           }}
         >
           <CloseIcon />
         </IconButton>
       </DialogTitle>
-      
+
       <DialogContent sx={{ pb: 2 }}>
         {/* Filter metadata */}
         <Box sx={{ mb: 3 }}>
           {filter.createdAt && (
-            <Typography 
-              variant="caption" 
-              sx={{ 
-                color: isDarkMode ? '#aaaaaa' : '#666666',
-                display: 'block',
+            <Typography
+              variant="caption"
+              sx={{
+                color: isDarkMode ? "#aaaaaa" : "#666666",
+                display: "block",
                 mb: 1,
               }}
             >
-              {t('filter.created')}: {new Date(filter.createdAt).toLocaleString()}
+              {t("filter.created")}:{" "}
+              {new Date(filter.createdAt).toLocaleString()}
             </Typography>
           )}
-          
-          <Typography 
-            variant="caption" 
-            sx={{ 
-              color: isDarkMode ? '#aaaaaa' : '#666666',
-              display: 'block',
+
+          <Typography
+            variant="caption"
+            sx={{
+              color: isDarkMode ? "#aaaaaa" : "#666666",
+              display: "block",
             }}
           >
-            {t('filter.scope')}: {filter.scope === 'global' ? t('filter.availableAcrossChats') : t('filter.currentChatOnly')}
+            {t("filter.scope")}:{" "}
+            {filter.scope === "global"
+              ? t("filter.availableAcrossChats")
+              : t("filter.currentChatOnly")}
           </Typography>
         </Box>
 
@@ -156,43 +161,43 @@ export function FilterDetailsDialog({
           showHeader={false}
         />
       </DialogContent>
-      
+
       <DialogActions sx={{ p: 2, pt: 0 }}>
         <Button
           onClick={onClose}
-          sx={{ color: isDarkMode ? '#cccccc' : '#666666' }}
+          sx={{ color: isDarkMode ? "#cccccc" : "#666666" }}
         >
-          {t('common.close')}
+          {t("common.close")}
         </Button>
-        
+
         {showApplyButton && (
           <Button
             onClick={handleApply}
             variant="contained"
             sx={{
-              backgroundColor: '#2196f3',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '8px',
-              '&:hover': {
-                backgroundColor: '#1976d2',
+              backgroundColor: "#2196f3",
+              display: "flex",
+              alignItems: "center",
+              gap: "8px",
+              "&:hover": {
+                backgroundColor: "#1976d2",
               },
-              '& .button-icon': {
+              "& .button-icon": {
                 order: -1, // Icon first in LTR
-                fontSize: '16px',
+                fontSize: "16px",
               },
               'html[dir="rtl"] &': {
-                '& .button-icon': {
+                "& .button-icon": {
                   order: 1, // Icon last in RTL
                 },
               },
             }}
           >
             <ApplyIcon className="button-icon" />
-            {t('filter.applyFilter')}
+            {t("filter.applyFilter")}
           </Button>
         )}
       </DialogActions>
     </Dialog>
   );
-} 
+}

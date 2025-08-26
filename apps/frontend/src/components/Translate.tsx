@@ -34,7 +34,7 @@ export const Translate: React.FC<TranslateProps> = ({
   as: Component = 'span',
   ...props
 }) => {
-  const { t, currentLang } = useTranslation();
+  const { t } = useTranslation();
 
   // Get the translated text
   const translatedText = t(i18nKey, params);

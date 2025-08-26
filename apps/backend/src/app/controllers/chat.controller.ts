@@ -1,15 +1,14 @@
-import { 
-  Controller, 
-  Get, 
-  Post, 
-  Put, 
-  Delete, 
-  Body, 
-  Param, 
-  Query, 
+import {
+  Controller,
+  Get,
+  Post,
+  Put,
+  Delete,
+  Body,
+  Param,
+  Query,
   HttpStatus,
-  ValidationPipe,
-  UsePipes,
+
   UseGuards,
   Logger,
   BadRequestException,
@@ -23,7 +22,7 @@ import {
   ApiQuery,
   ApiBody,
   ApiBadRequestResponse,
-  ApiInternalServerErrorResponse,
+
   ApiNotFoundResponse,
   ApiUnauthorizedResponse,
   ApiBearerAuth
@@ -41,7 +40,7 @@ import { Public } from '../decorators/public.decorator';
 export class ChatController {
   private readonly logger = new Logger(ChatController.name);
 
-  constructor(private readonly chatService: ChatService) {}
+  constructor(private readonly chatService: ChatService) { }
 
   // ==================== CHAT ENDPOINTS ====================
 
@@ -299,7 +298,7 @@ export class ChatController {
         userId,
         timestamp: messageData.timestamp ? new Date(messageData.timestamp) : new Date()
       };
-      
+
       const message = await this.chatService.addMessage(messageDto);
       this.logger.log(`Added message ${messageDto.id} to chat ${chatId}`);
       return message;
@@ -343,9 +342,9 @@ export class ChatController {
   ) {
     try {
       const messages = await this.chatService.getMessages(
-        chatId, 
-        userId, 
-        limit || 50, 
+        chatId,
+        userId,
+        limit || 50,
         offset || 0
       );
       return messages;
