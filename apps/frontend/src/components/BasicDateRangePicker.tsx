@@ -404,6 +404,19 @@ export default function BasicDateRangePicker({
     const days = differenceInDays(endDate, startDate) % 30;
     const hours = differenceInHours(endDate, startDate) % 24;
     const minutes = differenceInMinutes(endDate, startDate) % 60;
+    
+    if (t) {
+      // Use translation function if available
+      const parts = [];
+      if (years) parts.push(t("dateRange.duration.years", { count: years }));
+      if (months) parts.push(t("dateRange.duration.months", { count: months }));
+      if (days) parts.push(t("dateRange.duration.days", { count: days }));
+      if (hours) parts.push(t("dateRange.duration.hours", { count: hours }));
+      if (minutes) parts.push(t("dateRange.duration.minutes", { count: minutes }));
+      return parts.length ? parts.join(" ") : t("dateRange.duration.zero");
+    }
+    
+    // Fallback to English
     const parts = [];
     if (years) parts.push(`${years}y`);
     if (months) parts.push(`${months}mo`);
@@ -430,7 +443,13 @@ export default function BasicDateRangePicker({
   };
 
   return (
-    <Box sx={{ width: "100%", maxWidth: "360px", p: 1.5, position: "relative" }}>
+    <Box sx={{ 
+      width: "100%", 
+      maxWidth: "360px", 
+      p: 1.5, 
+      position: "relative",
+      direction: isRTL ? "rtl" : "ltr"
+    }}>
       {/* Clear */}
       <Button
         onClick={handleClear}
@@ -438,7 +457,7 @@ export default function BasicDateRangePicker({
         sx={{
           position: "absolute",
           top: 8,
-          right: 8,
+          [isRTL ? "left" : "right"]: 8,
           minWidth: 24,
           width: 24,
           height: 24,
@@ -472,6 +491,7 @@ export default function BasicDateRangePicker({
             display: "flex",
             justifyContent: "center",
             minHeight: 320,
+            direction: isRTL ? "rtl" : "ltr",
           }}
           onMouseLeave={handleCalendarMouseLeave}
         >
@@ -502,8 +522,12 @@ export default function BasicDateRangePicker({
             onBlur={() => handleInputBlur("start")}
             onKeyDown={(e) => handleKeyDown("start", e)}
             size="small"
-            placeholder="dd/mm/yyyy hh:mm"
+            placeholder={isRTL ? "hh:mm yyyy/mm/dd" : "dd/mm/yyyy hh:mm"}
             inputRef={startInputRef}
+            inputProps={{
+              dir: isRTL ? "rtl" : "ltr",
+              style: { textAlign: isRTL ? "right" : "left" }
+            }}
             sx={{
               ...textFieldStyles,
               "& input": { fontSize: 13, "&::-webkit-calendar-picker-indicator": { display: "none" } },
@@ -523,8 +547,12 @@ export default function BasicDateRangePicker({
             onBlur={() => handleInputBlur("end")}
             onKeyDown={(e) => handleKeyDown("end", e)}
             size="small"
-            placeholder="dd/mm/yyyy hh:mm"
+            placeholder={isRTL ? "hh:mm yyyy/mm/dd" : "dd/mm/yyyy hh:mm"}
             inputRef={endInputRef}
+            inputProps={{
+              dir: isRTL ? "rtl" : "ltr",
+              style: { textAlign: isRTL ? "right" : "left" }
+            }}
             sx={{
               ...textFieldStyles,
               "& input": { fontSize: 13, "&::-webkit-calendar-picker-indicator": { display: "none" } },
@@ -560,6 +588,7 @@ export default function BasicDateRangePicker({
               borderRadius: 1,
               backgroundColor: isDarkMode ? "#1e1e1e" : "#f8f9fa",
               border: `1px solid ${isDarkMode ? "#333333" : "#e9ecef"}`,
+              direction: isRTL ? "rtl" : "ltr",
             }}
           >
             <Typography
@@ -570,9 +599,10 @@ export default function BasicDateRangePicker({
                 display: "block",
                 mb: 0.5,
                 fontSize: 11,
+                textAlign: isRTL ? "right" : "left",
               }}
             >
-              Duration: {getDurationText(currentValue[0], currentValue[1])}
+              {t ? t("dateRange.duration.label") : "Duration"}: {getDurationText(currentValue[0], currentValue[1])}
             </Typography>
           </Box>
         )}
