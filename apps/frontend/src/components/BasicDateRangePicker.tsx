@@ -147,6 +147,30 @@ export default function BasicDateRangePicker({
     return null;
   };
 
+  // Helper function to ensure end time is valid when today is selected
+  const ensureValidEndTime = (startDate: Date, endDate: Date, isStartToday: boolean, isEndToday: boolean): Date => {
+    const adjustedEndDate = new Date(endDate);
+    
+    if (isEndToday) {
+      const now = new Date();
+      adjustedEndDate.setHours(now.getHours(), now.getMinutes(), 0, 0);
+      
+      // If both dates are today, ensure end time is after start time
+      if (isStartToday) {
+        const startTime = startDate.getTime();
+        const endTime = adjustedEndDate.getTime();
+        if (endTime <= startTime) {
+          // Set end time to be at least 1 hour after start time
+          adjustedEndDate.setTime(startTime + (60 * 60 * 1000));
+        }
+      }
+    } else {
+      adjustedEndDate.setHours(23, 59, 59, 999);
+    }
+    
+    return adjustedEndDate;
+  };
+
   // Commit to real state ONLY on click
   const handleSelectCommit = (range: DateRange | undefined) => {
     // stop any preview upon click
@@ -177,15 +201,8 @@ export default function BasicDateRangePicker({
         startDate.setHours(0, 0, 0, 0);
       }
 
-      // Set end date - use current time if today, otherwise 23:59:59
-      const endDate = new Date(range.to);
-      if (isEndToday) {
-        endDate.setHours(now.getHours(), now.getMinutes(), 0, 0);
-        // Add 1 hour to end time to ensure it's after start time
-        endDate.setHours(endDate.getHours() + 1);
-      } else {
-        endDate.setHours(23, 59, 59, 999);
-      }
+      // Use helper function to ensure end time is valid
+      const endDate = ensureValidEndTime(startDate, range.to, isStartToday, isEndToday);
 
       const err = validateDateRange(startDate, endDate);
       setValidationError(err);
@@ -235,13 +252,8 @@ export default function BasicDateRangePicker({
         start.setHours(0, 0, 0, 0);
       }
       
-      // If end date is today, use current time + 1 hour
-      if (isDayToday) {
-        end.setHours(now.getHours(), now.getMinutes(), 0, 0);
-        end.setHours(end.getHours() + 1);
-      } else {
-        end.setHours(23, 59, 59, 999);
-      }
+      // Use helper function to ensure end time is valid
+      end = ensureValidEndTime(start, day, isFromToday, isDayToday);
       
       setDraftRange({ from: start, to: end });
     }
