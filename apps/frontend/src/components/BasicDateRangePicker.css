@@ -287,18 +287,36 @@
   z-index: 4;
 }
 
-/* Outside Days */
+/* Outside Days - Enhanced muted styling */
 .enhanced-calendar .rdp-day_outside {
-  color: var(--text-muted);
-  opacity: 0.5;
+  color: var(--text-muted) !important;
+  opacity: 0.5 !important;
+  font-weight: 400 !important;
 }
 
-/* Disabled Days */
+/* Ensure outside days maintain muted appearance even when hovered */
+.enhanced-calendar .rdp-day_outside:hover {
+  background-color: transparent !important;
+  color: var(--text-muted) !important;
+  opacity: 0.5 !important;
+}
+
+/* Disabled Days - Enhanced styling for future dates */
 .enhanced-calendar .rdp-day:disabled,
 .enhanced-calendar .rdp-day[disabled] {
   opacity: 0.3;
-  cursor: not-allowed;
+  cursor: not-allowed !important;
   color: var(--text-muted);
+  background-color: transparent !important;
+  pointer-events: none;
+}
+
+/* Ensure disabled days don't show hover effects */
+.enhanced-calendar .rdp-day:disabled:hover,
+.enhanced-calendar .rdp-day[disabled]:hover {
+  background-color: transparent !important;
+  transform: none !important;
+  cursor: not-allowed !important;
 }
 
 /* Focus States */

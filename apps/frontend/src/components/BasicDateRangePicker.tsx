@@ -1184,6 +1184,20 @@ export default function BasicDateRangePicker({
                         hoverPreviewRange.to
                       )
                     : [],
+                // Add modifier for outside days to ensure proper styling
+                outside: (day) => {
+                  const currentMonthStart = new Date(
+                    currentMonth.getFullYear(),
+                    currentMonth.getMonth(),
+                    1
+                  );
+                  const currentMonthEnd = new Date(
+                    currentMonth.getFullYear(),
+                    currentMonth.getMonth() + 1,
+                    0
+                  );
+                  return day < currentMonthStart || day > currentMonthEnd;
+                },
               }}
               modifiersStyles={{
                 hovered: {
@@ -1201,6 +1215,12 @@ export default function BasicDateRangePicker({
                     : "rgba(99, 102, 241, 0.08)",
                   color: isDarkMode ? "#f9fafb" : "#111827",
                   transition: "background-color 0.15s ease",
+                },
+
+                // Style for outside days to ensure they're muted
+                outside: {
+                  color: isDarkMode ? "#9ca3af" : "#6b7280",
+                  opacity: 0.5,
                 },
               }}
             />
