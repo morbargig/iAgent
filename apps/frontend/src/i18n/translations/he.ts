@@ -239,6 +239,15 @@ const translations: Translation = {
     endDate: 'תאריך סיום',
     apply: 'החל',
     reset: 'איפוס',
+    duration: {
+      label: 'משך זמן',
+      years: '{{count}} שנים',
+      months: '{{count}} חודשים',
+      days: '{{count}} ימים',
+      hours: '{{count}} שעות',
+      minutes: '{{count}} דקות',
+      zero: '0 דקות',
+    },
     errors: {
       startDateFuture: 'תאריך ההתחלה לא יכול להיות בעתיד',
       endDateFuture: 'תאריך הסיום לא יכול להיות בעתיד',

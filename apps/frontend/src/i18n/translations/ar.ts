@@ -239,6 +239,15 @@ const translations: Translation = {
     endDate: 'تاريخ النهاية',
     apply: 'تطبيق',
     reset: 'إعادة تعيين',
+    duration: {
+      label: 'المدة الزمنية',
+      years: '{{count}} سنوات',
+      months: '{{count}} شهور',
+      days: '{{count}} أيام',
+      hours: '{{count}} ساعات',
+      minutes: '{{count}} دقائق',
+      zero: '0 دقائق',
+    },
   },
   actions: {
     toggleSidebar: 'تبديل الشريط الجانبي',

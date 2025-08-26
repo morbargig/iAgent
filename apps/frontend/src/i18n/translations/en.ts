@@ -240,6 +240,15 @@ const translations: Translation = {
     endDate: 'End Date',
     apply: 'Apply',
     reset: 'Reset',
+    duration: {
+      label: 'Duration',
+      years: '{{count}} years',
+      months: '{{count}} months',
+      days: '{{count}} days',
+      hours: '{{count}} hours',
+      minutes: '{{count}} minutes',
+      zero: '0 minutes',
+    },
   },
 
   actions: {
