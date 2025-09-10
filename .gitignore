@@ -8,6 +8,9 @@ pnpm-debug.log*
 # Production builds
 /dist
 /build
+
+
+
 /.nx/cache
 /.nx/workspace-data
 
