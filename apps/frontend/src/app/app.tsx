@@ -4,7 +4,7 @@ import React, { useState, useRef, useEffect, useMemo } from "react";
 import { ThemeProvider, createTheme } from "@mui/material/styles";
 import { CssBaseline, Box } from "@mui/material";
 import { useTranslation } from "../contexts/TranslationContext";
-import { Sidebar } from "../components/Sidebar";
+import { Sidebar } from "../components/Sidebar"; 
 import { ChatArea } from "../components/ChatArea";
 import { InputArea, type SendMessageData } from "../components/InputArea";
 import { LoginForm } from "../components/LoginForm";
