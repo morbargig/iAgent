@@ -2,6 +2,10 @@
   "name": "@iagent/workspace",
   "version": "1.0.0",
   "license": "MIT",
+
+
+
+  
   "description": "iAgent AI Chat Application - Nx Workspace",
   "scripts": {
     "dev": "concurrently \"npm run dev:backend\" \"npm run dev:frontend\"",
