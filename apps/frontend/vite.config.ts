@@ -13,8 +13,9 @@ export default defineConfig(({ mode }) => {
     cacheDir: '../../node_modules/.vite/apps/frontend',
 
     server: {
-      port: 4200,
+      port: 3000,
       host: '0.0.0.0',
+      allowedHosts: ['host.docker.internal'],
       watch: {
         // Prevent watching files that could cause infinite rebuilds
         ignored: [
@@ -33,16 +34,21 @@ export default defineConfig(({ mode }) => {
       host: '0.0.0.0',
     },
 
-    plugins: [react(), nxViteTsPaths()],
+    plugins: [
+      react(),
+      nxViteTsPaths(),
+    ],
 
     css: {
-      postcss: './postcss.config.js',
+      postcss: './postcss.config.cjs',
     },
 
     // Dynamic base URL configuration
     base: base,
 
     build: {
+      target: 'es2020',
+      cssTarget: 'chrome97',
       outDir: '../../dist/apps/frontend',
       reportCompressedSize: true,
       commonjsOptions: {
@@ -60,6 +66,10 @@ export default defineConfig(({ mode }) => {
         },
       },
     },
+
+    // Optional parity for dev transforms:
+    esbuild: { target: 'es2020' },
+    optimizeDeps: { esbuildOptions: { target: 'es2020' } },
 
     test: {
       globals: true,
