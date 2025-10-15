@@ -2,6 +2,30 @@ export function sharedTypes(): string {
   return 'shared-types';
 }
 
+// File Attachment Types
+export interface FileAttachment {
+  id: string;
+  name: string;
+  size: number;
+  type: string;
+  url?: string;
+  uploadedAt: Date;
+}
+
+export interface FileMetadata {
+  fileId: string;
+  name: string;
+  size: number;
+  type: string;
+  chatId: string;
+  messageId?: string;
+  uploadedAt: Date;
+  // For GridFS storage
+  gridfsId?: string;
+  // For demo mode (base64 encoded)
+  base64Data?: string;
+}
+
 // Message Types
 export interface Message {
   id: string;
@@ -10,6 +34,7 @@ export interface Message {
   timestamp: Date;
   isStreaming?: boolean;
   metadata?: MessageMetadata;
+  files?: FileAttachment[];
 }
 
 export interface MessageMetadata {

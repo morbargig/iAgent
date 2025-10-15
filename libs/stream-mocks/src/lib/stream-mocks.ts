@@ -2,6 +2,15 @@ export function streamMocks(): string {
   return 'stream-mocks';
 }
 
+export interface FileAttachment {
+  id: string;
+  name: string;
+  size: number;
+  type: string;
+  url?: string;
+  uploadedAt: Date;
+}
+
 export interface Message {
   id: string;
   role: 'user' | 'assistant';
@@ -15,6 +24,7 @@ export interface Message {
     name?: string;
     config?: Record<string, any>;
   } | null; // Filter configuration snapshot at time of message creation
+  files?: FileAttachment[]; // File attachments
   metadata?: {
     index?: number;
     total_tokens?: number;
@@ -85,7 +95,7 @@ const MOCK_RESPONSES = (t: TranslationFunction) => ({
 
 export const generateMockResponse = (input: string, t: TranslationFunction): string => {
   const inputLower = input.toLowerCase();
-  
+
   // PRIORITY: Check for report-related keywords FIRST and return specialized responses with report links
   if (inputLower.includes('security') || inputLower.includes('audit') || inputLower.includes('vulnerability')) {
     return `I have the latest security audit information for you. Here's our detailed [Q4 2024 Security Audit Report](report://security-audit-2024) that covers network security, application vulnerabilities, and compliance status.
@@ -97,7 +107,7 @@ export const generateMockResponse = (input: string, t: TranslationFunction): str
 
 The report includes specific recommendations for immediate actions and long-term improvements. Click the link above to view the full analysis with detailed findings and remediation steps.`;
   }
-  
+
   if (inputLower.includes('performance') || inputLower.includes('metrics') || inputLower.includes('system') || inputLower.includes('monitoring')) {
     return `Here's our comprehensive [System Performance Analysis Report](report://performance-analysis-2024) showing system performance across all critical infrastructure components.
 
@@ -114,7 +124,7 @@ The report includes specific recommendations for immediate actions and long-term
 
 The report identifies specific bottlenecks and provides immediate, short-term, and long-term optimization recommendations. View the complete analysis by clicking the link above.`;
   }
-  
+
   if (inputLower.includes('report') || inputLower.includes('analysis') || inputLower.includes('dashboard')) {
     return `I have access to detailed reports and analysis dashboards. Here are our latest reports:
 
@@ -132,26 +142,26 @@ The report identifies specific bottlenecks and provides immediate, short-term, a
 
 Click on any report link to view the full details, including metrics, findings, recommendations, and downloadable attachments. Each report includes detailed technical analysis and actionable insights.`;
   }
-  
+
   // Fall back to translation-based responses only if no report keywords match
   const responses = MOCK_RESPONSES(t);
-  
+
   if (inputLower.includes('hello') || inputLower.includes('hi')) {
     return responses.greeting;
   }
-  
+
   if (inputLower.includes('technical') || inputLower.includes('programming')) {
     return responses.technical;
   }
-  
+
   if (inputLower.includes('explain') || inputLower.includes('how does')) {
     return responses.explanation;
   }
-  
+
   if (inputLower.includes('creative') || inputLower.includes('write')) {
     return responses.creative;
   }
-  
+
   // For any other input, return a response with sample report links
   return `I can help you with various topics! Here are some sample reports you can explore:
 
@@ -179,12 +189,12 @@ export const streamMockResponse = async (
 ): Promise<void> => {
   const response = generateMockResponse(input, t);
   const chunks = response.split(' ');
-  
+
   for (const chunk of chunks) {
     await new Promise(resolve => setTimeout(resolve, 50));
     onChunk(chunk + ' ');
   }
-  
+
   onComplete();
 };
 
@@ -192,7 +202,7 @@ export const streamMockResponse = async (
 export function tokenizeText(text: string): string[] {
   // Split by words but preserve spaces by adding them back to each token (except the last one)
   const words = text.split(/\s+/);
-  return words.map((word, index) => 
+  return words.map((word, index) =>
     index < words.length - 1 ? word + ' ' : word
   );
 }
@@ -207,36 +217,36 @@ export function calculateDelay(chunk: string): number {
 // Tokenization utility for realistic streaming
 export function tokenizeResponse(text: string): string[] {
   const tokens: string[] = [];
-  
+
   // Handle different content types for more natural streaming
   const codeBlockRegex = /```[\s\S]*?```/g;
   const boldRegex = /\*\*(.*?)\*\*/g;
-  
+
   let processedText = text;
   const preservedBlocks: { placeholder: string; content: string }[] = [];
-  
+
   // Extract and preserve code blocks
   processedText = processedText.replace(codeBlockRegex, (match) => {
     const placeholder = `__CODE_BLOCK_${preservedBlocks.length}__`;
     preservedBlocks.push({ placeholder, content: match });
     return placeholder;
   });
-  
+
   // Extract and preserve bold text
   processedText = processedText.replace(boldRegex, (match) => {
     const placeholder = `__BOLD_${preservedBlocks.length}__`;
     preservedBlocks.push({ placeholder, content: match });
     return placeholder;
   });
-  
+
   // Better tokenization: split by words but keep trailing spaces and punctuation
   // This regex captures word + optional trailing space/punctuation as single tokens
   const wordPattern = /(\S+\s*|[.!?]+\s*|\n+)/g;
   let match;
-  
+
   while ((match = wordPattern.exec(processedText)) !== null) {
     const token = match[1];
-    
+
     // Check if this contains a preserved block
     const preservedBlock = preservedBlocks.find(block => token.includes(block.placeholder));
     if (preservedBlock) {
@@ -245,14 +255,14 @@ export function tokenizeResponse(text: string): string[] {
       tokens.push(token);
     }
   }
-  
+
   return tokens;
 }
 
 // Calculate realistic streaming delay based on token content
 export function calculateStreamingDelay(token: string, index: number, allTokens: string[]): number {
   const baseDelay = 50; // Base delay in milliseconds
-  
+
   // Different delays for different content types
   if (token.startsWith('```')) return 300; // Code blocks
   if (token.startsWith('**') && token.endsWith('**')) return 150; // Bold text
@@ -264,7 +274,7 @@ export function calculateStreamingDelay(token: string, index: number, allTokens:
   if (token.trim().length === 0) return 10; // Just whitespace
   if (token.trim().length > 15) return baseDelay + 30; // Longer words
   if (index < 3) return baseDelay + 50; // First few tokens (thinking time)
-  
+
   // Add some randomness for natural feel
   const randomFactor = Math.random() * 30 - 15; // ±15ms
   return Math.max(20, baseDelay + randomFactor);
@@ -283,20 +293,20 @@ export async function* generateStreamResponse(
   const response = generateMockResponse(input, t);
   const tokens = tokenizeResponse(response);
   const totalTokens = tokens.length;
-  
+
   for (let i = 0; i < tokens.length; i++) {
     // Check if aborted before processing each token
     if (abortSignal?.aborted) {
       return;
     }
-    
+
     const token = tokens[i];
     const delay = calculateStreamingDelay(token, i, tokens);
-    
+
     // Simulate processing time with abort checking
     await new Promise((resolve, reject) => {
       const timeout = setTimeout(resolve, delay);
-      
+
       if (abortSignal) {
         abortSignal.addEventListener('abort', () => {
           clearTimeout(timeout);
@@ -304,12 +314,12 @@ export async function* generateStreamResponse(
         });
       }
     });
-    
+
     // Double-check abort status after delay
     if (abortSignal?.aborted) {
       return;
     }
-    
+
     const progress = Math.round((i + 1) / totalTokens * 100);
     const metadata = {
       index: i + 1,
@@ -321,11 +331,11 @@ export async function* generateStreamResponse(
       categories: ['general', 'helpful'],
       progress
     };
-    
+
     if (onProgress) {
       onProgress(progress, metadata);
     }
-    
+
     yield {
       token,
       done: i === tokens.length - 1,
@@ -337,7 +347,7 @@ export async function* generateStreamResponse(
 // Frontend streaming utilities
 export class StreamingClient {
   private abortController: AbortController | null = null;
-  
+
   // Mock streaming method
   async streamChatMock(
     messages: Message[],
@@ -347,23 +357,23 @@ export class StreamingClient {
     t: TranslationFunction
   ): Promise<void> {
     this.abortController = new AbortController();
-    
+
     try {
       const lastMessage = messages[messages.length - 1];
       const response = generateMockResponse(lastMessage.content, t);
       const tokens = tokenizeResponse(response);
-      
+
       for (let i = 0; i < tokens.length; i++) {
         // Check if aborted
         if (this.abortController?.signal.aborted) {
           console.log('Mock stream was aborted');
           return;
         }
-        
+
         const token = tokens[i];
         const delay = calculateStreamingDelay(token, i, tokens);
         await new Promise(resolve => setTimeout(resolve, delay));
-        
+
         const metadata = {
           index: i + 1,
           total_tokens: tokens.length,
@@ -374,10 +384,10 @@ export class StreamingClient {
           categories: ['general', 'helpful'],
           progress: Math.round(((i + 1) / tokens.length) * 100)
         };
-        
+
         onToken(token, metadata);
       }
-      
+
       onComplete();
     } catch (error) {
       if (this.abortController?.signal.aborted) {
@@ -404,11 +414,11 @@ export class StreamingClient {
     selectedCountries?: string[]
   ): Promise<void> {
     this.abortController = new AbortController();
-    
+
     try {
       // Generate chat ID if not provided
       const requestChatId = chatId || `chat_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-      
+
       // Prepare request with enhanced structure
       const requestBody = {
         chatId: requestChatId,
@@ -443,47 +453,47 @@ export class StreamingClient {
         body: JSON.stringify(requestBody),
         signal: this.abortController.signal,
       });
-      
+
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
-      
+
       const reader = response.body?.getReader();
       const decoder = new TextDecoder();
-      
+
       if (reader) {
         let buffer = '';
-        
+
         try {
           while (true) {
             const { done, value } = await reader.read();
-            
+
             if (done) {
               onComplete();
               break;
             }
-            
+
             const chunk = decoder.decode(value, { stream: true });
             buffer += chunk;
-            
+
             const lines = buffer.split('\n');
             buffer = lines.pop() || '';
-            
+
             for (const line of lines) {
               if (line.trim()) {
                 try {
                   const structuredChunk = JSON.parse(line);
-                  
+
                   // Handle different chunk types
                   switch (structuredChunk.chunkType) {
                     case 'start':
                       console.log('🚀 Stream started:', structuredChunk.data);
                       break;
-                      
+
                     case 'metadata':
                       console.log('📊 Metadata:', structuredChunk.data);
                       break;
-                      
+
                     case 'token':
                       // Send token to the UI
                       onToken(structuredChunk.data.token, {
@@ -492,19 +502,19 @@ export class StreamingClient {
                         sessionId: structuredChunk.sessionId
                       });
                       break;
-                      
+
                     case 'progress':
                       console.log('⏳ Progress:', structuredChunk.data.progress + '%');
                       break;
-                      
+
                     case 'complete':
                       console.log('✅ Stream completed:', structuredChunk.data);
                       onComplete();
                       return;
-                      
+
                     case 'error':
                       throw new Error(structuredChunk.data.error.message || 'Unknown streaming error');
-                      
+
                     default:
                       console.warn('Unknown chunk type:', structuredChunk.chunkType);
                   }
@@ -526,7 +536,7 @@ export class StreamingClient {
       }
     }
   }
-  
+
   // Combined method that uses flag to determine mode
   async streamChat(
     messages: Message[],
@@ -551,7 +561,7 @@ export class StreamingClient {
       await this.streamChatAPI(messages, onToken, onComplete, onError, baseUrl, authToken, chatId, tools, dateFilter, selectedCountries);
     }
   }
-  
+
   abort(): void {
     if (this.abortController) {
       this.abortController.abort();
@@ -601,11 +611,11 @@ export function validateChatRequest(request: any): ChatRequest {
   if (!request.messages || !Array.isArray(request.messages)) {
     throw new Error('Invalid request: messages array is required');
   }
-  
+
   if (request.messages.length === 0) {
     throw new Error('Invalid request: at least one message is required');
   }
-  
+
   return {
     messages: request.messages,
     model: request.model || 'gpt-3.5-turbo-mock',

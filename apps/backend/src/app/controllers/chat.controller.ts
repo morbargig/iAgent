@@ -8,12 +8,17 @@ import {
   Param,
   Query,
   HttpStatus,
-
   UseGuards,
   Logger,
   BadRequestException,
-  InternalServerErrorException
+  InternalServerErrorException,
+  UseInterceptors,
+  UploadedFiles,
+  Res,
+  StreamableFile,
 } from '@nestjs/common';
+import { FilesInterceptor } from '@nestjs/platform-express';
+import { Response } from 'express';
 import {
   ApiTags,
   ApiOperation,
@@ -22,7 +27,7 @@ import {
   ApiQuery,
   ApiBody,
   ApiBadRequestResponse,
-
+  ApiConsumes,
   ApiNotFoundResponse,
   ApiUnauthorizedResponse,
   ApiBearerAuth
@@ -577,6 +582,158 @@ export class ChatController {
       return updatedChat;
     } catch (error) {
       this.logger.error(`Failed to set active filter for chat ${chatId}:`, error);
+      throw error;
+    }
+  }
+
+  // ==================== FILE UPLOAD ENDPOINTS ====================
+
+  @Post(':chatId/files')
+  @UseInterceptors(FilesInterceptor('files', 10)) // Max 10 files per request
+  @ApiConsumes('multipart/form-data')
+  @ApiOperation({
+    summary: 'Upload files to a chat',
+    description: 'Upload one or multiple files associated with a chat. Files are stored in GridFS (MongoDB mode) or base64 (demo mode). Requires Bearer token authentication.'
+  })
+  @ApiParam({ name: 'chatId', description: 'Chat ID to associate files with' })
+  @ApiResponse({
+    status: HttpStatus.CREATED,
+    description: 'Files uploaded successfully',
+    schema: {
+      type: 'array',
+      items: {
+        type: 'object',
+        properties: {
+          fileId: { type: 'string' },
+          name: { type: 'string' },
+          size: { type: 'number' },
+          type: { type: 'string' },
+          chatId: { type: 'string' },
+          uploadedAt: { type: 'string' }
+        }
+      }
+    }
+  })
+  @ApiUnauthorizedResponse({ description: 'Missing or invalid Bearer token' })
+  @ApiBadRequestResponse({ description: 'No files provided or invalid file data' })
+  async uploadFiles(
+    @Param('chatId') chatId: string,
+    @UserId() userId: string,
+    @UploadedFiles() files: Express.Multer.File[]
+  ) {
+    try {
+      if (!files || files.length === 0) {
+        throw new BadRequestException('No files provided');
+      }
+
+      this.logger.log(`Uploading ${files.length} file(s) for chat ${chatId}`);
+
+      const uploadedFiles = await Promise.all(
+        files.map(async (file) => {
+          const fileId = `file_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+
+          const fileData = {
+            fileId,
+            buffer: file.buffer,
+            filename: file.originalname,
+            mimetype: file.mimetype,
+            size: file.size,
+            chatId,
+            userId,
+          };
+
+          return await this.chatService.uploadFile(fileData);
+        })
+      );
+
+      this.logger.log(`Successfully uploaded ${uploadedFiles.length} file(s) for chat ${chatId}`);
+      return uploadedFiles;
+    } catch (error) {
+      this.logger.error(`Failed to upload files for chat ${chatId}:`, error);
+      throw error;
+    }
+  }
+
+  @Get('files/:fileId')
+  @ApiOperation({
+    summary: 'Download a file',
+    description: 'Download a file by its ID. Requires Bearer token authentication and file ownership verification.'
+  })
+  @ApiParam({ name: 'fileId', description: 'File ID' })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'File downloaded successfully'
+  })
+  @ApiNotFoundResponse({ description: 'File not found' })
+  @ApiUnauthorizedResponse({ description: 'Missing or invalid Bearer token' })
+  async downloadFile(
+    @Param('fileId') fileId: string,
+    @UserId() userId: string,
+    @Res({ passthrough: true }) res: Response
+  ) {
+    try {
+      const { stream, metadata } = await this.chatService.downloadFile(fileId, userId);
+
+      res.set({
+        'Content-Type': metadata.type || 'application/octet-stream',
+        'Content-Disposition': `attachment; filename="${metadata.name}"`,
+        'Content-Length': metadata.size,
+      });
+
+      return new StreamableFile(stream);
+    } catch (error) {
+      this.logger.error(`Failed to download file ${fileId}:`, error);
+      throw error;
+    }
+  }
+
+  @Delete('files/:fileId')
+  @ApiOperation({
+    summary: 'Delete a file',
+    description: 'Delete a file by its ID. Requires Bearer token authentication and file ownership verification.'
+  })
+  @ApiParam({ name: 'fileId', description: 'File ID' })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'File deleted successfully'
+  })
+  @ApiNotFoundResponse({ description: 'File not found' })
+  @ApiUnauthorizedResponse({ description: 'Missing or invalid Bearer token' })
+  async deleteFile(
+    @Param('fileId') fileId: string,
+    @UserId() userId: string
+  ) {
+    try {
+      await this.chatService.deleteFile(fileId, userId);
+      this.logger.log(`File ${fileId} deleted successfully`);
+      return { message: 'File deleted successfully', fileId };
+    } catch (error) {
+      this.logger.error(`Failed to delete file ${fileId}:`, error);
+      throw error;
+    }
+  }
+
+  @Get('files/:fileId/metadata')
+  @ApiOperation({
+    summary: 'Get file metadata',
+    description: 'Retrieve metadata for a specific file. Requires Bearer token authentication.'
+  })
+  @ApiParam({ name: 'fileId', description: 'File ID' })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'File metadata retrieved successfully'
+  })
+  @ApiNotFoundResponse({ description: 'File not found' })
+  @ApiUnauthorizedResponse({ description: 'Missing or invalid Bearer token' })
+  async getFileMetadata(
+    @Param('fileId') fileId: string,
+    @UserId() userId: string
+  ) {
+    try {
+      const metadata = await this.chatService.getFileMetadata(fileId, userId);
+      return metadata;
+    } catch (error) {
+      this.logger.error(`Failed to get metadata for file ${fileId}:`, error);
       throw error;
     }
   }

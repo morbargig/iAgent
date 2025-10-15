@@ -47,6 +47,72 @@ export class ToolSelectionDto {
   enabled!: boolean;
 }
 
+export class FileMetadataDto {
+  @ApiProperty({
+    description: 'Unique file identifier',
+    example: 'file_1638360000000_abc123'
+  })
+  @IsString()
+  fileId!: string;
+
+  @ApiProperty({
+    description: 'Original filename',
+    example: 'document.pdf'
+  })
+  @IsString()
+  name!: string;
+
+  @ApiProperty({
+    description: 'File size in bytes',
+    example: 1024000
+  })
+  size!: number;
+
+  @ApiProperty({
+    description: 'File MIME type',
+    example: 'application/pdf'
+  })
+  @IsString()
+  type!: string;
+
+  @ApiProperty({
+    description: 'Chat ID this file belongs to',
+    example: 'chat_1638360000000_xyz789'
+  })
+  @IsString()
+  chatId!: string;
+
+  @ApiPropertyOptional({
+    description: 'Message ID this file belongs to',
+    example: 'msg_1638360000000_abc123'
+  })
+  @IsOptional()
+  @IsString()
+  messageId?: string;
+
+  @ApiProperty({
+    description: 'Upload timestamp',
+    example: '2024-01-01T12:00:00.000Z'
+  })
+  @IsDateString()
+  uploadedAt!: string;
+
+  @ApiPropertyOptional({
+    description: 'GridFS object ID (for MongoDB mode)',
+    example: '507f1f77bcf86cd799439011'
+  })
+  @IsOptional()
+  @IsString()
+  gridfsId?: string;
+
+  @ApiPropertyOptional({
+    description: 'Base64 encoded file data (for demo mode)',
+  })
+  @IsOptional()
+  @IsString()
+  base64Data?: string;
+}
+
 export class ChatMessageDto {
   @ApiProperty({
     description: 'Unique identifier for the message',
@@ -79,10 +145,10 @@ export class ChatMessageDto {
 
   @ApiPropertyOptional({
     description: 'Message metadata',
-    example: { 
-      edited: false, 
+    example: {
+      edited: false,
       tokenCount: 25,
-      confidence: 0.95 
+      confidence: 0.95
     }
   })
   @IsOptional()
@@ -114,6 +180,14 @@ export class ChatMessageDto {
     name?: string;
     config?: Record<string, any>;
   };
+
+  @ApiPropertyOptional({
+    description: 'File attachments associated with this message',
+    type: [FileMetadataDto]
+  })
+  @IsOptional()
+  @IsArray()
+  files?: FileMetadataDto[];
 }
 
 export class ChatRequestDto {
@@ -289,4 +363,4 @@ export class HealthCheckDto {
     }
   })
   endpoints!: Record<string, string>;
-} 
+}

@@ -1,6 +1,9 @@
 import { Injectable, Logger, NotFoundException, Optional } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { Model } from 'mongoose';
+import { InjectConnection } from '@nestjs/mongoose';
+import { Model, Connection } from 'mongoose';
+import { GridFSBucket, ObjectId } from 'mongodb';
+import { Readable } from 'stream';
 import { Chat, ChatDocument, ChatMessage, ChatMessageDocument, ChatFilter, ChatFilterDocument } from '../schemas/chat.schema';
 
 export interface CreateChatDto {
@@ -43,29 +46,49 @@ export interface UpdateChatDto {
   archived?: boolean;
 }
 
+export interface FileUploadData {
+  fileId: string;
+  buffer: Buffer;
+  filename: string;
+  mimetype: string;
+  size: number;
+  chatId: string;
+  userId: string;
+}
+
 // Demo mode storage (in-memory)
 const demoChats: Map<string, any> = new Map();
 const demoMessages: Map<string, any[]> = new Map();
 const demoFilters: Map<string, any> = new Map();
+const demoFiles: Map<string, { data: string; metadata: any }> = new Map();
 
 @Injectable()
 export class ChatService {
   private readonly logger = new Logger(ChatService.name);
   private readonly isDemoMode: boolean;
+  private gridFSBucket: GridFSBucket | null = null;
 
   constructor(
     @Optional() @InjectModel(Chat.name) private chatModel: Model<ChatDocument>,
     @Optional() @InjectModel(ChatMessage.name) private messageModel: Model<ChatMessageDocument>,
     @Optional() @InjectModel(ChatFilter.name) private filterModel: Model<ChatFilterDocument>,
+    @Optional() @InjectConnection() private connection: Connection,
   ) {
     // Check if MongoDB is available (demo mode detection)
     this.isDemoMode = process.env.DEMO_MODE === 'true' || !process.env.MONGODB_URI || !this.chatModel || !this.messageModel || !this.filterModel;
-    
+
     if (this.isDemoMode) {
       this.logger.warn('🚨 Running in DEMO MODE - data will not persist and MongoDB is disabled');
       this.initializeDemoData();
     } else {
       this.logger.log('🚀 MongoDB mode enabled - data will persist');
+      // Initialize GridFS bucket for file storage
+      if (this.connection?.db) {
+        this.gridFSBucket = new GridFSBucket(this.connection.db, {
+          bucketName: 'uploads',
+        });
+        this.logger.log('📁 GridFS bucket initialized for file storage');
+      }
     }
   }
 
@@ -82,7 +105,7 @@ export class ChatService {
       archived: false,
       messageCount: 2
     };
-    
+
     const demoMessagesList = [
       {
         id: 'msg_demo_001',
@@ -143,7 +166,7 @@ export class ChatService {
 
     demoChats.set('demo-chat-001', demoChat);
     demoMessages.set('demo-chat-001', demoMessagesList);
-    
+
     // Initialize demo filter
     const demoFilter = {
       filterId: 'filter_demo_001',
@@ -200,10 +223,10 @@ export class ChatService {
       return chats;
     }
 
-    const query = includeArchived 
-      ? { userId } 
+    const query = includeArchived
+      ? { userId }
       : { userId, archived: { $ne: true } };
-    
+
     return await this.chatModel
       .find(query)
       .sort({ lastMessageAt: -1 })
@@ -266,7 +289,7 @@ export class ChatService {
     if (!chat) {
       throw new NotFoundException(`Chat with ID ${chatId} not found`);
     }
-    
+
     // Delete all messages in this chat
     await this.messageModel.deleteMany({ chatId, userId }).exec();
   }
@@ -278,7 +301,7 @@ export class ChatService {
       // Get current active filter for the chat
       const chat = demoChats.get(messageDto.chatId);
       let filterSnapshot = null;
-      
+
       if (chat && chat.activeFilterId) {
         const activeFilter = demoFilters.get(chat.activeFilterId);
         if (activeFilter) {
@@ -289,7 +312,7 @@ export class ChatService {
           };
         }
       }
-      
+
       const message = {
         ...messageDto,
         timestamp: messageDto.timestamp || new Date(),
@@ -297,25 +320,25 @@ export class ChatService {
         filterId: chat?.activeFilterId || null,
         filterSnapshot
       };
-      
+
       const messages = demoMessages.get(messageDto.chatId) || [];
       messages.push(message);
       demoMessages.set(messageDto.chatId, messages);
-      
+
       // Update chat's lastMessageAt and messageCount
       if (chat) {
         chat.lastMessageAt = message.timestamp;
         chat.messageCount = messages.length;
         demoChats.set(messageDto.chatId, chat);
       }
-      
+
       return message;
     }
 
     // Get current active filter for the chat for non-demo mode
     const chat = await this.chatModel.findOne({ chatId: messageDto.chatId, userId: messageDto.userId }).exec();
     let filterSnapshot = null;
-    
+
     if (chat && chat.activeFilterId) {
       const activeFilter = await this.filterModel.findOne({ filterId: chat.activeFilterId, userId: messageDto.userId }).exec();
       if (activeFilter) {
@@ -326,25 +349,25 @@ export class ChatService {
         };
       }
     }
-    
+
     const messageWithFilter = {
       ...messageDto,
       filterId: chat?.activeFilterId || null,
       filterSnapshot
     };
-    
+
     const message = new this.messageModel(messageWithFilter);
     const savedMessage = await message.save();
-    
+
     // Update chat's lastMessageAt and messageCount
     await this.chatModel.findOneAndUpdate(
       { chatId: messageDto.chatId, userId: messageDto.userId },
-      { 
+      {
         lastMessageAt: messageDto.timestamp || new Date(),
         $inc: { messageCount: 1 }
       }
     ).exec();
-    
+
     return savedMessage;
   }
 
@@ -372,13 +395,13 @@ export class ChatService {
         if (messageIndex !== -1) {
           messages.splice(messageIndex, 1);
           demoMessages.set(chatId, messages);
-          
+
           // Update chat's messageCount
           const chat = demoChats.get(chatId);
           if (chat) {
             chat.messageCount = messages.length;
-            chat.lastMessageAt = messages.length > 0 
-              ? messages[messages.length - 1].timestamp 
+            chat.lastMessageAt = messages.length > 0
+              ? messages[messages.length - 1].timestamp
               : chat.createdAt;
             demoChats.set(chatId, chat);
           }
@@ -392,7 +415,7 @@ export class ChatService {
     if (!message) {
       throw new NotFoundException(`Message with ID ${messageId} not found`);
     }
-    
+
     // Update chat's messageCount
     await this.chatModel.findOneAndUpdate(
       { chatId: message.chatId, userId },
@@ -408,7 +431,7 @@ export class ChatService {
       const totalMessages = Array.from(demoMessages.values())
         .flat()
         .filter(msg => msg.userId === userId).length;
-      
+
       return {
         totalChats: userChats.length,
         archivedChats: userChats.filter(chat => chat.archived).length,
@@ -420,7 +443,7 @@ export class ChatService {
     const totalChats = await this.chatModel.countDocuments({ userId });
     const archivedChats = await this.chatModel.countDocuments({ userId, archived: true });
     const totalMessages = await this.messageModel.countDocuments({ userId });
-    
+
     return {
       totalChats,
       archivedChats,
@@ -440,7 +463,7 @@ export class ChatService {
         isActive: createFilterDto.isActive ?? false
       };
       demoFilters.set(createFilterDto.filterId, filter);
-      
+
       // Update chat's associated filters
       const chat = demoChats.get(createFilterDto.chatId);
       if (chat && chat.userId === createFilterDto.userId) {
@@ -450,21 +473,21 @@ export class ChatService {
         }
         demoChats.set(createFilterDto.chatId, chat);
       }
-      
+
       return filter;
     }
 
     const filter = new this.filterModel(createFilterDto);
     const savedFilter = await filter.save();
-    
+
     // Update chat's associated filters
     await this.chatModel.findOneAndUpdate(
       { chatId: createFilterDto.chatId, userId: createFilterDto.userId },
-      { 
+      {
         $addToSet: { associatedFilters: createFilterDto.filterId }
       }
     ).exec();
-    
+
     return savedFilter;
   }
 
@@ -529,14 +552,14 @@ export class ChatService {
         throw new NotFoundException(`Filter with ID ${filterId} not found`);
       }
       demoFilters.delete(filterId);
-      
+
       // Remove from chat's associated filters
       const chat = demoChats.get(filter.chatId);
       if (chat && chat.associatedFilters) {
         chat.associatedFilters = chat.associatedFilters.filter((id: string) => id !== filterId);
         demoChats.set(filter.chatId, chat);
       }
-      
+
       return;
     }
 
@@ -544,7 +567,7 @@ export class ChatService {
     if (!filter) {
       throw new NotFoundException(`Filter with ID ${filterId} not found`);
     }
-    
+
     // Remove from chat's associated filters
     await this.chatModel.findOneAndUpdate(
       { chatId: filter.chatId, userId },
@@ -558,7 +581,7 @@ export class ChatService {
       if (!chat || chat.userId !== userId) {
         throw new NotFoundException(`Chat with ID ${chatId} not found`);
       }
-      
+
       // Deactivate all filters for this chat
       Array.from(demoFilters.values())
         .filter(f => f.chatId === chatId && f.userId === userId)
@@ -566,7 +589,7 @@ export class ChatService {
           f.isActive = false;
           demoFilters.set(f.filterId, f);
         });
-      
+
       // Activate the selected filter
       if (filterId) {
         const filter = demoFilters.get(filterId);
@@ -580,7 +603,7 @@ export class ChatService {
         chat.activeFilterId = null;
         chat.currentFilterConfig = null;
       }
-      
+
       demoChats.set(chatId, chat);
       return chat;
     }
@@ -599,7 +622,7 @@ export class ChatService {
         { isActive: true },
         { new: true }
       ).exec();
-      
+
       if (!filter) {
         throw new NotFoundException(`Filter with ID ${filterId} not found`);
       }
@@ -609,9 +632,9 @@ export class ChatService {
     // Update chat with active filter
     const chat = await this.chatModel.findOneAndUpdate(
       { chatId, userId },
-      { 
+      {
         activeFilterId: filterId,
-        currentFilterConfig: filterConfig 
+        currentFilterConfig: filterConfig
       },
       { new: true }
     ).exec();
@@ -619,7 +642,7 @@ export class ChatService {
     if (!chat) {
       throw new NotFoundException(`Chat with ID ${chatId} not found`);
     }
-    
+
     return chat;
   }
 
@@ -627,11 +650,187 @@ export class ChatService {
     if (this.isDemoMode) {
       return {
         isDemoMode: true,
-        reason: process.env.DEMO_MODE === 'true' 
-          ? 'DEMO_MODE environment variable is set' 
+        reason: process.env.DEMO_MODE === 'true'
+          ? 'DEMO_MODE environment variable is set'
           : 'No MONGODB_URI environment variable found'
       };
     }
     return { isDemoMode: false };
+  }
+
+  // ==================== FILE MANAGEMENT ====================
+
+  async uploadFile(fileData: FileUploadData): Promise<any> {
+    const { fileId, buffer, filename, mimetype, size, chatId, userId } = fileData;
+
+    if (this.isDemoMode) {
+      // Store file as base64 in demo mode
+      const base64Data = buffer.toString('base64');
+      const fileMetadata = {
+        fileId,
+        name: filename,
+        size,
+        type: mimetype,
+        chatId,
+        userId,
+        uploadedAt: new Date(),
+        base64Data,
+      };
+      demoFiles.set(fileId, { data: base64Data, metadata: fileMetadata });
+      this.logger.log(`📁 File uploaded in demo mode: ${filename} (${fileId})`);
+      return fileMetadata;
+    }
+
+    // Upload to GridFS in production mode
+    if (!this.gridFSBucket) {
+      throw new Error('GridFS bucket not initialized');
+    }
+
+    return new Promise((resolve, reject) => {
+      const readableStream = Readable.from(buffer);
+      const uploadStream = this.gridFSBucket!.openUploadStream(filename, {
+        metadata: {
+          fileId,
+          chatId,
+          userId,
+          originalName: filename,
+          mimetype,
+          size,
+          uploadedAt: new Date(),
+        },
+      });
+
+      readableStream.pipe(uploadStream);
+
+      uploadStream.on('finish', () => {
+        const fileMetadata = {
+          fileId,
+          name: filename,
+          size,
+          type: mimetype,
+          chatId,
+          userId,
+          uploadedAt: new Date(),
+          gridfsId: uploadStream.id.toString(),
+        };
+        this.logger.log(`📁 File uploaded to GridFS: ${filename} (${fileId})`);
+        resolve(fileMetadata);
+      });
+
+      uploadStream.on('error', (error) => {
+        this.logger.error(`Failed to upload file to GridFS: ${error.message}`);
+        reject(error);
+      });
+    });
+  }
+
+  async downloadFile(fileId: string, userId: string): Promise<{ stream: Readable; metadata: any }> {
+    if (this.isDemoMode) {
+      const file = demoFiles.get(fileId);
+      if (!file || file.metadata.userId !== userId) {
+        throw new NotFoundException(`File with ID ${fileId} not found`);
+      }
+
+      // Convert base64 back to buffer and create readable stream
+      const buffer = Buffer.from(file.data, 'base64');
+      const stream = Readable.from(buffer);
+
+      return {
+        stream,
+        metadata: file.metadata,
+      };
+    }
+
+    // Download from GridFS
+    if (!this.gridFSBucket) {
+      throw new Error('GridFS bucket not initialized');
+    }
+
+    // First, find the file in GridFS by metadata.fileId
+    const files = await this.gridFSBucket
+      .find({ 'metadata.fileId': fileId, 'metadata.userId': userId })
+      .toArray();
+
+    if (files.length === 0) {
+      throw new NotFoundException(`File with ID ${fileId} not found`);
+    }
+
+    const file = files[0];
+    const downloadStream = this.gridFSBucket.openDownloadStream(file._id);
+
+    return {
+      stream: downloadStream,
+      metadata: {
+        fileId: file.metadata?.fileId,
+        name: file.filename,
+        size: file.length,
+        type: file.metadata?.mimetype,
+        uploadedAt: file.uploadDate,
+      },
+    };
+  }
+
+  async deleteFile(fileId: string, userId: string): Promise<void> {
+    if (this.isDemoMode) {
+      const file = demoFiles.get(fileId);
+      if (!file || file.metadata.userId !== userId) {
+        throw new NotFoundException(`File with ID ${fileId} not found`);
+      }
+      demoFiles.delete(fileId);
+      this.logger.log(`🗑️ File deleted from demo storage: ${fileId}`);
+      return;
+    }
+
+    // Delete from GridFS
+    if (!this.gridFSBucket) {
+      throw new Error('GridFS bucket not initialized');
+    }
+
+    // Find the file in GridFS by metadata.fileId
+    const files = await this.gridFSBucket
+      .find({ 'metadata.fileId': fileId, 'metadata.userId': userId })
+      .toArray();
+
+    if (files.length === 0) {
+      throw new NotFoundException(`File with ID ${fileId} not found`);
+    }
+
+    const file = files[0];
+    await this.gridFSBucket.delete(file._id);
+    this.logger.log(`🗑️ File deleted from GridFS: ${fileId}`);
+  }
+
+  async getFileMetadata(fileId: string, userId: string): Promise<any> {
+    if (this.isDemoMode) {
+      const file = demoFiles.get(fileId);
+      if (!file || file.metadata.userId !== userId) {
+        throw new NotFoundException(`File with ID ${fileId} not found`);
+      }
+      return file.metadata;
+    }
+
+    // Get metadata from GridFS
+    if (!this.gridFSBucket) {
+      throw new Error('GridFS bucket not initialized');
+    }
+
+    const files = await this.gridFSBucket
+      .find({ 'metadata.fileId': fileId, 'metadata.userId': userId })
+      .toArray();
+
+    if (files.length === 0) {
+      throw new NotFoundException(`File with ID ${fileId} not found`);
+    }
+
+    const file = files[0];
+    return {
+      fileId: file.metadata?.fileId,
+      name: file.filename,
+      size: file.length,
+      type: file.metadata?.mimetype,
+      chatId: file.metadata?.chatId,
+      uploadedAt: file.uploadDate,
+      gridfsId: file._id.toString(),
+    };
   }
 } 

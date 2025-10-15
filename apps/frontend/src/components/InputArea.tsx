@@ -13,6 +13,10 @@ import {
   Divider,
   Badge,
   Chip,
+  Alert,
+  Snackbar,
+  LinearProgress,
+  CircularProgress,
 } from "@mui/material";
 import { parseISO } from "date-fns";
 import {
@@ -31,6 +35,13 @@ import {
   PlayArrow as PickIcon,
   Visibility as ViewIcon,
   Delete as DeleteIcon,
+  Close as CloseIcon,
+  InsertDriveFile as FileIcon,
+  Image as ImageIcon,
+  PictureAsPdf as PdfIcon,
+  Archive as ArchiveIcon,
+  Code as CodeIcon,
+  Description as DocumentIcon,
 } from "@mui/icons-material";
 import { useTranslation } from "../contexts/TranslationContext";
 import { Translate } from "./Translate";
@@ -41,6 +52,16 @@ import { useAnimatedPlaceholder } from "../hooks/useAnimatedPlaceholder";
 import { useToolToggles } from "../hooks/useToolToggles";
 import { ToolSettingsDialog, ToolConfiguration } from "./ToolSettingsDialog";
 import { useToolSchemas } from "../services/toolService";
+import {
+  validateFile,
+  validateFiles,
+  getFileIconColor,
+} from "../services/fileService";
+import {
+  FILE_UPLOAD_CONFIG,
+  formatFileSize,
+  getFileCategory,
+} from "../config/fileUpload";
 
 import BasicDateRangePicker from "./BasicDateRangePicker";
 
@@ -69,6 +90,7 @@ export interface SendMessageData {
   dateFilter: DateFilter;
   selectedCountries: string[];
   enabledTools: string[];
+  files?: File[];
   filterSnapshot?: {
     filterId?: string;
     name?: string;
@@ -180,17 +202,28 @@ export function InputArea({
   onAttachment,
   showVoiceButton = false,
   showClearButton = true,
-  showAttachmentButton = false,
+  showAttachmentButton = true, // Enable attachment button by default
   // Filter management
   currentChatId,
   authToken,
 }: InputAreaProps) {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const inputContainerRef = useRef<HTMLDivElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [isFocused, setIsFocused] = useState(false);
   const translationContext = useTranslation();
   const { t } = translationContext;
+
+  // File upload state
+  const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
+  const [isDragging, setIsDragging] = useState(false);
+  const [fileError, setFileError] = useState<string | null>(null);
+  const [showFileError, setShowFileError] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState<Record<string, number>>(
+    {}
+  );
+  const [isUploading, setIsUploading] = useState(false);
 
   // Flag selection state with localStorage persistence
   const [selectedFlags, setSelectedFlags] = useState<string[]>(() => {
@@ -484,6 +517,95 @@ export function InputArea({
     return () => window.removeEventListener("resize", handleResize);
   }, []);
 
+  // File handling functions
+  const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const files = event.target.files;
+    if (!files || files.length === 0) return;
+
+    const fileArray = Array.from(files);
+    const validation = validateFiles(fileArray, selectedFiles);
+
+    if (!validation.valid) {
+      setFileError(validation.error || "File validation failed");
+      setShowFileError(true);
+      return;
+    }
+
+    setSelectedFiles([...selectedFiles, ...fileArray]);
+    // Reset the input value to allow selecting the same file again
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
+  };
+
+  const handleFileButtonClick = () => {
+    fileInputRef.current?.click();
+  };
+
+  const removeFile = (index: number) => {
+    setSelectedFiles(selectedFiles.filter((_, i) => i !== index));
+  };
+
+  const handleDragEnter = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(true);
+  };
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    // Only set dragging to false if we're leaving the container
+    if (e.currentTarget === e.target) {
+      setIsDragging(false);
+    }
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+
+    const files = e.dataTransfer.files;
+    if (!files || files.length === 0) return;
+
+    const fileArray = Array.from(files);
+    const validation = validateFiles(fileArray, selectedFiles);
+
+    if (!validation.valid) {
+      setFileError(validation.error || "File validation failed");
+      setShowFileError(true);
+      return;
+    }
+
+    setSelectedFiles([...selectedFiles, ...fileArray]);
+  };
+
+  const getFileIcon = (mimeType: string) => {
+    const category = getFileCategory(mimeType);
+    const color = getFileIconColor(mimeType, isDarkMode);
+
+    switch (category) {
+      case "image":
+        return <ImageIcon sx={{ fontSize: 18, color }} />;
+      case "pdf":
+        return <PdfIcon sx={{ fontSize: 18, color }} />;
+      case "archive":
+        return <ArchiveIcon sx={{ fontSize: 18, color }} />;
+      case "code":
+        return <CodeIcon sx={{ fontSize: 18, color }} />;
+      case "document":
+        return <DocumentIcon sx={{ fontSize: 18, color }} />;
+      default:
+        return <FileIcon sx={{ fontSize: 18, color }} />;
+    }
+  };
+
   const handleKeyDown = (event: React.KeyboardEvent) => {
     if (event.key === "Enter" && !event.shiftKey) {
       event.preventDefault();
@@ -494,7 +616,11 @@ export function InputArea({
         return;
       }
 
-      if (value.trim() && !disabled && !isLoading) {
+      if (
+        (value.trim() || selectedFiles.length > 0) &&
+        !disabled &&
+        !isLoading
+      ) {
         handleSubmit();
       }
     }
@@ -503,7 +629,7 @@ export function InputArea({
   const handleSubmit = () => {
     if (isLoading && onStop) {
       onStop();
-    } else if (value.trim() && !disabled) {
+    } else if ((value.trim() || selectedFiles.length > 0) && !disabled) {
       // Check if there are unconfigured tools before submitting
       if (needsToolConfiguration) {
         // Open settings dialog instead of submitting
@@ -567,9 +693,13 @@ export function InputArea({
           (toolId) => enabledTools[toolId]
         ),
         filterSnapshot,
+        files: selectedFiles.length > 0 ? selectedFiles : undefined,
       };
 
       onSend(sendData);
+
+      // Clear selected files after sending
+      setSelectedFiles([]);
     }
   };
 
@@ -591,7 +721,11 @@ export function InputArea({
   // Check if there are unconfigured tools that need attention
   const needsToolConfiguration = hasUnconfiguredTools(toolSchemas);
 
-  const canSend = value.trim() && !disabled && !needsToolConfiguration;
+  const canSend =
+    (value.trim() || selectedFiles.length > 0) &&
+    !disabled &&
+    !needsToolConfiguration &&
+    !isUploading;
   const showStopButton = isLoading;
 
   // Detect text direction for proper alignment - simplified to prevent infinite loops
@@ -1359,7 +1493,195 @@ export function InputArea({
                 direction: "ltr",
               },
             }}
+            onDragEnter={handleDragEnter}
+            onDragOver={handleDragOver}
+            onDragLeave={handleDragLeave}
+            onDrop={handleDrop}
           >
+            {/* Hidden File Input */}
+            <input
+              ref={fileInputRef}
+              type="file"
+              multiple
+              accept="*/*"
+              onChange={handleFileSelect}
+              style={{ display: "none" }}
+            />
+
+            {/* File Preview Section */}
+            {selectedFiles.length > 0 && (
+              <Box
+                sx={{
+                  padding: "12px 16px 8px 16px",
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: "8px",
+                  borderBottom: `1px solid ${isDarkMode ? "#565869" : "#d1d5db"}`,
+                }}
+              >
+                <Box sx={{ display: "flex", flexWrap: "wrap", gap: "8px" }}>
+                  {selectedFiles.map((file, index) => {
+                    const fileId = `${file.name}-${index}`;
+                    const progress = uploadProgress[fileId] || 0;
+                    return (
+                      <Box
+                        key={index}
+                        sx={{
+                          position: "relative",
+                          minWidth: "200px",
+                          maxWidth: "300px",
+                        }}
+                      >
+                        <Chip
+                          icon={getFileIcon(
+                            file.type || "application/octet-stream"
+                          )}
+                          label={
+                            <Box
+                              sx={{
+                                display: "flex",
+                                flexDirection: "column",
+                                gap: "2px",
+                                width: "100%",
+                              }}
+                            >
+                              <Box
+                                sx={{
+                                  display: "flex",
+                                  alignItems: "center",
+                                  gap: "4px",
+                                }}
+                              >
+                                <Typography
+                                  variant="body2"
+                                  sx={{
+                                    maxWidth: "150px",
+                                    overflow: "hidden",
+                                    textOverflow: "ellipsis",
+                                    whiteSpace: "nowrap",
+                                    fontSize: "13px",
+                                  }}
+                                >
+                                  {file.name}
+                                </Typography>
+                                <Typography
+                                  variant="caption"
+                                  sx={{
+                                    color: isDarkMode ? "#a3a3a3" : "#6b7280",
+                                    fontSize: "11px",
+                                  }}
+                                >
+                                  ({formatFileSize(file.size)})
+                                </Typography>
+                              </Box>
+                              {isUploading &&
+                                progress > 0 &&
+                                progress < 100 && (
+                                  <LinearProgress
+                                    variant="determinate"
+                                    value={progress}
+                                    sx={{
+                                      width: "100%",
+                                      height: "3px",
+                                      borderRadius: "2px",
+                                      backgroundColor: isDarkMode
+                                        ? "#404040"
+                                        : "#e0e0e0",
+                                      "& .MuiLinearProgress-bar": {
+                                        backgroundColor: isDarkMode
+                                          ? "#3b82f6"
+                                          : "#2563eb",
+                                      },
+                                    }}
+                                  />
+                                )}
+                            </Box>
+                          }
+                          onDelete={
+                            !isUploading ? () => removeFile(index) : undefined
+                          }
+                          deleteIcon={<CloseIcon sx={{ fontSize: 16 }} />}
+                          sx={{
+                            backgroundColor: isDarkMode ? "#343541" : "#e5e7eb",
+                            color: isDarkMode ? "#ececf1" : "#374151",
+                            width: "100%",
+                            justifyContent: "space-between",
+                            "& .MuiChip-label": {
+                              width: "100%",
+                            },
+                            "& .MuiChip-deleteIcon": {
+                              color: isDarkMode ? "#a3a3a3" : "#6b7280",
+                              "&:hover": {
+                                color: isDarkMode ? "#ececf1" : "#374151",
+                              },
+                            },
+                            opacity: isUploading ? 0.7 : 1,
+                          }}
+                        />
+                      </Box>
+                    );
+                  })}
+                </Box>
+                {isUploading && (
+                  <Box
+                    sx={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "8px",
+                      paddingTop: "4px",
+                    }}
+                  >
+                    <CircularProgress
+                      size={16}
+                      sx={{ color: isDarkMode ? "#3b82f6" : "#2563eb" }}
+                    />
+                    <Typography
+                      variant="caption"
+                      sx={{
+                        color: isDarkMode ? "#a3a3a3" : "#6b7280",
+                        fontSize: "12px",
+                      }}
+                    >
+                      {t("input.uploadingFiles") || "Uploading files..."}
+                    </Typography>
+                  </Box>
+                )}
+              </Box>
+            )}
+
+            {/* Drag and Drop Overlay */}
+            {isDragging && (
+              <Box
+                sx={{
+                  position: "absolute",
+                  top: 0,
+                  left: 0,
+                  right: 0,
+                  bottom: 0,
+                  backgroundColor: isDarkMode
+                    ? "rgba(59, 130, 246, 0.1)"
+                    : "rgba(59, 130, 246, 0.05)",
+                  border: `2px dashed ${isDarkMode ? "#3b82f6" : "#2563eb"}`,
+                  borderRadius: "24px",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  zIndex: 10,
+                  pointerEvents: "none",
+                }}
+              >
+                <Typography
+                  variant="h6"
+                  sx={{
+                    color: isDarkMode ? "#3b82f6" : "#2563eb",
+                    fontWeight: 600,
+                  }}
+                >
+                  Drop files here
+                </Typography>
+              </Box>
+            )}
+
             {/* Main Textarea */}
             <textarea
               id="iagent-message-input"
@@ -1876,27 +2198,57 @@ export function InputArea({
 
                   {/* Attachment Button */}
                   {showAttachmentButton && (
-                    <IconButton
-                      onClick={onAttachment}
-                      disabled={disabled}
-                      sx={{
-                        width: "32px",
-                        height: "32px",
-                        backgroundColor: "transparent",
-                        color: isDarkMode ? "#8e8ea0" : "#6b7280",
-                        borderRadius: "16px",
-                        transition: "all 0.2s ease",
-                        "&:hover": {
-                          backgroundColor: isDarkMode
-                            ? "rgba(255, 255, 255, 0.1)"
-                            : "rgba(0, 0, 0, 0.05)",
-                          color: isDarkMode ? "#ffffff" : "#374151",
-                        },
-                      }}
-                      title={t("input.attachment") || "Attach file"}
-                    >
-                      <AttachFileIcon sx={{ fontSize: 16 }} />
-                    </IconButton>
+                    <Tooltip title={t("input.attachment") || "Attach files"}>
+                      <IconButton
+                        onClick={handleFileButtonClick}
+                        disabled={disabled}
+                        sx={{
+                          width: "32px",
+                          height: "32px",
+                          backgroundColor: "transparent",
+                          color:
+                            selectedFiles.length > 0
+                              ? isDarkMode
+                                ? "#3b82f6"
+                                : "#2563eb"
+                              : isDarkMode
+                                ? "#8e8ea0"
+                                : "#6b7280",
+                          borderRadius: "16px",
+                          transition: "all 0.2s ease",
+                          "&:hover": {
+                            backgroundColor: isDarkMode
+                              ? "rgba(255, 255, 255, 0.1)"
+                              : "rgba(0, 0, 0, 0.05)",
+                            color:
+                              selectedFiles.length > 0
+                                ? isDarkMode
+                                  ? "#60a5fa"
+                                  : "#1d4ed8"
+                                : isDarkMode
+                                  ? "#ffffff"
+                                  : "#374151",
+                          },
+                        }}
+                      >
+                        <Badge
+                          badgeContent={selectedFiles.length}
+                          color="primary"
+                          sx={{
+                            "& .MuiBadge-badge": {
+                              fontSize: "10px",
+                              height: "16px",
+                              minWidth: "16px",
+                              backgroundColor: isDarkMode
+                                ? "#3b82f6"
+                                : "#2563eb",
+                            },
+                          }}
+                        >
+                          <AttachFileIcon sx={{ fontSize: 16 }} />
+                        </Badge>
+                      </IconButton>
+                    </Tooltip>
                   )}
                 </Box>
 
@@ -2850,6 +3202,26 @@ export function InputArea({
         isDarkMode={isDarkMode}
         filter={selectedFilterForDetails}
       />
+
+      {/* File Error Snackbar */}
+      <Snackbar
+        open={showFileError}
+        autoHideDuration={6000}
+        onClose={() => setShowFileError(false)}
+        anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
+      >
+        <Alert
+          onClose={() => setShowFileError(false)}
+          severity="error"
+          sx={{
+            width: "100%",
+            backgroundColor: isDarkMode ? "#dc2626" : "#ef4444",
+            color: "#ffffff",
+          }}
+        >
+          {fileError}
+        </Alert>
+      </Snackbar>
     </>
   );
 }

@@ -19,6 +19,7 @@ import {
   DialogActions,
   TextField,
   Button,
+  Chip,
 } from "@mui/material";
 import {
   SmartToy as BotIcon,
@@ -39,6 +40,13 @@ import {
   FilterList as FilterIcon,
   PlayArrow as ApplyIcon,
   Visibility as ViewIcon,
+  Download as DownloadIcon,
+  InsertDriveFile as FileIcon,
+  Image as ImageIcon,
+  PictureAsPdf as PdfIcon,
+  Archive as ArchiveIcon,
+  Code as CodeIcon,
+  Description as DocumentIcon,
 } from "@mui/icons-material";
 import { type Message } from "@iagent/stream-mocks";
 import { MarkdownRenderer } from "./MarkdownRenderer";
@@ -49,6 +57,8 @@ import {
 import { useTranslation } from "../contexts/TranslationContext";
 import { LanguageSwitcher } from "./LanguageSwitcher";
 import { FilterDetailsDialog } from "./FilterDetailsDialog";
+import { downloadFile, getFileIconColor } from "../services/fileService";
+import { formatFileSize, getFileCategory } from "../config/fileUpload";
 
 interface ChatAreaProps {
   messages: Message[];
@@ -387,6 +397,29 @@ const ChatHeader = ({
   );
 };
 
+// Helper function to get file icon based on type
+const getFileIcon = (mimeType: string, isDarkMode: boolean) => {
+  const category = getFileCategory(mimeType);
+  const color = getFileIconColor(mimeType, isDarkMode);
+
+  const iconStyle = { fontSize: 18, color };
+
+  switch (category) {
+    case "image":
+      return <ImageIcon sx={iconStyle} />;
+    case "pdf":
+      return <PdfIcon sx={iconStyle} />;
+    case "archive":
+      return <ArchiveIcon sx={iconStyle} />;
+    case "code":
+      return <CodeIcon sx={iconStyle} />;
+    case "document":
+      return <DocumentIcon sx={iconStyle} />;
+    default:
+      return <FileIcon sx={iconStyle} />;
+  }
+};
+
 // iagent-inspired Message Component - Clean, grid-based layout with comprehensive action buttons
 const MessageBubble = ({
   message,
@@ -417,6 +450,15 @@ const MessageBubble = ({
   const isUser = message.role === "user";
   const [copied, setCopied] = useState(false);
   const [liked, setLiked] = useState<boolean | null>(null);
+
+  const handleFileDownload = async (fileId: string, fileName: string) => {
+    if (!authToken) return;
+    try {
+      await downloadFile(fileId, fileName, authToken, "http://localhost:3000");
+    } catch (error) {
+      console.error("Failed to download file:", error);
+    }
+  };
 
   const handleCopy = async () => {
     try {
@@ -491,6 +533,70 @@ const MessageBubble = ({
             lineHeight: 1.7,
           }}
         >
+          {/* File Attachments */}
+          {message.files && message.files.length > 0 && (
+            <Box
+              sx={{
+                display: "flex",
+                flexWrap: "wrap",
+                gap: "8px",
+                marginBottom: message.content ? "12px" : 0,
+              }}
+            >
+              {message.files.map((file) => (
+                <Chip
+                  key={file.id}
+                  icon={getFileIcon(file.type, isDarkMode)}
+                  label={
+                    <Box
+                      sx={{ display: "flex", alignItems: "center", gap: "4px" }}
+                    >
+                      <Typography
+                        variant="body2"
+                        sx={{
+                          maxWidth: "150px",
+                          overflow: "hidden",
+                          textOverflow: "ellipsis",
+                          whiteSpace: "nowrap",
+                          fontSize: "13px",
+                        }}
+                      >
+                        {file.name}
+                      </Typography>
+                      <Typography
+                        variant="caption"
+                        sx={{
+                          color: isDarkMode ? "#a3a3a3" : "#6b7280",
+                          fontSize: "11px",
+                        }}
+                      >
+                        ({formatFileSize(file.size)})
+                      </Typography>
+                    </Box>
+                  }
+                  onClick={() => handleFileDownload(file.id, file.name)}
+                  onDelete={() => handleFileDownload(file.id, file.name)}
+                  deleteIcon={<DownloadIcon sx={{ fontSize: 16 }} />}
+                  sx={{
+                    backgroundColor: isDarkMode ? "#343541" : "#e5e7eb",
+                    color: isDarkMode ? "#ececf1" : "#374151",
+                    cursor: "pointer",
+                    maxWidth: "300px",
+                    "& .MuiChip-deleteIcon": {
+                      color: isDarkMode ? "#a3a3a3" : "#6b7280",
+                      "&:hover": {
+                        color: isDarkMode ? "#ececf1" : "#374151",
+                      },
+                    },
+                    "&:hover": {
+                      backgroundColor: isDarkMode ? "#40414f" : "#d1d5db",
+                    },
+                  }}
+                />
+              ))}
+            </Box>
+          )}
+
           <MarkdownRenderer
             content={message.content}
             isDarkMode={isDarkMode}
@@ -705,6 +811,70 @@ const MessageBubble = ({
           borderRadius: "24px",
         }}
       >
+        {/* File Attachments */}
+        {message.files && message.files.length > 0 && (
+          <Box
+            sx={{
+              display: "flex",
+              flexWrap: "wrap",
+              gap: "8px",
+              marginBottom: message.content ? "12px" : 0,
+            }}
+          >
+            {message.files.map((file) => (
+              <Chip
+                key={file.id}
+                icon={getFileIcon(file.type, isDarkMode)}
+                label={
+                  <Box
+                    sx={{ display: "flex", alignItems: "center", gap: "4px" }}
+                  >
+                    <Typography
+                      variant="body2"
+                      sx={{
+                        maxWidth: "150px",
+                        overflow: "hidden",
+                        textOverflow: "ellipsis",
+                        whiteSpace: "nowrap",
+                        fontSize: "13px",
+                      }}
+                    >
+                      {file.name}
+                    </Typography>
+                    <Typography
+                      variant="caption"
+                      sx={{
+                        color: isDarkMode ? "#a3a3a3" : "#6b7280",
+                        fontSize: "11px",
+                      }}
+                    >
+                      ({formatFileSize(file.size)})
+                    </Typography>
+                  </Box>
+                }
+                onClick={() => handleFileDownload(file.id, file.name)}
+                onDelete={() => handleFileDownload(file.id, file.name)}
+                deleteIcon={<DownloadIcon sx={{ fontSize: 16 }} />}
+                sx={{
+                  backgroundColor: isDarkMode ? "#343541" : "#e5e7eb",
+                  color: isDarkMode ? "#ececf1" : "#374151",
+                  cursor: "pointer",
+                  maxWidth: "300px",
+                  "& .MuiChip-deleteIcon": {
+                    color: isDarkMode ? "#a3a3a3" : "#6b7280",
+                    "&:hover": {
+                      color: isDarkMode ? "#ececf1" : "#374151",
+                    },
+                  },
+                  "&:hover": {
+                    backgroundColor: isDarkMode ? "#40414f" : "#d1d5db",
+                  },
+                }}
+              />
+            ))}
+          </Box>
+        )}
+
         <MarkdownRenderer
           content={message.content}
           isDarkMode={isDarkMode}

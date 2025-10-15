@@ -21,9 +21,11 @@ import {
   updateMessageContent,
   type Message,
   type Conversation,
+  type FileAttachment,
 } from "@iagent/stream-mocks";
 import { useMockMode } from "../hooks/useMockMode";
 import { useSidebarState, useThemeMode } from "../hooks/useLocalStorage";
+import { uploadFiles } from "../services/fileService";
 
 import { generateUniqueId } from "../utils/id-generator";
 
@@ -387,8 +389,10 @@ const App = () => {
       selectedCountries,
       enabledTools,
       filterSnapshot,
+      files,
     } = data;
-    if (!content.trim() || isLoading) return;
+    if ((!content.trim() && (!files || files.length === 0)) || isLoading)
+      return;
 
     setIsLoading(true);
     setStreamingConversationId(currentConversation?.id || null);
@@ -396,6 +400,36 @@ const App = () => {
     setInput(""); // Clear input immediately when sending
 
     try {
+      // Upload files first if there are any
+      let fileAttachments: FileAttachment[] = [];
+      if (files && files.length > 0 && authToken && currentConversation?.id) {
+        try {
+          const uploadedFiles = await uploadFiles(
+            files,
+            currentConversation.id,
+            authToken,
+            "http://localhost:3001"
+          );
+
+          // Convert uploaded file metadata to attachments
+          fileAttachments = uploadedFiles.map((file) => ({
+            id: file.fileId,
+            name: file.name,
+            size: file.size,
+            type: file.type,
+            url: `/api/chats/files/${file.fileId}`,
+            uploadedAt: new Date(file.uploadedAt),
+          }));
+        } catch (error) {
+          console.error("Failed to upload files:", error);
+          setError(
+            error instanceof Error ? error.message : "Failed to upload files"
+          );
+          setIsLoading(false);
+          return;
+        }
+      }
+
       // Use the filter snapshot from the InputArea, or create a basic one if not provided
       const messageFilterSnapshot = filterSnapshot || {
         filterId: `filter_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
@@ -415,6 +449,61 @@ const App = () => {
         messageFilterSnapshot.filterId,
         messageFilterSnapshot
       );
+
+      // Add files to user message if uploaded
+      if (fileAttachments.length > 0) {
+        userMessage.files = fileAttachments;
+      }
+
+      // Save user message to backend (with file references)
+      if (authToken && currentConversation?.id) {
+        try {
+          const messagePayload = {
+            id: userMessage.id,
+            role: userMessage.role,
+            content: userMessage.content,
+            timestamp: userMessage.timestamp.toISOString(),
+            filterId: userMessage.filterId,
+            filterSnapshot: userMessage.filterSnapshot,
+            files:
+              fileAttachments.length > 0
+                ? fileAttachments.map((file) => ({
+                    fileId: file.id,
+                    name: file.name,
+                    size: file.size,
+                    type: file.type,
+                    chatId: currentConversation.id,
+                    uploadedAt: file.uploadedAt.toISOString(),
+                  }))
+                : undefined,
+          };
+
+          const response = await fetch(
+            `http://localhost:3001/api/chats/${currentConversation.id}/messages`,
+            {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${authToken}`,
+              },
+              body: JSON.stringify(messagePayload),
+            }
+          );
+
+          if (!response.ok) {
+            console.error(
+              "Failed to save message to backend:",
+              await response.text()
+            );
+          } else {
+            console.log("✅ Message saved to backend with file references");
+          }
+        } catch (error) {
+          console.error("Error saving message to backend:", error);
+          // Don't stop the flow - continue with local state
+        }
+      }
+
       const assistantMessage = createMessage(
         "assistant",
         "",
@@ -469,6 +558,40 @@ const App = () => {
       if (!currentConversation) {
         setCurrentConversationId(updatedConversation.id);
         setStreamingConversationId(updatedConversation.id); // Update streaming ID for new conversation
+
+        // Create new chat in backend
+        if (authToken) {
+          try {
+            const chatPayload = {
+              chatId: updatedConversation.id,
+              title: updatedConversation.title,
+              userId: authToken, // Will be extracted by backend
+            };
+
+            const response = await fetch("http://localhost:3001/api/chats", {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${authToken}`,
+              },
+              body: JSON.stringify(chatPayload),
+            });
+
+            if (!response.ok) {
+              console.error(
+                "Failed to create chat in backend:",
+                await response.text()
+              );
+            } else {
+              console.log(
+                "✅ Chat created in backend:",
+                updatedConversation.id
+              );
+            }
+          } catch (error) {
+            console.error("Error creating chat in backend:", error);
+          }
+        }
 
         // Auto-create initial filter for new chat with current settings
         setTimeout(() => {
@@ -538,27 +661,67 @@ const App = () => {
             })
           );
         },
-        () => {
-          setConversations((prev) =>
-            prev.map((conv) => {
+        async () => {
+          let savedAssistantMessage: Message | undefined;
+
+          setConversations((prev) => {
+            const updatedConvs = prev.map((conv) => {
               if (conv.id === updatedConversation.id) {
                 const lastMessage = conv.messages[conv.messages.length - 1];
+                const finalMessage = updateMessageContent(
+                  lastMessage,
+                  lastMessage.content,
+                  false
+                );
+                savedAssistantMessage = finalMessage;
                 return {
                   ...conv,
-                  messages: [
-                    ...conv.messages.slice(0, -1),
-                    updateMessageContent(
-                      lastMessage,
-                      lastMessage.content,
-                      false
-                    ),
-                  ],
+                  messages: [...conv.messages.slice(0, -1), finalMessage],
                   lastUpdated: new Date(),
                 };
               }
               return conv;
-            })
-          );
+            });
+            return updatedConvs;
+          });
+
+          // Save assistant message to backend after streaming completes
+          if (authToken && savedAssistantMessage && updatedConversation.id) {
+            try {
+              const messagePayload = {
+                id: savedAssistantMessage.id,
+                role: savedAssistantMessage.role,
+                content: savedAssistantMessage.content,
+                timestamp: savedAssistantMessage.timestamp.toISOString(),
+                filterId: savedAssistantMessage.filterId,
+                filterSnapshot: savedAssistantMessage.filterSnapshot,
+              };
+
+              const response = await fetch(
+                `http://localhost:3001/api/chats/${updatedConversation.id}/messages`,
+                {
+                  method: "POST",
+                  headers: {
+                    "Content-Type": "application/json",
+                    Authorization: `Bearer ${authToken}`,
+                  },
+                  body: JSON.stringify(messagePayload),
+                }
+              );
+
+              if (!response.ok) {
+                console.error(
+                  "Failed to save assistant message:",
+                  await response.text()
+                );
+              } else {
+                console.log("✅ Assistant message saved to backend");
+              }
+            } catch (error) {
+              console.error("Error saving assistant message:", error);
+            }
+          }
+
           setIsLoading(false);
           setStreamingConversationId(null); // Clear streaming conversation
         },
@@ -588,7 +751,7 @@ const App = () => {
           setStreamingConversationId(null); // Clear streaming conversation
         },
         isMockMode, // useMock
-        "http://localhost:3000",
+        "http://localhost:3001",
         translation,
         authToken || undefined, // authToken
         chatId, // chatId
@@ -955,7 +1118,7 @@ const App = () => {
         // useMock flag
         isMockMode,
         // baseUrl for API mode
-        "http://localhost:3000",
+        "http://localhost:3001",
         // translation function
         translation,
         // authToken for API mode
@@ -1184,6 +1347,8 @@ const App = () => {
               onLogout={handleLogout}
               userEmail={userEmail}
               onOpenReport={openReportFromUrl}
+              authToken={authToken || undefined}
+              currentChatId={currentConversationId || undefined}
             />
 
             {/* Input Area */}
@@ -1207,7 +1372,7 @@ const App = () => {
               onAttachment={handleAttachment}
               showVoiceButton={false} // Enable when voice functionality is ready
               showClearButton={true} // Always show clear button
-              showAttachmentButton={false} // Enable when attachment functionality is ready
+              showAttachmentButton={true} // File attachment enabled
               // Filter management
               currentChatId={currentConversationId || undefined}
               authToken={authToken || undefined}

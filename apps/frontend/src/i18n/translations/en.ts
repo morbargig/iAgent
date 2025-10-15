@@ -172,6 +172,13 @@ const translations: Translation = {
     toolsNeedConfig: 'Some tools require configuration',
     settingsRequired: 'Settings Required',
     disabledDueToConfig: 'Input disabled - tools need configuration',
+    uploadingFiles: 'Uploading files...',
+    fileUploadError: 'Failed to upload files',
+    fileUploadSuccess: 'Files uploaded successfully',
+    removeFile: 'Remove file',
+    dropFilesHere: 'Drop files here',
+    maxFileSize: 'Maximum file size: {{size}}',
+    maxFileCount: 'Maximum {{count}} files allowed',
     examples: [
       'What can you help me with?',
       'Explain quantum computing simply',

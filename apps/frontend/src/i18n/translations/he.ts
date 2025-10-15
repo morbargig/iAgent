@@ -171,6 +171,13 @@ const translations: Translation = {
     toolsNeedConfig: 'חלק מהכלים דורשים הגדרה',
     settingsRequired: 'נדרשות הגדרות',
     disabledDueToConfig: 'קלט מושבת - כלים דורשים הגדרה',
+    uploadingFiles: 'מעלה קבצים...',
+    fileUploadError: 'העלאת הקבצים נכשלה',
+    fileUploadSuccess: 'הקבצים הועלו בהצלחה',
+    removeFile: 'הסר קובץ',
+    dropFilesHere: 'שחרר קבצים כאן',
+    maxFileSize: 'גודל קובץ מקסימלי: {{size}}',
+    maxFileCount: 'מקסימום {{count}} קבצים מותרים',
     examples: [
       'במה אתה יכול לעזור לי?',
       'הסבר מחשוב קוונטי בפשטות',

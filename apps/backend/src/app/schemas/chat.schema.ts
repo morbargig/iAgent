@@ -95,6 +95,20 @@ export class ChatMessage {
     name?: string;
     config?: Record<string, any>;
   } | null;
+
+  // File attachments
+  @Prop({ type: [Object], default: [] })
+  files!: Array<{
+    fileId: string;
+    name: string;
+    size: number;
+    type: string;
+    chatId: string;
+    messageId?: string;
+    uploadedAt: Date;
+    gridfsId?: string;
+    base64Data?: string;
+  }>;
 }
 
 @Schema({ timestamps: true })

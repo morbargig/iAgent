@@ -171,6 +171,13 @@ const translations: Translation = {
     toolsNeedConfig: 'بعض الأدوات تحتاج تكوين',
     settingsRequired: 'الإعدادات مطلوبة',
     disabledDueToConfig: 'الإدخال معطل - الأدوات تحتاج تكوين',
+    uploadingFiles: 'جاري رفع الملفات...',
+    fileUploadError: 'فشل رفع الملفات',
+    fileUploadSuccess: 'تم رفع الملفات بنجاح',
+    removeFile: 'إزالة الملف',
+    dropFilesHere: 'أسقط الملفات هنا',
+    maxFileSize: 'الحد الأقصى لحجم الملف: {{size}}',
+    maxFileCount: 'الحد الأقصى {{count}} ملفات مسموح',
     examples: [
       'كيف يمكنك مساعدتي؟',
       'اشرح الحوسبة الكمية ببساطة',
