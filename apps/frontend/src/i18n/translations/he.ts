@@ -184,6 +184,23 @@ const translations: Translation = {
       'צור רעיונות יצירתיים עבור...'
     ],
   },
+  files: {
+    quickUpload: 'העלאה מהירה',
+    documentManager: 'מנהל מסמכים',
+    attachFiles: 'צרף קבצים',
+    documentManagement: 'ניהול מסמכים',
+    upload: 'העלאה',
+    manage: 'ניהול',
+    selectFiles: 'בחר קבצים',
+    dropFilesHere: 'גרור קבצים לכאן',
+    dragDropFiles: 'גרור ושחרר קבצים כאן, או לחץ לבחירה',
+    maxFileSize: 'גודל קובץ מקסימלי',
+    maxFiles: 'מספר קבצים מקסימלי',
+    supportedFormats: 'פורמטים נתמכים',
+    uploadingFiles: 'מעלה קבצים',
+    select: 'בחר',
+    cancel: 'ביטול',
+  },
   countries: {
     palestine: 'פלסטין',
     lebanon: 'לבנון',

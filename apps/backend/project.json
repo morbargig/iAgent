@@ -12,38 +12,88 @@
         "outputPath": "dist/apps/backend",
         "main": "apps/backend/src/main.ts",
         "tsConfig": "apps/backend/tsconfig.app.json",
-        "webpackConfig": "apps/backend/webpack.config.js"
+        "webpackConfig": "apps/backend/webpack.config.js",
+        "assets": ["apps/backend/src/assets"]
       },
       "configurations": {
         "development": {
           "optimization": false,
           "extractLicenses": false,
-          "sourceMap": true
+          "sourceMap": true,
+          "watch": true,
+          "fileReplacements": [
+            {
+              "replace": "apps/backend/src/environments/environment.ts",
+              "with": "apps/backend/src/environments/env.dev.ts"
+            }
+          ]
+        },
+        "staging": {
+          "optimization": false,
+          "extractLicenses": false,
+          "sourceMap": true,
+          "watch": true,
+          "fileReplacements": [
+            {
+              "replace": "apps/backend/src/environments/environment.ts",
+              "with": "apps/backend/src/environments/env.staging.ts"
+            }
+          ]
+        },
+        "test": {
+          "optimization": false,
+          "extractLicenses": false,
+          "sourceMap": true,
+          "watch": true,
+          "fileReplacements": [
+            {
+              "replace": "apps/backend/src/environments/environment.ts",
+              "with": "apps/backend/src/environments/env.test.ts"
+            }
+          ]
         },
         "production": {
           "optimization": true,
           "extractLicenses": true,
-          "sourceMap": false
+          "sourceMap": false,
+          "watch": false,
+          "fileReplacements": [
+            {
+              "replace": "apps/backend/src/environments/environment.ts",
+              "with": "apps/backend/src/environments/env.prod.ts"
+            }
+          ]
         }
       }
     },
     "serve": {
-      "continuous": true,
       "executor": "@nx/js:node",
       "defaultConfiguration": "development",
-      "dependsOn": [
-        "build"
-      ],
       "options": {
-        "buildTarget": "@iagent/backend:build",
-        "runBuildTargetDependencies": false
+        "buildTarget": "@iagent/backend:build:development",
+        "watch": true,
+        "runBuildTargetDependencies": true
       },
       "configurations": {
         "development": {
-          "buildTarget": "@iagent/backend:build:development"
+          "buildTarget": "@iagent/backend:build:development",
+          "watch": true,
+          "runBuildTargetDependencies": true
+        },
+        "staging": {
+          "buildTarget": "@iagent/backend:build:staging",
+          "watch": true,
+          "runBuildTargetDependencies": true
+        },
+        "test": {
+          "buildTarget": "@iagent/backend:build:test",
+          "watch": true,
+          "runBuildTargetDependencies": true
         },
         "production": {
-          "buildTarget": "@iagent/backend:build:production"
+          "buildTarget": "@iagent/backend:build:production",
+          "watch": false,
+          "runBuildTargetDependencies": true
         }
       }
     },

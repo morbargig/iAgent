@@ -184,6 +184,23 @@ const translations: Translation = {
       'أنشئ أفكار إبداعية لـ...'
     ],
   },
+  files: {
+    quickUpload: 'رفع سريع',
+    documentManager: 'إدارة المستندات',
+    attachFiles: 'إرفاق ملفات',
+    documentManagement: 'إدارة المستندات',
+    upload: 'رفع',
+    manage: 'إدارة',
+    selectFiles: 'اختر ملفات',
+    dropFilesHere: 'أسقط الملفات هنا',
+    dragDropFiles: 'اسحب وأسقط الملفات هنا، أو انقر للاختيار',
+    maxFileSize: 'الحد الأقصى لحجم الملف',
+    maxFiles: 'الحد الأقصى للملفات',
+    supportedFormats: 'التنسيقات المدعومة',
+    uploadingFiles: 'رفع الملفات',
+    select: 'اختيار',
+    cancel: 'إلغاء',
+  },
   countries: {
     palestine: 'فلسطين',
     lebanon: 'لبنان',

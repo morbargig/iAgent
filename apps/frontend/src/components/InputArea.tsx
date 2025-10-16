@@ -13,6 +13,8 @@ import {
   Divider,
   Badge,
   Chip,
+  Snackbar,
+  Paper,
 } from "@mui/material";
 import { parseISO } from "date-fns";
 import {
@@ -31,6 +33,9 @@ import {
   PlayArrow as PickIcon,
   Visibility as ViewIcon,
   Delete as DeleteIcon,
+  Download as DownloadIcon,
+  Close as CloseIcon,
+  CloudUpload as CloudUploadIcon,
 } from "@mui/icons-material";
 import { useTranslation } from "../contexts/TranslationContext";
 import { Translate } from "./Translate";
@@ -41,6 +46,11 @@ import { useAnimatedPlaceholder } from "../hooks/useAnimatedPlaceholder";
 import { useToolToggles } from "../hooks/useToolToggles";
 import { ToolSettingsDialog, ToolConfiguration } from "./ToolSettingsDialog";
 import { useToolSchemas } from "../services/toolService";
+import { DocumentManagementDialog } from "./DocumentManagementDialog";
+import FolderIcon from "@mui/icons-material/Folder";
+import { DocumentService } from "../services/documentService";
+import { formatFileSize, getFileIconComponent } from "../types/document.types";
+import { FILE_UPLOAD_CONFIG } from "../config/fileUpload";
 
 import BasicDateRangePicker from "./BasicDateRangePicker";
 
@@ -91,6 +101,13 @@ export interface SendMessageData {
     isActive?: boolean;
     createdAt?: string;
   };
+  attachments?: Array<{
+    id: string;
+    filename: string;
+    size: number;
+    mimetype: string;
+    uploadDate: string;
+  }>;
 }
 
 interface ChatFilter {
@@ -121,6 +138,9 @@ interface InputAreaProps {
   onVoiceInput?: () => void; // Voice input callback
   onClear?: () => void; // Clear input callback
   onAttachment?: () => void; // File attachment callback
+  onFileUploaded?: (file: any) => void; // File upload callback
+  attachedFiles?: any[]; // Attached files for preview
+  onRemoveAttachedFile?: (fileId: string) => void; // Remove attached file callback
   showVoiceButton?: boolean; // Show voice button
   showClearButton?: boolean; // Show clear button
   showAttachmentButton?: boolean; // Show attachment button
@@ -178,6 +198,9 @@ export function InputArea({
   onVoiceInput,
   onClear,
   onAttachment,
+  onFileUploaded,
+  attachedFiles = [],
+  onRemoveAttachedFile,
   showVoiceButton = false,
   showClearButton = true,
   showAttachmentButton = false,
@@ -558,7 +581,7 @@ export function InputArea({
         createdAt: new Date().toISOString(),
       };
 
-      // Prepare send data
+      // Prepare send data with attachments
       const sendData: SendMessageData = {
         content: value,
         dateFilter,
@@ -567,9 +590,23 @@ export function InputArea({
           (toolId) => enabledTools[toolId]
         ),
         filterSnapshot,
+        attachments: attachedFiles.map((f: any) => ({
+          id: f.id,
+          filename: f.filename,
+          size: f.size,
+          mimetype: f.mimetype,
+          uploadDate: f.uploadDate,
+        })),
       };
 
       onSend(sendData);
+      
+      // Clear attached files after successful send
+      if (attachedFiles && attachedFiles.length > 0) {
+        attachedFiles.forEach((file: any) => {
+          onRemoveAttachedFile?.(file.id);
+        });
+      }
     }
   };
 
@@ -1266,6 +1303,200 @@ export function InputArea({
     return synced;
   }, [toolConfigurations, enabledTools, toolsList]);
 
+  // Document dialog state
+  const [docsDialogOpen, setDocsDialogOpen] = useState(false);
+  const [showLimitWarning, setShowLimitWarning] = useState(false);
+  const [documentService] = useState(() => new DocumentService());
+  const [isDragging, setIsDragging] = useState(false);
+  
+  // File upload dropdown menu state
+  const [fileMenuAnchor, setFileMenuAnchor] = useState<null | HTMLElement>(null);
+  const fileMenuOpen = Boolean(fileMenuAnchor);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleOpenDocsDialog = () => {
+    if (attachedFiles.length >= 10) {
+      setShowLimitWarning(true);
+      return;
+    }
+    setDocsDialogOpen(true);
+  };
+  const handleCloseDocsDialog = () => setDocsDialogOpen(false);
+
+  // File menu handlers
+  const handleFileMenuClick = (event: React.MouseEvent<HTMLElement>) => {
+    setFileMenuAnchor(event.currentTarget);
+  };
+
+  const handleFileMenuClose = () => {
+    setFileMenuAnchor(null);
+  };
+
+  const handleQuickUpload = () => {
+    handleFileMenuClose();
+    // Trigger the hidden file input
+    fileInputRef.current?.click();
+  };
+
+  const handleOpenDocumentManager = () => {
+    handleFileMenuClose();
+    handleOpenDocsDialog();
+  };
+
+  const handleFileInputChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(event.target.files || []);
+    
+    if (files.length === 0) return;
+
+    // Validate file count
+    const totalCount = files.length + attachedFiles.length;
+    if (totalCount > FILE_UPLOAD_CONFIG.MAX_FILE_COUNT) {
+      setShowLimitWarning(true);
+      return;
+    }
+
+    // Validate each file size
+    for (const file of files) {
+      if (file.size > FILE_UPLOAD_CONFIG.MAX_FILE_SIZE) {
+        alert(`File ${file.name} exceeds maximum size of ${formatFileSize(FILE_UPLOAD_CONFIG.MAX_FILE_SIZE)}`);
+        return;
+      }
+    }
+
+    // Validate total size
+    const totalSize = [...attachedFiles, ...files].reduce((sum, f) => sum + (f.size || 0), 0);
+    if (totalSize > FILE_UPLOAD_CONFIG.MAX_TOTAL_SIZE) {
+      alert(`Total file size exceeds maximum of ${formatFileSize(FILE_UPLOAD_CONFIG.MAX_TOTAL_SIZE)}`);
+      return;
+    }
+
+    // Upload files
+    files.forEach(file => {
+      if (onFileUploaded) {
+        // Convert File to FileUploadResult-like object
+        const fileData = {
+          id: `file_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+          filename: file.name,
+          size: file.size,
+          mimetype: file.type,
+          uploadDate: new Date().toISOString(),
+        };
+        onFileUploaded(fileData);
+      }
+    });
+
+    // Reset input
+    if (event.target) {
+      event.target.value = '';
+    }
+  };
+
+  // Handle selecting a document from the dialog
+  const handleDocumentSelectFromDialog = (document: any) => {
+    // Check file limit
+    if (attachedFiles.length >= 10) {
+      setShowLimitWarning(true);
+      return;
+    }
+    
+    // Prevent duplicates by id
+    const exists = attachedFiles?.some((f: any) => (f.id || f._id) === document.id);
+    if (!exists) {
+      // Map DocumentFile -> FileUploadResult-like object for upstream handler
+      const mapped = {
+        id: document.id,
+        filename: document.name || document.filename,
+        size: document.size,
+        mimetype: document.mimeType || document.mimetype || 'application/octet-stream',
+        uploadDate: (document.uploadedAt instanceof Date ? document.uploadedAt : new Date(document.uploadedAt || Date.now())).toISOString?.() || new Date().toISOString(),
+      };
+      onFileUploaded?.(mapped);
+    }
+  };
+
+  // Handle preview attachment
+  const handlePreviewAttachment = (fileId: string) => {
+    const file = attachedFiles.find((f: any) => f.id === fileId);
+    if (file) {
+      // Use direct localhost:3001 URL (no proxy)
+      const url = `http://localhost:3001/api/files/${file.id}`;
+      window.open(url, '_blank', 'noopener,noreferrer');
+    }
+  };
+
+  // Handle download attachment
+  const handleDownloadAttachment = async (fileId: string) => {
+    const file = attachedFiles.find((f: any) => f.id === fileId);
+    if (file) {
+      try {
+        const blob = await documentService.downloadDocument(file.id);
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = file.filename;
+        link.style.display = 'none';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+      } catch (error) {
+        console.error('Download failed:', error);
+      }
+    }
+  };
+
+  // Drag and drop handlers
+  const handleDragEnter = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(true);
+  };
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (e.currentTarget === e.target) {
+      setIsDragging(false);
+    }
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+  };
+
+  const handleDrop = async (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+    
+    const files = Array.from(e.dataTransfer.files);
+    
+    // Check file limit
+    if (attachedFiles.length + files.length > 10) {
+      setShowLimitWarning(true);
+      return;
+    }
+    
+    // Upload files
+    for (const file of files) {
+      try {
+        const result = await documentService.uploadFile(file);
+        if (result.success && result.document) {
+          onFileUploaded?.({
+            id: result.document.id,
+            filename: result.document.name,
+            size: result.document.size,
+            mimetype: result.document.mimeType,
+            uploadDate: result.document.uploadedAt.toISOString(),
+          });
+        }
+      } catch (error) {
+        console.error('File upload failed:', error);
+      }
+    }
+  };
+
   return (
     <>
       {/* Input Area Container */}
@@ -1298,10 +1529,14 @@ export function InputArea({
           },
         }}
       >
-        {/* Input Area Content Wrapper */}
+        {/* Input Area Content Wrapper with Drag & Drop */}
         <Box
           id="iagent-input-content"
           className="iagent-input-content-wrapper"
+          onDragEnter={handleDragEnter}
+          onDragLeave={handleDragLeave}
+          onDragOver={handleDragOver}
+          onDrop={handleDrop}
           sx={{
             maxWidth: "768px",
             margin: "0 auto",
@@ -1310,12 +1545,37 @@ export function InputArea({
             width: "100%",
             boxSizing: "border-box",
             transition: "all 300ms cubic-bezier(0.4, 0, 0.2, 1)",
+            position: "relative",
             "@media (max-width: 600px)": {
               paddingInlineStart: "10px",
               paddingInlineEnd: "10px",
             },
           }}
         >
+          {/* Drag Overlay */}
+          {isDragging && (
+            <Box
+              sx={{
+                position: "absolute",
+                top: 0,
+                left: 0,
+                right: 0,
+                bottom: 0,
+                backgroundColor: "rgba(59, 130, 246, 0.1)",
+                border: "2px dashed #3b82f6",
+                borderRadius: "24px",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                zIndex: 10,
+                pointerEvents: "none",
+              }}
+            >
+              <Typography variant="h6" color="primary">
+                Drop files here
+              </Typography>
+            </Box>
+          )}
           {/* Main Input Form Container */}
           <Box
             id="iagent-input-form"
@@ -1360,6 +1620,134 @@ export function InputArea({
               },
             }}
           >
+            {/* File Preview Section - Inside bubble */}
+            {attachedFiles && attachedFiles.length > 0 && (
+              <Box
+                sx={{
+                  p: 1.5,
+                  borderBottom: `1px solid ${isDarkMode ? "rgba(255, 255, 255, 0.1)" : "rgba(0, 0, 0, 0.08)"}`,
+                  backgroundColor: isDarkMode ? "rgba(255, 255, 255, 0.02)" : "rgba(0, 0, 0, 0.01)",
+                  borderTopLeftRadius: "24px",
+                  borderTopRightRadius: "24px",
+                }}
+              >
+                <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
+                  {attachedFiles.map((file: any) => {
+                    const { Icon, color } = getFileIconComponent(file.mimetype);
+                    return (
+                      <Paper
+                        key={file.id}
+                        elevation={0}
+                        sx={{
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: 1,
+                          p: 1,
+                          borderRadius: '8px',
+                          backgroundColor: isDarkMode ? `${color}15` : `${color}08`,
+                          border: `1px solid ${color}40`,
+                          maxWidth: '220px',
+                          transition: 'all 0.2s ease',
+                          '&:hover': {
+                            borderColor: `${color}80`,
+                            boxShadow: `0 2px 8px ${color}30`,
+                          },
+                        }}
+                      >
+                        {/* File icon */}
+                        <Box
+                          sx={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            width: 32,
+                            height: 32,
+                            borderRadius: '6px',
+                            backgroundColor: `${color}20`,
+                            color: color,
+                            flexShrink: 0,
+                          }}
+                        >
+                          <Icon sx={{ fontSize: 18 }} />
+                        </Box>
+                        
+                        {/* File info */}
+                        <Box flex={1} minWidth={0}>
+                          <Typography 
+                            variant="caption" 
+                            fontWeight={600}
+                            noWrap
+                            sx={{ 
+                              color: isDarkMode ? '#ffffff' : '#1f2937',
+                              fontSize: '0.8125rem',
+                              display: 'block',
+                            }}
+                          >
+                            {file.filename}
+                          </Typography>
+                          <Typography 
+                            variant="caption" 
+                            sx={{ 
+                              color: isDarkMode ? '#9ca3af' : '#6b7280',
+                              fontSize: '0.75rem',
+                            }}
+                          >
+                            {formatFileSize(file.size)}
+                          </Typography>
+                        </Box>
+                        
+                        {/* Action buttons */}
+                        <Box display="flex" gap={0.25} flexShrink={0}>
+                          <Tooltip title="Preview">
+                            <IconButton
+                              onClick={() => handlePreviewAttachment(file.id)}
+                              size="small"
+                              sx={{
+                                width: 24,
+                                height: 24,
+                                color: isDarkMode ? '#9ca3af' : '#6b7280',
+                                '&:hover': { color: color },
+                              }}
+                            >
+                              <ViewIcon sx={{ fontSize: 14 }} />
+                            </IconButton>
+                          </Tooltip>
+                          <Tooltip title="Download">
+                            <IconButton
+                              onClick={() => handleDownloadAttachment(file.id)}
+                              size="small"
+                              sx={{
+                                width: 24,
+                                height: 24,
+                                color: isDarkMode ? '#9ca3af' : '#6b7280',
+                                '&:hover': { color: color },
+                              }}
+                            >
+                              <DownloadIcon sx={{ fontSize: 14 }} />
+                            </IconButton>
+                          </Tooltip>
+                          <Tooltip title="Remove">
+                            <IconButton
+                              onClick={() => onRemoveAttachedFile?.(file.id)}
+                              size="small"
+                              sx={{
+                                width: 24,
+                                height: 24,
+                                color: isDarkMode ? '#9ca3af' : '#6b7280',
+                                '&:hover': { color: '#ef4444' },
+                              }}
+                            >
+                              <CloseIcon sx={{ fontSize: 14 }} />
+                            </IconButton>
+                          </Tooltip>
+                        </Box>
+                      </Paper>
+                    );
+                  })}
+                </Box>
+              </Box>
+            )}
+
             {/* Main Textarea */}
             <textarea
               id="iagent-message-input"
@@ -1874,29 +2262,111 @@ export function InputArea({
                     </IconButton>
                   )}
 
-                  {/* Attachment Button */}
+                  {/* File Upload Dropdown Menu */}
                   {showAttachmentButton && (
-                    <IconButton
-                      onClick={onAttachment}
-                      disabled={disabled}
-                      sx={{
-                        width: "32px",
-                        height: "32px",
-                        backgroundColor: "transparent",
-                        color: isDarkMode ? "#8e8ea0" : "#6b7280",
-                        borderRadius: "16px",
-                        transition: "all 0.2s ease",
-                        "&:hover": {
-                          backgroundColor: isDarkMode
-                            ? "rgba(255, 255, 255, 0.1)"
-                            : "rgba(0, 0, 0, 0.05)",
-                          color: isDarkMode ? "#ffffff" : "#374151",
-                        },
-                      }}
-                      title={t("input.attachment") || "Attach file"}
-                    >
-                      <AttachFileIcon sx={{ fontSize: 16 }} />
-                    </IconButton>
+                    <>
+                      {/* Hidden file input for quick upload */}
+                      <input
+                        ref={fileInputRef}
+                        type="file"
+                        multiple
+                        onChange={handleFileInputChange}
+                        style={{ display: 'none' }}
+                        disabled={disabled}
+                      />
+                      
+                      {/* File Upload Button with Badge */}
+                      <Tooltip title={attachedFiles.length >= 10 ? "Maximum 10 files reached" : (t("attachFiles") || "Attach Files")}>
+                        <Badge 
+                          badgeContent={attachedFiles.length} 
+                          color="primary" 
+                          invisible={attachedFiles.length === 0}
+                          sx={{
+                            '& .MuiBadge-badge': {
+                              fontSize: '0.625rem',
+                              height: '16px',
+                              minWidth: '16px',
+                              padding: '0 4px',
+                            }
+                          }}
+                        >
+                          <IconButton
+                            onClick={handleFileMenuClick}
+                            disabled={disabled || attachedFiles.length >= 10}
+                            sx={{
+                              width: "32px",
+                              height: "32px",
+                              backgroundColor: "transparent",
+                              color: isDarkMode ? "#8e8ea0" : "#6b7280",
+                              borderRadius: "16px",
+                              transition: "all 0.2s ease",
+                              opacity: attachedFiles.length >= 10 ? 0.5 : 1,
+                              "&:hover": {
+                                backgroundColor: isDarkMode
+                                  ? "rgba(255, 255, 255, 0.1)"
+                                  : "rgba(0, 0, 0, 0.04)",
+                                color: isDarkMode ? "#ffffff" : "#374151",
+                              },
+                              "&.Mui-disabled": {
+                                color: isDarkMode ? "#565869" : "#9ca3af",
+                              },
+                            }}
+                          >
+                            <AttachFileIcon sx={{ fontSize: 16 }} />
+                          </IconButton>
+                        </Badge>
+                      </Tooltip>
+
+                      {/* File Upload Dropdown Menu */}
+                      <Menu
+                        anchorEl={fileMenuAnchor}
+                        open={fileMenuOpen}
+                        onClose={handleFileMenuClose}
+                        transformOrigin={{ horizontal: 'left', vertical: 'top' }}
+                        anchorOrigin={{ horizontal: 'left', vertical: 'bottom' }}
+                        slotProps={{
+                          paper: {
+                            sx: {
+                              mt: 0.5,
+                              borderRadius: '8px',
+                              boxShadow: isDarkMode
+                                ? '0 4px 12px rgba(0, 0, 0, 0.5)'
+                                : '0 4px 12px rgba(0, 0, 0, 0.15)',
+                              backgroundColor: isDarkMode ? '#2f3136' : '#ffffff',
+                            }
+                          }
+                        }}
+                      >
+                        <MenuItem 
+                          onClick={handleQuickUpload}
+                          sx={{
+                            color: isDarkMode ? '#dcddde' : '#000000',
+                            '&:hover': {
+                              backgroundColor: isDarkMode ? '#40444b' : '#f3f4f6',
+                            }
+                          }}
+                        >
+                          <ListItemIcon>
+                            <CloudUploadIcon fontSize="small" sx={{ color: isDarkMode ? '#dcddde' : '#000000' }} />
+                          </ListItemIcon>
+                          <ListItemText>{t("quickUpload") || "Quick Upload"}</ListItemText>
+                        </MenuItem>
+                        <MenuItem 
+                          onClick={handleOpenDocumentManager}
+                          sx={{
+                            color: isDarkMode ? '#dcddde' : '#000000',
+                            '&:hover': {
+                              backgroundColor: isDarkMode ? '#40444b' : '#f3f4f6',
+                            }
+                          }}
+                        >
+                          <ListItemIcon>
+                            <FolderIcon fontSize="small" sx={{ color: isDarkMode ? '#dcddde' : '#000000' }} />
+                          </ListItemIcon>
+                          <ListItemText>{t("documentManager") || "Document Manager"}</ListItemText>
+                        </MenuItem>
+                      </Menu>
+                    </>
                   )}
                 </Box>
 
@@ -2849,6 +3319,26 @@ export function InputArea({
         onApply={handleApplyFilterFromDetails}
         isDarkMode={isDarkMode}
         filter={selectedFilterForDetails}
+      />
+
+      {/* Documents Management Dialog */}
+      <DocumentManagementDialog
+        open={docsDialogOpen}
+        onClose={handleCloseDocsDialog}
+        onDocumentSelect={handleDocumentSelectFromDialog}
+        initialTab="manage"
+        selectionMode={true}
+        maxSelection={10}
+        title={t("documentManagement")}
+      />
+
+      {/* File Limit Warning Snackbar */}
+      <Snackbar
+        open={showLimitWarning}
+        autoHideDuration={3000}
+        onClose={() => setShowLimitWarning(false)}
+        message="Maximum 10 files allowed. Remove some files to add more."
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
       />
     </>
   );

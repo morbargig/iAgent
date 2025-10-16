@@ -8,6 +8,7 @@ import { Sidebar } from "../components/Sidebar";
 import { ChatArea } from "../components/ChatArea";
 import { InputArea, type SendMessageData } from "../components/InputArea";
 import { LoginForm } from "../components/LoginForm";
+import { FileManagerDialog } from "../components/FileManagerDialog";
 import {
   ReportDetailsPanel,
   type ReportData,
@@ -337,6 +338,10 @@ const App = () => {
   const [reportPanelWidth, setReportPanelWidth] = useState(350);
   const [isReportLoading, setIsReportLoading] = useState(false);
 
+  // File management state
+  const [isFileManagerOpen, setIsFileManagerOpen] = useState(false);
+  const [attachedFiles, setAttachedFiles] = useState<any[]>([]);
+
   // Stop generation function
   const stopGeneration = () => {
     if (streamingClient.current) {
@@ -387,6 +392,7 @@ const App = () => {
       selectedCountries,
       enabledTools,
       filterSnapshot,
+      attachments,
     } = data;
     if (!content.trim() || isLoading) return;
 
@@ -415,6 +421,11 @@ const App = () => {
         messageFilterSnapshot.filterId,
         messageFilterSnapshot
       );
+      
+      // Add attachments to user message if present
+      if (attachments && attachments.length > 0) {
+        (userMessage as any).attachments = attachments;
+      }
       const assistantMessage = createMessage(
         "assistant",
         "",
@@ -1064,9 +1075,16 @@ const App = () => {
   };
 
   const handleAttachment = () => {
-    // TODO: Implement file attachment functionality
-    console.log("Attachment clicked");
-    // You can implement file upload here
+    setIsFileManagerOpen(true);
+  };
+
+  const handleFileUploaded = (file: any) => {
+    console.log('File uploaded:', file);
+    setAttachedFiles((prev) => [...prev, file]);
+  };
+
+  const handleRemoveAttachedFile = (fileId: string) => {
+    setAttachedFiles((prev) => prev.filter((f) => f.id !== fileId));
   };
 
   // Report panel handlers
@@ -1205,9 +1223,12 @@ const App = () => {
               onVoiceInput={handleVoiceInput}
               onClear={handleClearInput}
               onAttachment={handleAttachment}
+              onFileUploaded={handleFileUploaded}
+              attachedFiles={attachedFiles}
+              onRemoveAttachedFile={handleRemoveAttachedFile}
               showVoiceButton={false} // Enable when voice functionality is ready
               showClearButton={true} // Always show clear button
-              showAttachmentButton={false} // Enable when attachment functionality is ready
+              showAttachmentButton={true} // Enable document attachment functionality
               // Filter management
               currentChatId={currentConversationId || undefined}
               authToken={authToken || undefined}
@@ -1225,6 +1246,18 @@ const App = () => {
             onWidthChange={handleReportPanelWidthChange}
           />
         </Box>
+
+        {/* File Manager Dialog */}
+        <FileManagerDialog
+          open={isFileManagerOpen}
+          onClose={() => setIsFileManagerOpen(false)}
+          onFileSelected={(file) => {
+            console.log('File selected for attachment:', file);
+            // You can add the file to the message or handle it as needed
+          }}
+          title="Attach File to Message"
+          showAttachButton={true}
+        />
       </Box>
     </ThemeProvider>
   );

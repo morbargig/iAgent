@@ -185,6 +185,23 @@ const translations: Translation = {
       'Generate creative ideas for...'
     ],
   },
+  files: {
+    quickUpload: 'Quick Upload',
+    documentManager: 'Document Manager',
+    attachFiles: 'Attach Files',
+    documentManagement: 'Document Management',
+    upload: 'Upload',
+    manage: 'Manage',
+    selectFiles: 'Select Files',
+    dropFilesHere: 'Drop files here',
+    dragDropFiles: 'Drag and drop files here, or click to select',
+    maxFileSize: 'Max file size',
+    maxFiles: 'Max files',
+    supportedFormats: 'Supported formats',
+    uploadingFiles: 'Uploading Files',
+    select: 'Select',
+    cancel: 'Cancel',
+  },
   countries: {
     palestine: 'Palestine',
     lebanon: 'Lebanon',
