@@ -2247,9 +2247,7 @@ export function InputArea({
                               fontSize: "10px",
                               height: "16px",
                               minWidth: "16px",
-                              backgroundColor: isDarkMode
-                                ? "#3b82f6"
-                                : "#2563eb",
+                              direction: "ltr !important",
                             },
                           }}
                         >

@@ -59,7 +59,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({
       if (isMockMode) {
         // Mock login - simulate success after delay
         await new Promise((resolve) => setTimeout(resolve, 1000));
-        onLogin("mock-token-12345", "mock-user-id", credentials.email);
+        onLogin("demo-jwt-token-12345", "user_123456789", credentials.email);
         return;
       }
 
@@ -93,7 +93,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({
       if (isMockMode) {
         // Mock demo login
         await new Promise((resolve) => setTimeout(resolve, 500));
-        onLogin("mock-demo-token-67890", "demo-user-id", "demo@example.com");
+        onLogin("demo-jwt-token-12345", "user_123456789", "demo@example.com");
         return;
       }
 

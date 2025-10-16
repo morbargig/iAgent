@@ -564,8 +564,8 @@ const App = () => {
           try {
             const chatPayload = {
               chatId: updatedConversation.id,
-              title: updatedConversation.title,
-              userId: authToken, // Will be extracted by backend
+              name: updatedConversation.title, // Backend expects 'name' not 'title'
+              // userId is automatically extracted from JWT token by backend
             };
 
             const response = await fetch("http://localhost:3001/api/chats", {

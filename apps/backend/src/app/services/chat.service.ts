@@ -726,6 +726,7 @@ export class ChatService {
   }
 
   async downloadFile(fileId: string, userId: string): Promise<{ stream: Readable; metadata: any }> {
+    console.log("is demo mode - ", this.isDemoMode);
     if (this.isDemoMode) {
       const file = demoFiles.get(fileId);
       if (!file || file.metadata.userId !== userId) {
