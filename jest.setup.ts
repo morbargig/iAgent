@@ -31,7 +31,7 @@ if (process.env.JEST_VERBOSE !== 'true') {
     if (
       typeof args[0] === 'string' &&
       (args[0].includes('componentWillReceiveProps') ||
-       args[0].includes('componentWillMount'))
+        args[0].includes('componentWillMount'))
     ) {
       return;
     }
@@ -41,7 +41,7 @@ if (process.env.JEST_VERBOSE !== 'true') {
 
 // Mock environment variables for tests
 process.env.NODE_ENV = 'test';
-process.env.VITE_API_BASE_URL = 'http://localhost:3000';
+process.env.VITE_API_BASE_URL = 'http://localhost:3001';
 process.env.VITE_MOCK_MODE = 'true';
 
 // Mock window.matchMedia (used by many UI libraries)
@@ -197,7 +197,7 @@ declare global {
     avatar: 'https://example.com/avatar.jpg',
     ...overrides,
   }),
-  
+
   message: (overrides = {}) => ({
     id: 'test-message-1',
     content: 'Test message content',
@@ -205,7 +205,7 @@ declare global {
     sender: 'user',
     ...overrides,
   }),
-  
+
   conversation: (overrides = {}) => ({
     id: 'test-conversation-1',
     title: 'Test Conversation',
@@ -225,14 +225,14 @@ expect.extend({
 afterEach(() => {
   // Clear all mocks
   jest.clearAllMocks();
-  
+
   // Reset localStorage and sessionStorage
   localStorageMock.clear();
   sessionStorageMock.clear();
-  
+
   // Clear any remaining timers
   jest.clearAllTimers();
-  
+
   // Clear fetch mock calls
   (fetch as jest.Mock).mockClear();
 });

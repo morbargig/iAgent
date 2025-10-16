@@ -102,10 +102,10 @@ export async function uploadFiles(
   files: File[],
   chatId: string,
   authToken: string,
-  baseUrl = 'http://localhost:3000'
+  baseUrl = 'http://localhost:3001'
 ): Promise<FileMetadata[]> {
   const formData = new FormData();
-  
+
   files.forEach((file) => {
     formData.append('files', file);
   });
@@ -133,7 +133,7 @@ export async function downloadFile(
   fileId: string,
   fileName: string,
   authToken: string,
-  baseUrl = 'http://localhost:3000'
+  baseUrl = 'http://localhost:3001'
 ): Promise<void> {
   const response = await fetch(`${baseUrl}/api/chats/files/${fileId}`, {
     headers: {
@@ -162,7 +162,7 @@ export async function downloadFile(
 export async function deleteFile(
   fileId: string,
   authToken: string,
-  baseUrl = 'http://localhost:3000'
+  baseUrl = 'http://localhost:3001'
 ): Promise<void> {
   const response = await fetch(`${baseUrl}/api/chats/files/${fileId}`, {
     method: 'DELETE',
@@ -181,7 +181,7 @@ export async function deleteFile(
  */
 export function getFileIconName(mimeType: string): string {
   const category = getFileCategory(mimeType);
-  
+
   switch (category) {
     case 'image':
       return 'Image';
@@ -203,7 +203,7 @@ export function getFileIconName(mimeType: string): string {
  */
 export function getFileIconColor(mimeType: string, isDarkMode: boolean): string {
   const category = getFileCategory(mimeType);
-  
+
   // Return colors optimized for light and dark modes
   if (isDarkMode) {
     switch (category) {

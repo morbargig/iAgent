@@ -7,6 +7,7 @@ This guide covers deployment options for the iAgent AI Chat Application, includi
 GitHub Pages provides free static site hosting perfect for the React frontend.
 
 ### Prerequisites
+
 - GitHub repository with your code
 - Admin access to the repository
 
@@ -15,12 +16,14 @@ GitHub Pages provides free static site hosting perfect for the React frontend.
 The project includes a pre-configured GitHub Actions workflow that automatically deploys to GitHub Pages on every push to the main branch.
 
 #### 1. Enable GitHub Pages
+
 1. Go to your GitHub repository
 2. Navigate to **Settings** → **Pages**
 3. Under **Source**, select "GitHub Actions"
 4. Save the configuration
 
 #### 2. Update Repository Name (if needed)
+
 If your repository name is different from `iagent`, update the base path:
 
 ```typescript
@@ -29,6 +32,7 @@ base: process.env.NODE_ENV === 'production' ? '/your-repo-name/' : '/',
 ```
 
 #### 3. Push to Main Branch
+
 ```bash
 git add .
 git commit -m "Deploy to GitHub Pages"
@@ -36,6 +40,7 @@ git push origin main
 ```
 
 The GitHub Actions workflow will automatically:
+
 - Install dependencies
 - Build the frontend
 - Deploy to GitHub Pages
@@ -63,12 +68,14 @@ gh-pages -d dist/apps/frontend
 Netlify offers excellent React deployment with continuous deployment.
 
 #### Automatic Deployment
+
 1. Connect your GitHub repository to Netlify
 2. Set build command: `npx nx build frontend --prod`
 3. Set publish directory: `dist/apps/frontend`
 4. Deploy automatically on git push
 
 #### Manual Deployment
+
 ```bash
 # Build the project
 npx nx build frontend --prod
@@ -85,12 +92,14 @@ netlify deploy --prod --dir=dist/apps/frontend
 Vercel provides excellent React hosting with automatic deployments.
 
 #### Automatic Deployment
+
 1. Connect your GitHub repository to Vercel
 2. Set build command: `npx nx build frontend --prod`
 3. Set output directory: `dist/apps/frontend`
 4. Deploy automatically on git push
 
 #### Manual Deployment
+
 ```bash
 # Build the project
 npx nx build frontend --prod
@@ -168,6 +177,7 @@ railway up
 ### Docker Deployment
 
 #### Frontend Dockerfile
+
 ```dockerfile
 # Multi-stage build for frontend
 FROM node:18-alpine as builder
@@ -189,6 +199,7 @@ CMD ["nginx", "-g", "daemon off;"]
 ```
 
 #### Backend Dockerfile
+
 ```dockerfile
 FROM node:18-alpine
 
@@ -205,14 +216,15 @@ EXPOSE 3000
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
-  CMD curl -f http://localhost:3000/health || exit 1
+  CMD curl -f http://localhost:3001/health || exit 1
 
 CMD ["node", "main.js"]
 ```
 
 #### Docker Compose
+
 ```yaml
-version: '3.8'
+version: "3.8"
 
 services:
   frontend:
@@ -235,7 +247,7 @@ services:
       - PORT=3000
       - CORS_ORIGIN=http://localhost
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:3000/health"]
+      test: ["CMD", "curl", "-f", "http://localhost:3001/health"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -278,17 +290,20 @@ RATE_LIMIT_MAX_REQUESTS=100
 ## 🔒 Security Considerations
 
 ### Frontend Security
+
 - **HTTPS Only**: Ensure all deployments use HTTPS
 - **Content Security Policy**: Configure CSP headers
 - **Environment Variables**: Never expose API keys in frontend code
 
 ### Backend Security
+
 - **Environment Variables**: Use secure environment variable management
 - **CORS**: Configure CORS for specific domains in production
 - **Rate Limiting**: Implement rate limiting for API endpoints
 - **Authentication**: Add authentication for production use
 
 ### GitHub Pages Specific
+
 ```nginx
 # _headers file for Netlify/additional security
 /*
@@ -301,11 +316,13 @@ RATE_LIMIT_MAX_REQUESTS=100
 ## 📊 Monitoring & Analytics
 
 ### Frontend Monitoring
+
 - **Google Analytics**: Add tracking for user interactions
 - **Sentry**: Error tracking and performance monitoring
 - **Lighthouse**: Performance auditing
 
 ### Backend Monitoring
+
 - **Health Checks**: Implement comprehensive health endpoints
 - **Logging**: Structured logging with correlation IDs
 - **Metrics**: Prometheus metrics for monitoring
@@ -314,14 +331,15 @@ RATE_LIMIT_MAX_REQUESTS=100
 ## 🚀 CI/CD Best Practices
 
 ### GitHub Actions Workflow
+
 ```yaml
 name: CI/CD Pipeline
 
 on:
   push:
-    branches: [ main, develop ]
+    branches: [main, develop]
   pull_request:
-    branches: [ main ]
+    branches: [main]
 
 jobs:
   test:
@@ -330,8 +348,8 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: '18'
-          cache: 'npm'
+          node-version: "18"
+          cache: "npm"
       - run: npm ci
       - run: npm run lint
       - run: npm run test
@@ -365,6 +383,7 @@ Before deploying to production:
 ### Common GitHub Pages Issues
 
 **Build Failing:**
+
 ```bash
 # Check the Actions tab for detailed error logs
 # Common fixes:
@@ -372,15 +391,17 @@ npm ci --legacy-peer-deps
 ```
 
 **404 on Refresh:**
+
 ```javascript
 // Add to public/404.html for SPA routing
 <script>
-  sessionStorage.redirect = location.href;
-  location.replace(location.origin + location.pathname.split('/')[1] + '/');
+  sessionStorage.redirect = location.href; location.replace(location.origin +
+  location.pathname.split('/')[1] + '/');
 </script>
 ```
 
 **Base Path Issues:**
+
 ```typescript
 // Ensure correct base path in vite.config.ts
 base: process.env.NODE_ENV === 'production' ? '/your-repo-name/' : '/',
@@ -389,6 +410,7 @@ base: process.env.NODE_ENV === 'production' ? '/your-repo-name/' : '/',
 ### Performance Optimization
 
 **Bundle Size:**
+
 ```bash
 # Analyze bundle size
 npx nx build frontend --analyze
@@ -398,16 +420,18 @@ import { Button } from '@mui/material/Button'; // Specific import
 ```
 
 **Caching:**
+
 ```javascript
 // Service worker for caching
-if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.register('/sw.js');
+if ("serviceWorker" in navigator) {
+  navigator.serviceWorker.register("/sw.js");
 }
 ```
 
 ## 📞 Support
 
 For deployment issues:
+
 1. Check the GitHub Actions logs
 2. Review environment variables
 3. Test locally with production build
@@ -415,4 +439,4 @@ For deployment issues:
 
 ---
 
-**Choose the deployment option that best fits your needs. GitHub Pages is recommended for frontend-only deployments, while full-stack applications benefit from platforms like Railway, Heroku, or DigitalOcean.** 
+**Choose the deployment option that best fits your needs. GitHub Pages is recommended for frontend-only deployments, while full-stack applications benefit from platforms like Railway, Heroku, or DigitalOcean.**

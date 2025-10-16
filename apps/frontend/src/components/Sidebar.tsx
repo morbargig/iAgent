@@ -28,6 +28,8 @@ import {
 } from "@mui/icons-material";
 import { type Conversation } from "@iagent/stream-mocks";
 import { useTranslation } from "../contexts/TranslationContext";
+import { DatabaseStatus } from "./DatabaseStatus";
+import { env } from "../config/config";
 
 interface SidebarProps {
   conversations: Conversation[];
@@ -569,6 +571,16 @@ export const Sidebar = React.forwardRef<HTMLDivElement, SidebarProps>(
             flexShrink: 0,
           }}
         >
+          {/* Database Status - Compact Mode */}
+          <Box sx={{ marginBottom: "12px" }}>
+            <DatabaseStatus
+              apiBaseUrl={env.API_BASE_URL}
+              compact={true}
+              refreshInterval={60000}
+              showDetails={false}
+            />
+          </Box>
+
           {/* Theme Toggle Button */}
           <Button
             id="iagent-theme-toggle"
@@ -863,6 +875,16 @@ export const Sidebar = React.forwardRef<HTMLDivElement, SidebarProps>(
                 paddingBottom: "max(16px, env(safe-area-inset-bottom))",
               }}
             >
+              {/* Database Status - Compact Mode */}
+              <Box sx={{ marginBottom: "12px" }}>
+                <DatabaseStatus
+                  apiBaseUrl={env.API_BASE_URL}
+                  compact={true}
+                  refreshInterval={60000}
+                  showDetails={false}
+                />
+              </Box>
+
               <Button
                 onClick={onToggleTheme}
                 variant="text"

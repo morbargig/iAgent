@@ -74,13 +74,16 @@ src/
 ## 🔌 API Endpoints
 
 ### Base URL
-- **Development**: `http://localhost:3000/api`
-- **Documentation**: `http://localhost:3000/api/docs`
+
+- **Development**: `http://localhost:3001/api`
+- **Documentation**: `http://localhost:3001/api/docs`
 
 ### Endpoints
 
 #### GET `/api`
+
 Health check endpoint
+
 ```json
 {
   "message": "iAgent API is running!",
@@ -90,7 +93,9 @@ Health check endpoint
 ```
 
 #### POST `/api/chat`
+
 Standard chat endpoint (non-streaming)
+
 ```json
 {
   "messages": [
@@ -103,12 +108,14 @@ Standard chat endpoint (non-streaming)
 ```
 
 #### POST `/api/chat/stream`
+
 Streaming chat endpoint with Server-Sent Events
+
 ```json
 {
   "messages": [
     {
-      "role": "user", 
+      "role": "user",
       "content": "Tell me a story"
     }
   ]
@@ -116,16 +123,18 @@ Streaming chat endpoint with Server-Sent Events
 ```
 
 #### GET `/api/chat/sse-stream`
+
 Server-Sent Events endpoint for real-time streaming
 
 ## 📊 Data Transfer Objects
 
 ### ChatMessageDto
+
 ```typescript
 export class ChatMessageDto {
   @IsString()
-  @IsIn(['user', 'assistant', 'system'])
-  role: 'user' | 'assistant' | 'system';
+  @IsIn(["user", "assistant", "system"])
+  role: "user" | "assistant" | "system";
 
   @IsString()
   @IsNotEmpty()
@@ -138,6 +147,7 @@ export class ChatMessageDto {
 ```
 
 ### ChatRequestDto
+
 ```typescript
 export class ChatRequestDto {
   @IsArray()
@@ -154,6 +164,7 @@ export class ChatRequestDto {
 ## 🔄 Streaming Implementation
 
 ### Server-Sent Events
+
 The backend implements real-time streaming using Server-Sent Events (SSE):
 
 ```typescript
@@ -166,7 +177,7 @@ async streamChat(@Body() chatRequest: ChatRequestDto, @Res() res: Response) {
 
   // Stream implementation
   const stream = this.streamingService.createStream(chatRequest.messages);
-  
+
   stream.subscribe({
     next: (chunk) => res.write(`data: ${JSON.stringify(chunk)}\n\n`),
     complete: () => res.end(),
@@ -176,55 +187,62 @@ async streamChat(@Body() chatRequest: ChatRequestDto, @Res() res: Response) {
 ```
 
 ### Mock Responses
+
 Built-in mock responses for development and testing:
 
-```typescript
+````typescript
 const MOCK_RESPONSES = {
   greeting: "Hello! I'm an AI assistant...",
   help: "I can help you with various tasks...",
   story: "Once upon a time, in a digital realm...",
   code: "Here's a simple example:\n\n```javascript\n...",
-  default: "I understand you're asking about..."
+  default: "I understand you're asking about...",
 };
-```
+````
 
 ## 🛡️ Validation & Security
 
 ### Request Validation
+
 - **DTO Validation**: All requests validated using class-validator
 - **Type Safety**: Full TypeScript implementation
 - **Sanitization**: Input sanitization and validation
 
 ### CORS Configuration
+
 ```typescript
 app.enableCors({
-  origin: ['http://localhost:4200', 'http://localhost:3000'],
-  methods: ['GET', 'POST'],
-  allowedHeaders: ['Content-Type', 'Authorization'],
-  credentials: true
+  origin: ["http://localhost:4200", "http://localhost:3001"],
+  methods: ["GET", "POST"],
+  allowedHeaders: ["Content-Type", "Authorization"],
+  credentials: true,
 });
 ```
 
 ## 📚 API Documentation
 
 ### Swagger/OpenAPI
+
 Comprehensive API documentation available at `/api/docs`
 
 Features:
+
 - **Interactive Testing**: Test endpoints directly from docs
 - **Schema Definitions**: Complete request/response schemas
 - **Authentication**: API key and bearer token support
 - **Examples**: Real request/response examples
 
 ### Generate Documentation
+
 ```bash
 # Documentation is auto-generated from decorators
-# Access at http://localhost:3000/api/docs
+# Access at http://localhost:3001/api/docs
 ```
 
 ## 🧪 Testing
 
 ### Unit Tests
+
 ```bash
 # Run all tests
 npm run test
@@ -237,12 +255,14 @@ npm run test:watch
 ```
 
 ### End-to-End Tests
+
 ```bash
 # Run e2e tests
 npm run test:e2e
 ```
 
 ### Test Structure
+
 ```
 test/
 ├── app.e2e-spec.ts       # End-to-end tests
@@ -254,6 +274,7 @@ test/
 ## 🔧 Configuration
 
 ### Environment Variables
+
 ```bash
 # .env
 PORT=3000
@@ -263,24 +284,25 @@ CORS_ORIGIN=http://localhost:4200
 ```
 
 ### NestJS Configuration
+
 ```typescript
 // main.ts
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
-  
-  app.setGlobalPrefix('api');
+
+  app.setGlobalPrefix("api");
   app.useGlobalPipes(new ValidationPipe());
   app.enableCors();
-  
+
   const config = new DocumentBuilder()
-    .setTitle('iAgent API')
-    .setDescription('AI Chat API with streaming support')
-    .setVersion('1.0')
+    .setTitle("iAgent API")
+    .setDescription("AI Chat API with streaming support")
+    .setVersion("1.0")
     .build();
-    
+
   const document = SwaggerModule.createDocument(app, config);
-  SwaggerModule.setup('api/docs', app, document);
-  
+  SwaggerModule.setup("api/docs", app, document);
+
   await app.listen(3000);
 }
 ```
@@ -288,6 +310,7 @@ async function bootstrap() {
 ## 🚀 Deployment
 
 ### Production Build
+
 ```bash
 # Build for production
 npm run build:prod
@@ -297,6 +320,7 @@ npm run start:prod
 ```
 
 ### Docker
+
 ```dockerfile
 FROM node:18-alpine
 
@@ -311,6 +335,7 @@ CMD ["node", "dist/apps/backend/main.js"]
 ```
 
 ### Environment Setup
+
 ```bash
 # Production environment
 NODE_ENV=production
@@ -321,6 +346,7 @@ API_VERSION=1.0.0
 ## 🔍 Debugging
 
 ### Development Debugging
+
 ```bash
 # Start with debugging
 npm run start:debug
@@ -330,15 +356,16 @@ npm run start:debug
 ```
 
 ### Logging
+
 ```typescript
-import { Logger } from '@nestjs/common';
+import { Logger } from "@nestjs/common";
 
 export class AppService {
   private readonly logger = new Logger(AppService.name);
 
   async processRequest() {
-    this.logger.log('Processing request...');
-    this.logger.error('Error occurred', error.stack);
+    this.logger.log("Processing request...");
+    this.logger.error("Error occurred", error.stack);
   }
 }
 ```
@@ -346,17 +373,19 @@ export class AppService {
 ## 📊 Performance
 
 ### Optimization Features
+
 - **Streaming**: Efficient real-time data streaming
 - **Validation Pipes**: Request validation without performance impact
 - **Async/Await**: Non-blocking operations
 - **Connection Pooling**: Efficient resource management
 
 ### Monitoring
+
 ```typescript
 // Add performance monitoring
 app.use((req, res, next) => {
   const start = Date.now();
-  res.on('finish', () => {
+  res.on("finish", () => {
     const duration = Date.now() - start;
     console.log(`${req.method} ${req.path} - ${duration}ms`);
   });
@@ -367,6 +396,7 @@ app.use((req, res, next) => {
 ## 🤝 Contributing
 
 ### Development Guidelines
+
 1. **Follow NestJS conventions**: Use decorators and dependency injection
 2. **Add tests**: Unit tests for services, e2e tests for controllers
 3. **Document APIs**: Use Swagger decorators for documentation
@@ -374,6 +404,7 @@ app.use((req, res, next) => {
 5. **Handle errors**: Proper error handling and logging
 
 ### Code Style
+
 - **ESLint**: Follow configured linting rules
 - **Prettier**: Auto-format code on save
 - **TypeScript**: Strict typing for all functions
@@ -389,4 +420,4 @@ app.use((req, res, next) => {
 
 ## 📄 License
 
-MIT License - see the [LICENSE](../../LICENSE) file for details. 
+MIT License - see the [LICENSE](../../LICENSE) file for details.

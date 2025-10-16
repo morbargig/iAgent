@@ -454,7 +454,7 @@ const MessageBubble = ({
   const handleFileDownload = async (fileId: string, fileName: string) => {
     if (!authToken) return;
     try {
-      await downloadFile(fileId, fileName, authToken, "http://localhost:3000");
+      await downloadFile(fileId, fileName, authToken, "http://localhost:3001");
     } catch (error) {
       console.error("Failed to download file:", error);
     }

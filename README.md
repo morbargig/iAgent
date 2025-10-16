@@ -55,7 +55,7 @@ npx nx serve @iagent/frontend
 
 # Start the backend (NestJS API)
 npx nx serve @iagent/backend
-# The API will be available at: http://localhost:3000
+# The API will be available at: http://localhost:3001
 
 # Or use npm scripts if available
 npm run dev:frontend  # Alternative command
@@ -67,7 +67,7 @@ npm run dev:backend   # Alternative command
 ```bash
 # Development (using Nx)
 npx nx serve @iagent/frontend   # Start React app at http://localhost:4200/iAgent/
-npx nx serve @iagent/backend    # Start NestJS API at http://localhost:3000
+npx nx serve @iagent/backend    # Start NestJS API at http://localhost:3001
 
 # Building (using Nx)
 npx nx build @iagent/frontend   # Build React app
@@ -98,6 +98,7 @@ npm run dev:backend      # Alternative to npx nx serve @iagent/backend
 ## 🛠️ Tech Stack
 
 ### Frontend
+
 - **React 19** - Latest React with concurrent features
 - **TypeScript** - Type-safe development
 - **Material-UI v7** - Modern Material Design components
@@ -105,6 +106,7 @@ npm run dev:backend      # Alternative to npx nx serve @iagent/backend
 - **React Markdown** - Markdown rendering with syntax highlighting
 
 ### Backend
+
 - **NestJS 11** - Progressive Node.js framework
 - **TypeScript** - Type-safe server development
 - **Express** - Fast, unopinionated web framework
@@ -112,6 +114,7 @@ npm run dev:backend      # Alternative to npx nx serve @iagent/backend
 - **Server-Sent Events** - Real-time streaming
 
 ### Development Tools
+
 - **Nx** - Monorepo management and build system
 - **ESLint** - Code linting and formatting
 - **Jest** - Testing framework
@@ -120,9 +123,11 @@ npm run dev:backend      # Alternative to npx nx serve @iagent/backend
 ## 📱 Applications
 
 ### [Frontend](./apps/frontend/README.md)
+
 React-based chat interface with Material-UI components, real-time streaming, and multi-language support.
 
 **Key Features:**
+
 - Real-time message streaming
 - Dark/light theme switching
 - Mobile-responsive design
@@ -130,9 +135,11 @@ React-based chat interface with Material-UI components, real-time streaming, and
 - Message actions (copy, edit, regenerate)
 
 ### [Backend](./apps/backend/README.md)
+
 NestJS API server providing chat functionality with comprehensive documentation and streaming support.
 
 **Key Features:**
+
 - RESTful API with Swagger docs
 - Server-Sent Events streaming
 - Request validation and error handling
@@ -142,8 +149,9 @@ NestJS API server providing chat functionality with comprehensive documentation 
 ## 🌐 API Documentation
 
 When running the backend, comprehensive API documentation is available at:
-- **Swagger UI**: http://localhost:3000/api/docs
-- **API Base**: http://localhost:3000/api
+
+- **Swagger UI**: http://localhost:3001/api/docs
+- **API Base**: http://localhost:3001/api
 
 ## 🔧 Configuration
 
@@ -152,12 +160,14 @@ When running the backend, comprehensive API documentation is available at:
 Create `.env` files in the respective app directories:
 
 **Frontend** (`apps/frontend/.env`):
+
 ```bash
-VITE_API_BASE_URL=http://localhost:3000
+VITE_API_BASE_URL=http://localhost:3001
 VITE_MOCK_MODE=false
 ```
 
 **Backend** (`apps/backend/.env`):
+
 ```bash
 PORT=3000
 NODE_ENV=development
@@ -167,6 +177,7 @@ CORS_ORIGIN=http://localhost:4200
 ## 🚀 Deployment
 
 ### Production Build
+
 ```bash
 # Build both applications
 npm run build
@@ -177,6 +188,7 @@ npm run build
 ```
 
 ### Docker Support
+
 ```bash
 # Build Docker images (when Dockerfiles are added)
 docker build -t iAgent-frontend ./apps/frontend
@@ -244,7 +256,7 @@ MIT License - see the [LICENSE](LICENSE) file for details.
 
 - [Frontend Documentation](./apps/frontend/README.md)
 - [Backend Documentation](./apps/backend/README.md)
-- [API Documentation](http://localhost:3000/api/docs) (when running)
+- [API Documentation](http://localhost:3001/api/docs) (when running)
 - [Nx Documentation](https://nx.dev)
 
 ---

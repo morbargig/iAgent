@@ -1,4 +1,5 @@
 import { Injectable, UnauthorizedException } from '@nestjs/common';
+import { env } from '../../config/env';
 
 export interface User {
   userId: string;
@@ -23,8 +24,8 @@ export interface LoginResponse {
 
 @Injectable()
 export class AuthService {
-  private readonly JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-in-production';
-  
+  private readonly JWT_SECRET = env.JWT_SECRET;
+
   // Mock users database - In production, use a real database
   private readonly users: User[] = [
     {
@@ -93,7 +94,7 @@ export class AuthService {
     const header = { alg: 'HS256', typ: 'JWT' };
     const encodedHeader = Buffer.from(JSON.stringify(header)).toString('base64url');
     const encodedPayload = Buffer.from(JSON.stringify(payload)).toString('base64url');
-    
+
     const signature = this.createSignature(`${encodedHeader}.${encodedPayload}`);
     return `${encodedHeader}.${encodedPayload}.${signature}`;
   }
@@ -106,13 +107,13 @@ export class AuthService {
 
     const [header, payload, signature] = parts;
     const expectedSignature = this.createSignature(`${header}.${payload}`);
-    
+
     if (signature !== expectedSignature) {
       throw new Error('Invalid token signature');
     }
 
     const decodedPayload = JSON.parse(Buffer.from(payload, 'base64url').toString());
-    
+
     // Check expiration
     if (decodedPayload.exp && decodedPayload.exp < Math.floor(Date.now() / 1000)) {
       throw new Error('Token expired');

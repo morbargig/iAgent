@@ -6,16 +6,16 @@
     "ghcr.io/devcontainers/features/git:1": {}
   },
   "forwardPorts": [
-    3000, // Backend API server
-    4200, // Frontend dev server  
+    3001, // Backend API server
+    3000, // Frontend dev server
     4300 // Frontend preview server
   ],
   "portsAttributes": {
-    "3000": {
+    "3001": {
       "label": "Backend API",
       "onAutoForward": "openBrowser"
     },
-    "4200": {
+    "3000": {
       "label": "Frontend Dev Server",
       "onAutoForward": "openBrowser"
     },
@@ -24,9 +24,7 @@
       "onAutoForward": "notify"
     }
   },
-  "runArgs": [
-    "--network=host"
-  ],
+  "runArgs": ["--network=host"],
   "customizations": {
     "vscode": {
       "extensions": [
@@ -53,10 +51,7 @@
       "settings": {
         "typescript.preferences.includePackageJsonAutoImports": "on",
         "npm.packageManager": "npm",
-        "eslint.workingDirectories": [
-          "apps/frontend",
-          "apps/backend"
-        ],
+        "eslint.workingDirectories": ["apps/frontend", "apps/backend"],
         "editor.formatOnSave": true,
         "editor.defaultFormatter": "esbenp.prettier-vscode",
         "editor.codeActionsOnSave": {
@@ -68,7 +63,7 @@
     }
   },
   "postCreateCommand": "npm install",
-  "postStartCommand": "echo '🚀 iAgent Development Environment Ready! Frontend: http://localhost:4200 | Backend: http://localhost:3000/api | Docs: http://localhost:3000/api/docs'",
+  "postStartCommand": "echo '🚀 iAgent Development Environment Ready! Frontend: http://localhost:4200 | Backend: http://localhost:3001/api | Docs: http://localhost:3001/api/docs'",
   "remoteUser": "node",
   "workspaceFolder": "/workspaces/iagent"
 }

@@ -20,12 +20,12 @@ This guide provides an in-depth explanation of our Continuous Deployment pipelin
 
 ### CD vs Continuous Delivery
 
-| Aspect | Continuous Delivery | Continuous Deployment |
-|--------|-------------------|---------------------|
-| **Deployment** | Manual approval required | Fully automated |
-| **Risk** | Lower (human oversight) | Higher (full automation) |
-| **Speed** | Slower (approval delays) | Faster (immediate deployment) |
-| **Use Case** | Critical systems | Rapid iteration products |
+| Aspect         | Continuous Delivery      | Continuous Deployment         |
+| -------------- | ------------------------ | ----------------------------- |
+| **Deployment** | Manual approval required | Fully automated               |
+| **Risk**       | Lower (human oversight)  | Higher (full automation)      |
+| **Speed**      | Slower (approval delays) | Faster (immediate deployment) |
+| **Use Case**   | Critical systems         | Rapid iteration products      |
 
 ### Benefits of CD
 
@@ -42,26 +42,26 @@ Our CD pipeline is triggered after successful CI completion and handles deployme
 ```mermaid
 graph TD
     A[✅ CI Success] --> B[🔍 Pre-deployment Checks]
-    
+
     B --> C{Environment?}
     C -->|Production| D[🏗️ Production Build]
     C -->|Staging| E[🧪 Staging Build]
-    
+
     D --> F[🛡️ Quality Gate]
     E --> F
-    
+
     F --> G{Quality OK?}
     G -->|Yes| H[🌐 Deploy Production]
     G -->|Yes| I[🧪 Deploy Staging]
     G -->|No| J[❌ Block Deployment]
-    
+
     H --> K[🧪 Post-deployment Tests]
     I --> K
-    
+
     K --> L{Tests Pass?}
     L -->|Yes| M[📢 Success Notification]
     L -->|No| N[🔄 Rollback]
-    
+
     style A fill:#e8f5e8
     style M fill:#e8f5e8
     style J fill:#ffebee
@@ -70,11 +70,11 @@ graph TD
 
 ### Pipeline Triggers
 
-| Trigger | Environment | Purpose |
-|---------|-------------|---------|
-| **CI Success on main** | Production | Deploy stable code to live site |
-| **Manual Dispatch** | Production/Staging | Manual deployment control |
-| **CI Success on develop** | Staging | Test features before production |
+| Trigger                   | Environment        | Purpose                         |
+| ------------------------- | ------------------ | ------------------------------- |
+| **CI Success on main**    | Production         | Deploy stable code to live site |
+| **Manual Dispatch**       | Production/Staging | Manual deployment control       |
+| **CI Success on develop** | Staging            | Test features before production |
 
 ## 🔧 Stage-by-Stage Breakdown
 
@@ -83,16 +83,18 @@ graph TD
 **Purpose**: Validate deployment conditions and set environment variables.
 
 **Duration**: ~1-2 minutes  
-**Critical**: Yes - blocks deployment if conditions not met  
+**Critical**: Yes - blocks deployment if conditions not met
 
 #### What happens:
 
 1. **Verify CI Success**
+
    ```yaml
    if: ${{ github.event.workflow_run.conclusion == 'success' || github.event_name == 'workflow_dispatch' }}
    ```
 
 2. **Determine Target Environment**
+
    ```bash
    if [[ "${{ github.ref }}" == "refs/heads/main" ]]; then
      ENVIRONMENT="production"
@@ -102,6 +104,7 @@ graph TD
    ```
 
 3. **Set Deployment URLs**
+
    ```bash
    if [[ "${ENVIRONMENT}" == "production" ]]; then
      echo "deployment_url=${{ env.PRODUCTION_URL }}" >> $GITHUB_OUTPUT
@@ -117,6 +120,7 @@ graph TD
    - Triggered by information
 
 #### Success Criteria:
+
 - ✅ CI pipeline completed successfully
 - ✅ Target environment determined
 - ✅ Deployment URLs configured
@@ -130,41 +134,46 @@ graph TD
 
 **Duration**: ~8-12 minutes  
 **Strategy**: Parallel builds for frontend and backend  
-**Depends on**: Pre-deployment verification  
+**Depends on**: Pre-deployment verification
 
 #### Matrix Configuration:
+
 ```yaml
 strategy:
   matrix:
-    project: ['frontend', 'backend']
+    project: ["frontend", "backend"]
 ```
 
 #### What happens for each project:
 
 1. **Setup Environment**
+
    ```yaml
    - name: Setup Node.js
      uses: actions/setup-node@v4
      with:
-       node-version: '18'
-       cache: 'npm'
+       node-version: "18"
+       cache: "npm"
    ```
 
 2. **Install Dependencies**
+
    ```bash
    npm ci --prefer-offline --no-audit --production=false
    ```
 
 3. **Build with Environment Variables**
+
    ```bash
    # Frontend build
    npx nx build frontend --configuration=production
-   
-   # Backend build  
+
+   # Backend build
    npx nx build backend --configuration=production
    ```
 
    Environment variables injected:
+
    ```yaml
    env:
      VITE_BASE_URL: ${{ needs.pre-deployment.outputs.deployment_url }}
@@ -174,6 +183,7 @@ strategy:
    ```
 
 4. **Analyze Build Output**
+
    ```bash
    echo "📁 Build directory contents:"
    ls -la dist/apps/${{ matrix.project }}
@@ -182,12 +192,13 @@ strategy:
    ```
 
 5. **Smoke Test Build**
+
    ```bash
    # Frontend: Check for index.html
    if [[ -f "dist/apps/frontend/index.html" ]]; then
      echo "✅ Frontend HTML file exists"
    fi
-   
+
    # Backend: Check for main.js
    if [[ -f "dist/apps/backend/main.js" ]]; then
      echo "✅ Backend main.js exists"
@@ -195,6 +206,7 @@ strategy:
    ```
 
 6. **Create Deployment Package**
+
    ```bash
    cd dist/apps/${{ matrix.project }}
    tar -czf ../../../${{ matrix.project }}-deployment.tar.gz .
@@ -206,6 +218,7 @@ strategy:
    - Size analysis reports
 
 #### Success Criteria:
+
 - ✅ Both projects build successfully
 - ✅ All required files present
 - ✅ Build sizes within acceptable limits
@@ -219,11 +232,12 @@ strategy:
 
 **Duration**: ~3-5 minutes  
 **Critical**: Yes - blocks deployment if issues found  
-**Depends on**: Production build completion  
+**Depends on**: Production build completion
 
 #### What happens:
 
 1. **Download Build Artifacts**
+
    ```yaml
    - name: Download frontend build
      uses: actions/download-artifact@v4
@@ -233,6 +247,7 @@ strategy:
    ```
 
 2. **Security Scan on Production Build**
+
    ```bash
    # Check for sensitive information
    if grep -r "password\|secret\|key\|token" dist/apps/frontend/ --exclude-dir=node_modules; then
@@ -243,10 +258,11 @@ strategy:
    ```
 
 3. **Performance Analysis**
+
    ```bash
    # Check bundle sizes
    find dist/apps/frontend -name "*.js" -exec wc -c {} + | sort -n
-   
+
    # Check for large files (> 1MB)
    find dist/apps/frontend -size +1M -type f || echo "✅ No large files found"
    ```
@@ -262,6 +278,7 @@ strategy:
    ```
 
 #### Success Criteria:
+
 - ✅ No sensitive data exposed in build
 - ✅ Bundle sizes within limits
 - ✅ Required meta tags present
@@ -277,15 +294,16 @@ strategy:
 
 **Duration**: ~3-5 minutes  
 **Target**: GitHub Pages  
-**URL**: Configured in environment variables  
+**URL**: Configured in environment variables
 
 ##### What happens:
 
 1. **Prepare Deployment Files**
+
    ```bash
    # Create .nojekyll to bypass Jekyll processing
    touch dist/apps/frontend/.nojekyll
-   
+
    # Create robots.txt for SEO
    cat > dist/apps/frontend/robots.txt << EOF
    User-agent: *
@@ -295,13 +313,14 @@ strategy:
    ```
 
 2. **Deploy to GitHub Pages**
+
    ```yaml
    - name: Deploy to GitHub Pages
      uses: peaceiris/actions-gh-pages@v3
      with:
        github_token: ${{ secrets.GITHUB_TOKEN }}
        publish_dir: ./dist/apps/frontend
-       commit_message: '🚀 Deploy ${{ github.sha }}'
+       commit_message: "🚀 Deploy ${{ github.sha }}"
    ```
 
 3. **Custom Domain Setup** (optional)
@@ -315,7 +334,7 @@ strategy:
 **Purpose**: Deploy to staging environment for testing.
 
 **Duration**: ~2-3 minutes  
-**Target**: Configurable staging server  
+**Target**: Configurable staging server
 
 ##### What happens:
 
@@ -328,6 +347,7 @@ strategy:
    ```
 
 #### Success Criteria:
+
 - ✅ Deployment completes without errors
 - ✅ Files uploaded successfully
 - ✅ DNS/routing configured correctly
@@ -341,14 +361,15 @@ strategy:
 
 **Duration**: ~5-8 minutes  
 **Critical**: Yes - triggers rollback if tests fail  
-**Depends on**: Successful deployment  
+**Depends on**: Successful deployment
 
 #### What happens:
 
 1. **Wait for Deployment Availability**
+
    ```bash
    DEPLOYMENT_URL="${{ needs.pre-deployment.outputs.deployment_url }}"
-   
+
    for i in {1..10}; do
      if curl -s --head "$DEPLOYMENT_URL" | head -n 1 | grep -q "200 OK"; then
        echo "✅ Deployment is live!"
@@ -361,6 +382,7 @@ strategy:
    ```
 
 2. **Basic Connectivity Tests**
+
    ```bash
    # Test homepage loads
    if curl -s "$DEPLOYMENT_URL" | grep -q "iAgent"; then
@@ -372,6 +394,7 @@ strategy:
    ```
 
 3. **Performance Testing**
+
    ```bash
    # Run Lighthouse audit
    npm install -g lighthouse
@@ -388,6 +411,7 @@ strategy:
    ```
 
 #### Success Criteria:
+
 - ✅ Site responds with 200 status
 - ✅ Core content loads correctly
 - ✅ Performance scores meet thresholds
@@ -400,11 +424,12 @@ strategy:
 **Purpose**: Inform team about deployment status and results.
 
 **Duration**: ~1 minute  
-**Runs**: Always (success or failure)  
+**Runs**: Always (success or failure)
 
 #### What happens:
 
 1. **Success Notification**
+
    ```bash
    echo "✅ Deployment completed successfully!"
    echo "🌐 URL: ${{ deployment_url }}"
@@ -414,12 +439,14 @@ strategy:
    ```
 
 2. **Failure Notification**
+
    ```bash
    echo "❌ Deployment failed!"
    echo "🔍 Please check the workflow logs for details"
    ```
 
 3. **External Notifications** (when configured)
+
    ```bash
    # Slack notification
    curl -X POST -H 'Content-type: application/json' \
@@ -443,14 +470,14 @@ strategy:
 graph TD
     A[🔧 Development] --> B[🧪 Staging]
     B --> C[🌐 Production]
-    
+
     A1[Local Development] --> A
     A2[Feature Branches] --> A
     A3[Integration Testing] --> B
     B1[User Acceptance Testing] --> B
     B2[Performance Testing] --> B
     C1[Live Users] --> C
-    
+
     style A fill:#e3f2fd
     style B fill:#fff3e0
     style C fill:#e8f5e8
@@ -458,11 +485,11 @@ graph TD
 
 ### Environment Configuration
 
-| Environment | Purpose | URL | Deployment Trigger | Approvals |
-|-------------|---------|-----|-------------------|-----------|
-| **Development** | Feature development | `localhost:4200` | Manual | None |
-| **Staging** | Pre-production testing | `staging.example.com` | Develop branch CI | Optional |
-| **Production** | Live application | `example.com` | Main branch CI | Required |
+| Environment     | Purpose                | URL                   | Deployment Trigger | Approvals |
+| --------------- | ---------------------- | --------------------- | ------------------ | --------- |
+| **Development** | Feature development    | `localhost:4200`      | Manual             | None      |
+| **Staging**     | Pre-production testing | `staging.example.com` | Develop branch CI  | Optional  |
+| **Production**  | Live application       | `example.com`         | Main branch CI     | Required  |
 
 ### Environment Variables
 
@@ -473,7 +500,7 @@ VITE_ENVIRONMENT: "production"
 VITE_ANALYTICS_ID: "GA-PROD-123"
 NODE_ENV: "production"
 
-# Staging Environment  
+# Staging Environment
 VITE_API_BASE_URL: "https://api-staging.example.com"
 VITE_ENVIRONMENT: "staging"
 VITE_ANALYTICS_ID: "GA-STAGING-123"
@@ -487,11 +514,13 @@ Quality gates are automated checks that must pass before deployment proceeds:
 ### Pre-deployment Gates
 
 1. **CI Success Verification**
+
    - All CI jobs must pass
    - No failing tests
    - No critical security issues
 
 2. **Branch Protection**
+
    - Only main/develop branches can deploy
    - Required reviews completed
    - Status checks passed
@@ -511,6 +540,7 @@ Quality gates are automated checks that must pass before deployment proceeds:
 ### Build Quality Gates
 
 1. **Bundle Size Limits**
+
    ```bash
    # Fail if bundle > 2MB
    SIZE=$(du -k dist/apps/frontend | cut -f1)
@@ -521,6 +551,7 @@ Quality gates are automated checks that must pass before deployment proceeds:
    ```
 
 2. **Security Scan**
+
    ```bash
    # Fail if sensitive data found
    if grep -r "api-key\|password" dist/; then
@@ -542,6 +573,7 @@ Quality gates are automated checks that must pass before deployment proceeds:
 ### Post-deployment Gates
 
 1. **Health Checks**
+
    ```bash
    # Verify application responds correctly
    curl -f "$DEPLOYMENT_URL/health" || exit 1
@@ -564,13 +596,13 @@ Deploy to a parallel environment and switch traffic:
   run: |
     # Deploy to green environment
     ./deploy-to-green.sh
-    
+
     # Run smoke tests on green
     ./test-green-environment.sh
-    
+
     # Switch traffic to green
     ./switch-to-green.sh
-    
+
     # Keep blue as rollback option
     echo "Blue environment kept for rollback"
 ```
@@ -584,10 +616,10 @@ Gradually replace instances:
   run: |
     # Deploy to 25% of instances
     ./deploy-partial.sh 25
-    
+
     # Monitor for 5 minutes
     sleep 300
-    
+
     # If healthy, continue to 100%
     ./deploy-partial.sh 100
 ```
@@ -601,10 +633,10 @@ Deploy to small percentage of users:
   run: |
     # Deploy to 5% of users
     ./deploy-canary.sh 5
-    
+
     # Monitor metrics for 1 hour
     ./monitor-canary.sh 3600
-    
+
     # If metrics good, deploy to all
     ./deploy-canary.sh 100
 ```
@@ -614,6 +646,7 @@ Deploy to small percentage of users:
 ### Beginner Exercises
 
 1. **Add Environment-Specific Configuration**
+
    ```yaml
    - name: Set environment config
      run: |
@@ -625,6 +658,7 @@ Deploy to small percentage of users:
    ```
 
 2. **Implement Simple Health Check**
+
    ```yaml
    - name: Health check
      run: |
@@ -642,10 +676,11 @@ Deploy to small percentage of users:
 ### Intermediate Exercises
 
 1. **Multi-Environment Matrix**
+
    ```yaml
    strategy:
      matrix:
-       environment: ['staging', 'production']
+       environment: ["staging", "production"]
        include:
          - environment: staging
            url: https://staging.example.com
@@ -654,6 +689,7 @@ Deploy to small percentage of users:
    ```
 
 2. **Rollback Mechanism**
+
    ```yaml
    - name: Rollback on failure
      if: failure()
@@ -674,6 +710,7 @@ Deploy to small percentage of users:
 ### Advanced Exercises
 
 1. **Feature Flag Integration**
+
    ```yaml
    - name: Update feature flags
      run: |
@@ -683,6 +720,7 @@ Deploy to small percentage of users:
    ```
 
 2. **A/B Testing Setup**
+
    ```yaml
    - name: Configure A/B test
      run: |
@@ -726,7 +764,7 @@ sleep 5
 
 # 5. Run health checks
 echo "🧪 Running health checks..."
-curl -f http://localhost:3000 || exit 1
+curl -f http://localhost:3001 || exit 1
 
 # 6. Cleanup
 kill $SERVER_PID
@@ -803,14 +841,14 @@ After each deployment, monitor:
   if: failure()
   run: |
     echo "🔄 Initiating automatic rollback"
-    
+
     # Revert to previous GitHub Pages deployment
     git checkout HEAD~1
     npm run build
-    
+
     # Deploy previous version
     npx gh-pages -d dist/apps/frontend
-    
+
     # Notify team
     echo "❌ Deployment failed, rolled back to previous version"
 ```
@@ -818,23 +856,26 @@ After each deployment, monitor:
 #### Manual Rollback Process
 
 1. **Identify Issue**
+
    - Check monitoring alerts
    - Review error logs
    - Confirm user impact
 
 2. **Initiate Rollback**
+
    ```bash
    # Find previous successful deployment
    git log --oneline -10
-   
+
    # Checkout previous version
    git checkout <previous-commit>
-   
+
    # Trigger deployment workflow
    gh workflow run cd.yml
    ```
 
 3. **Verify Rollback**
+
    - Test critical functionality
    - Monitor error rates
    - Confirm user experience restored
@@ -871,4 +912,4 @@ echo "🔍 Please investigate the issue and create incident report"
 
 ---
 
-**🎉 Congratulations!** You now understand the complete CD pipeline. This knowledge will help you deploy applications safely and efficiently while maintaining high quality standards. 
+**🎉 Congratulations!** You now understand the complete CD pipeline. This knowledge will help you deploy applications safely and efficiently while maintaining high quality standards.

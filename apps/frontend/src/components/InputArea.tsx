@@ -734,6 +734,14 @@ export function InputArea({
     [value]
   );
 
+  // Get placeholder direction based on current language (not input text)
+  const placeholderDirection = React.useMemo(() => {
+    const lang = translationContext.currentLang;
+    return lang === "he" || lang === "ar" ? "rtl" : "ltr";
+  }, [translationContext.currentLang]);
+
+  const placeholderAlign = placeholderDirection === "rtl" ? "right" : "left";
+
   // Memoize textarea styles to prevent unnecessary re-renders
   const textareaStyle = React.useMemo(
     () => ({
@@ -1042,7 +1050,7 @@ export function InputArea({
       // If we have authToken, also try API call
       if (authToken) {
         const response = await fetch(
-          `http://localhost:3000/api/chats/${currentChatId}/filters`,
+          `http://localhost:3001/api/chats/${currentChatId}/filters`,
           {
             method: "POST",
             headers: {
@@ -1104,7 +1112,7 @@ export function InputArea({
       // If we have authToken, also try API call
       if (authToken) {
         const response = await fetch(
-          `http://localhost:3000/api/chats/${currentChatId}/active-filter`,
+          `http://localhost:3001/api/chats/${currentChatId}/active-filter`,
           {
             method: "PUT",
             headers: {
@@ -1166,7 +1174,7 @@ export function InputArea({
       // Also try API call if authenticated
       if (authToken) {
         const response = await fetch(
-          `http://localhost:3000/api/chats/${currentChatId}/filters`,
+          `http://localhost:3001/api/chats/${currentChatId}/filters`,
           {
             headers: {
               Authorization: `Bearer ${authToken}`,
@@ -1299,7 +1307,7 @@ export function InputArea({
           // Also try API call if authenticated
           if (authToken) {
             await fetch(
-              `http://localhost:3000/api/chats/filters/${renameDialogFilter.filterId}`,
+              `http://localhost:3001/api/chats/filters/${renameDialogFilter.filterId}`,
               {
                 method: "PUT",
                 headers: {
@@ -1471,26 +1479,26 @@ export function InputArea({
               "&:hover": {
                 boxShadow: "0 2px 12px rgba(0, 0, 0, 0.1)",
               },
-              // Placeholder styling - simplified to prevent loops
+              // Placeholder styling - dynamic based on current language
               "& textarea::placeholder": {
                 opacity: 0.7,
-                textAlign: "left",
-                direction: "ltr",
+                textAlign: placeholderAlign,
+                direction: placeholderDirection,
               },
               "& textarea::-webkit-input-placeholder": {
                 opacity: 0.7,
-                textAlign: "left",
-                direction: "ltr",
+                textAlign: placeholderAlign,
+                direction: placeholderDirection,
               },
               "& textarea::-moz-placeholder": {
                 opacity: 0.7,
-                textAlign: "left",
-                direction: "ltr",
+                textAlign: placeholderAlign,
+                direction: placeholderDirection,
               },
               "& textarea:-ms-input-placeholder": {
                 opacity: 0.7,
-                textAlign: "left",
-                direction: "ltr",
+                textAlign: placeholderAlign,
+                direction: placeholderDirection,
               },
             }}
             onDragEnter={handleDragEnter}

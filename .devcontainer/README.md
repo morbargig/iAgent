@@ -4,39 +4,41 @@ This devcontainer provides a complete development environment for the iAgent Nx 
 
 ## Quick Start
 
-1. **Open in Dev Container**: 
+1. **Open in Dev Container**:
+
    - VS Code: `Ctrl+Shift+P` → "Dev Containers: Reopen in Container"
    - GitHub Codespaces: Click "Code" → "Codespaces" → "Create codespace on main"
 
 2. **Wait for Setup**: The container will automatically run `npm install`
 
 3. **Start Development Servers**:
+
    ```bash
    # Start frontend dev server (port 4200)
    npm run dev
-   
-   # Or start backend API server (port 3000)  
+
+   # Or start backend API server (port 3000)
    nx serve backend
-   
+
    # Or start both simultaneously
    nx run-many -t serve
    ```
 
 ## Available Ports
 
-| Port | Service | URL | Description |
-|------|---------|-----|-------------|
-| 3000 | Backend API | http://localhost:3000/api | NestJS API server |
-| 3000 | API Docs | http://localhost:3000/api/docs | Swagger documentation |
-| 4200 | Frontend | http://localhost:4200 | React dev server (HMR) |
-| 4300 | Preview | http://localhost:4300 | Vite preview server |
+| Port | Service     | URL                            | Description            |
+| ---- | ----------- | ------------------------------ | ---------------------- |
+| 3000 | Backend API | http://localhost:3001/api      | NestJS API server      |
+| 3000 | API Docs    | http://localhost:3001/api/docs | Swagger documentation  |
+| 4200 | Frontend    | http://localhost:4200          | React dev server (HMR) |
+| 4300 | Preview     | http://localhost:4300          | Vite preview server    |
 
 ## Useful Nx Commands
 
 ```bash
 # Development
 nx serve frontend          # Start frontend dev server
-nx serve backend          # Start backend API server  
+nx serve backend          # Start backend API server
 nx run-many -t serve      # Start all apps
 
 # Building
@@ -69,9 +71,11 @@ nx docker-build frontend  # Build frontend Docker image
 ## Troubleshooting
 
 ### Port Conflicts
+
 If ports are already in use, VS Code will automatically forward to available ports.
 
 ### Package Installation Issues
+
 ```bash
 # Clear cache and reinstall
 rm -rf node_modules package-lock.json
@@ -79,6 +83,7 @@ npm install
 ```
 
 ### Nx Cache Issues
+
 ```bash
 # Clear Nx cache
 nx reset
@@ -94,4 +99,4 @@ nx docker-build frontend
 
 # Run the built image
 docker run -p 3000:3000 iagent-frontend
-``` 
+```

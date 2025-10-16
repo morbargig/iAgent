@@ -7,18 +7,19 @@ import { Logger } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { AppModule } from './app/app.module.js';
+import { env } from './config/env.js';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
-  
+
   // Enable CORS for frontend communication
   app.enableCors({
-    origin: ['http://localhost:4200', 'http://localhost:3000'], // Frontend ports
+    origin: ['http://localhost:3000', "http://localhost:3001"], // Frontend ports
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization', 'Cache-Control', 'x-user-id'],
     credentials: true,
   });
-  
+
   const globalPrefix = 'api';
   app.setGlobalPrefix(globalPrefix);
 
@@ -35,7 +36,7 @@ async function bootstrap() {
     .addTag('Chat', 'Chat and messaging endpoints')
     .addTag('Authentication', 'Authentication endpoints')
     .addTag('Chat Management', 'Chat CRUD operations')
-    .addServer('http://localhost:3000', 'Development server')
+    .addServer('http://localhost:3001', 'Development server')
     .addServer('https://your-production-domain.com', 'Production server')
     .addBearerAuth(
       {
@@ -60,9 +61,9 @@ async function bootstrap() {
     customfavIcon: 'https://avatars.githubusercontent.com/u/6936373?s=200&v=4',
   });
 
-  const port = process.env.PORT || 3000;
+  const port = env.PORT;
   await app.listen(port);
-  
+
   Logger.log(
     `🚀 Application is running on: http://localhost:${port}/${globalPrefix}`
   );

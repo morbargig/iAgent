@@ -17,6 +17,7 @@ import {
 } from '@nestjs/swagger';
 
 import { ChatService } from './services/chat.service';
+import { MongoDBConnectionService } from './database/mongodb-connection.service';
 import { UserId, ApiJwtAuth } from './decorators/auth.decorator';
 // import { AuthService, LoginRequest, LoginResponse } from './auth/auth.service';
 // import { AuthGuard, AuthenticatedRequest } from './auth/auth.guard';
@@ -46,7 +47,8 @@ interface MessageEvent {
 @Controller()
 export class AppController {
   constructor(
-    private readonly chatService: ChatService
+    private readonly chatService: ChatService,
+    private readonly dbConnection: MongoDBConnectionService
   ) { }
 
   @Get()
@@ -69,6 +71,7 @@ export class AppController {
       uptime: Math.floor(process.uptime()),
       endpoints: {
         health: '/api',
+        database: '/api/health/database',
         login: '/api/auth/login',
         demo: '/api/auth/demo-token',
         chat: '/api/chat',
@@ -77,6 +80,94 @@ export class AppController {
         docs: '/api/docs'
       }
     };
+  }
+
+  @Get('health/database')
+  @ApiOperation({
+    summary: 'Database health check',
+    description: 'Returns the current MongoDB connection status, mode, and database information'
+  })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'Database connection status retrieved successfully',
+    schema: {
+      type: 'object',
+      properties: {
+        connected: {
+          type: 'boolean',
+          description: 'Whether the database is currently connected',
+          example: true
+        },
+        mode: {
+          type: 'string',
+          enum: ['demo', 'production', 'memory'],
+          description: 'Current operation mode',
+          example: 'demo'
+        },
+        uri: {
+          type: 'string',
+          description: 'Sanitized database URI (credentials hidden)',
+          example: 'mongodb://user:****@localhost:27017/iagent'
+        },
+        database: {
+          type: 'string',
+          description: 'Current database name',
+          example: 'iagent'
+        },
+        error: {
+          type: 'string',
+          description: 'Error message if connection failed',
+          example: 'Connection timeout'
+        },
+        timestamp: {
+          type: 'string',
+          format: 'date-time',
+          description: 'Time of last status update',
+          example: '2024-01-01T12:00:00.000Z'
+        }
+      }
+    }
+  })
+  getDatabaseStatus() {
+    return this.dbConnection.getStatus();
+  }
+
+  @Post('health/database/reconnect')
+  @ApiOperation({
+    summary: 'Reconnect to database',
+    description: 'Attempts to reconnect to the MongoDB database'
+  })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'Reconnection attempt completed',
+    schema: {
+      type: 'object',
+      properties: {
+        success: {
+          type: 'boolean',
+          description: 'Whether reconnection was successful'
+        },
+        status: {
+          type: 'object',
+          description: 'Current database status after reconnection attempt'
+        }
+      }
+    }
+  })
+  async reconnectDatabase() {
+    try {
+      const status = await this.dbConnection.reconnect();
+      return {
+        success: status.connected,
+        status
+      };
+    } catch (error) {
+      return {
+        success: false,
+        status: this.dbConnection.getStatus(),
+        error: error instanceof Error ? error.message : 'Unknown error'
+      };
+    }
   }
 
   @Post('auth/login')

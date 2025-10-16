@@ -5,6 +5,7 @@ import { Model, Connection } from 'mongoose';
 import { GridFSBucket, ObjectId } from 'mongodb';
 import { Readable } from 'stream';
 import { Chat, ChatDocument, ChatMessage, ChatMessageDocument, ChatFilter, ChatFilterDocument } from '../schemas/chat.schema';
+import { env } from '../../config/env';
 
 export interface CreateChatDto {
   chatId: string;
@@ -75,7 +76,7 @@ export class ChatService {
     @Optional() @InjectConnection() private connection: Connection,
   ) {
     // Check if MongoDB is available (demo mode detection)
-    this.isDemoMode = process.env.DEMO_MODE === 'true' || !process.env.MONGODB_URI || !this.chatModel || !this.messageModel || !this.filterModel;
+    this.isDemoMode = env.DEMO_MODE || !env.MONGODB_URI || !this.chatModel || !this.messageModel || !this.filterModel;
 
     if (this.isDemoMode) {
       this.logger.warn('🚨 Running in DEMO MODE - data will not persist and MongoDB is disabled');
@@ -650,7 +651,7 @@ export class ChatService {
     if (this.isDemoMode) {
       return {
         isDemoMode: true,
-        reason: process.env.DEMO_MODE === 'true'
+        reason: env.DEMO_MODE
           ? 'DEMO_MODE environment variable is set'
           : 'No MONGODB_URI environment variable found'
       };
