@@ -1613,7 +1613,9 @@ export function InputArea({
       }
 
       // Prevent duplicates by id using current state
-      const exists = currentFiles.some((f) => "id" in f && f.id === document.id);
+      const exists = currentFiles.some(
+        (f) => "id" in f && f.id === document.id
+      );
 
       if (!exists) {
         // Add as SelectedDocument (already in MongoDB)
@@ -1622,7 +1624,9 @@ export function InputArea({
           filename: document.name || document.filename,
           size: document.size,
           mimetype:
-            document.mimeType || document.mimetype || "application/octet-stream",
+            document.mimeType ||
+            document.mimetype ||
+            "application/octet-stream",
           uploadDate:
             (document.uploadedAt instanceof Date
               ? document.uploadedAt
@@ -3484,7 +3488,7 @@ export function InputArea({
         onDocumentSelect={handleDocumentSelectFromDialog}
         initialTab="manage"
         selectionMode={true}
-        maxSelection={10}
+        maxSelection={FILE_UPLOAD_CONFIG.MAX_FILE_COUNT}
         title={t("documentManagement")}
       />
 
