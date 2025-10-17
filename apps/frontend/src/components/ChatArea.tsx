@@ -42,7 +42,6 @@ import {
 } from "@mui/icons-material";
 import { type Message } from "@iagent/stream-mocks";
 import { MarkdownRenderer } from "./MarkdownRenderer";
-import { FilePreview } from "./FilePreview";
 import { FileAttachmentCard } from "./FileAttachmentCard";
 import {
   extractPlainTextFromMarkdown,
@@ -498,15 +497,19 @@ const MessageBubble = ({
             <FileAttachmentCard
               files={message.attachments.map((f: any) => ({
                 id: f.id,
-                name: f.name || f.filename,
-                originalName: f.name || f.filename,
+                name: f.filename || f.name,
+                originalName: f.filename || f.name,
                 size: f.size,
-                type: f.mimeType || f.mimetype,
-                mimeType: f.mimeType || f.mimetype,
-                uploadedAt: new Date(f.uploadedAt || new Date()),
-                userId: 'user',
-                status: 'ready' as const,
-                url: f.url,
+                type: f.mimetype || f.mimeType || "application/octet-stream",
+                mimeType:
+                  f.mimetype || f.mimeType || "application/octet-stream",
+                uploadedAt: new Date(
+                  f.uploadDate || f.uploadedAt || Date.now()
+                ),
+                userId: "user",
+                status: "ready" as const,
+                url: `http://localhost:3030/api/files/${f.id}`,
+                metadata: {},
               }))}
               isDarkMode={isDarkMode}
             />

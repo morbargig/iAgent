@@ -14,8 +14,6 @@ import {
   Badge,
   Chip,
   Snackbar,
-  Paper,
-  LinearProgress,
   Alert,
 } from "@mui/material";
 import { parseISO } from "date-fns";
@@ -35,15 +33,8 @@ import {
   PlayArrow as PickIcon,
   Visibility as ViewIcon,
   Delete as DeleteIcon,
-  Download as DownloadIcon,
   Close as CloseIcon,
   CloudUpload as CloudUploadIcon,
-  InsertDriveFile as FileIcon,
-  Image as ImageIcon,
-  PictureAsPdf as PdfIcon,
-  Archive as ArchiveIcon,
-  Code as CodeIcon,
-  Description as DocumentIcon,
 } from "@mui/icons-material";
 import { useTranslation } from "../contexts/TranslationContext";
 import { Translate } from "./Translate";
@@ -57,9 +48,9 @@ import { useToolSchemas } from "../services/toolService";
 import { DocumentManagementDialog } from "./DocumentManagementDialog";
 import FolderIcon from "@mui/icons-material/Folder";
 import { DocumentService } from "../services/documentService";
-import { formatFileSize, getFileIconComponent } from "../types/document.types";
-import { FILE_UPLOAD_CONFIG, getFileCategory } from "../config/fileUpload";
-import { validateFile, validateFiles, getFileIconColor } from "../services/fileService";
+import { formatFileSize } from "../types/document.types";
+import { FILE_UPLOAD_CONFIG } from "../config/fileUpload";
+import { validateFiles } from "../services/fileService";
 
 import BasicDateRangePicker from "./BasicDateRangePicker";
 
@@ -77,7 +68,7 @@ const detectLanguage = (text: string): "ltr" | "rtl" => {
 // Unified file state interfaces
 interface PendingFile {
   localFile: File;
-  status: 'pending' | 'uploading' | 'uploaded' | 'error';
+  status: "pending" | "uploading" | "uploaded" | "error";
   progress?: number;
   uploadedFile?: {
     id: string;
@@ -95,7 +86,7 @@ interface SelectedDocument {
   size: number;
   mimetype: string;
   uploadDate: string;
-  source: 'document-manager';
+  source: "document-manager";
 }
 
 export interface DateFilter {
@@ -248,8 +239,10 @@ export function InputArea({
   const translationContext = useTranslation();
   const { t } = translationContext;
 
-  // File upload state - local file selection (before upload)
-  const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
+  // Unified file state - manages both pending uploads and selected documents
+  const [allFiles, setAllFiles] = useState<(PendingFile | SelectedDocument)[]>(
+    []
+  );
   const [isDragging, setIsDragging] = useState(false);
   const [fileError, setFileError] = useState<string | null>(null);
   const [showFileError, setShowFileError] = useState(false);
@@ -553,7 +546,13 @@ export function InputArea({
     if (!files || files.length === 0) return;
 
     const fileArray = Array.from(files);
-    const validation = validateFiles(fileArray, selectedFiles);
+
+    // Get current local files for validation
+    const currentLocalFiles = allFiles
+      .filter((f): f is PendingFile => "localFile" in f)
+      .map((f) => f.localFile);
+
+    const validation = validateFiles(fileArray, currentLocalFiles);
 
     if (!validation.valid) {
       setFileError(validation.error || "File validation failed");
@@ -561,15 +560,18 @@ export function InputArea({
       return;
     }
 
-    setSelectedFiles([...selectedFiles, ...fileArray]);
+    // Add files as pending
+    const newPendingFiles: PendingFile[] = fileArray.map((file) => ({
+      localFile: file,
+      status: "pending" as const,
+    }));
+
+    setAllFiles([...allFiles, ...newPendingFiles]);
+
     // Reset the input value to allow selecting the same file again
     if (fileInputRef.current) {
       fileInputRef.current.value = "";
     }
-  };
-
-  const removeFile = (index: number) => {
-    setSelectedFiles(selectedFiles.filter((_, i) => i !== index));
   };
 
   const handleDragEnter = (e: React.DragEvent) => {
@@ -601,7 +603,13 @@ export function InputArea({
     if (!files || files.length === 0) return;
 
     const fileArray = Array.from(files);
-    const validation = validateFiles(fileArray, selectedFiles);
+
+    // Get current local files for validation
+    const currentLocalFiles = allFiles
+      .filter((f): f is PendingFile => "localFile" in f)
+      .map((f) => f.localFile);
+
+    const validation = validateFiles(fileArray, currentLocalFiles);
 
     if (!validation.valid) {
       setFileError(validation.error || "File validation failed");
@@ -609,27 +617,13 @@ export function InputArea({
       return;
     }
 
-    setSelectedFiles([...selectedFiles, ...fileArray]);
-  };
+    // Add files as pending
+    const newPendingFiles: PendingFile[] = fileArray.map((file) => ({
+      localFile: file,
+      status: "pending" as const,
+    }));
 
-  const getFileIcon = (mimeType: string) => {
-    const category = getFileCategory(mimeType);
-    const color = getFileIconColor(mimeType, isDarkMode);
-
-    switch (category) {
-      case "image":
-        return <ImageIcon sx={{ fontSize: 18, color }} />;
-      case "pdf":
-        return <PdfIcon sx={{ fontSize: 18, color }} />;
-      case "archive":
-        return <ArchiveIcon sx={{ fontSize: 18, color }} />;
-      case "code":
-        return <CodeIcon sx={{ fontSize: 18, color }} />;
-      case "document":
-        return <DocumentIcon sx={{ fontSize: 18, color }} />;
-      default:
-        return <FileIcon sx={{ fontSize: 18, color }} />;
-    }
+    setAllFiles([...allFiles, ...newPendingFiles]);
   };
 
   const handleKeyDown = (event: React.KeyboardEvent) => {
@@ -642,22 +636,131 @@ export function InputArea({
         return;
       }
 
-      if ((value.trim() || selectedFiles.length > 0) && !disabled && !isLoading) {
+      if ((value.trim() || allFiles.length > 0) && !disabled && !isLoading) {
         handleSubmit();
       }
     }
   };
 
-  const handleSubmit = () => {
+  // Upload pending files to MongoDB
+  const uploadPendingFiles = async (): Promise<void> => {
+    const pendingFiles = allFiles.filter(
+      (f): f is PendingFile => "localFile" in f && f.status === "pending"
+    );
+
+    for (const pending of pendingFiles) {
+      try {
+        // Update status to uploading
+        setAllFiles((prev) =>
+          prev.map((f) =>
+            f === pending
+              ? { ...f, status: "uploading" as const, progress: 0 }
+              : f
+          )
+        );
+
+        // Upload via documentService (which uses correct endpoint)
+        const result = await documentService.uploadFile(
+          pending.localFile,
+          {},
+          (progress) => {
+            setAllFiles((prev) =>
+              prev.map((f) =>
+                f === pending ? { ...f, progress: progress.progress } : f
+              )
+            );
+          }
+        );
+
+        if (result.success && result.document) {
+          const doc = result.document;
+          // Update to uploaded status
+          setAllFiles((prev) =>
+            prev.map((f) =>
+              f === pending
+                ? {
+                    ...f,
+                    status: "uploaded" as const,
+                    uploadedFile: {
+                      id: doc.id,
+                      filename: doc.name,
+                      size: doc.size,
+                      mimetype: doc.mimeType,
+                      uploadDate: doc.uploadedAt.toISOString(),
+                    },
+                  }
+                : f
+            )
+          );
+        } else {
+          throw new Error(result.error || "Upload failed");
+        }
+      } catch (error) {
+        setAllFiles((prev) =>
+          prev.map((f) =>
+            f === pending
+              ? {
+                  ...f,
+                  status: "error" as const,
+                  error:
+                    error instanceof Error ? error.message : "Upload failed",
+                }
+              : f
+          )
+        );
+      }
+    }
+  };
+
+  const handleSubmit = async () => {
     if (isLoading && onStop) {
       onStop();
-    } else if ((value.trim() || selectedFiles.length > 0) && !disabled) {
+    } else if ((value.trim() || allFiles.length > 0) && !disabled) {
       // Check if there are unconfigured tools before submitting
       if (needsToolConfiguration) {
         // Open settings dialog instead of submitting
         setToolSettingsOpen(true);
         return;
       }
+
+      // Upload pending files first
+      await uploadPendingFiles();
+
+      // Check if any uploads failed
+      const hasErrors = allFiles.some(
+        (f) => "status" in f && f.status === "error"
+      );
+      if (hasErrors) {
+        setFileError(
+          "Some files failed to upload. Please remove them or try again."
+        );
+        setShowFileError(true);
+        return;
+      }
+
+      // Collect all file references (both uploaded and from document manager)
+      const attachments = allFiles
+        .map((f) => {
+          if ("source" in f && f.source === "document-manager") {
+            return {
+              id: f.id,
+              filename: f.filename,
+              size: f.size,
+              mimetype: f.mimetype,
+              uploadDate: f.uploadDate,
+            };
+          } else if ("uploadedFile" in f && f.uploadedFile) {
+            return f.uploadedFile;
+          }
+          return null;
+        })
+        .filter(Boolean) as Array<{
+        id: string;
+        filename: string;
+        size: number;
+        mimetype: string;
+        uploadDate: string;
+      }>;
 
       // Prepare date filter data with proper serialization
       const dateFilter: DateFilter = {
@@ -715,27 +818,13 @@ export function InputArea({
           (toolId) => enabledTools[toolId]
         ),
         filterSnapshot,
-        files: selectedFiles,  // Add local files
-        attachments: attachedFiles.map((f: any) => ({
-          id: f.id,
-          filename: f.filename,
-          size: f.size,
-          mimetype: f.mimetype,
-          uploadDate: f.uploadDate,
-        })),
+        attachments,
       };
 
       onSend(sendData);
 
-      // Clear selected files after successful send
-      setSelectedFiles([]);
-
-      // Clear attached files after successful send
-      if (attachedFiles && attachedFiles.length > 0) {
-        attachedFiles.forEach((file: any) => {
-          onRemoveAttachedFile?.(file.id);
-        });
-      }
+      // Clear all files after successful send
+      setAllFiles([]);
     }
   };
 
@@ -1438,7 +1527,9 @@ export function InputArea({
   const [documentService] = useState(() => new DocumentService());
 
   // File upload dropdown menu state
-  const [fileMenuAnchor, setFileMenuAnchor] = useState<null | HTMLElement>(null);
+  const [fileMenuAnchor, setFileMenuAnchor] = useState<null | HTMLElement>(
+    null
+  );
   const fileMenuOpen = Boolean(fileMenuAnchor);
 
   const handleOpenDocsDialog = () => {
@@ -1470,106 +1561,81 @@ export function InputArea({
     handleOpenDocsDialog();
   };
 
-  const handleFileInputChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileInputChange = (
+    event: React.ChangeEvent<HTMLInputElement>
+  ) => {
     const files = Array.from(event.target.files || []);
-    
+
     if (files.length === 0) return;
 
     // Validate file count
-    const totalCount = files.length + attachedFiles.length;
+    const totalCount = files.length + allFiles.length;
     if (totalCount > FILE_UPLOAD_CONFIG.MAX_FILE_COUNT) {
       setShowLimitWarning(true);
       return;
     }
 
-    // Validate each file size
-    for (const file of files) {
-      if (file.size > FILE_UPLOAD_CONFIG.MAX_FILE_SIZE) {
-        alert(`File ${file.name} exceeds maximum size of ${formatFileSize(FILE_UPLOAD_CONFIG.MAX_FILE_SIZE)}`);
-        return;
-      }
-    }
+    // Get current local files for validation
+    const currentLocalFiles = allFiles
+      .filter((f): f is PendingFile => "localFile" in f)
+      .map((f) => f.localFile);
 
-    // Validate total size
-    const totalSize = [...attachedFiles, ...files].reduce((sum, f) => sum + (f.size || 0), 0);
-    if (totalSize > FILE_UPLOAD_CONFIG.MAX_TOTAL_SIZE) {
-      alert(`Total file size exceeds maximum of ${formatFileSize(FILE_UPLOAD_CONFIG.MAX_TOTAL_SIZE)}`);
+    const validation = validateFiles(files, currentLocalFiles);
+
+    if (!validation.valid) {
+      setFileError(validation.error || "File validation failed");
+      setShowFileError(true);
       return;
     }
 
-    // Upload files
-    files.forEach(file => {
-      if (onFileUploaded) {
-        // Convert File to FileUploadResult-like object
-        const fileData = {
-          id: `file_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-          filename: file.name,
-          size: file.size,
-          mimetype: file.type,
-          uploadDate: new Date().toISOString(),
-        };
-        onFileUploaded(fileData);
-      }
-    });
+    // Add files as pending
+    const newPendingFiles: PendingFile[] = files.map((file) => ({
+      localFile: file,
+      status: "pending" as const,
+    }));
+
+    setAllFiles([...allFiles, ...newPendingFiles]);
 
     // Reset input
     if (event.target) {
-      event.target.value = '';
+      event.target.value = "";
     }
   };
 
   // Handle selecting a document from the dialog
   const handleDocumentSelectFromDialog = (document: any) => {
-    // Check file limit
-    if (attachedFiles.length >= 10) {
-      setShowLimitWarning(true);
-      return;
-    }
-    
-    // Prevent duplicates by id
-    const exists = attachedFiles?.some((f: any) => (f.id || f._id) === document.id);
-    if (!exists) {
-      // Map DocumentFile -> FileUploadResult-like object for upstream handler
-      const mapped = {
-        id: document.id,
-        filename: document.name || document.filename,
-        size: document.size,
-        mimetype: document.mimeType || document.mimetype || 'application/octet-stream',
-        uploadDate: (document.uploadedAt instanceof Date ? document.uploadedAt : new Date(document.uploadedAt || Date.now())).toISOString?.() || new Date().toISOString(),
-      };
-      onFileUploaded?.(mapped);
-    }
-  };
-
-  // Handle preview attachment
-  const handlePreviewAttachment = (fileId: string) => {
-    const file = attachedFiles.find((f: any) => f.id === fileId);
-    if (file) {
-      // Use direct localhost:3001 URL (no proxy)
-      const url = `http://localhost:3001/api/files/${file.id}`;
-      window.open(url, '_blank', 'noopener,noreferrer');
-    }
-  };
-
-  // Handle download attachment
-  const handleDownloadAttachment = async (fileId: string) => {
-    const file = attachedFiles.find((f: any) => f.id === fileId);
-    if (file) {
-      try {
-        const blob = await documentService.downloadDocument(file.id);
-        const url = URL.createObjectURL(blob);
-        const link = document.createElement('a');
-        link.href = url;
-        link.download = file.filename;
-        link.style.display = 'none';
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        URL.revokeObjectURL(url);
-      } catch (error) {
-        console.error('Download failed:', error);
+    // Use functional update to ensure we get the latest state
+    setAllFiles((currentFiles) => {
+      // Check file limit with current state
+      if (currentFiles.length >= FILE_UPLOAD_CONFIG.MAX_FILE_COUNT) {
+        setShowLimitWarning(true);
+        return currentFiles;
       }
-    }
+
+      // Prevent duplicates by id using current state
+      const exists = currentFiles.some((f) => "id" in f && f.id === document.id);
+
+      if (!exists) {
+        // Add as SelectedDocument (already in MongoDB)
+        const selectedDoc: SelectedDocument = {
+          id: document.id,
+          filename: document.name || document.filename,
+          size: document.size,
+          mimetype:
+            document.mimeType || document.mimetype || "application/octet-stream",
+          uploadDate:
+            (document.uploadedAt instanceof Date
+              ? document.uploadedAt
+              : new Date(document.uploadedAt || Date.now())
+            ).toISOString?.() || new Date().toISOString(),
+          source: "document-manager",
+        };
+
+        return [...currentFiles, selectedDoc];
+      }
+
+      return currentFiles;
+    });
   };
 
   return (
@@ -1695,78 +1761,98 @@ export function InputArea({
               },
             }}
           >
-            {/* Selected Files Preview (before upload) - Chip-based UI */}
-            {selectedFiles.length > 0 && (
+            {/* Unified File Preview - Minimalistic badges */}
+            {allFiles.length > 0 && (
               <Box
                 sx={{
-                  padding: "12px 16px 8px 16px",
-                  display: "flex",
-                  flexDirection: "column",
-                  gap: "8px",
+                  padding: "12px 16px",
                   borderBottom: `1px solid ${isDarkMode ? "#565869" : "#d1d5db"}`,
                 }}
               >
                 <Box sx={{ display: "flex", flexWrap: "wrap", gap: "8px" }}>
-                  {selectedFiles.map((file, index) => (
-                    <Box
-                      key={index}
-                      sx={{
-                        position: "relative",
-                        minWidth: "200px",
-                        maxWidth: "300px",
-                      }}
-                    >
+                  {allFiles.map((file, index) => {
+                    const isPending = "localFile" in file;
+                    const filename = isPending
+                      ? file.localFile.name
+                      : file.filename;
+                    const size = isPending ? file.localFile.size : file.size;
+
+                    return (
                       <Chip
-                        icon={getFileIcon(file.type || "application/octet-stream")}
+                        key={`${filename}-${index}`}
                         label={
                           <Box
                             sx={{
                               display: "flex",
-                              flexDirection: "column",
-                              gap: "2px",
-                              width: "100%",
+                              alignItems: "center",
+                              gap: "4px",
                             }}
                           >
-                            <Box
+                            <Typography
+                              variant="body2"
                               sx={{
-                                display: "flex",
-                                alignItems: "center",
-                                gap: "4px",
+                                maxWidth: "150px",
+                                overflow: "hidden",
+                                textOverflow: "ellipsis",
+                                whiteSpace: "nowrap",
+                                fontSize: "13px",
                               }}
                             >
-                              <Typography
-                                variant="body2"
-                                sx={{
-                                  maxWidth: "150px",
-                                  overflow: "hidden",
-                                  textOverflow: "ellipsis",
-                                  whiteSpace: "nowrap",
-                                  fontSize: "13px",
-                                }}
-                              >
-                                {file.name}
-                              </Typography>
+                              {filename}
+                            </Typography>
+                            <Typography
+                              variant="caption"
+                              sx={{
+                                color: isDarkMode ? "#a3a3a3" : "#6b7280",
+                                fontSize: "11px",
+                              }}
+                            >
+                              ({formatFileSize(size)})
+                            </Typography>
+                            {isPending && file.status === "uploading" && (
                               <Typography
                                 variant="caption"
                                 sx={{
-                                  color: isDarkMode ? "#a3a3a3" : "#6b7280",
+                                  color: "#3b82f6",
                                   fontSize: "11px",
+                                  ml: 0.5,
                                 }}
                               >
-                                ({formatFileSize(file.size)})
+                                {file.progress}%
                               </Typography>
-                            </Box>
+                            )}
+                            {isPending && file.status === "error" && (
+                              <Typography
+                                variant="caption"
+                                sx={{
+                                  color: "#ef4444",
+                                  fontSize: "11px",
+                                  ml: 0.5,
+                                }}
+                              >
+                                ✕
+                              </Typography>
+                            )}
                           </Box>
                         }
-                        onDelete={() => removeFile(index)}
+                        onDelete={() => {
+                          setAllFiles((prev) =>
+                            prev.filter((_, i) => i !== index)
+                          );
+                        }}
                         deleteIcon={<CloseIcon sx={{ fontSize: 16 }} />}
                         sx={{
                           backgroundColor: isDarkMode ? "#343541" : "#e5e7eb",
                           color: isDarkMode ? "#ececf1" : "#374151",
-                          width: "100%",
-                          justifyContent: "space-between",
+                          height: "32px",
+                          border:
+                            isPending && file.status === "error"
+                              ? "1px solid #ef4444"
+                              : isPending && file.status === "uploading"
+                                ? "1px solid #3b82f6"
+                                : "none",
                           "& .MuiChip-label": {
-                            width: "100%",
+                            padding: "0 12px",
                           },
                           "& .MuiChip-deleteIcon": {
                             color: isDarkMode ? "#a3a3a3" : "#6b7280",
@@ -1776,134 +1862,6 @@ export function InputArea({
                           },
                         }}
                       />
-                    </Box>
-                  ))}
-                </Box>
-              </Box>
-            )}
-
-            {/* File Preview Section - Inside bubble */}
-            {attachedFiles && attachedFiles.length > 0 && (
-              <Box
-                sx={{
-                  p: 1.5,
-                  borderBottom: `1px solid ${isDarkMode ? "rgba(255, 255, 255, 0.1)" : "rgba(0, 0, 0, 0.08)"}`,
-                  backgroundColor: isDarkMode ? "rgba(255, 255, 255, 0.02)" : "rgba(0, 0, 0, 0.01)",
-                  borderTopLeftRadius: "24px",
-                  borderTopRightRadius: "24px",
-                }}
-              >
-                <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
-                  {attachedFiles.map((file: any) => {
-                    const { Icon, color } = getFileIconComponent(file.mimetype);
-                    return (
-                      <Paper
-                        key={file.id}
-                        elevation={0}
-                        sx={{
-                          display: 'inline-flex',
-                          alignItems: 'center',
-                          gap: 1,
-                          p: 1,
-                          borderRadius: '8px',
-                          backgroundColor: isDarkMode ? `${color}15` : `${color}08`,
-                          border: `1px solid ${color}40`,
-                          maxWidth: '220px',
-                          transition: 'all 0.2s ease',
-                          '&:hover': {
-                            borderColor: `${color}80`,
-                            boxShadow: `0 2px 8px ${color}30`,
-                          },
-                        }}
-                      >
-                        {/* File icon */}
-                        <Box
-                          sx={{
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            width: 32,
-                            height: 32,
-                            borderRadius: '6px',
-                            backgroundColor: `${color}20`,
-                            color: color,
-                            flexShrink: 0,
-                          }}
-                        >
-                          <Icon sx={{ fontSize: 18 }} />
-                        </Box>
-                        
-                        {/* File info */}
-                        <Box flex={1} minWidth={0}>
-                          <Typography 
-                            variant="caption" 
-                            fontWeight={600}
-                            noWrap
-                            sx={{ 
-                              color: isDarkMode ? '#ffffff' : '#1f2937',
-                              fontSize: '0.8125rem',
-                              display: 'block',
-                            }}
-                          >
-                            {file.filename}
-                          </Typography>
-                          <Typography 
-                            variant="caption" 
-                            sx={{ 
-                              color: isDarkMode ? '#9ca3af' : '#6b7280',
-                              fontSize: '0.75rem',
-                            }}
-                          >
-                            {formatFileSize(file.size)}
-                          </Typography>
-                        </Box>
-                        
-                        {/* Action buttons */}
-                        <Box display="flex" gap={0.25} flexShrink={0}>
-                          <Tooltip title="Preview">
-                            <IconButton
-                              onClick={() => handlePreviewAttachment(file.id)}
-                              size="small"
-                              sx={{
-                                width: 24,
-                                height: 24,
-                                color: isDarkMode ? '#9ca3af' : '#6b7280',
-                                '&:hover': { color: color },
-                              }}
-                            >
-                              <ViewIcon sx={{ fontSize: 14 }} />
-                            </IconButton>
-                          </Tooltip>
-                          <Tooltip title="Download">
-                            <IconButton
-                              onClick={() => handleDownloadAttachment(file.id)}
-                              size="small"
-                              sx={{
-                                width: 24,
-                                height: 24,
-                                color: isDarkMode ? '#9ca3af' : '#6b7280',
-                                '&:hover': { color: color },
-                              }}
-                            >
-                              <DownloadIcon sx={{ fontSize: 14 }} />
-                            </IconButton>
-                          </Tooltip>
-                          <Tooltip title="Remove">
-                            <IconButton
-                              onClick={() => onRemoveAttachedFile?.(file.id)}
-                              size="small"
-                              sx={{
-                                width: 24,
-                                height: 24,
-                                color: isDarkMode ? '#9ca3af' : '#6b7280',
-                                '&:hover': { color: '#ef4444' },
-                              }}
-                            >
-                              <CloseIcon sx={{ fontSize: 14 }} />
-                            </IconButton>
-                          </Tooltip>
-                        </Box>
-                      </Paper>
                     );
                   })}
                 </Box>
@@ -2433,28 +2391,38 @@ export function InputArea({
                         type="file"
                         multiple
                         onChange={handleFileSelect}
-                        style={{ display: 'none' }}
+                        style={{ display: "none" }}
                         disabled={disabled}
                       />
 
                       {/* File Upload Button with Badge */}
-                      <Tooltip title={selectedFiles.length >= FILE_UPLOAD_CONFIG.MAX_FILE_COUNT ? `Maximum ${FILE_UPLOAD_CONFIG.MAX_FILE_COUNT} files reached` : (t("attachFiles") || "Attach Files")}>
+                      <Tooltip
+                        title={
+                          allFiles.length >= FILE_UPLOAD_CONFIG.MAX_FILE_COUNT
+                            ? `Maximum ${FILE_UPLOAD_CONFIG.MAX_FILE_COUNT} files reached`
+                            : t("attachFiles") || "Attach Files"
+                        }
+                      >
                         <Badge
-                          badgeContent={selectedFiles.length}
+                          badgeContent={allFiles.length}
                           color="primary"
-                          invisible={selectedFiles.length === 0}
+                          invisible={allFiles.length === 0}
                           sx={{
-                            '& .MuiBadge-badge': {
-                              fontSize: '0.625rem',
-                              height: '16px',
-                              minWidth: '16px',
-                              padding: '0 4px',
-                            }
+                            "& .MuiBadge-badge": {
+                              fontSize: "0.625rem",
+                              height: "16px",
+                              minWidth: "16px",
+                              padding: "0 4px",
+                            },
                           }}
                         >
                           <IconButton
                             onClick={handleFileMenuClick}
-                            disabled={disabled || selectedFiles.length >= FILE_UPLOAD_CONFIG.MAX_FILE_COUNT}
+                            disabled={
+                              disabled ||
+                              allFiles.length >=
+                                FILE_UPLOAD_CONFIG.MAX_FILE_COUNT
+                            }
                             sx={{
                               width: "32px",
                               height: "32px",
@@ -2462,7 +2430,11 @@ export function InputArea({
                               color: isDarkMode ? "#8e8ea0" : "#6b7280",
                               borderRadius: "16px",
                               transition: "all 0.2s ease",
-                              opacity: selectedFiles.length >= FILE_UPLOAD_CONFIG.MAX_FILE_COUNT ? 0.5 : 1,
+                              opacity:
+                                allFiles.length >=
+                                FILE_UPLOAD_CONFIG.MAX_FILE_COUNT
+                                  ? 0.5
+                                  : 1,
                               "&:hover": {
                                 backgroundColor: isDarkMode
                                   ? "rgba(255, 255, 255, 0.1)"
@@ -2484,48 +2456,70 @@ export function InputArea({
                         anchorEl={fileMenuAnchor}
                         open={fileMenuOpen}
                         onClose={handleFileMenuClose}
-                        transformOrigin={{ horizontal: 'left', vertical: 'top' }}
-                        anchorOrigin={{ horizontal: 'left', vertical: 'bottom' }}
+                        transformOrigin={{
+                          horizontal: "left",
+                          vertical: "top",
+                        }}
+                        anchorOrigin={{
+                          horizontal: "left",
+                          vertical: "bottom",
+                        }}
                         slotProps={{
                           paper: {
                             sx: {
                               mt: 0.5,
-                              borderRadius: '8px',
+                              borderRadius: "8px",
                               boxShadow: isDarkMode
-                                ? '0 4px 12px rgba(0, 0, 0, 0.5)'
-                                : '0 4px 12px rgba(0, 0, 0, 0.15)',
-                              backgroundColor: isDarkMode ? '#2f3136' : '#ffffff',
-                            }
-                          }
+                                ? "0 4px 12px rgba(0, 0, 0, 0.5)"
+                                : "0 4px 12px rgba(0, 0, 0, 0.15)",
+                              backgroundColor: isDarkMode
+                                ? "#2f3136"
+                                : "#ffffff",
+                            },
+                          },
                         }}
                       >
-                        <MenuItem 
+                        <MenuItem
                           onClick={handleQuickUpload}
                           sx={{
-                            color: isDarkMode ? '#dcddde' : '#000000',
-                            '&:hover': {
-                              backgroundColor: isDarkMode ? '#40444b' : '#f3f4f6',
-                            }
+                            color: isDarkMode ? "#dcddde" : "#000000",
+                            "&:hover": {
+                              backgroundColor: isDarkMode
+                                ? "#40444b"
+                                : "#f3f4f6",
+                            },
                           }}
                         >
                           <ListItemIcon>
-                            <CloudUploadIcon fontSize="small" sx={{ color: isDarkMode ? '#dcddde' : '#000000' }} />
+                            <CloudUploadIcon
+                              fontSize="small"
+                              sx={{ color: isDarkMode ? "#dcddde" : "#000000" }}
+                            />
                           </ListItemIcon>
-                          <ListItemText>{t("quickUpload") || "Quick Upload"}</ListItemText>
+                          <ListItemText>
+                            {t("quickUpload") || "Quick Upload"}
+                          </ListItemText>
                         </MenuItem>
-                        <MenuItem 
+                        <MenuItem
                           onClick={handleOpenDocumentManager}
                           sx={{
-                            color: isDarkMode ? '#dcddde' : '#000000',
-                            '&:hover': {
-                              backgroundColor: isDarkMode ? '#40444b' : '#f3f4f6',
-                            }
+                            color: isDarkMode ? "#dcddde" : "#000000",
+                            "&:hover": {
+                              backgroundColor: isDarkMode
+                                ? "#40444b"
+                                : "#f3f4f6",
+                            },
                           }}
                         >
                           <ListItemIcon>
-                            <FolderIcon fontSize="small" sx={{ color: isDarkMode ? '#dcddde' : '#000000' }} />
+                            <FolderIcon
+                              fontSize="small"
+                              sx={{ color: isDarkMode ? "#dcddde" : "#000000" }}
+                            />
                           </ListItemIcon>
-                          <ListItemText>{t("documentManager") || "Document Manager"}</ListItemText>
+                          <ListItemText>
+                            {t("documentManager") || "Document Manager"}
+                          </ListItemText>
                         </MenuItem>
                       </Menu>
                     </>
@@ -3500,7 +3494,7 @@ export function InputArea({
         autoHideDuration={3000}
         onClose={() => setShowLimitWarning(false)}
         message="Maximum 10 files allowed. Remove some files to add more."
-        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+        anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
       />
 
       {/* File Error Snackbar */}
@@ -3508,9 +3502,13 @@ export function InputArea({
         open={showFileError}
         autoHideDuration={4000}
         onClose={() => setShowFileError(false)}
-        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+        anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
       >
-        <Alert onClose={() => setShowFileError(false)} severity="error" sx={{ width: '100%' }}>
+        <Alert
+          onClose={() => setShowFileError(false)}
+          severity="error"
+          sx={{ width: "100%" }}
+        >
           {fileError}
         </Alert>
       </Snackbar>
