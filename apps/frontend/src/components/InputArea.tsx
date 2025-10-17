@@ -15,6 +15,8 @@ import {
   Chip,
   Snackbar,
   Paper,
+  LinearProgress,
+  Alert,
 } from "@mui/material";
 import { parseISO } from "date-fns";
 import {
@@ -36,6 +38,12 @@ import {
   Download as DownloadIcon,
   Close as CloseIcon,
   CloudUpload as CloudUploadIcon,
+  InsertDriveFile as FileIcon,
+  Image as ImageIcon,
+  PictureAsPdf as PdfIcon,
+  Archive as ArchiveIcon,
+  Code as CodeIcon,
+  Description as DocumentIcon,
 } from "@mui/icons-material";
 import { useTranslation } from "../contexts/TranslationContext";
 import { Translate } from "./Translate";
@@ -50,7 +58,8 @@ import { DocumentManagementDialog } from "./DocumentManagementDialog";
 import FolderIcon from "@mui/icons-material/Folder";
 import { DocumentService } from "../services/documentService";
 import { formatFileSize, getFileIconComponent } from "../types/document.types";
-import { FILE_UPLOAD_CONFIG } from "../config/fileUpload";
+import { FILE_UPLOAD_CONFIG, getFileCategory } from "../config/fileUpload";
+import { validateFile, validateFiles, getFileIconColor } from "../services/fileService";
 
 import BasicDateRangePicker from "./BasicDateRangePicker";
 
@@ -64,6 +73,30 @@ const detectLanguage = (text: string): "ltr" | "rtl" => {
 
   return rtlRegex.test(text) ? "rtl" : "ltr";
 };
+
+// Unified file state interfaces
+interface PendingFile {
+  localFile: File;
+  status: 'pending' | 'uploading' | 'uploaded' | 'error';
+  progress?: number;
+  uploadedFile?: {
+    id: string;
+    filename: string;
+    size: number;
+    mimetype: string;
+    uploadDate: string;
+  };
+  error?: string;
+}
+
+interface SelectedDocument {
+  id: string;
+  filename: string;
+  size: number;
+  mimetype: string;
+  uploadDate: string;
+  source: 'document-manager';
+}
 
 export interface DateFilter {
   type: "custom" | "picker";
@@ -214,6 +247,13 @@ export function InputArea({
   const [isFocused, setIsFocused] = useState(false);
   const translationContext = useTranslation();
   const { t } = translationContext;
+
+  // File upload state - local file selection (before upload)
+  const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
+  const [isDragging, setIsDragging] = useState(false);
+  const [fileError, setFileError] = useState<string | null>(null);
+  const [showFileError, setShowFileError] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Flag selection state with localStorage persistence
   const [selectedFlags, setSelectedFlags] = useState<string[]>(() => {
@@ -507,6 +547,91 @@ export function InputArea({
     return () => window.removeEventListener("resize", handleResize);
   }, []);
 
+  // File handling functions
+  const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const files = event.target.files;
+    if (!files || files.length === 0) return;
+
+    const fileArray = Array.from(files);
+    const validation = validateFiles(fileArray, selectedFiles);
+
+    if (!validation.valid) {
+      setFileError(validation.error || "File validation failed");
+      setShowFileError(true);
+      return;
+    }
+
+    setSelectedFiles([...selectedFiles, ...fileArray]);
+    // Reset the input value to allow selecting the same file again
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
+  };
+
+  const removeFile = (index: number) => {
+    setSelectedFiles(selectedFiles.filter((_, i) => i !== index));
+  };
+
+  const handleDragEnter = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(true);
+  };
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    // Only set dragging to false if we're leaving the container
+    if (e.currentTarget === e.target) {
+      setIsDragging(false);
+    }
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+  };
+
+  const handleDropFiles = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+
+    const files = e.dataTransfer.files;
+    if (!files || files.length === 0) return;
+
+    const fileArray = Array.from(files);
+    const validation = validateFiles(fileArray, selectedFiles);
+
+    if (!validation.valid) {
+      setFileError(validation.error || "File validation failed");
+      setShowFileError(true);
+      return;
+    }
+
+    setSelectedFiles([...selectedFiles, ...fileArray]);
+  };
+
+  const getFileIcon = (mimeType: string) => {
+    const category = getFileCategory(mimeType);
+    const color = getFileIconColor(mimeType, isDarkMode);
+
+    switch (category) {
+      case "image":
+        return <ImageIcon sx={{ fontSize: 18, color }} />;
+      case "pdf":
+        return <PdfIcon sx={{ fontSize: 18, color }} />;
+      case "archive":
+        return <ArchiveIcon sx={{ fontSize: 18, color }} />;
+      case "code":
+        return <CodeIcon sx={{ fontSize: 18, color }} />;
+      case "document":
+        return <DocumentIcon sx={{ fontSize: 18, color }} />;
+      default:
+        return <FileIcon sx={{ fontSize: 18, color }} />;
+    }
+  };
+
   const handleKeyDown = (event: React.KeyboardEvent) => {
     if (event.key === "Enter" && !event.shiftKey) {
       event.preventDefault();
@@ -517,7 +642,7 @@ export function InputArea({
         return;
       }
 
-      if (value.trim() && !disabled && !isLoading) {
+      if ((value.trim() || selectedFiles.length > 0) && !disabled && !isLoading) {
         handleSubmit();
       }
     }
@@ -526,7 +651,7 @@ export function InputArea({
   const handleSubmit = () => {
     if (isLoading && onStop) {
       onStop();
-    } else if (value.trim() && !disabled) {
+    } else if ((value.trim() || selectedFiles.length > 0) && !disabled) {
       // Check if there are unconfigured tools before submitting
       if (needsToolConfiguration) {
         // Open settings dialog instead of submitting
@@ -590,6 +715,7 @@ export function InputArea({
           (toolId) => enabledTools[toolId]
         ),
         filterSnapshot,
+        files: selectedFiles,  // Add local files
         attachments: attachedFiles.map((f: any) => ({
           id: f.id,
           filename: f.filename,
@@ -600,7 +726,10 @@ export function InputArea({
       };
 
       onSend(sendData);
-      
+
+      // Clear selected files after successful send
+      setSelectedFiles([]);
+
       // Clear attached files after successful send
       if (attachedFiles && attachedFiles.length > 0) {
         attachedFiles.forEach((file: any) => {
@@ -1307,12 +1436,10 @@ export function InputArea({
   const [docsDialogOpen, setDocsDialogOpen] = useState(false);
   const [showLimitWarning, setShowLimitWarning] = useState(false);
   const [documentService] = useState(() => new DocumentService());
-  const [isDragging, setIsDragging] = useState(false);
-  
+
   // File upload dropdown menu state
   const [fileMenuAnchor, setFileMenuAnchor] = useState<null | HTMLElement>(null);
   const fileMenuOpen = Boolean(fileMenuAnchor);
-  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleOpenDocsDialog = () => {
     if (attachedFiles.length >= 10) {
@@ -1445,58 +1572,6 @@ export function InputArea({
     }
   };
 
-  // Drag and drop handlers
-  const handleDragEnter = (e: React.DragEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setIsDragging(true);
-  };
-
-  const handleDragLeave = (e: React.DragEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    if (e.currentTarget === e.target) {
-      setIsDragging(false);
-    }
-  };
-
-  const handleDragOver = (e: React.DragEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-  };
-
-  const handleDrop = async (e: React.DragEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setIsDragging(false);
-    
-    const files = Array.from(e.dataTransfer.files);
-    
-    // Check file limit
-    if (attachedFiles.length + files.length > 10) {
-      setShowLimitWarning(true);
-      return;
-    }
-    
-    // Upload files
-    for (const file of files) {
-      try {
-        const result = await documentService.uploadFile(file);
-        if (result.success && result.document) {
-          onFileUploaded?.({
-            id: result.document.id,
-            filename: result.document.name,
-            size: result.document.size,
-            mimetype: result.document.mimeType,
-            uploadDate: result.document.uploadedAt.toISOString(),
-          });
-        }
-      } catch (error) {
-        console.error('File upload failed:', error);
-      }
-    }
-  };
-
   return (
     <>
       {/* Input Area Container */}
@@ -1536,7 +1611,7 @@ export function InputArea({
           onDragEnter={handleDragEnter}
           onDragLeave={handleDragLeave}
           onDragOver={handleDragOver}
-          onDrop={handleDrop}
+          onDrop={handleDropFiles}
           sx={{
             maxWidth: "768px",
             margin: "0 auto",
@@ -1620,6 +1695,93 @@ export function InputArea({
               },
             }}
           >
+            {/* Selected Files Preview (before upload) - Chip-based UI */}
+            {selectedFiles.length > 0 && (
+              <Box
+                sx={{
+                  padding: "12px 16px 8px 16px",
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: "8px",
+                  borderBottom: `1px solid ${isDarkMode ? "#565869" : "#d1d5db"}`,
+                }}
+              >
+                <Box sx={{ display: "flex", flexWrap: "wrap", gap: "8px" }}>
+                  {selectedFiles.map((file, index) => (
+                    <Box
+                      key={index}
+                      sx={{
+                        position: "relative",
+                        minWidth: "200px",
+                        maxWidth: "300px",
+                      }}
+                    >
+                      <Chip
+                        icon={getFileIcon(file.type || "application/octet-stream")}
+                        label={
+                          <Box
+                            sx={{
+                              display: "flex",
+                              flexDirection: "column",
+                              gap: "2px",
+                              width: "100%",
+                            }}
+                          >
+                            <Box
+                              sx={{
+                                display: "flex",
+                                alignItems: "center",
+                                gap: "4px",
+                              }}
+                            >
+                              <Typography
+                                variant="body2"
+                                sx={{
+                                  maxWidth: "150px",
+                                  overflow: "hidden",
+                                  textOverflow: "ellipsis",
+                                  whiteSpace: "nowrap",
+                                  fontSize: "13px",
+                                }}
+                              >
+                                {file.name}
+                              </Typography>
+                              <Typography
+                                variant="caption"
+                                sx={{
+                                  color: isDarkMode ? "#a3a3a3" : "#6b7280",
+                                  fontSize: "11px",
+                                }}
+                              >
+                                ({formatFileSize(file.size)})
+                              </Typography>
+                            </Box>
+                          </Box>
+                        }
+                        onDelete={() => removeFile(index)}
+                        deleteIcon={<CloseIcon sx={{ fontSize: 16 }} />}
+                        sx={{
+                          backgroundColor: isDarkMode ? "#343541" : "#e5e7eb",
+                          color: isDarkMode ? "#ececf1" : "#374151",
+                          width: "100%",
+                          justifyContent: "space-between",
+                          "& .MuiChip-label": {
+                            width: "100%",
+                          },
+                          "& .MuiChip-deleteIcon": {
+                            color: isDarkMode ? "#a3a3a3" : "#6b7280",
+                            "&:hover": {
+                              color: isDarkMode ? "#ececf1" : "#374151",
+                            },
+                          },
+                        }}
+                      />
+                    </Box>
+                  ))}
+                </Box>
+              </Box>
+            )}
+
             {/* File Preview Section - Inside bubble */}
             {attachedFiles && attachedFiles.length > 0 && (
               <Box
@@ -2270,17 +2432,17 @@ export function InputArea({
                         ref={fileInputRef}
                         type="file"
                         multiple
-                        onChange={handleFileInputChange}
+                        onChange={handleFileSelect}
                         style={{ display: 'none' }}
                         disabled={disabled}
                       />
-                      
+
                       {/* File Upload Button with Badge */}
-                      <Tooltip title={attachedFiles.length >= 10 ? "Maximum 10 files reached" : (t("attachFiles") || "Attach Files")}>
-                        <Badge 
-                          badgeContent={attachedFiles.length} 
-                          color="primary" 
-                          invisible={attachedFiles.length === 0}
+                      <Tooltip title={selectedFiles.length >= FILE_UPLOAD_CONFIG.MAX_FILE_COUNT ? `Maximum ${FILE_UPLOAD_CONFIG.MAX_FILE_COUNT} files reached` : (t("attachFiles") || "Attach Files")}>
+                        <Badge
+                          badgeContent={selectedFiles.length}
+                          color="primary"
+                          invisible={selectedFiles.length === 0}
                           sx={{
                             '& .MuiBadge-badge': {
                               fontSize: '0.625rem',
@@ -2292,7 +2454,7 @@ export function InputArea({
                         >
                           <IconButton
                             onClick={handleFileMenuClick}
-                            disabled={disabled || attachedFiles.length >= 10}
+                            disabled={disabled || selectedFiles.length >= FILE_UPLOAD_CONFIG.MAX_FILE_COUNT}
                             sx={{
                               width: "32px",
                               height: "32px",
@@ -2300,7 +2462,7 @@ export function InputArea({
                               color: isDarkMode ? "#8e8ea0" : "#6b7280",
                               borderRadius: "16px",
                               transition: "all 0.2s ease",
-                              opacity: attachedFiles.length >= 10 ? 0.5 : 1,
+                              opacity: selectedFiles.length >= FILE_UPLOAD_CONFIG.MAX_FILE_COUNT ? 0.5 : 1,
                               "&:hover": {
                                 backgroundColor: isDarkMode
                                   ? "rgba(255, 255, 255, 0.1)"
@@ -3340,6 +3502,18 @@ export function InputArea({
         message="Maximum 10 files allowed. Remove some files to add more."
         anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
       />
+
+      {/* File Error Snackbar */}
+      <Snackbar
+        open={showFileError}
+        autoHideDuration={4000}
+        onClose={() => setShowFileError(false)}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+      >
+        <Alert onClose={() => setShowFileError(false)} severity="error" sx={{ width: '100%' }}>
+          {fileError}
+        </Alert>
+      </Snackbar>
     </>
   );
 }

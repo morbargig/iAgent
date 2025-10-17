@@ -70,7 +70,7 @@ export const FileAttachmentCard: React.FC<FileAttachmentCardProps> = ({
   }
 
   return (
-    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5, mt: 2 }}>
+    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5, mb: 2 }}>
       {files.map((file) => {
         const { Icon, color } = getFileIconComponent(file.mimeType);
         

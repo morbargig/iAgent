@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from "react";
 import {
   Dialog,
   DialogTitle,
@@ -20,7 +20,7 @@ import {
   Alert,
   Tooltip,
   Checkbox,
-} from '@mui/material';
+} from "@mui/material";
 import {
   Download as DownloadIcon,
   Delete as DeleteIcon,
@@ -28,8 +28,8 @@ import {
   Refresh as RefreshIcon,
   AttachFile as AttachFileIcon,
   Check as CheckIcon,
-} from '@mui/icons-material';
-import { fileService, FileInfo } from '../services/fileService';
+} from "@mui/icons-material";
+import { fileService, FileInfo } from "../services/fileService";
 
 interface FileManagerDialogProps {
   open: boolean;
@@ -43,7 +43,7 @@ export const FileManagerDialog: React.FC<FileManagerDialogProps> = ({
   open,
   onClose,
   onFileSelected,
-  title = 'File Manager',
+  title = "File Manager",
   showAttachButton = true,
 }) => {
   const [files, setFiles] = useState<FileInfo[]>([]);
@@ -54,12 +54,12 @@ export const FileManagerDialog: React.FC<FileManagerDialogProps> = ({
   const loadFiles = async () => {
     setLoading(true);
     setError(null);
-    
+
     try {
       const filesData = await fileService.getFileList(50, 0);
       setFiles(filesData);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load files');
+      setError(err instanceof Error ? err.message : "Failed to load files");
     } finally {
       setLoading(false);
     }
@@ -86,7 +86,7 @@ export const FileManagerDialog: React.FC<FileManagerDialogProps> = ({
     try {
       await fileService.downloadFile(file.id, file.filename);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Download failed');
+      setError(err instanceof Error ? err.message : "Download failed");
     }
   };
 
@@ -98,18 +98,18 @@ export const FileManagerDialog: React.FC<FileManagerDialogProps> = ({
         setSelectedFile(null);
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Delete failed');
+      setError(err instanceof Error ? err.message : "Delete failed");
     }
   };
 
   const getFileIcon = (mimetype: string) => {
-    if (mimetype.startsWith('image/')) return '🖼️';
-    if (mimetype.startsWith('video/')) return '🎥';
-    if (mimetype.startsWith('audio/')) return '🎵';
-    if (mimetype.includes('pdf')) return '📄';
-    if (mimetype.includes('text')) return '📝';
-    if (mimetype.includes('zip') || mimetype.includes('rar')) return '📦';
-    return '📁';
+    if (mimetype.startsWith("image/")) return "🖼️";
+    if (mimetype.startsWith("video/")) return "🎥";
+    if (mimetype.startsWith("audio/")) return "🎵";
+    if (mimetype.includes("pdf")) return "📄";
+    if (mimetype.includes("text")) return "📝";
+    if (mimetype.includes("zip") || mimetype.includes("rar")) return "📦";
+    return "📁";
   };
 
   return (
@@ -121,13 +121,13 @@ export const FileManagerDialog: React.FC<FileManagerDialogProps> = ({
           </Typography>
           <Box display="flex" gap={1}>
             <Tooltip title="Refresh files">
-              <IconButton 
-                onClick={loadFiles} 
+              <IconButton
+                onClick={loadFiles}
                 disabled={loading}
                 sx={{
-                  backgroundColor: 'transparent',
-                  '&:hover': {
-                    backgroundColor: 'action.hover',
+                  backgroundColor: "transparent",
+                  "&:hover": {
+                    backgroundColor: "action.hover",
                   },
                 }}
               >
@@ -141,12 +141,12 @@ export const FileManagerDialog: React.FC<FileManagerDialogProps> = ({
                 onClick={handleAttach}
                 disabled={!selectedFile}
                 sx={{
-                  backgroundColor: '#10a37f',
-                  '&:hover': {
-                    backgroundColor: '#0d8a6b',
+                  backgroundColor: "#10a37f",
+                  "&:hover": {
+                    backgroundColor: "#0d8a6b",
                   },
-                  '&:disabled': {
-                    backgroundColor: 'action.disabled',
+                  "&:disabled": {
+                    backgroundColor: "action.disabled",
                   },
                 }}
               >
@@ -156,14 +156,14 @@ export const FileManagerDialog: React.FC<FileManagerDialogProps> = ({
           </Box>
         </Box>
       </DialogTitle>
-      
+
       <DialogContent sx={{ p: 0 }}>
         {error && (
-          <Alert 
-            severity="error" 
-            sx={{ 
-              m: 2, 
-              borderRadius: '8px',
+          <Alert
+            severity="error"
+            sx={{
+              m: 2,
+              borderRadius: "8px",
             }}
           >
             {error}
@@ -171,12 +171,19 @@ export const FileManagerDialog: React.FC<FileManagerDialogProps> = ({
         )}
 
         {loading ? (
-          <Box display="flex" justifyContent="center" alignItems="center" minHeight={200}>
+          <Box
+            display="flex"
+            justifyContent="center"
+            alignItems="center"
+            minHeight={200}
+          >
             <CircularProgress />
           </Box>
         ) : files.length === 0 ? (
           <Box textAlign="center" py={6} px={4}>
-            <AttachFileIcon sx={{ fontSize: 64, color: 'text.secondary', mb: 2 }} />
+            <AttachFileIcon
+              sx={{ fontSize: 64, color: "text.secondary", mb: 2 }}
+            />
             <Typography variant="h6" color="text.secondary" gutterBottom>
               No files uploaded yet
             </Typography>
@@ -195,7 +202,9 @@ export const FileManagerDialog: React.FC<FileManagerDialogProps> = ({
                     <TableCell sx={{ fontWeight: 600 }}>Size</TableCell>
                     <TableCell sx={{ fontWeight: 600 }}>Type</TableCell>
                     <TableCell sx={{ fontWeight: 600 }}>Upload Date</TableCell>
-                    <TableCell align="center" sx={{ fontWeight: 600 }}>Actions</TableCell>
+                    <TableCell align="center" sx={{ fontWeight: 600 }}>
+                      Actions
+                    </TableCell>
                   </TableRow>
                 </TableHead>
                 <TableBody>
@@ -205,13 +214,13 @@ export const FileManagerDialog: React.FC<FileManagerDialogProps> = ({
                       hover
                       selected={selectedFile?.id === file.id}
                       onClick={() => handleFileSelect(file)}
-                      sx={{ 
-                        cursor: 'pointer',
-                        '&:hover': {
-                          backgroundColor: 'action.hover',
+                      sx={{
+                        cursor: "pointer",
+                        "&:hover": {
+                          backgroundColor: "action.hover",
                         },
-                        '&.Mui-selected': {
-                          backgroundColor: 'primary.50',
+                        "&.Mui-selected": {
+                          backgroundColor: "primary.50",
                         },
                       }}
                     >
@@ -221,9 +230,9 @@ export const FileManagerDialog: React.FC<FileManagerDialogProps> = ({
                             checked={selectedFile?.id === file.id}
                             onChange={() => handleFileSelect(file)}
                             sx={{
-                              color: 'primary.main',
-                              '&.Mui-checked': {
-                                color: 'primary.main',
+                              color: "primary.main",
+                              "&.Mui-checked": {
+                                color: "primary.main",
                               },
                             }}
                           />
@@ -234,10 +243,10 @@ export const FileManagerDialog: React.FC<FileManagerDialogProps> = ({
                           <Typography variant="body2">
                             {getFileIcon(file.mimetype)}
                           </Typography>
-                          <Typography 
-                            variant="body2" 
+                          <Typography
+                            variant="body2"
                             fontWeight="medium"
-                            noWrap 
+                            noWrap
                             sx={{ maxWidth: 200 }}
                           >
                             {file.filename}
@@ -255,7 +264,7 @@ export const FileManagerDialog: React.FC<FileManagerDialogProps> = ({
                           size="small"
                           variant="outlined"
                           sx={{
-                            fontSize: '0.75rem',
+                            fontSize: "0.75rem",
                             height: 24,
                           }}
                         />
@@ -275,16 +284,16 @@ export const FileManagerDialog: React.FC<FileManagerDialogProps> = ({
                                 handleDownload(file);
                               }}
                               sx={{
-                                color: 'primary.main',
-                                '&:hover': {
-                                  backgroundColor: 'primary.50',
+                                color: "primary.main",
+                                "&:hover": {
+                                  backgroundColor: "primary.50",
                                 },
                               }}
                             >
                               <DownloadIcon />
                             </IconButton>
                           </Tooltip>
-                          
+
                           <Tooltip title="Delete file">
                             <IconButton
                               size="small"
@@ -294,8 +303,8 @@ export const FileManagerDialog: React.FC<FileManagerDialogProps> = ({
                                 handleDelete(file);
                               }}
                               sx={{
-                                '&:hover': {
-                                  backgroundColor: 'error.50',
+                                "&:hover": {
+                                  backgroundColor: "error.50",
                                 },
                               }}
                             >
@@ -312,18 +321,18 @@ export const FileManagerDialog: React.FC<FileManagerDialogProps> = ({
           </Box>
         )}
       </DialogContent>
-      
+
       <DialogActions sx={{ p: 2 }}>
-        <Button 
+        <Button
           onClick={onClose}
           sx={{
-            color: 'text.secondary',
-            '&:hover': {
-              backgroundColor: 'action.hover',
+            color: "text.secondary",
+            "&:hover": {
+              backgroundColor: "action.hover",
             },
           }}
         >
-          {showAttachButton ? 'Cancel' : 'Close'}
+          {showAttachButton ? "Cancel" : "Close"}
         </Button>
       </DialogActions>
     </Dialog>

@@ -1,4 +1,6 @@
 // File management service for MongoDB GridFS
+import { FILE_UPLOAD_CONFIG, formatFileSize as configFormatFileSize, getFileCategory } from '../config/fileUpload';
+
 export interface FileUploadResult {
   id: string;
   filename: string;
@@ -6,6 +8,24 @@ export interface FileUploadResult {
   mimetype: string;
   uploadDate: string;
 }
+
+/**
+ * File validation result
+ */
+export interface FileValidationResult {
+  valid: boolean;
+  error?: string;
+}
+
+/**
+ * File validation errors
+ */
+export const FILE_ERRORS = {
+  FILE_TOO_LARGE: (maxSize: string) => `File exceeds maximum size of ${maxSize}`,
+  TOTAL_SIZE_EXCEEDED: (maxSize: string) => `Total file size exceeds ${maxSize}`,
+  TOO_MANY_FILES: (maxCount: number) => `Maximum ${maxCount} files allowed`,
+  INVALID_FILE_TYPE: (fileName: string) => `File type not supported: ${fileName}`,
+};
 
 export interface FileInfo {
   id: string;
@@ -19,6 +39,122 @@ export interface FileInfo {
 export interface FileListResponse {
   files: FileInfo[];
   total: number;
+}
+
+/**
+ * Validate a single file against constraints
+ */
+export function validateFile(file: File, currentFiles: File[] = []): FileValidationResult {
+  // Check file size
+  if (file.size > FILE_UPLOAD_CONFIG.MAX_FILE_SIZE) {
+    return {
+      valid: false,
+      error: FILE_ERRORS.FILE_TOO_LARGE(configFormatFileSize(FILE_UPLOAD_CONFIG.MAX_FILE_SIZE)),
+    };
+  }
+
+  // Check file count
+  if (currentFiles.length >= FILE_UPLOAD_CONFIG.MAX_FILE_COUNT) {
+    return {
+      valid: false,
+      error: FILE_ERRORS.TOO_MANY_FILES(FILE_UPLOAD_CONFIG.MAX_FILE_COUNT),
+    };
+  }
+
+  // Check total size
+  const currentTotalSize = currentFiles.reduce((sum, f) => sum + f.size, 0);
+  if (currentTotalSize + file.size > FILE_UPLOAD_CONFIG.MAX_TOTAL_SIZE) {
+    return {
+      valid: false,
+      error: FILE_ERRORS.TOTAL_SIZE_EXCEEDED(configFormatFileSize(FILE_UPLOAD_CONFIG.MAX_TOTAL_SIZE)),
+    };
+  }
+
+  // Check file type (if restrictions are set)
+  if (
+    FILE_UPLOAD_CONFIG.ACCEPTED_FILE_TYPES.length > 0 &&
+    !FILE_UPLOAD_CONFIG.ACCEPTED_FILE_TYPES.includes(file.type)
+  ) {
+    return {
+      valid: false,
+      error: FILE_ERRORS.INVALID_FILE_TYPE(file.name),
+    };
+  }
+
+  return { valid: true };
+}
+
+/**
+ * Validate multiple files
+ */
+export function validateFiles(files: File[], currentFiles: File[] = []): FileValidationResult {
+  // Check total count
+  if (currentFiles.length + files.length > FILE_UPLOAD_CONFIG.MAX_FILE_COUNT) {
+    return {
+      valid: false,
+      error: FILE_ERRORS.TOO_MANY_FILES(FILE_UPLOAD_CONFIG.MAX_FILE_COUNT),
+    };
+  }
+
+  // Check total size
+  const currentTotalSize = currentFiles.reduce((sum, f) => sum + f.size, 0);
+  const newTotalSize = files.reduce((sum, f) => sum + f.size, 0);
+  if (currentTotalSize + newTotalSize > FILE_UPLOAD_CONFIG.MAX_TOTAL_SIZE) {
+    return {
+      valid: false,
+      error: FILE_ERRORS.TOTAL_SIZE_EXCEEDED(configFormatFileSize(FILE_UPLOAD_CONFIG.MAX_TOTAL_SIZE)),
+    };
+  }
+
+  // Validate each file individually
+  for (const file of files) {
+    const result = validateFile(file, [...currentFiles, ...files.slice(0, files.indexOf(file))]);
+    if (!result.valid) {
+      return result;
+    }
+  }
+
+  return { valid: true };
+}
+
+/**
+ * Get color for file icon based on file type
+ */
+export function getFileIconColor(mimeType: string, isDarkMode: boolean): string {
+  const category = getFileCategory(mimeType);
+
+  // Return colors optimized for light and dark modes
+  if (isDarkMode) {
+    switch (category) {
+      case 'image':
+        return '#10b981'; // Green
+      case 'pdf':
+        return '#ef4444'; // Red
+      case 'archive':
+        return '#f59e0b'; // Amber
+      case 'code':
+        return '#3b82f6'; // Blue
+      case 'document':
+        return '#8b5cf6'; // Purple
+      default:
+        return '#6b7280'; // Gray
+    }
+  } else {
+    switch (category) {
+      case 'image':
+        return '#059669'; // Green
+      case 'pdf':
+        return '#dc2626'; // Red
+      case 'archive':
+        return '#d97706'; // Amber
+      case 'code':
+        return '#2563eb'; // Blue
+      case 'document':
+        return '#7c3aed'; // Purple
+      default:
+        return '#4b5563'; // Gray
+    }
+  }
 }
 
 class FileService {

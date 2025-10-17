@@ -493,12 +493,6 @@ const MessageBubble = ({
             lineHeight: 1.7,
           }}
         >
-          <MarkdownRenderer
-            content={message.content}
-            isDarkMode={isDarkMode}
-            onOpenReport={onOpenReport}
-          />
-
           {/* File Attachments - Rich preview cards with download/preview buttons */}
           {message.attachments && message.attachments.length > 0 && (
             <FileAttachmentCard
@@ -517,6 +511,12 @@ const MessageBubble = ({
               isDarkMode={isDarkMode}
             />
           )}
+
+          <MarkdownRenderer
+            content={message.content}
+            isDarkMode={isDarkMode}
+            onOpenReport={onOpenReport}
+          />
 
           {message.isStreaming && (
             <Box
