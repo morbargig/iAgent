@@ -191,7 +191,7 @@ export class MockDocumentStore {
   }
 
   // Get paginated documents
-  getPaginatedDocuments(page: number = 1, limit: number = 10, query?: string, filters?: any): {
+  getPaginatedDocuments(page = 1, limit = 10, query?: string, filters?: any): {
     documents: DocumentFile[];
     total: number;
     page: number;

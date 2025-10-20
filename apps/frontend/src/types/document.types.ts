@@ -93,7 +93,7 @@ export interface DocumentProcessingResult {
 }
 
 // Upload event types for real-time updates
-export type DocumentUploadEvent = 
+export type DocumentUploadEvent =
   | { type: 'progress'; data: UploadProgress }
   | { type: 'completed'; data: DocumentFile }
   | { type: 'error'; data: { fileId: string; error: string } }
@@ -101,23 +101,50 @@ export type DocumentUploadEvent =
 
 // Supported file types configuration
 export const SUPPORTED_DOCUMENT_TYPES = {
+  // Documents
   'application/pdf': { extension: '.pdf', name: 'PDF Document', icon: '📄' },
   'application/msword': { extension: '.doc', name: 'Word Document', icon: '📝' },
-  'application/vnd.openxmlformats-officedocument.wordprocessingml.document': { 
-    extension: '.docx', name: 'Word Document', icon: '📝' 
-  },
-  'text/plain': { extension: '.txt', name: 'Text File', icon: '📄' },
-  'text/markdown': { extension: '.md', name: 'Markdown File', icon: '📄' },
-  'application/vnd.ms-excel': { extension: '.xls', name: 'Excel Spreadsheet', icon: '📊' },
-  'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': { 
-    extension: '.xlsx', name: 'Excel Spreadsheet', icon: '📊' 
-  },
-  'application/vnd.ms-powerpoint': { extension: '.ppt', name: 'PowerPoint Presentation', icon: '📊' },
-  'application/vnd.openxmlformats-officedocument.presentationml.presentation': { 
-    extension: '.pptx', name: 'PowerPoint Presentation', icon: '📊' 
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document': {
+    extension: '.docx', name: 'Word Document', icon: '📝'
   },
   'application/rtf': { extension: '.rtf', name: 'Rich Text Format', icon: '📄' },
+
+  // Spreadsheets
+  'application/vnd.ms-excel': { extension: '.xls', name: 'Excel Spreadsheet', icon: '📊' },
+  'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': {
+    extension: '.xlsx', name: 'Excel Spreadsheet', icon: '📊'
+  },
   'text/csv': { extension: '.csv', name: 'CSV File', icon: '📊' },
+
+  // Presentations
+  'application/vnd.ms-powerpoint': { extension: '.ppt', name: 'PowerPoint Presentation', icon: '📊' },
+  'application/vnd.openxmlformats-officedocument.presentationml.presentation': {
+    extension: '.pptx', name: 'PowerPoint Presentation', icon: '📊'
+  },
+
+  // Images
+  'image/png': { extension: '.png', name: 'PNG Image', icon: '🖼️' },
+  'image/jpeg': { extension: '.jpg', name: 'JPEG Image', icon: '🖼️' },
+  'image/jpg': { extension: '.jpg', name: 'JPEG Image', icon: '🖼️' },
+  'image/gif': { extension: '.gif', name: 'GIF Image', icon: '🖼️' },
+  'image/webp': { extension: '.webp', name: 'WebP Image', icon: '🖼️' },
+  'image/svg+xml': { extension: '.svg', name: 'SVG Image', icon: '🖼️' },
+
+  // Text/Code files
+  'text/plain': { extension: '.txt', name: 'Text File', icon: '📄' },
+  'text/markdown': { extension: '.md', name: 'Markdown File', icon: '📄' },
+  'text/javascript': { extension: '.js', name: 'JavaScript File', icon: '💻' },
+  'text/typescript': { extension: '.ts', name: 'TypeScript File', icon: '💻' },
+  'text/html': { extension: '.html', name: 'HTML File', icon: '💻' },
+  'text/css': { extension: '.css', name: 'CSS File', icon: '💻' },
+  'application/json': { extension: '.json', name: 'JSON File', icon: '💻' },
+
+  // Archives
+  'application/zip': { extension: '.zip', name: 'ZIP Archive', icon: '📦' },
+  'application/x-rar-compressed': { extension: '.rar', name: 'RAR Archive', icon: '📦' },
+  'application/x-7z-compressed': { extension: '.7z', name: '7-Zip Archive', icon: '📦' },
+  'application/x-tar': { extension: '.tar', name: 'TAR Archive', icon: '📦' },
+  'application/gzip': { extension: '.gz', name: 'GZIP Archive', icon: '📦' },
 } as const;
 
 export const DEFAULT_UPLOAD_OPTIONS: DocumentUploadOptions = {
@@ -142,25 +169,52 @@ export const getFileIcon = (mimeType: string): string => {
 };
 
 export interface FileIconConfig {
-  Icon: React.ComponentType<any>;
+  Icon: React.ComponentType<{ sx?: Record<string, unknown> }>;
   color: string;
 }
 
 export const getFileIconComponent = (mimeType: string): FileIconConfig => {
   const iconMap: Record<string, FileIconConfig> = {
+    // Documents
     'application/pdf': { Icon: PictureAsPdf, color: '#d32f2f' },
-    'text/plain': { Icon: Description, color: '#616161' },
     'application/msword': { Icon: Article, color: '#1976d2' },
     'application/vnd.openxmlformats-officedocument.wordprocessingml.document': { Icon: Article, color: '#1976d2' },
+    'application/rtf': { Icon: TextFields, color: '#616161' },
+
+    // Spreadsheets
     'application/vnd.ms-excel': { Icon: TableChart, color: '#2e7d32' },
     'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': { Icon: TableChart, color: '#2e7d32' },
+    'text/csv': { Icon: GridOn, color: '#2e7d32' },
+
+    // Presentations
     'application/vnd.ms-powerpoint': { Icon: Slideshow, color: '#ed6c02' },
     'application/vnd.openxmlformats-officedocument.presentationml.presentation': { Icon: Slideshow, color: '#ed6c02' },
-    'text/csv': { Icon: GridOn, color: '#2e7d32' },
+
+    // Images - using Description as a placeholder (you can import Image icon from MUI if needed)
+    'image/png': { Icon: Description, color: '#10b981' },
+    'image/jpeg': { Icon: Description, color: '#10b981' },
+    'image/jpg': { Icon: Description, color: '#10b981' },
+    'image/gif': { Icon: Description, color: '#10b981' },
+    'image/webp': { Icon: Description, color: '#10b981' },
+    'image/svg+xml': { Icon: Description, color: '#10b981' },
+
+    // Text/Code files
+    'text/plain': { Icon: Description, color: '#616161' },
     'text/markdown': { Icon: Code, color: '#0288d1' },
-    'application/rtf': { Icon: TextFields, color: '#616161' },
+    'text/javascript': { Icon: Code, color: '#f0db4f' },
+    'text/typescript': { Icon: Code, color: '#3178c6' },
+    'text/html': { Icon: Code, color: '#e34c26' },
+    'text/css': { Icon: Code, color: '#264de4' },
+    'application/json': { Icon: Code, color: '#0288d1' },
+
+    // Archives
+    'application/zip': { Icon: InsertDriveFile, color: '#f59e0b' },
+    'application/x-rar-compressed': { Icon: InsertDriveFile, color: '#f59e0b' },
+    'application/x-7z-compressed': { Icon: InsertDriveFile, color: '#f59e0b' },
+    'application/x-tar': { Icon: InsertDriveFile, color: '#f59e0b' },
+    'application/gzip': { Icon: InsertDriveFile, color: '#f59e0b' },
   };
-  
+
   return iconMap[mimeType] || { Icon: InsertDriveFile, color: '#757575' };
 };
 
@@ -176,10 +230,10 @@ export const validateFile = (file: File, options: DocumentUploadOptions): { vali
   if (file.size > options.maxFileSize) {
     return { valid: false, error: `File size exceeds ${formatFileSize(options.maxFileSize)} limit` };
   }
-  
+
   if (options.allowedTypes && options.allowedTypes.length > 0 && !options.allowedTypes.includes(file.type)) {
     return { valid: false, error: `File type ${file.type} is not supported` };
   }
-  
+
   return { valid: true };
 };

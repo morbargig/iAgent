@@ -23,7 +23,7 @@ export class DocumentService {
   private useMockData = false; // Use live API by default
   private currentUserId = 'demo-user'; // Default user ID for mock
 
-  constructor(baseUrl: string = 'http://localhost:3030/api') {
+  constructor(baseUrl = 'http://localhost:3030/api') {
     this.baseUrl = baseUrl;
   }
 

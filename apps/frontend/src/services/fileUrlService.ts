@@ -105,7 +105,7 @@ export class FileUrlService {
   }
 
   // Create temporary file URL for preview
-  static createTempPreviewUrl(content: string, mimeType: string = 'text/html'): string {
+  static createTempPreviewUrl(content: string, mimeType = 'text/html'): string {
     const blob = new Blob([content], { type: mimeType });
     return URL.createObjectURL(blob);
   }

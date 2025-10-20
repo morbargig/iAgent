@@ -176,7 +176,7 @@ class FileService {
     return response.json();
   }
 
-  async getFileList(limit: number = 50, skip: number = 0): Promise<FileInfo[]> {
+  async getFileList(limit = 50, skip = 0): Promise<FileInfo[]> {
     const response = await fetch(`${this.baseUrl}/list?limit=${limit}&skip=${skip}`);
     
     if (!response.ok) {
