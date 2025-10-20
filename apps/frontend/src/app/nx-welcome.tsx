@@ -80,12 +80,12 @@ export function NxWelcome({ title }: { title: string }) {
       width: 100%;
     }
     .container {
-      margin-left: auto;
-      margin-right: auto;
+      margin-inline-start: auto;
+      margin-inline-end: auto;
       max-width: 768px;
       padding-bottom: 3rem;
-      padding-left: 1rem;
-      padding-right: 1rem;
+      padding-inline-start: 1rem;
+      padding-inline-end: 1rem;
       color: rgba(55, 65, 81, 1);
       width: 100%;
     }
@@ -127,13 +127,13 @@ export function NxWelcome({ title }: { title: string }) {
     #hero .text-container h2 svg {
       color: hsla(162, 47%, 50%, 1);
       height: 2rem;
-      left: -0.25rem;
+      inset-inline-start: -0.25rem;
       position: absolute;
       top: 0;
       width: 2rem;
     }
     #hero .text-container h2 span {
-      margin-left: 2.5rem;
+      margin-inline-start: 2.5rem;
     }
     #hero .text-container a {
       background-color: rgba(255, 255, 255, 1);
@@ -147,8 +147,8 @@ export function NxWelcome({ title }: { title: string }) {
     #hero .logo-container {
       display: none;
       justify-content: center;
-      padding-left: 2rem;
-      padding-right: 2rem;
+      padding-inline-start: 2rem;
+      padding-inline-end: 2rem;
     }
     #hero .logo-container svg {
       color: rgba(255, 255, 255, 1);
@@ -174,8 +174,8 @@ export function NxWelcome({ title }: { title: string }) {
       font-size: 1.25rem;
       letter-spacing: -0.025em;
       line-height: 1.75rem;
-      padding-left: 1rem;
-      padding-right: 1rem;
+      padding-inline-start: 1rem;
+      padding-inline-end: 1rem;
     }
     .list-item-link {
       align-items: center;
@@ -191,7 +191,7 @@ export function NxWelcome({ title }: { title: string }) {
       width: 100%;
     }
     .list-item-link svg:first-child {
-      margin-right: 1rem;
+      margin-inline-end: 1rem;
       height: 1.5rem;
       transition-property: background-color, border-color, color, fill, stroke,
       opacity, box-shadow, transform, filter, backdrop-filter,
@@ -264,8 +264,8 @@ export function NxWelcome({ title }: { title: string }) {
       font-weight: 400;
       font-size: 1.125rem;
       line-height: 1.75rem;
-      padding-left: 1rem;
-      padding-right: 1rem;
+      padding-inline-start: 1rem;
+      padding-inline-end: 1rem;
     }
     .button-pill span span {
       display: block;
@@ -317,8 +317,8 @@ export function NxWelcome({ title }: { title: string }) {
       font-weight: 400;
       letter-spacing: -0.025em;
       line-height: 1.75rem;
-      padding-left: 1rem;
-      padding-right: 1rem;
+      padding-inline-start: 1rem;
+      padding-inline-end: 1rem;
     }
     #nx-cloud > div h2 span {
       display: block;
@@ -354,23 +354,23 @@ export function NxWelcome({ title }: { title: string }) {
       font-weight: 400;
       letter-spacing: -0.025em;
       line-height: 1.75rem;
-      padding-left: 1rem;
-      padding-right: 1rem;
+      padding-inline-start: 1rem;
+      padding-inline-end: 1rem;
     }
     #commands p {
       font-size: 1rem;
       font-weight: 300;
       line-height: 1.5rem;
       margin-top: 1rem;
-      padding-left: 1rem;
-      padding-right: 1rem;
+      padding-inline-start: 1rem;
+      padding-inline-end: 1rem;
     }
     details {
       align-items: center;
       display: flex;
       margin-top: 1rem;
-      padding-left: 1rem;
-      padding-right: 1rem;
+      padding-inline-start: 1rem;
+      padding-inline-end: 1rem;
       width: 100%;
     }
     details pre > span {
@@ -394,7 +394,7 @@ export function NxWelcome({ title }: { title: string }) {
     }
     summary svg {
       height: 1.5rem;
-      margin-right: 1rem;
+      margin-inline-end: 1rem;
       width: 1.5rem;
     }
     #love {
@@ -728,8 +728,8 @@ export function NxWelcome({ title }: { title: string }) {
                   target="_blank"
                   rel="noreferrer"
                 >
-                  {' '}
-                  What is Nx Cloud?{' '}
+                  {" "}
+                  What is Nx Cloud?{" "}
                 </a>
               </div>
             </div>

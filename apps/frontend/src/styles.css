@@ -46,26 +46,26 @@ html[dir="rtl"] .grid {
   direction: rtl;
 }
 
-/* RTL-aware margins and paddings */
+/* RTL-aware margins and paddings - Using logical properties */
 html[dir="rtl"] .ml-auto {
-  margin-left: unset !important;
-  margin-right: auto !important;
+  margin-inline-start: unset !important;
+  margin-inline-end: auto !important;
 }
 
 html[dir="rtl"] .mr-auto {
-  margin-right: unset !important;
-  margin-left: auto !important;
+  margin-inline-end: unset !important;
+  margin-inline-start: auto !important;
 }
 
-/* RTL-aware positioning */
+/* RTL-aware positioning - Using logical properties */
 html[dir="rtl"] .left-0 {
-  left: unset !important;
-  right: 0 !important;
+  inset-inline-start: unset !important;
+  inset-inline-end: 0 !important;
 }
 
 html[dir="rtl"] .right-0 {
-  right: unset !important;
-  left: 0 !important;
+  inset-inline-end: unset !important;
+  inset-inline-start: 0 !important;
 }
 
 /* RTL-aware text alignment */
@@ -173,8 +173,8 @@ html[dir="rtl"] .MuiListItemButton-root {
 
 /* Fix for Material-UI components in RTL */
 html[dir="rtl"] .MuiDrawer-paper {
-  right: 0;
-  left: auto;
+  inset-inline-end: 0;
+  inset-inline-start: auto;
 }
 
 html[dir="rtl"] .MuiIconButton-root:not(.no-rtl-transform) {
@@ -183,6 +183,6 @@ html[dir="rtl"] .MuiIconButton-root:not(.no-rtl-transform) {
 
 /* Ensure proper scrollbar position */
 html[dir="rtl"] ::-webkit-scrollbar {
-  left: 0;
-  right: auto;
+  inset-inline-start: 0;
+  inset-inline-end: auto;
 }

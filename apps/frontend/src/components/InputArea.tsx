@@ -1649,8 +1649,8 @@ export function InputArea({
               sx={{
                 position: "absolute",
                 top: 0,
-                left: 0,
-                right: 0,
+                insetInlineStart: 0,
+                insetInlineEnd: 0,
                 bottom: 0,
                 backgroundColor: "rgba(59, 130, 246, 0.1)",
                 border: "2px dashed #3b82f6",
@@ -1687,27 +1687,6 @@ export function InputArea({
               minHeight: "80px",
               "&:hover": {
                 boxShadow: "0 2px 12px rgba(0, 0, 0, 0.1)",
-              },
-              // Placeholder styling - simplified to prevent loops
-              "& textarea::placeholder": {
-                opacity: 0.7,
-                textAlign: "left",
-                direction: "ltr",
-              },
-              "& textarea::-webkit-input-placeholder": {
-                opacity: 0.7,
-                textAlign: "left",
-                direction: "ltr",
-              },
-              "& textarea::-moz-placeholder": {
-                opacity: 0.7,
-                textAlign: "left",
-                direction: "ltr",
-              },
-              "& textarea:-ms-input-placeholder": {
-                opacity: 0.7,
-                textAlign: "left",
-                direction: "ltr",
               },
             }}
           >
@@ -1761,7 +1740,7 @@ export function InputArea({
                                 thickness={5}
                                 sx={{
                                   color: "#3b82f6",
-                                  ml: 0.5,
+                                  me: 0.5,
                                 }}
                               />
                               <Typography
@@ -1769,7 +1748,7 @@ export function InputArea({
                                 sx={{
                                   color: "#3b82f6",
                                   fontSize: "11px",
-                                  ml: 0.3,
+                                  marginInlineEnd: 0.3,
                                 }}
                               >
                                 {file.progress}%
@@ -1782,7 +1761,7 @@ export function InputArea({
                               sx={{
                                 color: "#ef4444",
                                 fontSize: "11px",
-                                ml: 0.5,
+                                marginInlineEnd: 0.5,
                               }}
                             >
                               ✕
@@ -1795,11 +1774,12 @@ export function InputArea({
                           prev.filter((f) => f.tempId !== file.tempId)
                         );
                       }}
-                      deleteIcon={<CloseIcon sx={{ fontSize: 16 }} />}
+                      deleteIcon={<CloseIcon className="no-rtl-transform" />}
                       sx={{
                         backgroundColor: isDarkMode ? "#343541" : "#e5e7eb",
                         color: isDarkMode ? "#ececf1" : "#374151",
                         height: "32px",
+                        direction: textDirection,
                         border:
                           file.status === "error"
                             ? "1px solid #ef4444"
@@ -1808,11 +1788,27 @@ export function InputArea({
                               : "none",
                         "& .MuiChip-label": {
                           padding: "0 12px",
+                          direction: textDirection,
                         },
+                        // Ensure chip content stays within bounds
+                        overflow: "hidden",
                         "& .MuiChip-deleteIcon": {
+                          visibility: "visible",
+                          opacity: 1,
+                          display: "flex",
+                          margin: "0 4px",
                           color: isDarkMode ? "#a3a3a3" : "#6b7280",
                           "&:hover": {
                             color: isDarkMode ? "#ececf1" : "#374151",
+                          },
+                        },
+                        // RTL layout fix - use flexbox order
+                        '[dir="rtl"] &': {
+                          "& .MuiChip-deleteIcon": {
+                            order: -1, // Move to start in RTL
+                          },
+                          "& .MuiChip-label": {
+                            order: 1, // Move label after icon in RTL
                           },
                         },
                       }}
@@ -1858,7 +1854,7 @@ export function InputArea({
                               sx={{
                                 color: "#10b981",
                                 fontSize: "10px",
-                                ml: 0.5,
+                                marginInlineStart: 0.5,
                               }}
                             >
                               ✓
@@ -1871,22 +1867,39 @@ export function InputArea({
                           prev.filter((f) => f.id !== file.id)
                         );
                       }}
-                      deleteIcon={<CloseIcon sx={{ fontSize: 16 }} />}
+                      deleteIcon={<CloseIcon className="no-rtl-transform" />}
                       sx={{
                         backgroundColor: isDarkMode ? "#343541" : "#e5e7eb",
                         color: isDarkMode ? "#ececf1" : "#374151",
                         height: "32px",
+                        direction: textDirection,
                         border:
                           file.source === "document-manager"
                             ? "1px solid #10b981"
                             : "1px solid #3b82f6",
                         "& .MuiChip-label": {
                           padding: "0 12px",
+                          direction: textDirection,
                         },
+                        // Ensure chip content stays within bounds
+                        overflow: "hidden",
                         "& .MuiChip-deleteIcon": {
+                          visibility: "visible",
+                          opacity: 1,
+                          display: "flex",
+                          margin: "0 4px",
                           color: isDarkMode ? "#a3a3a3" : "#6b7280",
                           "&:hover": {
                             color: isDarkMode ? "#ececf1" : "#374151",
+                          },
+                        },
+                        // RTL layout fix - use flexbox order
+                        '[dir="rtl"] &': {
+                          "& .MuiChip-deleteIcon": {
+                            order: -1, // Move to start in RTL
+                          },
+                          "& .MuiChip-label": {
+                            order: 1, // Move label after icon in RTL
                           },
                         },
                       }}
@@ -2638,8 +2651,8 @@ export function InputArea({
                 sx={{
                   position: "fixed",
                   top: 0,
-                  left: 0,
-                  right: 0,
+                  insetInlineStart: 0,
+                  insetInlineEnd: 0,
                   bottom: 0,
                   zIndex: 9998,
                   backgroundColor: "transparent",
@@ -2760,8 +2773,8 @@ export function InputArea({
                 sx={{
                   position: "fixed",
                   top: 0,
-                  left: 0,
-                  right: 0,
+                  insetInlineStart: 0,
+                  insetInlineEnd: 0,
                   bottom: 0,
                   zIndex: 9998,
                   backgroundColor: "rgba(0, 0, 0, 0.1)",

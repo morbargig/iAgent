@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState } from "react";
 import {
   Box,
   TextField,
@@ -11,51 +11,53 @@ import {
   Chip,
   Menu,
   MenuItem,
-
-} from '@mui/material';
+} from "@mui/material";
 import {
   Settings as SettingsIcon,
   CalendarMonth as CalendarIcon,
-
-} from '@mui/icons-material';
-import { useTranslation } from '../contexts/TranslationContext';
+} from "@mui/icons-material";
+import { useTranslation } from "../contexts/TranslationContext";
 
 interface AdvancedSearchInterfaceProps {
   isDarkMode: boolean;
   onSearch?: (query: string, filters: any) => void;
 }
 
-export function AdvancedSearchInterface({ 
+export function AdvancedSearchInterface({
   isDarkMode,
-  onSearch 
+  onSearch,
 }: AdvancedSearchInterfaceProps) {
-
   const { changeLanguage, currentLang } = useTranslation();
-  
+
   // State management
-  const [searchQuery, setSearchQuery] = useState('');
-  const [filterText, setFilterText] = useState('סיון דפי טריביקוק');
+  const [searchQuery, setSearchQuery] = useState("");
+  const [filterText, setFilterText] = useState("סיון דפי טריביקוק");
   const [excludeAmi, setExcludeAmi] = useState(false);
   const [includeAmi, setIncludeAmi] = useState(false);
   const [selectedDays, setSelectedDays] = useState(7);
-  const [selectedMode, setSelectedMode] = useState<'free' | 'flow' | 'product'>('free');
-  
+  const [selectedMode, setSelectedMode] = useState<"free" | "flow" | "product">(
+    "free"
+  );
+
   // Menu states
-  const [languageMenuAnchor, setLanguageMenuAnchor] = useState<null | HTMLElement>(null);
-  const [dateMenuAnchor, setDateMenuAnchor] = useState<null | HTMLElement>(null);
+  const [languageMenuAnchor, setLanguageMenuAnchor] =
+    useState<null | HTMLElement>(null);
+  const [dateMenuAnchor, setDateMenuAnchor] = useState<null | HTMLElement>(
+    null
+  );
 
   const languages = [
-    { code: 'he', flag: '🇮🇱', name: 'עברית' },
-    { code: 'ar', flag: '🇸🇦', name: 'العربية' },
-    { code: 'en', flag: '🇺🇸', name: 'English' },
+    { code: "he", flag: "🇮🇱", name: "עברית" },
+    { code: "ar", flag: "🇸🇦", name: "العربية" },
+    { code: "en", flag: "🇺🇸", name: "English" },
   ];
 
   const dateOptions = [
-    { value: 1, label: 'יום אחד אחורה' },
-    { value: 3, label: '3 ימים אחורה' },
-    { value: 7, label: '7 ימים אחורה' },
-    { value: 14, label: '14 ימים אחורה' },
-    { value: 30, label: 'חודש אחורה' },
+    { value: 1, label: "יום אחד אחורה" },
+    { value: 3, label: "3 ימים אחורה" },
+    { value: 7, label: "7 ימים אחורה" },
+    { value: 14, label: "14 ימים אחורה" },
+    { value: 30, label: "חודש אחורה" },
   ];
 
   const handleSearch = () => {
@@ -77,13 +79,13 @@ export function AdvancedSearchInterface({
   return (
     <Box
       sx={{
-        display: 'flex',
-        flexDirection: 'column',
+        display: "flex",
+        flexDirection: "column",
         gap: 3,
         padding: 3,
         maxWidth: 1200,
-        margin: '0 auto',
-        direction: 'rtl', // RTL for Hebrew interface
+        margin: "0 auto",
+        direction: "rtl", // RTL for Hebrew interface
       }}
     >
       {/* Top Section - Additional Settings */}
@@ -92,8 +94,8 @@ export function AdvancedSearchInterface({
         sx={{
           padding: 3,
           borderRadius: 3,
-          backgroundColor: isDarkMode ? '#2d2d2d' : '#ffffff',
-          border: `2px solid ${isDarkMode ? '#404040' : '#e0e0e0'}`,
+          backgroundColor: isDarkMode ? "#2d2d2d" : "#ffffff",
+          border: `2px solid ${isDarkMode ? "#404040" : "#e0e0e0"}`,
         }}
       >
         <Typography
@@ -101,8 +103,8 @@ export function AdvancedSearchInterface({
           sx={{
             marginBottom: 2,
             fontWeight: 600,
-            color: isDarkMode ? '#ffffff' : '#333333',
-            textAlign: 'center',
+            color: isDarkMode ? "#ffffff" : "#333333",
+            textAlign: "center",
           }}
         >
           הדרות נוספות
@@ -116,45 +118,45 @@ export function AdvancedSearchInterface({
           variant="outlined"
           sx={{
             marginBottom: 2,
-            '& .MuiOutlinedInput-root': {
+            "& .MuiOutlinedInput-root": {
               borderRadius: 3,
-              backgroundColor: isDarkMode ? '#404040' : '#f8f9fa',
+              backgroundColor: isDarkMode ? "#404040" : "#f8f9fa",
             },
           }}
           InputProps={{
-            style: { direction: 'rtl' },
+            style: { direction: "rtl" },
           }}
         />
 
         {/* Toggle Options */}
-        <Box sx={{ display: 'flex', gap: 3, justifyContent: 'center' }}>
+        <Box sx={{ display: "flex", gap: 3, justifyContent: "center" }}>
           <FormControlLabel
             control={
               <Switch
                 checked={excludeAmi}
                 onChange={(e) => setExcludeAmi(e.target.checked)}
                 sx={{
-                  '& .MuiSwitch-switchBase.Mui-checked': {
-                    color: '#1976d2',
+                  "& .MuiSwitch-switchBase.Mui-checked": {
+                    color: "#1976d2",
                   },
-                  '& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track': {
-                    backgroundColor: '#1976d2',
+                  "& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track": {
+                    backgroundColor: "#1976d2",
                   },
                 }}
               />
             }
             label={
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+              <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
                 <Chip
                   label="כן"
                   size="small"
-                  color={excludeAmi ? 'primary' : 'default'}
+                  color={excludeAmi ? "primary" : "default"}
                   sx={{ minWidth: 40 }}
                 />
                 <Chip
                   label="לא"
                   size="small"
-                  color={!excludeAmi ? 'default' : 'default'}
+                  color={!excludeAmi ? "default" : "default"}
                   sx={{ minWidth: 40 }}
                 />
                 <Typography>האם להוציא תוצרי אמ"י?</Typography>
@@ -169,27 +171,27 @@ export function AdvancedSearchInterface({
                 checked={includeAmi}
                 onChange={(e) => setIncludeAmi(e.target.checked)}
                 sx={{
-                  '& .MuiSwitch-switchBase.Mui-checked': {
-                    color: '#1976d2',
+                  "& .MuiSwitch-switchBase.Mui-checked": {
+                    color: "#1976d2",
                   },
-                  '& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track': {
-                    backgroundColor: '#1976d2',
+                  "& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track": {
+                    backgroundColor: "#1976d2",
                   },
                 }}
               />
             }
             label={
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+              <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
                 <Chip
                   label="כן"
                   size="small"
-                  color={includeAmi ? 'primary' : 'default'}
+                  color={includeAmi ? "primary" : "default"}
                   sx={{ minWidth: 40 }}
                 />
                 <Chip
                   label="לא"
                   size="small"
-                  color={!includeAmi ? 'default' : 'default'}
+                  color={!includeAmi ? "default" : "default"}
                   sx={{ minWidth: 40 }}
                 />
                 <Typography>האם להכיל רק תוצרי אמ"י?</Typography>
@@ -206,29 +208,29 @@ export function AdvancedSearchInterface({
         sx={{
           padding: 2,
           borderRadius: 4,
-          backgroundColor: isDarkMode ? '#2d2d2d' : '#ffffff',
-          border: `2px solid ${isDarkMode ? '#404040' : '#e0e0e0'}`,
+          backgroundColor: isDarkMode ? "#2d2d2d" : "#ffffff",
+          border: `2px solid ${isDarkMode ? "#404040" : "#e0e0e0"}`,
         }}
       >
         <Box
           sx={{
-            display: 'flex',
-            alignItems: 'center',
+            display: "flex",
+            alignItems: "center",
             gap: 2,
-            position: 'relative',
+            position: "relative",
           }}
         >
           {/* Language Flags */}
-          <Box sx={{ display: 'flex', gap: 1 }}>
+          <Box sx={{ display: "flex", gap: 1 }}>
             {languages.map((lang) => (
               <IconButton
                 key={lang.code}
                 onClick={(e) => setLanguageMenuAnchor(e.currentTarget)}
                 sx={{
-                  fontSize: '24px',
+                  fontSize: "24px",
                   padding: 0.5,
                   opacity: currentLang === lang.code ? 1 : 0.6,
-                  '&:hover': { opacity: 1 },
+                  "&:hover": { opacity: 1 },
                 }}
               >
                 {lang.flag}
@@ -240,16 +242,16 @@ export function AdvancedSearchInterface({
           <IconButton
             onClick={(e) => setDateMenuAnchor(e.currentTarget)}
             sx={{
-              backgroundColor: isDarkMode ? '#404040' : '#f0f0f0',
+              backgroundColor: isDarkMode ? "#404040" : "#f0f0f0",
               borderRadius: 2,
               padding: 1,
-              '&:hover': {
-                backgroundColor: isDarkMode ? '#505050' : '#e0e0e0',
+              "&:hover": {
+                backgroundColor: isDarkMode ? "#505050" : "#e0e0e0",
               },
             }}
           >
             <CalendarIcon />
-            <Typography sx={{ marginLeft: 1, fontSize: '14px' }}>
+            <Typography sx={{ marginInlineStart: 1, fontSize: "14px" }}>
               {selectedDays} ימים אחורה
             </Typography>
           </IconButton>
@@ -257,10 +259,10 @@ export function AdvancedSearchInterface({
           {/* Settings */}
           <IconButton
             sx={{
-              backgroundColor: isDarkMode ? '#404040' : '#f0f0f0',
+              backgroundColor: isDarkMode ? "#404040" : "#f0f0f0",
               borderRadius: 2,
-              '&:hover': {
-                backgroundColor: isDarkMode ? '#505050' : '#e0e0e0',
+              "&:hover": {
+                backgroundColor: isDarkMode ? "#505050" : "#e0e0e0",
               },
             }}
           >
@@ -275,68 +277,76 @@ export function AdvancedSearchInterface({
             placeholder="Ask anything..."
             variant="outlined"
             sx={{
-              '& .MuiOutlinedInput-root': {
+              "& .MuiOutlinedInput-root": {
                 borderRadius: 4,
-                backgroundColor: isDarkMode ? '#404040' : '#f8f9fa',
-                fontSize: '18px',
-                padding: '8px 16px',
+                backgroundColor: isDarkMode ? "#404040" : "#f8f9fa",
+                fontSize: "18px",
+                padding: "8px 16px",
               },
-              '& .MuiOutlinedInput-input': {
-                padding: '12px 0',
+              "& .MuiOutlinedInput-input": {
+                padding: "12px 0",
               },
             }}
             onKeyPress={(e) => {
-              if (e.key === 'Enter') {
+              if (e.key === "Enter") {
                 handleSearch();
               }
             }}
           />
 
           {/* Mode Buttons */}
-          <Box sx={{ display: 'flex', gap: 1 }}>
+          <Box sx={{ display: "flex", gap: 1 }}>
             <Button
-              variant={selectedMode === 'free' ? 'contained' : 'outlined'}
-              onClick={() => setSelectedMode('free')}
+              variant={selectedMode === "free" ? "contained" : "outlined"}
+              onClick={() => setSelectedMode("free")}
               sx={{
                 borderRadius: 3,
                 minWidth: 80,
-                textTransform: 'none',
+                textTransform: "none",
                 fontWeight: 600,
               }}
             >
               חינם
             </Button>
             <Button
-              variant={selectedMode === 'flow' ? 'contained' : 'outlined'}
-              onClick={() => setSelectedMode('flow')}
+              variant={selectedMode === "flow" ? "contained" : "outlined"}
+              onClick={() => setSelectedMode("flow")}
               sx={{
                 borderRadius: 3,
                 minWidth: 80,
-                textTransform: 'none',
+                textTransform: "none",
                 fontWeight: 600,
-                backgroundColor: selectedMode === 'flow' ? '#00bcd4' : 'transparent',
-                color: selectedMode === 'flow' ? 'white' : '#00bcd4',
-                borderColor: '#00bcd4',
-                '&:hover': {
-                  backgroundColor: selectedMode === 'flow' ? '#00acc1' : 'rgba(0, 188, 212, 0.1)',
+                backgroundColor:
+                  selectedMode === "flow" ? "#00bcd4" : "transparent",
+                color: selectedMode === "flow" ? "white" : "#00bcd4",
+                borderColor: "#00bcd4",
+                "&:hover": {
+                  backgroundColor:
+                    selectedMode === "flow"
+                      ? "#00acc1"
+                      : "rgba(0, 188, 212, 0.1)",
                 },
               }}
             >
               flow
             </Button>
             <Button
-              variant={selectedMode === 'product' ? 'contained' : 'outlined'}
-              onClick={() => setSelectedMode('product')}
+              variant={selectedMode === "product" ? "contained" : "outlined"}
+              onClick={() => setSelectedMode("product")}
               sx={{
                 borderRadius: 3,
                 minWidth: 80,
-                textTransform: 'none',
+                textTransform: "none",
                 fontWeight: 600,
-                backgroundColor: selectedMode === 'product' ? '#2196f3' : 'transparent',
-                color: selectedMode === 'product' ? 'white' : '#2196f3',
-                borderColor: '#2196f3',
-                '&:hover': {
-                  backgroundColor: selectedMode === 'product' ? '#1976d2' : 'rgba(33, 150, 243, 0.1)',
+                backgroundColor:
+                  selectedMode === "product" ? "#2196f3" : "transparent",
+                color: selectedMode === "product" ? "white" : "#2196f3",
+                borderColor: "#2196f3",
+                "&:hover": {
+                  backgroundColor:
+                    selectedMode === "product"
+                      ? "#1976d2"
+                      : "rgba(33, 150, 243, 0.1)",
                 },
               }}
             >
@@ -357,7 +367,7 @@ export function AdvancedSearchInterface({
               onClick={() => handleLanguageChange(lang.code)}
               selected={currentLang === lang.code}
             >
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+              <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
                 <span>{lang.flag}</span>
                 <span>{lang.name}</span>
               </Box>
@@ -387,4 +397,4 @@ export function AdvancedSearchInterface({
       </Paper>
     </Box>
   );
-} 
+}

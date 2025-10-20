@@ -18,7 +18,6 @@ import {
   Visibility as ViewIcon,
 } from "@mui/icons-material";
 
-
 export interface ReportData {
   id: string;
   title: string;
@@ -414,7 +413,11 @@ export const ReportDetailsPanel = React.forwardRef<
 
           {/* Report icon and title */}
           <Box
-            sx={{ display: "flex", alignItems: "center", paddingRight: "48px" }}
+            sx={{
+              display: "flex",
+              alignItems: "center",
+              paddingInlineEnd: "48px",
+            }}
           >
             <ReportIcon
               sx={{
@@ -789,7 +792,7 @@ export const ReportDetailsPanel = React.forwardRef<
             sx={{
               position: "absolute",
               top: 0,
-              left: 0, // Left edge for right-side panel
+              insetInlineStart: 0, // Start edge for panel
               width: "4px",
               height: "100%",
               cursor: "col-resize",
