@@ -64,6 +64,10 @@ export const FilePreview: React.FC<FilePreviewProps> = ({
     }
   };
 
+  const handlePreview = (file: AttachedFile) => {
+    fileService.previewFile(file.id);
+  };
+
   // Compact mode for ChatGPT-style inline cards with type-specific icons
   if (compact) {
     return (
@@ -171,6 +175,25 @@ export const FilePreview: React.FC<FilePreviewProps> = ({
                     </IconButton>
                   </Tooltip>
                 )}
+                <Tooltip title="Preview">
+                  <IconButton
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handlePreview(file);
+                    }}
+                    size="small"
+                    sx={{
+                      width: 20,
+                      height: 20,
+                      color: isDarkMode ? '#8e8ea0' : '#6b7280',
+                      '&:hover': {
+                        color: color,
+                      },
+                    }}
+                  >
+                    <PreviewIcon sx={{ fontSize: 14 }} />
+                  </IconButton>
+                </Tooltip>
                 <Tooltip title="Download">
                   <IconButton
                     onClick={(e) => {
@@ -255,6 +278,21 @@ export const FilePreview: React.FC<FilePreviewProps> = ({
               
               {/* Action buttons */}
               <Box display="flex" gap={0.5}>
+                <Tooltip title="Preview">
+                  <IconButton
+                    onClick={() => handlePreview(file)}
+                    size="small"
+                    sx={{
+                      color: isDarkMode ? '#8e8ea0' : '#6b7280',
+                      '&:hover': {
+                        backgroundColor: isDarkMode ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.05)',
+                      },
+                    }}
+                  >
+                    <PreviewIcon sx={{ fontSize: 14 }} />
+                  </IconButton>
+                </Tooltip>
+                
                 <Tooltip title="Download">
                   <IconButton
                     onClick={() => handleDownload(file)}

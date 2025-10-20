@@ -27,6 +27,7 @@ import {
   Info as InfoIcon,
   Refresh as RefreshIcon,
   FilePresent as FileIcon,
+  Visibility as VisibilityIcon,
 } from '@mui/icons-material';
 import { fileService, FileInfo } from '../services/fileService';
 
@@ -202,6 +203,15 @@ export const FileList: React.FC<FileListProps> = ({ onFileDeleted }) => {
                     </TableCell>
                     <TableCell align="center">
                       <Box display="flex" gap={1} justifyContent="center">
+                        <Tooltip title="Preview">
+                          <IconButton
+                            size="small"
+                            onClick={() => fileService.previewFile(file.id)}
+                          >
+                            <VisibilityIcon />
+                          </IconButton>
+                        </Tooltip>
+                        
                         <Tooltip title="Download">
                           <IconButton
                             size="small"

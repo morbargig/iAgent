@@ -37,8 +37,7 @@ export const FileAttachmentCard: React.FC<FileAttachmentCardProps> = ({
     if (onPreview) {
       onPreview(file);
     } else {
-      // Use direct localhost:3030 URL (no proxy)
-      const url = `http://localhost:3030/api/files/${file.id}`;
+      const url = `http://localhost:3030/api/files/${file.id}/preview`;
       window.open(url, '_blank', 'noopener,noreferrer');
     }
   };

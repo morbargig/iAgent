@@ -16,6 +16,7 @@ import {
   AudioFile as AudioIcon,
   Code as CodeIcon,
   Archive as ArchiveIcon,
+  Visibility as PreviewIcon,
 } from '@mui/icons-material';
 import { fileService } from '../services/fileService';
 
@@ -45,6 +46,10 @@ export const FileAttachment: React.FC<FileAttachmentProps> = ({
       // Default download behavior
       fileService.downloadFile(file.id, file.filename);
     }
+  };
+
+  const handlePreview = () => {
+    fileService.previewFile(file.id);
   };
 
   const getFileIcon = (mimetype: string) => {
@@ -128,6 +133,22 @@ export const FileAttachment: React.FC<FileAttachmentProps> = ({
             {fileService.formatFileSize(file.size)} • {file.mimetype}
           </Typography>
         </Box>
+        
+        <Tooltip title="Preview file">
+          <IconButton
+            onClick={handlePreview}
+            size="small"
+            sx={{
+              color: 'primary.main',
+              '&:hover': {
+                backgroundColor: 'primary.50',
+              },
+            }}
+          >
+            <PreviewIcon />
+            kjhdsfkjhsfdk
+          </IconButton>
+        </Tooltip>
         
         <Tooltip title="Download file">
           <IconButton

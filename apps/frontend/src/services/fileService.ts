@@ -225,6 +225,15 @@ class FileService {
     window.URL.revokeObjectURL(url);
   }
 
+  getPreviewUrl(fileId: string): string {
+    return `${this.baseUrl}/${fileId}/preview`;
+  }
+
+  previewFile(fileId: string): void {
+    const url = this.getPreviewUrl(fileId);
+    window.open(url, '_blank', 'noopener,noreferrer');
+  }
+
   async deleteFile(fileId: string): Promise<void> {
     const response = await fetch(`${this.baseUrl}/${fileId}`, {
       method: 'DELETE',
