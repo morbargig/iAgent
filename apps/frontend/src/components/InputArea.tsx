@@ -1163,7 +1163,7 @@ export function InputArea({
       // If we have authToken, also try API call
       if (authToken) {
         const response = await fetch(
-          `http://localhost:3000/api/chats/${currentChatId}/filters`,
+          `http://localhost:3030/api/chats/${currentChatId}/filters`,
           {
             method: "POST",
             headers: {
@@ -1225,7 +1225,7 @@ export function InputArea({
       // If we have authToken, also try API call
       if (authToken) {
         const response = await fetch(
-          `http://localhost:3000/api/chats/${currentChatId}/active-filter`,
+          `http://localhost:3030/api/chats/${currentChatId}/active-filter`,
           {
             method: "PUT",
             headers: {
@@ -1287,7 +1287,7 @@ export function InputArea({
       // Also try API call if authenticated
       if (authToken) {
         const response = await fetch(
-          `http://localhost:3000/api/chats/${currentChatId}/filters`,
+          `http://localhost:3030/api/chats/${currentChatId}/filters`,
           {
             headers: {
               Authorization: `Bearer ${authToken}`,
@@ -1420,7 +1420,7 @@ export function InputArea({
           // Also try API call if authenticated
           if (authToken) {
             await fetch(
-              `http://localhost:3000/api/chats/filters/${renameDialogFilter.filterId}`,
+              `http://localhost:3030/api/chats/filters/${renameDialogFilter.filterId}`,
               {
                 method: "PUT",
                 headers: {

@@ -599,7 +599,7 @@ const App = () => {
           setStreamingConversationId(null); // Clear streaming conversation
         },
         isMockMode, // useMock
-        "http://localhost:3000",
+        "http://localhost:3030",
         translation,
         authToken || undefined, // authToken
         chatId, // chatId
@@ -966,7 +966,7 @@ const App = () => {
         // useMock flag
         isMockMode,
         // baseUrl for API mode
-        "http://localhost:3000",
+        "http://localhost:3030",
         // translation function
         translation,
         // authToken for API mode

@@ -63,7 +63,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({
         return;
       }
 
-      const response = await fetch("http://localhost:3000/api/auth/login", {
+      const response = await fetch("http://localhost:3030/api/auth/login", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -97,7 +97,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({
         return;
       }
 
-      const response = await fetch("http://localhost:3000/api/auth/demo-token");
+      const response = await fetch("http://localhost:3030/api/auth/demo-token");
       const data = await response.json();
       onLogin(data.token, data.userId, data.email);
     } catch (err) {
