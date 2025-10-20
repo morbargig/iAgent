@@ -237,7 +237,7 @@ export const DocumentManager: React.FC<DocumentManagerProps> = ({
               startIcon={<UploadIcon />}
               onClick={onUploadClick}
             >
-              {t("upload")}
+              {t("files.upload")}
             </Button>
           )}
           <IconButton onClick={() => loadDocuments(true)}>
@@ -451,7 +451,7 @@ export const DocumentManager: React.FC<DocumentManagerProps> = ({
           sx={{ color: theme.palette.error.main }}
         >
           <DeleteIcon sx={{ mr: 1 }} />
-          {t("delete")}
+          {t("common.delete")}
         </MenuItem>
       </Menu>
 
@@ -469,7 +469,7 @@ export const DocumentManager: React.FC<DocumentManagerProps> = ({
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setDeleteDialog({ open: false })}>
-            {t("cancel")}
+            {t("common.cancel")}
           </Button>
           <Button
             onClick={() =>
@@ -478,7 +478,7 @@ export const DocumentManager: React.FC<DocumentManagerProps> = ({
             }
             color="error"
           >
-            {t("delete")}
+            {t("common.delete")}
           </Button>
         </DialogActions>
       </Dialog>
@@ -509,7 +509,7 @@ export const DocumentManager: React.FC<DocumentManagerProps> = ({
           <Button
             onClick={() => setBulkDeleteDialog({ open: false, documents: [] })}
           >
-            {t("cancel")}
+            {t("common.cancel")}
           </Button>
           <Button
             onClick={() => handleBulkDelete(bulkDeleteDialog.documents)}

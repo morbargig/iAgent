@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from "react";
 import {
   Box,
   Typography,
@@ -20,7 +20,7 @@ import {
   DialogActions,
   Tooltip,
   Pagination,
-} from '@mui/material';
+} from "@mui/material";
 import {
   Download as DownloadIcon,
   Delete as DeleteIcon,
@@ -28,8 +28,9 @@ import {
   Refresh as RefreshIcon,
   FilePresent as FileIcon,
   Visibility as VisibilityIcon,
-} from '@mui/icons-material';
-import { fileService, FileInfo } from '../services/fileService';
+} from "@mui/icons-material";
+import { fileService, FileInfo } from "../services/fileService";
+import { useTranslation } from "../contexts/TranslationContext";
 
 interface FileListProps {
   onFileDeleted?: () => void;
@@ -45,24 +46,29 @@ export const FileList: React.FC<FileListProps> = ({ onFileDeleted }) => {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [fileToDelete, setFileToDelete] = useState<string | null>(null);
   const [deleting, setDeleting] = useState(false);
+  const { t } = useTranslation();
 
   const filesPerPage = 10;
 
   const loadFiles = async () => {
     setLoading(true);
     setError(null);
-    
+
     try {
       const skip = (page - 1) * filesPerPage;
       const [filesData, count] = await Promise.all([
         fileService.getFileList(filesPerPage, skip),
         fileService.getFileCount(),
       ]);
-      
+
       setFiles(filesData);
       setTotalCount(count);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load files');
+      setError(
+        err instanceof Error
+          ? err.message
+          : t("files.management.list.errors.failedToLoad")
+      );
     } finally {
       setLoading(false);
     }
@@ -76,7 +82,11 @@ export const FileList: React.FC<FileListProps> = ({ onFileDeleted }) => {
     try {
       await fileService.downloadFile(file.id, file.filename);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Download failed');
+      setError(
+        err instanceof Error
+          ? err.message
+          : t("files.management.list.errors.downloadFailed")
+      );
     }
   };
 
@@ -87,7 +97,7 @@ export const FileList: React.FC<FileListProps> = ({ onFileDeleted }) => {
 
   const handleDeleteConfirm = async () => {
     if (!fileToDelete) return;
-    
+
     setDeleting(true);
     try {
       await fileService.deleteFile(fileToDelete);
@@ -96,7 +106,11 @@ export const FileList: React.FC<FileListProps> = ({ onFileDeleted }) => {
       await loadFiles();
       onFileDeleted?.();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Delete failed');
+      setError(
+        err instanceof Error
+          ? err.message
+          : t("files.management.list.errors.deleteFailed")
+      );
     } finally {
       setDeleting(false);
     }
@@ -107,20 +121,25 @@ export const FileList: React.FC<FileListProps> = ({ onFileDeleted }) => {
   };
 
   const getFileIcon = (mimetype: string) => {
-    if (mimetype.startsWith('image/')) return '🖼️';
-    if (mimetype.startsWith('video/')) return '🎥';
-    if (mimetype.startsWith('audio/')) return '🎵';
-    if (mimetype.includes('pdf')) return '📄';
-    if (mimetype.includes('text')) return '📝';
-    if (mimetype.includes('zip') || mimetype.includes('rar')) return '📦';
-    return '📁';
+    if (mimetype.startsWith("image/")) return "🖼️";
+    if (mimetype.startsWith("video/")) return "🎥";
+    if (mimetype.startsWith("audio/")) return "🎵";
+    if (mimetype.includes("pdf")) return "📄";
+    if (mimetype.includes("text")) return "📝";
+    if (mimetype.includes("zip") || mimetype.includes("rar")) return "📦";
+    return "📁";
   };
 
   const totalPages = Math.ceil(totalCount / filesPerPage);
 
   if (loading && files.length === 0) {
     return (
-      <Box display="flex" justifyContent="center" alignItems="center" minHeight={200}>
+      <Box
+        display="flex"
+        justifyContent="center"
+        alignItems="center"
+        minHeight={200}
+      >
         <CircularProgress />
       </Box>
     );
@@ -128,9 +147,14 @@ export const FileList: React.FC<FileListProps> = ({ onFileDeleted }) => {
 
   return (
     <Paper elevation={2} sx={{ p: 3 }}>
-      <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
+      <Box
+        display="flex"
+        justifyContent="space-between"
+        alignItems="center"
+        mb={2}
+      >
         <Typography variant="h6">
-          Files in MongoDB GridFS ({totalCount} total)
+          {t("files.management.list.title", { count: totalCount })}
         </Typography>
         <Button
           variant="outlined"
@@ -138,7 +162,7 @@ export const FileList: React.FC<FileListProps> = ({ onFileDeleted }) => {
           onClick={handleRefresh}
           disabled={loading}
         >
-          Refresh
+          {t("files.management.list.refresh")}
         </Button>
       </Box>
 
@@ -150,12 +174,12 @@ export const FileList: React.FC<FileListProps> = ({ onFileDeleted }) => {
 
       {files.length === 0 ? (
         <Box textAlign="center" py={4}>
-          <FileIcon sx={{ fontSize: 64, color: 'grey.400', mb: 2 }} />
+          <FileIcon sx={{ fontSize: 64, color: "grey.400", mb: 2 }} />
           <Typography variant="h6" color="text.secondary">
-            No files uploaded yet
+            {t("files.management.list.emptyState.title")}
           </Typography>
           <Typography variant="body2" color="text.secondary">
-            Upload your first file using the upload component above
+            {t("files.management.list.emptyState.subtitle")}
           </Typography>
         </Box>
       ) : (
@@ -164,11 +188,15 @@ export const FileList: React.FC<FileListProps> = ({ onFileDeleted }) => {
             <Table>
               <TableHead>
                 <TableRow>
-                  <TableCell>File</TableCell>
-                  <TableCell>Size</TableCell>
-                  <TableCell>Type</TableCell>
-                  <TableCell>Upload Date</TableCell>
-                  <TableCell align="center">Actions</TableCell>
+                  <TableCell>{t("files.management.list.table.file")}</TableCell>
+                  <TableCell>{t("files.management.list.table.size")}</TableCell>
+                  <TableCell>{t("files.management.list.table.type")}</TableCell>
+                  <TableCell>
+                    {t("files.management.list.table.uploadDate")}
+                  </TableCell>
+                  <TableCell align="center">
+                    {t("files.management.list.table.actions")}
+                  </TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>
@@ -179,7 +207,11 @@ export const FileList: React.FC<FileListProps> = ({ onFileDeleted }) => {
                         <Typography variant="body2">
                           {getFileIcon(file.mimetype)}
                         </Typography>
-                        <Typography variant="body2" noWrap sx={{ maxWidth: 200 }}>
+                        <Typography
+                          variant="body2"
+                          noWrap
+                          sx={{ maxWidth: 200 }}
+                        >
                           {file.filename}
                         </Typography>
                       </Box>
@@ -203,7 +235,9 @@ export const FileList: React.FC<FileListProps> = ({ onFileDeleted }) => {
                     </TableCell>
                     <TableCell align="center">
                       <Box display="flex" gap={1} justifyContent="center">
-                        <Tooltip title="Preview">
+                        <Tooltip
+                          title={t("files.management.list.tooltips.preview")}
+                        >
                           <IconButton
                             size="small"
                             onClick={() => fileService.previewFile(file.id)}
@@ -211,8 +245,10 @@ export const FileList: React.FC<FileListProps> = ({ onFileDeleted }) => {
                             <VisibilityIcon />
                           </IconButton>
                         </Tooltip>
-                        
-                        <Tooltip title="Download">
+
+                        <Tooltip
+                          title={t("files.management.list.tooltips.download")}
+                        >
                           <IconButton
                             size="small"
                             onClick={() => handleDownload(file)}
@@ -220,8 +256,10 @@ export const FileList: React.FC<FileListProps> = ({ onFileDeleted }) => {
                             <DownloadIcon />
                           </IconButton>
                         </Tooltip>
-                        
-                        <Tooltip title="File Info">
+
+                        <Tooltip
+                          title={t("files.management.list.tooltips.fileInfo")}
+                        >
                           <IconButton
                             size="small"
                             onClick={() => setSelectedFile(file)}
@@ -229,8 +267,10 @@ export const FileList: React.FC<FileListProps> = ({ onFileDeleted }) => {
                             <InfoIcon />
                           </IconButton>
                         </Tooltip>
-                        
-                        <Tooltip title="Delete">
+
+                        <Tooltip
+                          title={t("files.management.list.tooltips.delete")}
+                        >
                           <IconButton
                             size="small"
                             color="error"
@@ -261,32 +301,63 @@ export const FileList: React.FC<FileListProps> = ({ onFileDeleted }) => {
       )}
 
       {/* File Info Dialog */}
-      <Dialog open={!!selectedFile} onClose={() => setSelectedFile(null)} maxWidth="sm" fullWidth>
-        <DialogTitle>File Information</DialogTitle>
+      <Dialog
+        open={!!selectedFile}
+        onClose={() => setSelectedFile(null)}
+        maxWidth="sm"
+        fullWidth
+      >
+        <DialogTitle>
+          {t("files.management.list.fileInfoDialog.title")}
+        </DialogTitle>
         <DialogContent>
           {selectedFile && (
             <Box>
               <Typography variant="body1" gutterBottom>
-                <strong>Filename:</strong> {selectedFile.filename}
+                <strong>
+                  {t("files.management.list.fileInfoDialog.filename")}
+                </strong>{" "}
+                {selectedFile.filename}
               </Typography>
               <Typography variant="body1" gutterBottom>
-                <strong>Size:</strong> {fileService.formatFileSize(selectedFile.size)}
+                <strong>
+                  {t("files.management.list.fileInfoDialog.size")}
+                </strong>{" "}
+                {fileService.formatFileSize(selectedFile.size)}
               </Typography>
               <Typography variant="body1" gutterBottom>
-                <strong>Type:</strong> {selectedFile.mimetype}
+                <strong>
+                  {t("files.management.list.fileInfoDialog.type")}
+                </strong>{" "}
+                {selectedFile.mimetype}
               </Typography>
               <Typography variant="body1" gutterBottom>
-                <strong>Upload Date:</strong> {fileService.formatDate(selectedFile.uploadDate)}
+                <strong>
+                  {t("files.management.list.fileInfoDialog.uploadDate")}
+                </strong>{" "}
+                {fileService.formatDate(selectedFile.uploadDate)}
               </Typography>
               <Typography variant="body1" gutterBottom>
-                <strong>File ID:</strong> {selectedFile.id}
+                <strong>
+                  {t("files.management.list.fileInfoDialog.fileId")}
+                </strong>{" "}
+                {selectedFile.id}
               </Typography>
               {selectedFile.metadata && (
                 <Box mt={2}>
                   <Typography variant="body1" gutterBottom>
-                    <strong>Metadata:</strong>
+                    <strong>
+                      {t("files.management.list.fileInfoDialog.metadata")}
+                    </strong>
                   </Typography>
-                  <pre style={{ fontSize: '12px', backgroundColor: '#f5f5f5', padding: '8px', borderRadius: '4px' }}>
+                  <pre
+                    style={{
+                      fontSize: "12px",
+                      backgroundColor: "#f5f5f5",
+                      padding: "8px",
+                      borderRadius: "4px",
+                    }}
+                  >
                     {JSON.stringify(selectedFile.metadata, null, 2)}
                   </pre>
                 </Box>
@@ -295,28 +366,40 @@ export const FileList: React.FC<FileListProps> = ({ onFileDeleted }) => {
           )}
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setSelectedFile(null)}>Close</Button>
+          <Button onClick={() => setSelectedFile(null)}>
+            {t("files.management.list.fileInfoDialog.close")}
+          </Button>
         </DialogActions>
       </Dialog>
 
       {/* Delete Confirmation Dialog */}
-      <Dialog open={deleteDialogOpen} onClose={() => setDeleteDialogOpen(false)}>
-        <DialogTitle>Delete File</DialogTitle>
+      <Dialog
+        open={deleteDialogOpen}
+        onClose={() => setDeleteDialogOpen(false)}
+      >
+        <DialogTitle>
+          {t("files.management.list.deleteDialog.title")}
+        </DialogTitle>
         <DialogContent>
           <Typography>
-            Are you sure you want to delete this file? This action cannot be undone.
+            {t("files.management.list.deleteDialog.confirmMessage")}
           </Typography>
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setDeleteDialogOpen(false)} disabled={deleting}>
-            Cancel
+          <Button
+            onClick={() => setDeleteDialogOpen(false)}
+            disabled={deleting}
+          >
+            {t("files.management.list.deleteDialog.cancel")}
           </Button>
           <Button
             onClick={handleDeleteConfirm}
             color="error"
             disabled={deleting}
           >
-            {deleting ? 'Deleting...' : 'Delete'}
+            {deleting
+              ? t("files.management.list.deleteDialog.deleting")
+              : t("files.management.list.deleteDialog.delete")}
           </Button>
         </DialogActions>
       </Dialog>

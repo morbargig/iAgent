@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState } from "react";
 import {
   Box,
   Typography,
@@ -7,10 +7,11 @@ import {
   Tab,
   Paper,
   Alert,
-} from '@mui/material';
-import { FileUpload } from './FileUpload';
-import { FileList } from './FileList';
-import { FileUploadResult } from '../services/fileService';
+} from "@mui/material";
+import { FileUpload } from "./FileUpload";
+import { FileList } from "./FileList";
+import { FileUploadResult } from "../services/fileService";
+import { useTranslation } from "../contexts/TranslationContext";
 
 interface TabPanelProps {
   children?: React.ReactNode;
@@ -38,13 +39,18 @@ export const FileManagement: React.FC = () => {
   const [activeTab, setActiveTab] = useState(0);
   const [uploadSuccess, setUploadSuccess] = useState<string | null>(null);
   const [uploadError, setUploadError] = useState<string | null>(null);
+  const { t } = useTranslation();
 
   const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
     setActiveTab(newValue);
   };
 
   const handleUploadSuccess = (result: FileUploadResult) => {
-    setUploadSuccess(`File "${result.filename}" uploaded successfully!`);
+    setUploadSuccess(
+      t("files.management.messages.fileUploadedSuccess", {
+        filename: result.filename,
+      })
+    );
     setUploadError(null);
     // Switch to files tab to show the uploaded file
     setTimeout(() => {
@@ -58,37 +64,62 @@ export const FileManagement: React.FC = () => {
   };
 
   const handleFileDeleted = () => {
-    setUploadSuccess('File deleted successfully!');
+    setUploadSuccess(t("files.management.messages.fileDeletedSuccess"));
     setUploadError(null);
   };
 
   return (
     <Container maxWidth="lg" sx={{ py: 4 }}>
       <Typography variant="h4" gutterBottom align="center">
-        MongoDB GridFS File Management
+        {t("files.management.title")}
       </Typography>
-      
-      <Typography variant="body1" color="text.secondary" align="center" sx={{ mb: 4 }}>
-        Upload, manage, and download files stored in MongoDB Atlas using GridFS
+
+      <Typography
+        variant="body1"
+        color="text.secondary"
+        align="center"
+        sx={{ mb: 4 }}
+      >
+        {t("files.management.subtitle")}
       </Typography>
 
       {uploadSuccess && (
-        <Alert severity="success" sx={{ mb: 2 }} onClose={() => setUploadSuccess(null)}>
+        <Alert
+          severity="success"
+          sx={{ mb: 2 }}
+          onClose={() => setUploadSuccess(null)}
+        >
           {uploadSuccess}
         </Alert>
       )}
 
       {uploadError && (
-        <Alert severity="error" sx={{ mb: 2 }} onClose={() => setUploadError(null)}>
+        <Alert
+          severity="error"
+          sx={{ mb: 2 }}
+          onClose={() => setUploadError(null)}
+        >
           {uploadError}
         </Alert>
       )}
 
       <Paper elevation={2}>
-        <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
-          <Tabs value={activeTab} onChange={handleTabChange} aria-label="file management tabs">
-            <Tab label="Upload Files" id="file-tab-0" aria-controls="file-tabpanel-0" />
-            <Tab label="Manage Files" id="file-tab-1" aria-controls="file-tabpanel-1" />
+        <Box sx={{ borderBottom: 1, borderColor: "divider" }}>
+          <Tabs
+            value={activeTab}
+            onChange={handleTabChange}
+            aria-label="file management tabs"
+          >
+            <Tab
+              label={t("files.management.tabs.uploadFiles")}
+              id="file-tab-0"
+              aria-controls="file-tabpanel-0"
+            />
+            <Tab
+              label={t("files.management.tabs.manageFiles")}
+              id="file-tab-1"
+              aria-controls="file-tabpanel-1"
+            />
           </Tabs>
         </Box>
 
@@ -104,24 +135,23 @@ export const FileManagement: React.FC = () => {
         </TabPanel>
       </Paper>
 
-      <Box sx={{ mt: 4, p: 2, backgroundColor: 'grey.50', borderRadius: 2 }}>
+      <Box sx={{ mt: 4, p: 2, backgroundColor: "grey.50", borderRadius: 2 }}>
         <Typography variant="h6" gutterBottom>
-          About MongoDB GridFS
+          {t("files.management.about.title")}
         </Typography>
         <Typography variant="body2" color="text.secondary" paragraph>
-          GridFS is a specification for storing and retrieving files that exceed the BSON-document size limit of 16MB.
-          Instead of storing a file in a single document, GridFS divides a file into parts, or chunks, and stores each chunk as a separate document.
+          {t("files.management.about.description")}
         </Typography>
         <Typography variant="body2" color="text.secondary" paragraph>
-          <strong>Benefits:</strong>
+          <strong>{t("files.management.about.benefitsTitle")}</strong>
         </Typography>
         <Typography variant="body2" color="text.secondary" component="div">
           <ul>
-            <li>Store files larger than 16MB</li>
-            <li>Efficient streaming of large files</li>
-            <li>Metadata storage separate from file content</li>
-            <li>Atomic operations for file consistency</li>
-            <li>Automatic chunking for optimal performance</li>
+            <li>{t("files.management.about.benefits.largeFiles")}</li>
+            <li>{t("files.management.about.benefits.streaming")}</li>
+            <li>{t("files.management.about.benefits.metadata")}</li>
+            <li>{t("files.management.about.benefits.atomicOperations")}</li>
+            <li>{t("files.management.about.benefits.chunking")}</li>
           </ul>
         </Typography>
       </Box>

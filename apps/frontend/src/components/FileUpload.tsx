@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef } from "react";
 import {
   Box,
   Button,
@@ -8,13 +8,14 @@ import {
   Paper,
   IconButton,
   Chip,
-} from '@mui/material';
+} from "@mui/material";
 import {
   CloudUpload as UploadIcon,
   Delete as DeleteIcon,
   CheckCircle as CheckIcon,
-} from '@mui/icons-material';
-import { fileService, FileUploadResult } from '../services/fileService';
+} from "@mui/icons-material";
+import { fileService, FileUploadResult } from "../services/fileService";
+import { useTranslation } from "../contexts/TranslationContext";
 
 interface FileUploadProps {
   onUploadSuccess?: (result: FileUploadResult) => void;
@@ -28,9 +29,12 @@ export const FileUpload: React.FC<FileUploadProps> = ({
   const [uploading, setUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
-  const [uploadResult, setUploadResult] = useState<FileUploadResult | null>(null);
+  const [uploadResult, setUploadResult] = useState<FileUploadResult | null>(
+    null
+  );
   const [error, setError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const { t } = useTranslation();
 
   const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -51,7 +55,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({
     try {
       // Simulate progress
       const progressInterval = setInterval(() => {
-        setUploadProgress(prev => {
+        setUploadProgress((prev) => {
           if (prev >= 90) {
             clearInterval(progressInterval);
             return 90;
@@ -61,20 +65,24 @@ export const FileUpload: React.FC<FileUploadProps> = ({
       }, 200);
 
       const result = await fileService.uploadFile(selectedFile);
-      
+
       clearInterval(progressInterval);
       setUploadProgress(100);
       setUploadResult(result);
       setSelectedFile(null);
-      
+
       if (fileInputRef.current) {
-        fileInputRef.current.value = '';
+        fileInputRef.current.value = "";
       }
 
       onUploadSuccess?.(result);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Upload failed');
-      onUploadError?.(err instanceof Error ? err.message : 'Upload failed');
+      const errorMessage =
+        err instanceof Error
+          ? err.message
+          : t("files.management.upload.uploadFailed");
+      setError(errorMessage);
+      onUploadError?.(errorMessage);
     } finally {
       setUploading(false);
       setTimeout(() => setUploadProgress(0), 1000);
@@ -86,7 +94,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({
     setUploadResult(null);
     setError(null);
     if (fileInputRef.current) {
-      fileInputRef.current.value = '';
+      fileInputRef.current.value = "";
     }
   };
 
@@ -107,24 +115,24 @@ export const FileUpload: React.FC<FileUploadProps> = ({
   return (
     <Paper elevation={2} sx={{ p: 3, mb: 2 }}>
       <Typography variant="h6" gutterBottom>
-        Upload File to MongoDB GridFS
+        {t("files.management.upload.title")}
       </Typography>
-      
+
       <Box
         onDrop={handleDrop}
         onDragOver={handleDragOver}
         sx={{
-          border: '2px dashed',
-          borderColor: selectedFile ? 'primary.main' : 'grey.300',
+          border: "2px dashed",
+          borderColor: selectedFile ? "primary.main" : "grey.300",
           borderRadius: 2,
           p: 3,
-          textAlign: 'center',
-          backgroundColor: selectedFile ? 'primary.50' : 'grey.50',
-          transition: 'all 0.3s ease',
-          cursor: 'pointer',
-          '&:hover': {
-            borderColor: 'primary.main',
-            backgroundColor: 'primary.50',
+          textAlign: "center",
+          backgroundColor: selectedFile ? "primary.50" : "grey.50",
+          transition: "all 0.3s ease",
+          cursor: "pointer",
+          "&:hover": {
+            borderColor: "primary.main",
+            backgroundColor: "primary.50",
           },
         }}
         onClick={() => fileInputRef.current?.click()}
@@ -133,15 +141,17 @@ export const FileUpload: React.FC<FileUploadProps> = ({
           ref={fileInputRef}
           type="file"
           onChange={handleFileSelect}
-          style={{ display: 'none' }}
+          style={{ display: "none" }}
         />
-        
-        <UploadIcon sx={{ fontSize: 48, color: 'grey.400', mb: 1 }} />
-        
+
+        <UploadIcon sx={{ fontSize: 48, color: "grey.400", mb: 1 }} />
+
         <Typography variant="body1" color="text.secondary">
-          {selectedFile ? selectedFile.name : 'Click to select or drag and drop a file'}
+          {selectedFile
+            ? selectedFile.name
+            : t("files.management.upload.placeholder")}
         </Typography>
-        
+
         {selectedFile && (
           <Box sx={{ mt: 2 }}>
             <Chip
@@ -154,16 +164,18 @@ export const FileUpload: React.FC<FileUploadProps> = ({
       </Box>
 
       {selectedFile && (
-        <Box sx={{ mt: 2, display: 'flex', gap: 1, alignItems: 'center' }}>
+        <Box sx={{ mt: 2, display: "flex", gap: 1, alignItems: "center" }}>
           <Button
             variant="contained"
             onClick={handleUpload}
             disabled={uploading}
             startIcon={<UploadIcon />}
           >
-            {uploading ? 'Uploading...' : 'Upload File'}
+            {uploading
+              ? t("files.management.upload.uploading")
+              : t("files.management.upload.uploadFile")}
           </Button>
-          
+
           <IconButton onClick={handleClear} disabled={uploading}>
             <DeleteIcon />
           </IconButton>
@@ -174,7 +186,9 @@ export const FileUpload: React.FC<FileUploadProps> = ({
         <Box sx={{ mt: 2 }}>
           <LinearProgress variant="determinate" value={uploadProgress} />
           <Typography variant="caption" color="text.secondary">
-            Uploading... {uploadProgress}%
+            {t("files.management.upload.progressText", {
+              progress: uploadProgress,
+            })}
           </Typography>
         </Box>
       )}
@@ -191,10 +205,13 @@ export const FileUpload: React.FC<FileUploadProps> = ({
           }
         >
           <Typography variant="body2">
-            File uploaded successfully!
+            {t("files.management.upload.successMessage")}
           </Typography>
           <Typography variant="caption" display="block">
-            ID: {uploadResult.id} | Size: {fileService.formatFileSize(uploadResult.size)}
+            {t("files.management.upload.fileInfo", {
+              id: uploadResult.id,
+              size: fileService.formatFileSize(uploadResult.size),
+            })}
           </Typography>
         </Alert>
       )}

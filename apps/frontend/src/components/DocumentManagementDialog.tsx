@@ -152,7 +152,7 @@ export const DocumentManagementDialog: React.FC<
           <Box display="flex" alignItems="center">
             <FolderIcon sx={{ mr: 1 }} />
             <Typography variant="h6">
-              {title || t("documentManagement")}
+              {title || t("files.documentManagement")}
             </Typography>
           </Box>
           <IconButton onClick={handleClose} size="small">
@@ -171,13 +171,13 @@ export const DocumentManagementDialog: React.FC<
           >
             <Tab
               icon={<UploadIcon />}
-              label={t("upload")}
+              label={t("files.upload")}
               value="upload"
               iconPosition="start"
             />
             <Tab
               icon={<FolderIcon />}
-              label={t("manage")}
+              label={t("files.manage")}
               value="manage"
               iconPosition="start"
             />
@@ -210,13 +210,13 @@ export const DocumentManagementDialog: React.FC<
 
       {selectionMode && (
         <DialogActions>
-          <Button onClick={handleClose}>{t("cancel")}</Button>
+          <Button onClick={handleClose}>{t("common.cancel")}</Button>
           <Button
             onClick={handleConfirmSelection}
             variant="contained"
             disabled={selectedDocs.length === 0}
           >
-            {t("select")} ({selectedDocs.length})
+            {t("files.select")} ({selectedDocs.length})
           </Button>
         </DialogActions>
       )}

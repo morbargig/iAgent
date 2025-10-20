@@ -552,7 +552,7 @@ export function InputArea({
     const validation = validateFiles(fileArray, currentLocalFiles);
 
     if (!validation.valid) {
-      setFileError(validation.error || "File validation failed");
+      setFileError(validation.error || t("files.validationFailed"));
       setShowFileError(true);
       return;
     }
@@ -604,7 +604,7 @@ export function InputArea({
     const validation = validateFiles(fileArray, currentLocalFiles);
 
     if (!validation.valid) {
-      setFileError(validation.error || "File validation failed");
+      setFileError(validation.error || t("files.validationFailed"));
       setShowFileError(true);
       return;
     }
@@ -701,7 +701,7 @@ export function InputArea({
           setUploadingFiles((prev) => prev.filter((f) => f.tempId !== tempId));
         }, 500);
       } else {
-        throw new Error(result.error || "Upload failed");
+        throw new Error(result.error || t("files.uploadFailed"));
       }
     } catch (error) {
       setUploadingFiles((prev) =>
@@ -710,7 +710,10 @@ export function InputArea({
             ? {
                 ...f,
                 status: "error" as const,
-                error: error instanceof Error ? error.message : "Upload failed",
+                error:
+                  error instanceof Error
+                    ? error.message
+                    : t("files.uploadFailed"),
               }
             : f
         )
@@ -731,7 +734,7 @@ export function InputArea({
 
       // Check if any files are still uploading
       if (uploadingFiles.length > 0) {
-        setFileError("Please wait for files to finish uploading");
+        setFileError(t("files.waitForUploads"));
         setShowFileError(true);
         return;
       }
@@ -739,9 +742,7 @@ export function InputArea({
       // Check if any uploads failed
       const hasErrors = uploadingFiles.some((f) => f.status === "error");
       if (hasErrors) {
-        setFileError(
-          "Some files failed to upload. Please remove them or try again."
-        );
+        setFileError(t("files.uploadErrors"));
         setShowFileError(true);
         return;
       }
@@ -1373,7 +1374,7 @@ export function InputArea({
         ? `${rangeAmount} ${t(`dateRange.${rangeType}`)} ${t("dateRange.ago")}`
         : dateRange[0] && dateRange[1]
           ? `${dateRange[0].toLocaleDateString("en-US", { month: "short", day: "numeric" })} - ${dateRange[1].toLocaleDateString("en-US", { month: "short", day: "numeric" })}`
-          : "No date range";
+          : t("filter.noDateRange");
 
     return {
       countries: selectedFlags,
@@ -1663,7 +1664,7 @@ export function InputArea({
               }}
             >
               <Typography variant="h6" color="primary">
-                Drop files here
+                {t("files.dropHere")}
               </Typography>
             </Box>
           )}
@@ -2392,7 +2393,7 @@ export function InputArea({
                           color: isDarkMode ? "#ffffff" : "#374151",
                         },
                       }}
-                      title={t("input.clear") || "Clear"}
+                      title={t("input.clearTooltip")}
                     >
                       <ClearIcon sx={{ fontSize: 16 }} />
                     </IconButton>
@@ -2417,7 +2418,7 @@ export function InputArea({
                           color: isDarkMode ? "#ffffff" : "#374151",
                         },
                       }}
-                      title={t("input.voice") || "Voice input"}
+                      title={t("input.voiceTooltip")}
                     >
                       <MicIcon sx={{ fontSize: 16 }} />
                     </IconButton>
@@ -2441,8 +2442,10 @@ export function InputArea({
                         title={
                           uploadingFiles.length + attachedFiles.length >=
                           FILE_UPLOAD_CONFIG.MAX_FILE_COUNT
-                            ? `Maximum ${FILE_UPLOAD_CONFIG.MAX_FILE_COUNT} files reached`
-                            : t("attachFiles") || "Attach Files"
+                            ? t("files.maxFilesReached", {
+                                count: FILE_UPLOAD_CONFIG.MAX_FILE_COUNT,
+                              })
+                            : t("input.attachFilesTooltip")
                         }
                       >
                         <Badge
@@ -2542,9 +2545,7 @@ export function InputArea({
                               sx={{ color: isDarkMode ? "#dcddde" : "#000000" }}
                             />
                           </ListItemIcon>
-                          <ListItemText>
-                            {t("quickUpload") || "Quick Upload"}
-                          </ListItemText>
+                          <ListItemText>{t("files.quickUpload")}</ListItemText>
                         </MenuItem>
                         <MenuItem
                           onClick={handleOpenDocumentManager}
@@ -2564,7 +2565,7 @@ export function InputArea({
                             />
                           </ListItemIcon>
                           <ListItemText>
-                            {t("documentManager") || "Document Manager"}
+                            {t("files.documentManager")}
                           </ListItemText>
                         </MenuItem>
                       </Menu>
@@ -3353,7 +3354,7 @@ export function InputArea({
                     {filter.name}
                     {(filter as any).scope === "global" && (
                       <Chip
-                        label="Global"
+                        label={t("common.global")}
                         size="small"
                         sx={{
                           height: "16px",
@@ -3388,7 +3389,7 @@ export function InputArea({
                         : "rgba(0, 0, 0, 0.1)",
                     },
                   }}
-                  title="View filter details"
+                  title={t("filter.viewTooltip")}
                 >
                   <ViewIcon sx={{ fontSize: 16 }} />
                 </IconButton>
@@ -3407,7 +3408,7 @@ export function InputArea({
                         : "rgba(22, 101, 52, 0.1)",
                     },
                   }}
-                  title="Apply this filter"
+                  title={t("filter.applyTooltip")}
                 >
                   <PickIcon sx={{ fontSize: 16 }} />
                 </IconButton>
@@ -3426,7 +3427,7 @@ export function InputArea({
                         : "rgba(0, 0, 0, 0.1)",
                     },
                   }}
-                  title="Rename filter"
+                  title={t("filter.renameTooltip")}
                 >
                   <EditIcon sx={{ fontSize: 16 }} />
                 </IconButton>
@@ -3445,7 +3446,7 @@ export function InputArea({
                         : "rgba(220, 38, 38, 0.1)",
                     },
                   }}
-                  title="Delete filter"
+                  title={t("filter.deleteTooltip")}
                 >
                   <DeleteIcon sx={{ fontSize: 16 }} />
                 </IconButton>
@@ -3531,7 +3532,7 @@ export function InputArea({
         initialTab="manage"
         selectionMode={true}
         maxSelection={FILE_UPLOAD_CONFIG.MAX_FILE_COUNT}
-        title={t("documentManagement")}
+        title={t("files.documentManagement")}
       />
 
       {/* File Limit Warning Snackbar */}
@@ -3539,7 +3540,7 @@ export function InputArea({
         open={showLimitWarning}
         autoHideDuration={3000}
         onClose={() => setShowLimitWarning(false)}
-        message="Maximum 10 files allowed. Remove some files to add more."
+        message={t("files.maxFilesLimit", { count: 10 })}
         anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
       />
 
