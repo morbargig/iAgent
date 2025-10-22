@@ -6,7 +6,10 @@ import { CssBaseline, Box } from "@mui/material";
 import { useTranslation } from "../contexts/TranslationContext";
 import { Sidebar } from "../components/Sidebar";
 import { ChatArea } from "../components/ChatArea";
-import { InputArea, type SendMessageData } from "../components/InputArea";
+import {
+  InputArea,
+  type SendMessageData,
+} from "../components/InputArea/InputArea";
 import { LoginForm } from "../components/LoginForm";
 import { FileManagerDialog } from "../components/FileManagerDialog";
 import {
@@ -421,7 +424,7 @@ const App = () => {
         messageFilterSnapshot.filterId,
         messageFilterSnapshot
       );
-      
+
       // Add attachments to user message if present
       if (attachments && attachments.length > 0) {
         (userMessage as any).attachments = attachments;
@@ -1079,7 +1082,7 @@ const App = () => {
   };
 
   const handleFileUploaded = (file: any) => {
-    console.log('File uploaded:', file);
+    console.log("File uploaded:", file);
     setAttachedFiles((prev) => [...prev, file]);
   };
 
@@ -1252,7 +1255,7 @@ const App = () => {
           open={isFileManagerOpen}
           onClose={() => setIsFileManagerOpen(false)}
           onFileSelected={(file) => {
-            console.log('File selected for attachment:', file);
+            console.log("File selected for attachment:", file);
             // You can add the file to the message or handle it as needed
           }}
           title="Attach File to Message"
