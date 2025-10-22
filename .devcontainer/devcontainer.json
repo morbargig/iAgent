@@ -1,74 +1,166 @@
 {
-  "name": "iAgent Development Container",
-  "image": "mcr.microsoft.com/devcontainers/typescript-node:1-20-bullseye",
+  "name": "iAgent Development Environment",
+  "image": "mcr.microsoft.com/devcontainers/typescript-node:20-bullseye",
+  
+  // Features to install in the container
   "features": {
-    "ghcr.io/devcontainers/features/docker-in-docker:2": {},
-    "ghcr.io/devcontainers/features/git:1": {}
-  },
-  "forwardPorts": [
-    3000, // Backend API server
-    4200, // Frontend dev server  
-    4300 // Frontend preview server
-  ],
-  "portsAttributes": {
-    "3000": {
-      "label": "Backend API",
-      "onAutoForward": "openBrowser"
-    },
-    "4200": {
-      "label": "Frontend Dev Server",
-      "onAutoForward": "openBrowser"
-    },
-    "4300": {
-      "label": "Frontend Preview",
-      "onAutoForward": "notify"
+    "ghcr.io/devcontainers/features/git:1": {},
+    "ghcr.io/devcontainers/features/github-cli:1": {},
+    "ghcr.io/devcontainers/features/mongodb:1": {
+      "version": "7.0"
     }
   },
-  "runArgs": [
-    "--network=host"
-  ],
+
+  // VS Code extensions to install
   "customizations": {
     "vscode": {
       "extensions": [
+        // Nx and Angular extensions
         "nrwl.angular-console",
+        "ms-vscode.vscode-typescript-next",
+        
+        // React and frontend development
         "bradlc.vscode-tailwindcss",
         "esbenp.prettier-vscode",
-        "dbaeumer.vscode-eslint",
-        "ms-vscode.vscode-typescript-next",
         "ms-vscode.vscode-json",
-        "ms-vscode.vscode-npm",
-        "christian-kohler.path-intellisense",
-        "formulahendry.auto-rename-tag",
-        "ms-vscode.vscode-css-peek",
-        "bradlc.vscode-tailwindcss",
-        "ms-vscode.material-icon-theme",
-        "PKief.material-icon-theme",
+        
+        // NestJS and backend development
+        "ms-vscode.vscode-node-azure-pack",
+        "ms-vscode.vscode-node-debug2",
+        
+        // General development tools
+        "ms-vscode.vscode-eslint",
         "ms-vscode.vscode-jest",
+        "formulahendry.auto-rename-tag",
+        "christian-kohler.path-intellisense",
+        "redhat.vscode-yaml",
+        
+        // Git and version control
+        "eamodio.gitlens",
+        "github.vscode-pull-request-github",
+        
+        // Database tools
+        "mongodb.mongodb-vscode",
+        
+        // Testing
         "ms-vscode.test-adapter-converter",
-        "hbenl.vscode-test-explorer",
-        "ms-playwright.playwright",
-        "usernamehw.errorlens",
-        "streetsidesoftware.code-spell-checker"
+        "hbenl.vscode-test-explorer"
       ],
+      
       "settings": {
-        "typescript.preferences.includePackageJsonAutoImports": "on",
-        "npm.packageManager": "npm",
+        // TypeScript settings
+        "typescript.preferences.importModuleSpecifier": "relative",
+        "typescript.suggest.autoImports": true,
+        "typescript.updateImportsOnFileMove.enabled": "always",
+        
+        // ESLint settings
         "eslint.workingDirectories": [
           "apps/frontend",
-          "apps/backend"
+          "apps/backend",
+          "libs/shared-types",
+          "libs/shared-utils",
+          "libs/stream-mocks",
+          "libs/types"
         ],
+        "eslint.validate": [
+          "javascript",
+          "javascriptreact",
+          "typescript",
+          "typescriptreact"
+        ],
+        
+        // Prettier settings
         "editor.formatOnSave": true,
         "editor.defaultFormatter": "esbenp.prettier-vscode",
-        "editor.codeActionsOnSave": {
-          "source.fixAll.eslint": "explicit"
+        "prettier.requireConfig": true,
+        
+        // Tailwind CSS IntelliSense
+        "tailwindCSS.includeLanguages": {
+          "typescript": "typescript",
+          "typescriptreact": "typescriptreact"
         },
+        "tailwindCSS.experimental.classRegex": [
+          ["clsx\\(([^)]*)\\)", "(?:'|\"|`)([^']*)(?:'|\"|`)"],
+          ["classnames\\(([^)]*)\\)", "'([^']*)'"],
+          ["cva\\(([^)]*)\\)", "[\"'`]([^\"'`]*).*?[\"'`]"]
+        ],
+        
+        // File associations
+        "files.associations": {
+          "*.css": "tailwindcss"
+        },
+        
+        // Terminal settings
         "terminal.integrated.defaultProfile.linux": "bash",
-        "git.openRepositoryInParentFolders": "always"
+        "terminal.integrated.profiles.linux": {
+          "bash": {
+            "path": "/bin/bash",
+            "args": ["-l"]
+          }
+        },
+        
+        // Nx specific settings
+        "nx.enableLibraryImports": true,
+        "nx.showProjectGraph": true,
+        
+        // Jest settings
+        "jest.jestCommandLine": "npx nx test",
+        "jest.autoRun": "off",
+        
+        // MongoDB settings
+        "mongo.shell.path": "/usr/bin/mongosh"
       }
     }
   },
-  "postCreateCommand": "npm install",
-  "postStartCommand": "echo '🚀 iAgent Development Environment Ready! Frontend: http://localhost:4200 | Backend: http://localhost:3000/api | Docs: http://localhost:3000/api/docs'",
+
+  // Ports to forward
+  "forwardPorts": [
+    3000,  // Frontend dev server
+    3001,  // Backend dev server
+    4200,  // Alternative frontend port
+    4873,  // Local registry
+    27017  // MongoDB
+  ],
+  "portsAttributes": {
+    "3000": {
+      "label": "Frontend (React)",
+      "onAutoForward": "notify"
+    },
+    "3001": {
+      "label": "Backend (NestJS)",
+      "onAutoForward": "notify"
+    },
+    "4200": {
+      "label": "Frontend Alternative",
+      "onAutoForward": "silent"
+    },
+    "4873": {
+      "label": "Local Registry",
+      "onAutoForward": "silent"
+    },
+    "27017": {
+      "label": "MongoDB",
+      "onAutoForward": "silent"
+    }
+  },
+
+  // Commands to run after container creation
+  "postCreateCommand": "npm install && npx nx run-many --target=build --all",
+  
+  // Commands to run after container starts
+  "postStartCommand": "echo 'iAgent development environment is ready! Run npm run dev to start development servers.'",
+  
+  // Environment variables
+  "containerEnv": {
+    "NODE_ENV": "development",
+    "NX_CLOUD_DISTRIBUTED_EXECUTION": "false",
+    "MONGODB_URI": "mongodb://localhost:27017/iagent"
+  },
+
+  // User configuration
   "remoteUser": "node",
-  "workspaceFolder": "/workspaces/iagent"
+  
+  // Additional configuration
+  "updateContentCommand": "npm install",
+  "updateRemoteUserUID": "automatic"
 }
