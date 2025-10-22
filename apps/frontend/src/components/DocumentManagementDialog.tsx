@@ -72,10 +72,9 @@ export const DocumentManagementDialog: React.FC<
 
   // Handle upload completion
   const handleUploadComplete = (documents: DocumentFile[]) => {
-    // Optionally switch to manage tab to show uploaded documents
-    if (documents.length > 0) {
-      setCurrentTab("manage");
-    }
+    // Upload completed - do not automatically switch tabs
+    // Let the user manually navigate to see uploaded documents
+    console.log(`${documents.length} documents uploaded successfully`);
   };
 
   // Handle document selection (single click)

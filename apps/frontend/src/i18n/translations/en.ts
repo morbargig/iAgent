@@ -234,6 +234,12 @@ const translations: Translation = {
     dropHere: 'Drop files here',
     maxFilesReached: 'Maximum {{count}} files reached',
     maxFilesLimit: 'Maximum {{count}} files allowed. Remove some files to add more.',
+    fileTooLarge: 'File {{fileName}} is too large (max {{maxSize}})',
+    fileTypeNotSupported: 'File type {{fileType}} is not supported',
+    fileRejected: 'File {{fileName}} was rejected',
+    maxFilesExceeded: 'Maximum {{maxFiles}} files allowed',
+    uploadFailedFallback: 'Upload failed',
+    supportedFormatsList: 'PDF, Word, Excel, PowerPoint, Text, RTF, CSV',
     // FileManagement specific keys
     management: {
       title: 'MongoDB GridFS File Management',

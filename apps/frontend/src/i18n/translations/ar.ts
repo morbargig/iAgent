@@ -233,6 +233,12 @@ const translations: Translation = {
     dropHere: 'أسقط الملفات هنا',
     maxFilesReached: 'تم الوصول للحد الأقصى {{count}} ملفات',
     maxFilesLimit: 'الحد الأقصى {{count}} ملفات مسموح. احذف بعض الملفات لإضافة المزيد.',
+    fileTooLarge: 'الملف {{fileName}} كبير جداً (الحد الأقصى {{maxSize}})',
+    fileTypeNotSupported: 'نوع الملف {{fileType}} غير مدعوم',
+    fileRejected: 'تم رفض الملف {{fileName}}',
+    maxFilesExceeded: 'الحد الأقصى هو {{maxFiles}} ملفات مسموح',
+    uploadFailedFallback: 'فشل الرفع',
+    supportedFormatsList: 'PDF، Word، Excel، PowerPoint، Text، RTF، CSV',
     // FileManagement specific keys
     management: {
       title: 'إدارة ملفات MongoDB GridFS',
