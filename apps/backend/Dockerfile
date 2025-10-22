@@ -59,7 +59,7 @@ RUN npm ci --only=production && npm cache clean --force
 USER nestjs
 
 # Expose port
-EXPOSE 3000
+EXPOSE 3030
 
 # Add health check
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \

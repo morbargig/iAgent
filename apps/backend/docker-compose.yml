@@ -1,16 +1,16 @@
-version: '3.8'
+version: "3.8"
 
 services:
   backend:
     build:
-      context: ../..  # Build from workspace root
+      context: ../.. # Build from workspace root
       dockerfile: apps/backend/Dockerfile
     container_name: iagent-backend
     ports:
-      - "3000:3000"
+      - "3030:3030"
     environment:
       - NODE_ENV=production
-      - PORT=3000
+      - PORT=3030
       # Add your environment variables here
       # - MONGODB_URI=${MONGODB_URI}
       # - JWT_SECRET=${JWT_SECRET}
@@ -19,7 +19,13 @@ services:
       - ./logs:/app/logs
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "node", "-e", "const http=require('http');const options={host:'localhost',port:3000,path:'/api',timeout:2000};const req=http.request(options,(res)=>{process.exit(res.statusCode<400?0:1)});req.on('error',()=>process.exit(1));req.end();"]
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "const http=require('http');const options={host:'localhost',port:3000,path:'/api',timeout:2000};const req=http.request(options,(res)=>{process.exit(res.statusCode<400?0:1)});req.on('error',()=>process.exit(1));req.end();",
+        ]
       interval: 30s
       timeout: 10s
       retries: 3
