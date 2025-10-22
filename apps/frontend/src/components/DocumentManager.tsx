@@ -218,17 +218,7 @@ export const DocumentManager: React.FC<DocumentManagerProps> = ({
         mb={2}
       >
         <Typography variant="h6">
-          {t("documents")} ({totalDocuments})
-          {selectionMode && selectedDocuments.length > 0 && (
-            <Typography
-              component="span"
-              variant="body2"
-              color="primary"
-              sx={{ ml: 1 }}
-            >
-              ({selectedDocuments.length} selected)
-            </Typography>
-          )}
+          {t("files.documents")} ({totalDocuments})
         </Typography>
         <Box display="flex" gap={1}>
           {showUploadButton && (
@@ -253,7 +243,7 @@ export const DocumentManager: React.FC<DocumentManagerProps> = ({
 
       <TextField
         fullWidth
-        placeholder={t("searchDocuments")}
+        placeholder={t("files.searchDocuments")}
         value={searchQuery}
         onChange={(e) => handleSearch(e.target.value)}
         InputProps={{
@@ -298,7 +288,7 @@ export const DocumentManager: React.FC<DocumentManagerProps> = ({
             {t("noDocuments")}
           </Typography>
           <Typography variant="body2" color="text.secondary">
-            {t("uploadFirstDocument")}
+            {t("files.uploadFirstDocument")}
           </Typography>
         </Box>
       )}
@@ -317,18 +307,23 @@ export const DocumentManager: React.FC<DocumentManagerProps> = ({
           }}
         >
           <Typography variant="body2" color="primary">
-            {selectedDocuments.length}{" "}
-            {selectedDocuments.length === 1 ? "file" : "files"} selected
+            {selectedDocuments.length > 1 && `${selectedDocuments.length} `}{" "}
+            {selectedDocuments.length === 1
+              ? t("files.file")
+              : t("files.files")}{" "}
+            {selectedDocuments.length === 1
+              ? t("files.selectedFile")
+              : t("files.selectedFiles")}
           </Typography>
           <Box>
             <Button
-              startIcon={<DeleteIcon />}
+              startIcon={<DeleteIcon sx={{ marginInlineEnd: 1 }} />}
               onClick={handleBulkDeleteClick}
               color="error"
               variant="outlined"
               size="small"
             >
-              Delete Selected
+              {t("files.deleteSelected")}
             </Button>
           </Box>
         </Box>
@@ -459,11 +454,11 @@ export const DocumentManager: React.FC<DocumentManagerProps> = ({
         open={deleteDialog.open}
         onClose={() => setDeleteDialog({ open: false })}
       >
-        <DialogTitle>{t("deleteDocument")}</DialogTitle>
+        <DialogTitle>{t("files.deleteDocument")}</DialogTitle>
         <DialogContent>
           <Typography>
-            {t("deleteDocumentConfirm", {
-              name: deleteDialog.document?.name || "this document",
+            {t("files.deleteDocumentConfirm", {
+              name: deleteDialog.document?.name || t("files.thisDocument"),
             })}
           </Typography>
         </DialogContent>
@@ -488,22 +483,13 @@ export const DocumentManager: React.FC<DocumentManagerProps> = ({
         open={bulkDeleteDialog.open}
         onClose={() => setBulkDeleteDialog({ open: false, documents: [] })}
       >
-        <DialogTitle>{t("deleteMultipleDocuments")}</DialogTitle>
+        <DialogTitle>{t("files.deleteMultipleDocuments")}</DialogTitle>
         <DialogContent>
           <Typography>
-            {t("deleteMultipleDocumentsConfirm", {
+            {t("files.deleteMultipleDocumentsConfirm", {
               count: bulkDeleteDialog.documents.length,
             })}
           </Typography>
-          {bulkDeleteDialog.documents.length > 0 && (
-            <Box sx={{ mt: 2, maxHeight: 200, overflow: "auto" }}>
-              {bulkDeleteDialog.documents.map((doc) => (
-                <Typography key={doc.id} variant="body2" sx={{ py: 0.5 }}>
-                  • {doc.name}
-                </Typography>
-              ))}
-            </Box>
-          )}
         </DialogContent>
         <DialogActions>
           <Button
@@ -516,7 +502,7 @@ export const DocumentManager: React.FC<DocumentManagerProps> = ({
             color="error"
             variant="contained"
           >
-            {t("deleteAll")} ({bulkDeleteDialog.documents.length})
+            {t("files.deleteAll")} ({bulkDeleteDialog.documents.length})
           </Button>
         </DialogActions>
       </Dialog>

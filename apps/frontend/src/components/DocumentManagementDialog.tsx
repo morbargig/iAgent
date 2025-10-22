@@ -150,7 +150,7 @@ export const DocumentManagementDialog: React.FC<
       <DialogTitle>
         <Box display="flex" alignItems="center" justifyContent="space-between">
           <Box display="flex" alignItems="center">
-            <FolderIcon sx={{ mr: 1 }} />
+            <FolderIcon sx={{ marginInlineEnd: 1 }} />
             <Typography variant="h6">
               {title || t("files.documentManagement")}
             </Typography>
@@ -170,13 +170,13 @@ export const DocumentManagementDialog: React.FC<
             sx={{ px: 2 }}
           >
             <Tab
-              icon={<UploadIcon />}
+              icon={<UploadIcon sx={{ marginInlineEnd: 1 }} />}
               label={t("files.upload")}
               value="upload"
               iconPosition="start"
             />
             <Tab
-              icon={<FolderIcon />}
+              icon={<FolderIcon sx={{ marginInlineEnd: 1 }} />}
               label={t("files.manage")}
               value="manage"
               iconPosition="start"
