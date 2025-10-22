@@ -1,7 +1,7 @@
 // File Attachment Card Component
 // Rich file preview cards for message attachments with thumbnail preview and action buttons
 
-import React from 'react';
+import React from "react";
 import {
   Box,
   Paper,
@@ -9,13 +9,17 @@ import {
   IconButton,
   Tooltip,
   useTheme,
-} from '@mui/material';
+} from "@mui/material";
 import {
   Download as DownloadIcon,
   Visibility as PreviewIcon,
-} from '@mui/icons-material';
-import { DocumentFile, formatFileSize, getFileIconComponent } from '../types/document.types';
-import { DocumentService } from '../services/documentService';
+} from "@mui/icons-material";
+import {
+  DocumentFile,
+  formatFileSize,
+  getFileIconComponent,
+} from "../types/document.types";
+import { useFileActions } from "../hooks/useFileActions";
 
 interface FileAttachmentCardProps {
   files: DocumentFile[];
@@ -31,82 +35,61 @@ export const FileAttachmentCard: React.FC<FileAttachmentCardProps> = ({
   onDownload,
 }) => {
   const theme = useTheme();
-  const [documentService] = React.useState(() => new DocumentService());
-
-  const handlePreview = (file: DocumentFile) => {
-    if (onPreview) {
-      onPreview(file);
-    } else {
-      const url = `http://localhost:3030/api/files/${file.id}/preview`;
-      window.open(url, '_blank', 'noopener,noreferrer');
-    }
-  };
-
-  const handleDownload = async (file: DocumentFile) => {
-    if (onDownload) {
-      onDownload(file);
-    } else {
-      // Default: download file
-      try {
-        const blob = await documentService.downloadDocument(file.id);
-        const url = URL.createObjectURL(blob);
-        const link = document.createElement('a');
-        link.href = url;
-        link.download = file.name;
-        link.style.display = 'none';
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        URL.revokeObjectURL(url);
-      } catch (error) {
-        console.error('Download failed:', error);
-      }
-    }
-  };
+  const { handlePreview, handleDownload } = useFileActions({
+    onPreviewCallback: onPreview,
+    onDownloadCallback: onDownload,
+    onError: (error, action) => {
+      console.error(`${action} failed:`, error);
+    },
+  });
 
   if (!files || files.length === 0) {
     return null;
   }
 
   return (
-    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5, mb: 2 }}>
+    <Box sx={{ display: "flex", flexDirection: "column", gap: 1.5, mb: 2 }}>
       {files.map((file) => {
         const { Icon, color } = getFileIconComponent(file.mimeType);
-        
+
         return (
           <Paper
             key={file.id}
             elevation={0}
             sx={{
-              display: 'flex',
-              alignItems: 'center',
+              display: "flex",
+              alignItems: "center",
               gap: 1.5,
               p: 1.5,
-              borderRadius: '12px',
-              backgroundColor: isDarkMode ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.02)',
-              border: `1px solid ${isDarkMode ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.08)'}`,
-              transition: 'all 0.2s ease',
-              '&:hover': {
-                backgroundColor: isDarkMode ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.04)',
-                boxShadow: isDarkMode 
-                  ? '0 4px 12px rgba(0, 0, 0, 0.3)' 
-                  : '0 4px 12px rgba(0, 0, 0, 0.08)',
-                borderColor: isDarkMode ? 'rgba(255, 255, 255, 0.15)' : 'rgba(0, 0, 0, 0.12)',
+              borderRadius: "12px",
+              backgroundColor: isDarkMode
+                ? "rgba(255, 255, 255, 0.05)"
+                : "rgba(0, 0, 0, 0.02)",
+              border: `1px solid ${isDarkMode ? "rgba(255, 255, 255, 0.1)" : "rgba(0, 0, 0, 0.08)"}`,
+              transition: "all 0.2s ease",
+              "&:hover": {
+                backgroundColor: isDarkMode
+                  ? "rgba(255, 255, 255, 0.08)"
+                  : "rgba(0, 0, 0, 0.04)",
+                boxShadow: isDarkMode
+                  ? "0 4px 12px rgba(0, 0, 0, 0.3)"
+                  : "0 4px 12px rgba(0, 0, 0, 0.08)",
+                borderColor: isDarkMode
+                  ? "rgba(255, 255, 255, 0.15)"
+                  : "rgba(0, 0, 0, 0.12)",
               },
             }}
           >
             {/* File Icon with Type-Specific Color */}
             <Box
               sx={{
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
                 width: 48,
                 height: 48,
-                borderRadius: '10px',
-                backgroundColor: isDarkMode 
-                  ? `${color}20` 
-                  : `${color}15`,
+                borderRadius: "10px",
+                backgroundColor: isDarkMode ? `${color}20` : `${color}15`,
                 color: color,
                 flexShrink: 0,
               }}
@@ -116,23 +99,23 @@ export const FileAttachmentCard: React.FC<FileAttachmentCardProps> = ({
 
             {/* File Info */}
             <Box flex={1} minWidth={0}>
-              <Typography 
-                variant="body2" 
+              <Typography
+                variant="body2"
                 fontWeight={600}
                 noWrap
-                sx={{ 
-                  color: isDarkMode ? '#ffffff' : '#1f2937',
-                  fontSize: '0.9375rem',
+                sx={{
+                  color: isDarkMode ? "#ffffff" : "#1f2937",
+                  fontSize: "0.9375rem",
                   mb: 0.25,
                 }}
               >
                 {file.name}
               </Typography>
-              <Typography 
-                variant="caption" 
-                sx={{ 
-                  color: isDarkMode ? '#9ca3af' : '#6b7280',
-                  fontSize: '0.8125rem',
+              <Typography
+                variant="caption"
+                sx={{
+                  color: isDarkMode ? "#9ca3af" : "#6b7280",
+                  fontSize: "0.8125rem",
                 }}
               >
                 {formatFileSize(file.size)}
@@ -151,10 +134,14 @@ export const FileAttachmentCard: React.FC<FileAttachmentCardProps> = ({
                   sx={{
                     width: 36,
                     height: 36,
-                    backgroundColor: isDarkMode ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.04)',
-                    color: isDarkMode ? '#d1d5db' : '#6b7280',
-                    '&:hover': {
-                      backgroundColor: isDarkMode ? 'rgba(255, 255, 255, 0.12)' : 'rgba(0, 0, 0, 0.08)',
+                    backgroundColor: isDarkMode
+                      ? "rgba(255, 255, 255, 0.08)"
+                      : "rgba(0, 0, 0, 0.04)",
+                    color: isDarkMode ? "#d1d5db" : "#6b7280",
+                    "&:hover": {
+                      backgroundColor: isDarkMode
+                        ? "rgba(255, 255, 255, 0.12)"
+                        : "rgba(0, 0, 0, 0.08)",
                       color: theme.palette.primary.main,
                     },
                   }}
@@ -173,10 +160,14 @@ export const FileAttachmentCard: React.FC<FileAttachmentCardProps> = ({
                   sx={{
                     width: 36,
                     height: 36,
-                    backgroundColor: isDarkMode ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.04)',
-                    color: isDarkMode ? '#d1d5db' : '#6b7280',
-                    '&:hover': {
-                      backgroundColor: isDarkMode ? 'rgba(255, 255, 255, 0.12)' : 'rgba(0, 0, 0, 0.08)',
+                    backgroundColor: isDarkMode
+                      ? "rgba(255, 255, 255, 0.08)"
+                      : "rgba(0, 0, 0, 0.04)",
+                    color: isDarkMode ? "#d1d5db" : "#6b7280",
+                    "&:hover": {
+                      backgroundColor: isDarkMode
+                        ? "rgba(255, 255, 255, 0.12)"
+                        : "rgba(0, 0, 0, 0.08)",
                       color: theme.palette.primary.main,
                     },
                   }}
@@ -191,4 +182,3 @@ export const FileAttachmentCard: React.FC<FileAttachmentCardProps> = ({
     </Box>
   );
 };
-
