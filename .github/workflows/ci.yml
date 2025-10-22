@@ -13,7 +13,8 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  NODE_VERSION: '18'
+  NODE_VERSION: '20'
+  NX_CLOUD_DISTRIBUTED_EXECUTION: 'false'
 
 jobs:
   # Code Quality and Type Checking
@@ -44,16 +45,16 @@ jobs:
             nx-${{ runner.os }}-${{ hashFiles('**/package-lock.json') }}-
 
       - name: 🧹 Lint Frontend
-        run: npx nx lint frontend
+        run: npx nx lint frontend --skip-nx-cache
 
       - name: 🧹 Lint Backend
-        run: npx nx lint backend
+        run: npx nx lint backend --skip-nx-cache
 
       - name: 🔧 TypeScript check Frontend
-        run: npx nx typecheck frontend
+        run: npx nx typecheck frontend --skip-nx-cache
 
       - name: 🔧 TypeScript check Backend
-        run: npx nx typecheck backend
+        run: npx nx typecheck backend --skip-nx-cache
 
   # Unit Tests
   test:
@@ -88,9 +89,10 @@ jobs:
             nx-${{ runner.os }}-${{ hashFiles('**/package-lock.json') }}-
 
       - name: 🧪 Run tests for ${{ matrix.project }}
-        run: npx nx test ${{ matrix.project }} --coverage --watchAll=false --passWithNoTests
+        run: npx nx test ${{ matrix.project }} --coverage --watchAll=false --passWithNoTests --skip-nx-cache
         env:
           CI: true
+          NX_CLOUD_DISTRIBUTED_EXECUTION: 'false'
 
       - name: 📊 Upload test coverage
         if: matrix.project == 'frontend'
@@ -135,12 +137,13 @@ jobs:
             nx-${{ runner.os }}-${{ hashFiles('**/package-lock.json') }}-
 
       - name: 🏗️ Build ${{ matrix.project }}
-        run: npx nx build ${{ matrix.project }} --configuration=production
+        run: npx nx build ${{ matrix.project }} --configuration=production --skip-nx-cache
         env:
           # GitHub Pages environment variables for frontend
           VITE_BASE_URL: '/iAgent/'
           VITE_API_BASE_URL: '/iAgent/api'
           VITE_ENVIRONMENT: 'production'
+          NX_CLOUD_DISTRIBUTED_EXECUTION: 'false'
 
       - name: 📊 Analyze build size
         if: matrix.project == 'frontend'

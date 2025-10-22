@@ -1,0 +1,15 @@
+# Development Environment Variables
+.env.local
+.env.development
+
+# MongoDB data
+mongodb_data/
+
+# VS Code settings (optional - you might want to commit these)
+.vscode/settings.json
+.vscode/launch.json
+.vscode/tasks.json
+
+# Docker volumes
+docker-compose.override.yml
+

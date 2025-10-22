@@ -1,0 +1,14 @@
+# Nx Cloud Configuration
+# This file helps configure Nx Cloud behavior
+
+# Disable Nx Cloud for local development
+NX_CLOUD_DISTRIBUTED_EXECUTION=false
+
+# Ignore certain files from Nx Cloud
+node_modules/
+dist/
+coverage/
+.nx/
+.git/
+*.log
+.env*
