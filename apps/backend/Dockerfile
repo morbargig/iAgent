@@ -5,12 +5,15 @@ FROM node:18-alpine AS builder
 # Set working directory
 WORKDIR /app
 
-# Copy package files for dependency installation
+# Copy all package files first for better caching
 COPY package*.json ./
 COPY tsconfig.base.json ./
 COPY nx.json ./
 COPY jest.config.ts ./
 COPY jest.preset.js ./
+
+# Create backend directory structure
+RUN mkdir -p ./apps/backend
 
 # Copy workspace configuration files
 COPY apps/backend/package.json ./apps/backend/
@@ -19,17 +22,14 @@ COPY apps/backend/tsconfig*.json ./apps/backend/
 COPY apps/backend/webpack.config.js ./apps/backend/
 COPY apps/backend/jest.config.js ./apps/backend/
 
-# Copy shared libraries
+# Copy shared libraries (if they exist)
 COPY libs/ ./libs/
 
-# Install dependencies
-RUN npm ci --only=production && npm cache clean --force
+# Install all dependencies (including dev dependencies for build)
+RUN npm ci && npm cache clean --force
 
-# Install development dependencies needed for build
-RUN npm ci
-
-# Copy backend source code
-COPY apps/backend/src/ ./apps/backend/src/
+# Copy the entire apps/backend directory (including src)
+COPY apps/backend/ ./apps/backend/
 
 # Build the application using Nx
 RUN npx nx build backend --configuration=production
