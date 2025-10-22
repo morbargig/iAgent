@@ -2,23 +2,23 @@ export const environment = {
   production: true,
   apiUrl: process.env.API_URL || 'https://api.iagent.com',
   frontendUrl: process.env.FRONTEND_URL || 'https://iagent.com',
-  
+
   // Demo mode support - uses local MongoDB when true (typically false in production)
   demoMode: process.env.DEMO_MODE === 'true',
-  
+
   mongodb: {
     // Local MongoDB (docker) URI - not typically used in production
     uriLocal: process.env.MONGODB_URI_LOCAL || 'mongodb://localhost:27017',
     // Remote MongoDB URI
     uri: process.env.MONGODB_URI || 'mongodb+srv://appuser:VruPdc3d4pKYEUwO@cluster0.giuoosh.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0',
     dbName: process.env.DB_NAME || 'filesdb',
-    
+
     // Computed URI based on demo mode
     get activeUri(): string {
-      return this.demoMode ? this.uriLocal : this.uri;
+      return environment.demoMode ? this.uriLocal : this.uri;
     }
   },
-  
+
   // File upload limits - Environment configurable with defaults
   fileUpload: {
     maxFileSize: parseInt(process.env.MAX_FILE_SIZE || '5242880'), // Default: 5MB

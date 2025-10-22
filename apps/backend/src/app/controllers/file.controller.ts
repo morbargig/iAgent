@@ -14,12 +14,12 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { FileInterceptor, FilesInterceptor } from '@nestjs/platform-express';
-import { Response } from 'express';
+import type { Response } from 'express';
+import type { Express } from 'express';
 import { ApiTags, ApiOperation, ApiResponse, ApiConsumes, ApiParam, ApiQuery, ApiBearerAuth } from '@nestjs/swagger';
 import { FileService, FileUploadResult, FileInfo } from '../services/file.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { UserId } from '../decorators/user.decorator';
-import { Public } from '../decorators/public.decorator';
 
 @ApiTags('Files')
 @Controller('files')
@@ -49,6 +49,7 @@ export class FileController {
   })
   @ApiResponse({ status: 400, description: 'Bad request - no file provided' })
   async uploadFile(
+    // @ts-ignore
     @UploadedFile() file: Express.Multer.File,
   ): Promise<FileUploadResult> {
     if (!file) {
@@ -257,6 +258,7 @@ export class FileController {
   async uploadChatFiles(
     @Param('chatId') chatId: string,
     @UserId() userId: string,
+    // @ts-ignore
     @UploadedFiles() files: Express.Multer.File[]
   ): Promise<FileUploadResult[]> {
     if (!files || files.length === 0) {

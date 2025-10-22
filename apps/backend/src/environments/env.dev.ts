@@ -2,23 +2,23 @@ export const environment = {
   production: false,
   apiUrl: 'http://localhost:3030/api',
   frontendUrl: 'http://localhost:3000',
-  
+
   // Demo mode support - uses local MongoDB when true
   demoMode: process.env.DEMO_MODE === 'true',
-  
+
   mongodb: {
     // Local MongoDB (docker) URI
     uriLocal: process.env.MONGODB_URI_LOCAL || 'mongodb://localhost:27017',
     // Remote MongoDB URI
     uri: process.env.MONGODB_URI || 'mongodb+srv://appuser:VruPdc3d4pKYEUwO@cluster0.giuoosh.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0',
     dbName: process.env.DB_NAME || 'filesdb',
-    
+
     // Computed URI based on demo mode
     get activeUri(): string {
-      return this.demoMode ? this.uriLocal : this.uri;
+      return environment.demoMode ? this.uriLocal : this.uri;
     }
   },
-  
+
   // File upload limits - Environment configurable with defaults
   fileUpload: {
     maxFileSize: parseInt(process.env.MAX_FILE_SIZE || '5242880'), // Default: 5MB (5 * 1024 * 1024)
@@ -26,7 +26,7 @@ export const environment = {
     maxFileCount: parseInt(process.env.MAX_FILE_COUNT || '8'), // Default: 8 files
     acceptedTypes: process.env.ACCEPTED_FILE_TYPES?.split(',') || [] // Empty = all types
   },
-  
+
   database: {
     host: 'localhost',
     port: 5432,
