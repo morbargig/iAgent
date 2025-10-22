@@ -1,5 +1,6 @@
 import React from "react";
-import { Box, Snackbar, Alert } from "@mui/material";
+import { Box, Snackbar, Alert, IconButton } from "@mui/material";
+import { Clear as ClearIcon } from "@mui/icons-material";
 import { useTranslation } from "../../contexts/TranslationContext";
 import { Translate } from "../Translate";
 import { FilterNameDialog } from "../FilterNameDialog";
@@ -151,6 +152,7 @@ export function InputArea({
   // Tool schemas and settings dialog
   const { toolSchemas, loading: toolSchemasLoading } = useToolSchemas();
   const [toolSettingsOpen, setToolSettingsOpen] = React.useState(false);
+  const { isRTL } = useTranslation();
 
   // Filter management
   const filterManagement = useFilterManagement({
@@ -496,35 +498,72 @@ export function InputArea({
               onRemoveAttached={fileHandling.removeAttachedFile}
             />
 
-            {/* Main Textarea */}
-            <textarea
-              id="iagent-message-input"
-              className="iagent-textarea-input"
-              ref={inputAreaUI.textareaRef}
-              value={value}
-              onChange={(e) => onChange(e.target.value)}
-              onKeyDown={handleKeyDown}
-              onFocus={() => inputAreaUI.setIsFocused(true)}
-              onBlur={() => inputAreaUI.setIsFocused(false)}
-              placeholder={
-                inputAreaUI.needsToolConfiguration
-                  ? t("input.disabledDueToConfig")
-                  : inputAreaUI.debugPlaceholder
-              }
-              disabled={disabled || inputAreaUI.needsToolConfiguration}
-              style={{
-                ...inputAreaUI.textareaStyle,
-                opacity: inputAreaUI.needsToolConfiguration ? 0.6 : 1,
-                cursor: inputAreaUI.needsToolConfiguration
-                  ? "not-allowed"
-                  : "text",
-                color: inputAreaUI.needsToolConfiguration
-                  ? isDarkMode
-                    ? "#ff9800"
-                    : "#f57c00"
-                  : inputAreaUI.textareaStyle.color,
-              }}
-            />
+            {/* Main Textarea Container */}
+            <Box sx={{ position: "relative" }}>
+              <textarea
+                id="iagent-message-input"
+                className="iagent-textarea-input"
+                ref={inputAreaUI.textareaRef}
+                value={value}
+                onChange={(e) => onChange(e.target.value)}
+                onKeyDown={handleKeyDown}
+                onFocus={() => inputAreaUI.setIsFocused(true)}
+                onBlur={() => inputAreaUI.setIsFocused(false)}
+                placeholder={
+                  inputAreaUI.needsToolConfiguration
+                    ? t("input.disabledDueToConfig")
+                    : inputAreaUI.debugPlaceholder
+                }
+                disabled={disabled || inputAreaUI.needsToolConfiguration}
+                style={{
+                  ...inputAreaUI.textareaStyle,
+                  opacity: inputAreaUI.needsToolConfiguration ? 0.6 : 1,
+                  cursor: inputAreaUI.needsToolConfiguration
+                    ? "not-allowed"
+                    : "text",
+                  color: inputAreaUI.needsToolConfiguration
+                    ? isDarkMode
+                      ? "#ff9800"
+                      : "#f57c00"
+                    : inputAreaUI.textareaStyle.color,
+                  paddingRight:
+                    showClearButton && value.trim() ? "40px" : "16px",
+                }}
+              />
+
+              {/* Clear Button - Absolutely Positioned */}
+              {showClearButton && value.trim() && (
+                <IconButton
+                  onClick={() => {
+                    onChange("");
+                    onClear?.();
+                  }}
+                  disabled={disabled}
+                  sx={{
+                    position: "absolute",
+                    top: "8px",
+                    right: isRTL ? "auto" : "8px",
+                    left: isRTL ? "8px" : "auto",
+                    width: "24px",
+                    height: "24px",
+                    backgroundColor: "transparent",
+                    color: isDarkMode ? "#8e8ea0" : "#6b7280",
+                    borderRadius: "12px",
+                    transition: "all 0.2s ease",
+                    zIndex: 1,
+                    "&:hover": {
+                      backgroundColor: isDarkMode
+                        ? "rgba(255, 255, 255, 0.1)"
+                        : "rgba(0, 0, 0, 0.05)",
+                      color: isDarkMode ? "#ffffff" : "#374151",
+                    },
+                  }}
+                  title={t("input.clearTooltip")}
+                >
+                  <ClearIcon sx={{ fontSize: 14 }} />
+                </IconButton>
+              )}
+            </Box>
 
             {/* Input Controls */}
             <InputControls

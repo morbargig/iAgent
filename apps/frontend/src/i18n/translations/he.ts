@@ -230,7 +230,6 @@ const translations: Translation = {
     uploadFailed: 'העלאה נכשלה',
     waitForUploads: 'אנא המתן לסיום העלאת הקבצים',
     uploadErrors: 'העלאת חלק מהקבצים נכשלה. אנא הסר אותם או נסה שוב.',
-    dropHere: 'גרור קבצים לכאן',
     maxFilesReached: 'הגעת למקסימום {{count}} קבצים',
     maxFilesLimit: 'מקסימום {{count}} קבצים מותר. הסר קבצים כדי להוסיף עוד.',
     fileTooLarge: 'הקובץ {{fileName}} גדול מדי (מקסימום {{maxSize}})',

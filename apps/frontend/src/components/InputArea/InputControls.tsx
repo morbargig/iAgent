@@ -366,7 +366,6 @@ export const InputControls: React.FC<InputControlsProps> = ({
         {/* Action Buttons */}
         <ActionButtons
           value={value}
-          showClearButton={showClearButton}
           showVoiceButton={showVoiceButton}
           showAttachmentButton={showAttachmentButton}
           canSend={canSend}
@@ -378,7 +377,6 @@ export const InputControls: React.FC<InputControlsProps> = ({
           fileMenuOpen={fileMenuOpen}
           fileMenuAnchor={fileMenuAnchor}
           t={t}
-          onClear={onClear}
           onVoiceInput={onVoiceInput}
           onSubmit={onSubmit}
           onFileMenuClick={onFileMenuClick}

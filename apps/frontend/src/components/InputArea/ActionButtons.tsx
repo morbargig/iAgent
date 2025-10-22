@@ -10,7 +10,6 @@ import {
   ListItemIcon,
 } from "@mui/material";
 import {
-  Clear as ClearIcon,
   Mic as MicIcon,
   AttachFile as AttachFileIcon,
   Stop as StopIcon,
@@ -23,7 +22,6 @@ import { UploadingFile, AttachedFile } from "../../hooks/useFileHandling";
 
 interface ActionButtonsProps {
   value: string;
-  showClearButton: boolean;
   showVoiceButton: boolean;
   showAttachmentButton: boolean;
   canSend: boolean;
@@ -34,8 +32,7 @@ interface ActionButtonsProps {
   attachedFiles: AttachedFile[];
   fileMenuOpen: boolean;
   fileMenuAnchor: HTMLElement | null;
-  t: (key: string, params?: any) => string;
-  onClear: () => void;
+  t: (key: string, params?: Record<string, unknown>) => string;
   onVoiceInput?: () => void;
   onSubmit: () => void;
   onFileMenuClick: (event: React.MouseEvent<HTMLElement>) => void;
@@ -46,7 +43,6 @@ interface ActionButtonsProps {
 
 export const ActionButtons: React.FC<ActionButtonsProps> = ({
   value,
-  showClearButton,
   showVoiceButton,
   showAttachmentButton,
   canSend,
@@ -58,7 +54,6 @@ export const ActionButtons: React.FC<ActionButtonsProps> = ({
   fileMenuOpen,
   fileMenuAnchor,
   t,
-  onClear,
   onVoiceInput,
   onSubmit,
   onFileMenuClick,
@@ -76,31 +71,6 @@ export const ActionButtons: React.FC<ActionButtonsProps> = ({
         alignItems: "center",
       }}
     >
-      {/* Clear Button */}
-      {showClearButton && value.trim() && (
-        <IconButton
-          onClick={onClear}
-          disabled={disabled}
-          sx={{
-            width: "32px",
-            height: "32px",
-            backgroundColor: "transparent",
-            color: isDarkMode ? "#8e8ea0" : "#6b7280",
-            borderRadius: "16px",
-            transition: "all 0.2s ease",
-            "&:hover": {
-              backgroundColor: isDarkMode
-                ? "rgba(255, 255, 255, 0.1)"
-                : "rgba(0, 0, 0, 0.05)",
-              color: isDarkMode ? "#ffffff" : "#374151",
-            },
-          }}
-          title={t("input.clearTooltip")}
-        >
-          <ClearIcon sx={{ fontSize: 16 }} />
-        </IconButton>
-      )}
-
       {/* Voice Button */}
       {showVoiceButton && (
         <IconButton

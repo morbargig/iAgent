@@ -69,8 +69,7 @@ export const DocumentList: React.FC<DocumentListProps> = ({
 }) => {
   const theme = useTheme();
   const { t } = useTranslation();
-  const { currentLang } = useTranslation();
-  const isRTL = currentLang === "ar" || currentLang === "he";
+  const { isRTL } = useTranslation();
 
   // Loading skeleton component
   if (loading) {
