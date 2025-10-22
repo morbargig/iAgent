@@ -226,6 +226,7 @@ const translations: Translation = {
     supportedFormats: 'Supported formats',
     uploadingFiles: 'Uploading Files',
     select: 'Select',
+    selectionLimitExceeded: 'You have selected {{selected}} files, but only {{max}} files can be selected. Please deselect some files.',
     cancel: 'Cancel',
     validationFailed: 'File validation failed',
     uploadFailed: 'Upload failed',

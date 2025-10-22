@@ -131,9 +131,7 @@ export const DocumentManagementDialog: React.FC<
       if (isSelected) {
         return prev.filter((d) => d.id !== document.id);
       } else {
-        if (maxSelection && prev.length >= maxSelection) {
-          return prev;
-        }
+        // Allow unlimited selection - remove the blocking logic
         return [...prev, document];
       }
     });
@@ -266,15 +264,34 @@ export const DocumentManagementDialog: React.FC<
       </DialogContent>
 
       {selectionMode && (
-        <DialogActions>
-          <Button onClick={handleClose}>{t("common.cancel")}</Button>
-          <Button
-            onClick={handleConfirmSelection}
-            variant="contained"
-            disabled={selectedDocs.length === 0}
-          >
-            {t("files.select")} ({selectedDocs.length})
-          </Button>
+        <DialogActions
+          sx={{ flexDirection: "column", alignItems: "stretch", gap: 1 }}
+        >
+          {maxSelection && selectedDocs.length > maxSelection && (
+            <Typography
+              variant="caption"
+              color="error"
+              sx={{ textAlign: "center", px: 2 }}
+            >
+              {t("files.selectionLimitExceeded", {
+                selected: selectedDocs.length,
+                max: maxSelection,
+              })}
+            </Typography>
+          )}
+          <Box sx={{ display: "flex", justifyContent: "flex-end", gap: 1 }}>
+            <Button onClick={handleClose}>{t("common.cancel")}</Button>
+            <Button
+              onClick={handleConfirmSelection}
+              variant="contained"
+              disabled={
+                selectedDocs.length === 0 ||
+                (maxSelection ? selectedDocs.length > maxSelection : false)
+              }
+            >
+              {t("files.select")} ({selectedDocs.length})
+            </Button>
+          </Box>
         </DialogActions>
       )}
     </Dialog>

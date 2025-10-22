@@ -225,6 +225,7 @@ const translations: Translation = {
     supportedFormats: 'פורמטים נתמכים',
     uploadingFiles: 'מעלה קבצים',
     select: 'בחר',
+    selectionLimitExceeded: 'נבחרו {{selected}} קבצים, אך ניתן לבחור רק {{max}} קבצים. אנא בטל בחירת חלק מהקבצים.',
     cancel: 'ביטול',
     validationFailed: 'אימות קובץ נכשל',
     uploadFailed: 'העלאה נכשלה',

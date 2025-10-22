@@ -225,6 +225,7 @@ const translations: Translation = {
     supportedFormats: 'التنسيقات المدعومة',
     uploadingFiles: 'رفع الملفات',
     select: 'اختيار',
+    selectionLimitExceeded: 'لقد اخترت {{selected}} ملفًا، ولكن يمكن اختيار {{max}} ملفات فقط. يرجى إلغاء تحديد بعض الملفات.',
     cancel: 'إلغاء',
     validationFailed: 'فشل في التحقق من صحة الملف',
     uploadFailed: 'فشل في الرفع',
