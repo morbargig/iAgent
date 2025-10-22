@@ -23,6 +23,10 @@ import {
   InputAdornment,
   Skeleton,
   Checkbox,
+  Card,
+  CardContent,
+  CardActions,
+  Tooltip,
 } from "@mui/material";
 import {
   Search as SearchIcon,
@@ -62,6 +66,147 @@ interface DocumentManagerProps {
 }
 
 type ViewMode = "list" | "grid";
+
+// DocumentCard component for grid view
+const DocumentCard: React.FC<{
+  document: DocumentFile;
+  isSelected: boolean;
+  selectionMode: boolean;
+  onDocumentClick: (document: DocumentFile) => void;
+  onToggleSelection?: (document: DocumentFile) => void;
+  onContextMenu: (event: React.MouseEvent, document: DocumentFile) => void;
+  onDeleteClick: (document: DocumentFile) => void;
+}> = ({
+  document,
+  isSelected,
+  selectionMode,
+  onDocumentClick,
+  onToggleSelection,
+  onContextMenu,
+  onDeleteClick,
+}) => {
+  const theme = useTheme();
+  const { Icon, color } = getFileIconComponent(document.mimeType);
+
+  return (
+    <Card
+      sx={{
+        height: "100%",
+        display: "flex",
+        flexDirection: "column",
+        cursor: "pointer",
+        border: isSelected
+          ? `2px solid ${theme.palette.primary.main}`
+          : `1px solid ${theme.palette.divider}`,
+        backgroundColor: isSelected
+          ? theme.palette.action.selected
+          : "transparent",
+        "&:hover": {
+          backgroundColor: theme.palette.action.hover,
+          borderColor: theme.palette.primary.light,
+        },
+        transition: "all 0.2s ease-in-out",
+      }}
+      onClick={() => onDocumentClick(document)}
+    >
+      <CardContent sx={{ flexGrow: 1, pb: 1 }}>
+        <Box display="flex" alignItems="flex-start" mb={1}>
+          {selectionMode && (
+            <Checkbox
+              checked={isSelected}
+              onChange={() => onToggleSelection?.(document)}
+              onClick={(e) => e.stopPropagation()}
+              sx={{ mr: 1, mt: -1 }}
+              size="small"
+            />
+          )}
+          <Box
+            display="flex"
+            flexDirection="column"
+            alignItems="center"
+            width="100%"
+          >
+            <Avatar
+              sx={{
+                bgcolor: `${color}20`,
+                width: { xs: 48, sm: 56 },
+                height: { xs: 48, sm: 56 },
+                mb: 2,
+              }}
+            >
+              <Icon sx={{ color: color, fontSize: { xs: 24, sm: 28 } }} />
+            </Avatar>
+            <Tooltip title={document.name} placement="top">
+              <Typography
+                variant="body2"
+                fontWeight="medium"
+                textAlign="center"
+                sx={{
+                  mb: 1,
+                  display: "-webkit-box",
+                  WebkitLineClamp: 2,
+                  WebkitBoxOrient: "vertical",
+                  overflow: "hidden",
+                  wordBreak: "break-word",
+                  lineHeight: 1.2,
+                }}
+              >
+                {document.name}
+              </Typography>
+            </Tooltip>
+            <Typography
+              variant="caption"
+              color="text.secondary"
+              textAlign="center"
+              sx={{
+                display: "block",
+                mb: 0.5,
+              }}
+            >
+              {getFileTypeName(document.mimeType)}
+            </Typography>
+            <Typography
+              variant="caption"
+              color="text.secondary"
+              textAlign="center"
+              sx={{
+                display: "block",
+                mb: 0.5,
+              }}
+            >
+              {formatFileSize(document.size)}
+            </Typography>
+            <Typography
+              variant="caption"
+              color="text.secondary"
+              textAlign="center"
+            >
+              {format(document.uploadedAt, "MMM dd, yyyy")}
+            </Typography>
+          </Box>
+        </Box>
+      </CardContent>
+      <CardActions sx={{ pt: 0, justifyContent: "center" }}>
+        {selectionMode ? (
+          <IconButton
+            onClick={(e) => {
+              e.stopPropagation();
+              onDeleteClick(document);
+            }}
+            size="small"
+            color="error"
+          >
+            <DeleteIcon />
+          </IconButton>
+        ) : (
+          <IconButton onClick={(e) => onContextMenu(e, document)} size="small">
+            <MoreIcon />
+          </IconButton>
+        )}
+      </CardActions>
+    </Card>
+  );
+};
 
 export const DocumentManager: React.FC<DocumentManagerProps> = ({
   onDocumentSelect,
@@ -271,14 +416,40 @@ export const DocumentManager: React.FC<DocumentManagerProps> = ({
 
       {loading && (
         <Box>
-          {Array.from({ length: 5 }).map((_, index) => (
-            <Skeleton
-              key={index}
-              variant="rectangular"
-              height={60}
-              sx={{ mb: 1 }}
-            />
-          ))}
+          {viewMode === "list" ? (
+            // List view skeletons
+            Array.from({ length: 5 }).map((_, index) => (
+              <Skeleton
+                key={index}
+                variant="rectangular"
+                height={60}
+                sx={{ mb: 1, borderRadius: 1 }}
+              />
+            ))
+          ) : (
+            // Grid view skeletons
+            <Box
+              sx={{
+                display: "grid",
+                gridTemplateColumns: {
+                  xs: "repeat(2, 1fr)",
+                  sm: "repeat(3, 1fr)",
+                  md: "repeat(4, 1fr)",
+                  lg: "repeat(4, 1fr)",
+                },
+                gap: { xs: 1, sm: 2 },
+              }}
+            >
+              {Array.from({ length: 8 }).map((_, index) => (
+                <Skeleton
+                  key={index}
+                  variant="rectangular"
+                  height={200}
+                  sx={{ borderRadius: 1 }}
+                />
+              ))}
+            </Box>
+          )}
         </Box>
       )}
 
@@ -331,76 +502,115 @@ export const DocumentManager: React.FC<DocumentManagerProps> = ({
 
       {!loading && documents.length > 0 && (
         <>
-          <List sx={{ maxHeight, overflow: "auto" }}>
-            {documents.map((document) => {
-              const isSelected = isDocumentSelected(document);
-              const { Icon, color } = getFileIconComponent(document.mimeType);
-              return (
-                <ListItem
-                  key={document.id}
-                  onClick={() => handleDocumentClick(document)}
-                  sx={{
-                    borderRadius: 1,
-                    mb: 1,
-                    cursor: "pointer",
-                    border: isSelected
-                      ? `2px solid ${theme.palette.primary.main}`
-                      : "1px solid transparent",
-                    backgroundColor: isSelected
-                      ? theme.palette.action.selected
-                      : "transparent",
-                    "&:hover": { backgroundColor: theme.palette.action.hover },
-                  }}
-                >
-                  {selectionMode && (
-                    <ListItemIcon>
-                      <Checkbox
-                        checked={isSelected}
-                        onChange={() => onToggleSelection?.(document)}
-                        onClick={(e) => e.stopPropagation()}
-                      />
-                    </ListItemIcon>
-                  )}
-                  <ListItemIcon>
-                    <Avatar sx={{ bgcolor: `${color}20` }}>
-                      <Icon sx={{ color: color }} />
-                    </Avatar>
-                  </ListItemIcon>
-                  <ListItemText
-                    primary={document.name}
-                    secondary={
-                      <Typography variant="body2" color="text.secondary">
-                        {getFileTypeName(document.mimeType)} •{" "}
-                        {formatFileSize(document.size)} •{" "}
-                        {format(document.uploadedAt, "MMM dd, yyyy")}
-                      </Typography>
-                    }
-                  />
-                  <ListItemSecondaryAction>
-                    {selectionMode ? (
-                      <IconButton
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setDeleteDialog({ open: true, document });
-                        }}
-                        size="small"
-                        color="error"
-                      >
-                        <DeleteIcon />
-                      </IconButton>
-                    ) : (
-                      <IconButton
-                        onClick={(e) => handleContextMenu(e, document)}
-                        size="small"
-                      >
-                        <MoreIcon />
-                      </IconButton>
+          {viewMode === "list" ? (
+            // List View
+            <List sx={{ maxHeight, overflow: "auto" }}>
+              {documents.map((document) => {
+                const isSelected = isDocumentSelected(document);
+                const { Icon, color } = getFileIconComponent(document.mimeType);
+                return (
+                  <ListItem
+                    key={document.id}
+                    onClick={() => handleDocumentClick(document)}
+                    sx={{
+                      borderRadius: 1,
+                      mb: 1,
+                      cursor: "pointer",
+                      border: isSelected
+                        ? `2px solid ${theme.palette.primary.main}`
+                        : "1px solid transparent",
+                      backgroundColor: isSelected
+                        ? theme.palette.action.selected
+                        : "transparent",
+                      "&:hover": {
+                        backgroundColor: theme.palette.action.hover,
+                      },
+                    }}
+                  >
+                    {selectionMode && (
+                      <ListItemIcon>
+                        <Checkbox
+                          checked={isSelected}
+                          onChange={() => onToggleSelection?.(document)}
+                          onClick={(e) => e.stopPropagation()}
+                        />
+                      </ListItemIcon>
                     )}
-                  </ListItemSecondaryAction>
-                </ListItem>
-              );
-            })}
-          </List>
+                    <ListItemIcon>
+                      <Avatar sx={{ bgcolor: `${color}20` }}>
+                        <Icon sx={{ color: color }} />
+                      </Avatar>
+                    </ListItemIcon>
+                    <ListItemText
+                      primary={document.name}
+                      secondary={
+                        <Typography variant="body2" color="text.secondary">
+                          {getFileTypeName(document.mimeType)} •{" "}
+                          {formatFileSize(document.size)} •{" "}
+                          {format(document.uploadedAt, "MMM dd, yyyy")}
+                        </Typography>
+                      }
+                    />
+                    <ListItemSecondaryAction>
+                      {selectionMode ? (
+                        <IconButton
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setDeleteDialog({ open: true, document });
+                          }}
+                          size="small"
+                          color="error"
+                        >
+                          <DeleteIcon />
+                        </IconButton>
+                      ) : (
+                        <IconButton
+                          onClick={(e) => handleContextMenu(e, document)}
+                          size="small"
+                        >
+                          <MoreIcon />
+                        </IconButton>
+                      )}
+                    </ListItemSecondaryAction>
+                  </ListItem>
+                );
+              })}
+            </List>
+          ) : (
+            // Grid View
+            <Box sx={{ maxHeight, overflow: "auto" }}>
+              <Box
+                sx={{
+                  display: "grid",
+                  gridTemplateColumns: {
+                    xs: "repeat(2, 1fr)",
+                    sm: "repeat(3, 1fr)",
+                    md: "repeat(4, 1fr)",
+                    lg: "repeat(4, 1fr)",
+                  },
+                  gap: { xs: 1, sm: 2 },
+                }}
+              >
+                {documents.map((document) => {
+                  const isSelected = isDocumentSelected(document);
+                  return (
+                    <DocumentCard
+                      key={document.id}
+                      document={document}
+                      isSelected={isSelected}
+                      selectionMode={selectionMode}
+                      onDocumentClick={handleDocumentClick}
+                      onToggleSelection={onToggleSelection}
+                      onContextMenu={handleContextMenu}
+                      onDeleteClick={(document) =>
+                        setDeleteDialog({ open: true, document })
+                      }
+                    />
+                  );
+                })}
+              </Box>
+            </Box>
+          )}
 
           {totalPages > 1 && (
             <Box display="flex" justifyContent="center" mt={2}>
@@ -422,7 +632,9 @@ export const DocumentManager: React.FC<DocumentManagerProps> = ({
       >
         <MenuItem
           onClick={() => {
-            onDocumentPreview?.(menuAnchor!.document);
+            if (menuAnchor?.document) {
+              onDocumentPreview?.(menuAnchor.document);
+            }
             setMenuAnchor(null);
           }}
         >
@@ -431,7 +643,9 @@ export const DocumentManager: React.FC<DocumentManagerProps> = ({
         </MenuItem>
         <MenuItem
           onClick={() => {
-            handleDownloadDocument(menuAnchor!.document);
+            if (menuAnchor?.document) {
+              handleDownloadDocument(menuAnchor.document);
+            }
             setMenuAnchor(null);
           }}
         >
@@ -440,7 +654,9 @@ export const DocumentManager: React.FC<DocumentManagerProps> = ({
         </MenuItem>
         <MenuItem
           onClick={() => {
-            setDeleteDialog({ open: true, document: menuAnchor!.document });
+            if (menuAnchor?.document) {
+              setDeleteDialog({ open: true, document: menuAnchor.document });
+            }
             setMenuAnchor(null);
           }}
           sx={{ color: theme.palette.error.main }}
