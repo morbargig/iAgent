@@ -14,9 +14,10 @@ concurrency:
   cancel-in-progress: false
 
 env:
-  NODE_VERSION: "18"
+  NODE_VERSION: "20"
   # GitHub Pages configuration
   BASE_URL: "/iAgent/"
+  NX_CLOUD_DISTRIBUTED_EXECUTION: "false"
 
 jobs:
   deploy:
@@ -52,13 +53,14 @@ jobs:
             nx-${{ runner.os }}-${{ hashFiles('**/package-lock.json') }}-
 
       - name: 🏗️ Build frontend for production
-        run: npx nx build frontend --configuration=production
+        run: npx nx build frontend --configuration=production --skip-nx-cache
         env:
           # GitHub Pages specific environment variables
           VITE_BASE_URL: ${{ env.BASE_URL }}
           VITE_API_BASE_URL: ${{ env.BASE_URL }}api/
           VITE_ENVIRONMENT: production
           NODE_ENV: production
+          NX_CLOUD_DISTRIBUTED_EXECUTION: "false"
 
       - name: 📊 Verify build output
         run: |
