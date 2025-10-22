@@ -12,8 +12,11 @@ import {
   Checkbox,
   IconButton,
   Pagination,
+  PaginationItem,
 } from "@mui/material";
 import {
+  ArrowBack,
+  ArrowForward,
   Delete as DeleteIcon,
   MoreVert as MoreIcon,
 } from "@mui/icons-material";
@@ -64,6 +67,8 @@ export const DocumentList: React.FC<DocumentListProps> = ({
 }) => {
   const theme = useTheme();
   const { t } = useTranslation();
+  const { currentLang } = useTranslation();
+  const isRTL = currentLang === "ar" || currentLang === "he";
 
   // Loading skeleton component
   if (loading) {
@@ -233,12 +238,21 @@ export const DocumentList: React.FC<DocumentListProps> = ({
       )}
 
       {totalPages > 1 && (
-        <Box display="flex" justifyContent="center" mt={2}>
+        <Box display="flex" justifyContent="center" mt={2} dir="ltr">
           <Pagination
             count={totalPages}
             page={page}
             onChange={(_, newPage) => onPageChange(newPage || 1)}
             color="primary"
+            renderItem={(item) => (
+              <PaginationItem
+                {...item}
+                slots={{
+                  previous: isRTL ? ArrowForward : ArrowBack,
+                  next: isRTL ? ArrowBack : ArrowForward,
+                }}
+              />
+            )}
           />
         </Box>
       )}
