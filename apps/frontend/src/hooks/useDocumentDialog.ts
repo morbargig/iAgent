@@ -80,6 +80,11 @@ export const useDocumentDialog = ({
         }
     };
 
+    // Handle removing a document from attachments
+    const handleDocumentRemoveFromDialog = (document: any) => {
+        setAttachedFiles((prev) => prev.filter((f) => f.id !== document.id));
+    };
+
     const closeLimitWarning = () => {
         setShowLimitWarning(false);
     };
@@ -99,6 +104,7 @@ export const useDocumentDialog = ({
         handleQuickUpload,
         handleOpenDocumentManager,
         handleDocumentSelectFromDialog,
+        handleDocumentRemoveFromDialog,
         closeLimitWarning,
     };
 };

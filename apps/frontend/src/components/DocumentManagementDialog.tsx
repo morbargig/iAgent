@@ -25,6 +25,7 @@ import { DocumentUpload } from "./DocumentUpload";
 import { DocumentManager } from "./DocumentManager";
 import { DocumentFile } from "../types/document.types";
 import { useTranslation } from "../contexts/TranslationContext";
+import { AttachedFile } from "../hooks/useFileHandling";
 
 const Transition = React.forwardRef(function Transition(
   props: TransitionProps & {
@@ -39,11 +40,13 @@ interface DocumentManagementDialogProps {
   open: boolean;
   onClose: () => void;
   onDocumentSelect?: (document: DocumentFile) => void;
+  onDocumentRemove?: (document: DocumentFile) => void;
   initialTab?: "upload" | "manage";
   selectionMode?: boolean;
   selectedDocuments?: DocumentFile[];
   maxSelection?: number;
   title?: string;
+  attachedFiles?: AttachedFile[];
 }
 
 type TabValue = "upload" | "manage";
@@ -54,16 +57,50 @@ export const DocumentManagementDialog: React.FC<
   open,
   onClose,
   onDocumentSelect,
+  onDocumentRemove,
   initialTab = "manage",
   selectionMode = false,
   selectedDocuments = [],
   maxSelection = 1,
   title,
+  attachedFiles = [],
 }) => {
   const { t } = useTranslation();
 
+  // Convert AttachedFile to DocumentFile format
+  const convertAttachedFileToDocumentFile = (
+    attachedFile: AttachedFile
+  ): DocumentFile => {
+    return {
+      id: attachedFile.id,
+      name: attachedFile.filename,
+      originalName: attachedFile.filename,
+      size: attachedFile.size,
+      type: attachedFile.mimetype.split("/")[0] || "unknown",
+      mimeType: attachedFile.mimetype,
+      uploadedAt: new Date(attachedFile.uploadDate),
+      userId: "", // Will be populated by backend
+      status: "ready" as const,
+      url: "", // Will be populated if needed
+      metadata: {},
+    };
+  };
+
   const [currentTab, setCurrentTab] = useState<TabValue>(initialTab);
   const [selectedDocs, setSelectedDocs] = useState<DocumentFile[]>([]);
+
+  // Initialize selectedDocs with converted attachedFiles when dialog opens
+  React.useEffect(() => {
+    if (open && selectionMode && attachedFiles.length > 0) {
+      const convertedFiles = attachedFiles.map(
+        convertAttachedFileToDocumentFile
+      );
+      setSelectedDocs(convertedFiles);
+    } else if (open && !selectionMode) {
+      // Clear selection when not in selection mode
+      setSelectedDocs([]);
+    }
+  }, [open, selectionMode, attachedFiles]);
 
   // Handle tab change
   const handleTabChange = (event: React.SyntheticEvent, newValue: TabValue) => {
@@ -109,7 +146,28 @@ export const DocumentManagementDialog: React.FC<
 
   // Handle confirm selection
   const handleConfirmSelection = () => {
-    selectedDocs.forEach((doc) => onDocumentSelect?.(doc));
+    if (!selectionMode) return;
+
+    // Compare current selection with original attached files
+    const originalAttachedIds = attachedFiles.map((f) => f.id);
+    const currentSelectedIds = selectedDocs.map((doc) => doc.id);
+
+    // Find files that were removed (in original but not in current selection)
+    const removedFiles = attachedFiles
+      .filter((f) => !currentSelectedIds.includes(f.id))
+      .map(convertAttachedFileToDocumentFile);
+
+    // Find files that were added (in current selection but not in original)
+    const addedFiles = selectedDocs.filter(
+      (doc) => !originalAttachedIds.includes(doc.id)
+    );
+
+    // Handle removals
+    removedFiles.forEach((doc) => onDocumentRemove?.(doc));
+
+    // Handle additions
+    addedFiles.forEach((doc) => onDocumentSelect?.(doc));
+
     setSelectedDocs([]);
     onClose();
   };

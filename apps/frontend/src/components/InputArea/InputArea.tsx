@@ -694,10 +694,12 @@ export function InputArea({
         open={documentDialog.docsDialogOpen}
         onClose={documentDialog.handleCloseDocsDialog}
         onDocumentSelect={documentDialog.handleDocumentSelectFromDialog}
+        onDocumentRemove={documentDialog.handleDocumentRemoveFromDialog}
         initialTab="manage"
         selectionMode={true}
         maxSelection={FILE_UPLOAD_CONFIG.MAX_FILE_COUNT}
         title={t("files.documentManagement")}
+        attachedFiles={fileHandling.attachedFiles}
       />
 
       {/* File Limit Warning Snackbar */}
