@@ -1,11 +1,11 @@
 // Document Service
 // This service handles all document upload, management, and API interactions
 
-import { 
-  DocumentFile, 
-  DocumentUploadResponse, 
-  DocumentListResponse, 
-  DocumentSearchFilters, 
+import {
+  DocumentFile,
+  DocumentUploadResponse,
+  DocumentListResponse,
+  DocumentSearchFilters,
   UploadProgress,
   DocumentUploadEvent,
   validateFile,
@@ -71,12 +71,12 @@ export class DocumentService {
 
   // Upload single file with progress tracking
   async uploadFile(
-    file: File, 
+    file: File,
     options: Partial<DocumentUploadOptions> = {},
     onProgress?: (progress: UploadProgress) => void
   ): Promise<DocumentUploadResponse> {
     const uploadOptions = { ...DEFAULT_UPLOAD_OPTIONS, ...options };
-    
+
     // Validate file
     const validation = validateFile(file, uploadOptions);
     if (!validation.valid) {
@@ -89,7 +89,7 @@ export class DocumentService {
     }
 
     const fileId = `upload_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-    
+
     try {
       const formData = new FormData();
       formData.append('file', file);
@@ -97,14 +97,14 @@ export class DocumentService {
 
       // Create XMLHttpRequest for progress tracking
       const xhr = new XMLHttpRequest();
-      
+
       return new Promise((resolve, reject) => {
         xhr.upload.addEventListener('progress', (event) => {
           if (event.lengthComputable && onProgress) {
             const progress = Math.round((event.loaded / event.total) * 100);
             const speed = event.loaded / ((Date.now() - startTime) / 1000);
             const timeRemaining = (event.total - event.loaded) / speed;
-            
+
             const progressData: UploadProgress = {
               fileId,
               fileName: file.name,
@@ -113,7 +113,7 @@ export class DocumentService {
               speed,
               timeRemaining
             };
-            
+
             onProgress(progressData);
             this.emitEvent({ type: 'progress', data: progressData });
           }
@@ -123,10 +123,10 @@ export class DocumentService {
           if (xhr.status === 200 || xhr.status === 201) {
             try {
               const response = JSON.parse(xhr.responseText);
-              
+
               // Backend returns FileUploadResult directly (not wrapped in {document: ...})
               const fileResult = response.document || response;
-              
+
               // Map to DocumentFile
               const document: DocumentFile = {
                 id: fileResult.id,
@@ -141,13 +141,13 @@ export class DocumentService {
                 url: `${this.baseUrl}/files/${fileResult.id}`,
                 metadata: {}
               };
-              
+
               // Process file if autoProcess is enabled
               if (uploadOptions.autoProcess) {
                 const processingResult = await FileProcessingService.processFile(file);
                 document.metadata = processingResult.metadata;
               }
-              
+
               this.emitEvent({ type: 'completed', data: document });
               resolve({ success: true, document });
             } catch (error) {
@@ -174,11 +174,11 @@ export class DocumentService {
 
   // Simulate upload for mock mode
   private async simulateUpload(
-    file: File, 
+    file: File,
     onProgress?: (progress: UploadProgress) => void
   ): Promise<DocumentUploadResponse> {
     const fileId = `upload_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-    
+
     // Simulate upload progress
     const simulateProgress = () => {
       return new Promise<void>((resolve) => {
@@ -190,7 +190,7 @@ export class DocumentService {
             clearInterval(interval);
             resolve();
           }
-          
+
           if (onProgress) {
             const progressData: UploadProgress = {
               fileId,
@@ -209,10 +209,10 @@ export class DocumentService {
 
     try {
       await simulateProgress();
-      
+
       // Process file
       const processingResult = await FileProcessingService.processFile(file);
-      
+
       // Create document
       const document: DocumentFile = {
         id: fileId,
@@ -227,16 +227,16 @@ export class DocumentService {
         url: FileUrlService.getDownloadUrl(fileId),
         metadata: processingResult.metadata
       };
-      
+
       // Add to mock store
       mockDocumentStore.addDocument(document);
-      
+
       this.emitEvent({ type: 'completed', data: document });
-      
+
       return { success: true, document };
     } catch (error) {
-      this.emitEvent({ 
-        type: 'error', 
+      this.emitEvent({
+        type: 'error',
         data: { fileId, error: error instanceof Error ? error.message : 'Upload failed' }
       });
       return { success: false, error: error instanceof Error ? error.message : 'Upload failed' };
@@ -275,7 +275,7 @@ export class DocumentService {
       if (!Array.isArray(files)) {
         throw new Error('Unexpected response format for files list');
       }
-      const total = await this.getDocumentCount();
+      const total = await this.getDocumentCount(filters?.query);
       return {
         documents: files.map((f) => this.mapFileInfoToDocument(f as any)),
         total,
@@ -296,7 +296,7 @@ export class DocumentService {
       if (!document) {
         throw new Error('Document not found');
       }
-      
+
       // Create a mock blob with document content
       const content = document.metadata?.extractedText || `Content of ${document.name}`;
       return new Blob([content], { type: document.mimeType });
@@ -424,9 +424,15 @@ export class DocumentService {
   }
 
   // Helpers
-  private async getDocumentCount(): Promise<number> {
+  private async getDocumentCount(query?: string): Promise<number> {
     try {
-      const response = await fetch(`${this.baseUrl}/files/count`, {
+      const params = new URLSearchParams();
+      if (query && query.trim()) {
+        params.append('query', query.trim());
+      }
+      const url = params.toString() ? `${this.baseUrl}/files/count?${params}` : `${this.baseUrl}/files/count`;
+
+      const response = await fetch(url, {
         headers: this.getHeaders(),
       });
       if (!response.ok) return 0;

@@ -24,7 +24,7 @@ import { Public } from '../decorators/public.decorator';
 @ApiTags('Files')
 @Controller('files')
 export class FileController {
-  constructor(private readonly fileService: FileService) {}
+  constructor(private readonly fileService: FileService) { }
 
   @Post('upload')
   @UseInterceptors(FileInterceptor('file'))
@@ -61,10 +61,11 @@ export class FileController {
   @Get('list')
   @ApiOperation({
     summary: 'List uploaded files',
-    description: 'Get a list of all uploaded files with pagination',
+    description: 'Get a list of all uploaded files with pagination and optional search',
   })
   @ApiQuery({ name: 'limit', required: false, type: Number, description: 'Number of files to return (default: 50)' })
   @ApiQuery({ name: 'skip', required: false, type: Number, description: 'Number of files to skip (default: 0)' })
+  @ApiQuery({ name: 'query', required: false, type: String, description: 'Search query to filter files by filename' })
   @ApiResponse({
     status: 200,
     description: 'List of files retrieved successfully',
@@ -86,6 +87,7 @@ export class FileController {
   async listFiles(
     @Query('limit') limit?: string,
     @Query('skip') skip?: string,
+    @Query('query') query?: string,
   ): Promise<FileInfo[]> {
     const limitNum = limit ? parseInt(limit, 10) : 50;
     const skipNum = skip ? parseInt(skip, 10) : 0;
@@ -98,14 +100,15 @@ export class FileController {
       throw new BadRequestException('Skip must be 0 or greater');
     }
 
-    return this.fileService.listFiles(limitNum, skipNum);
+    return this.fileService.listFiles(limitNum, skipNum, query);
   }
 
   @Get('count')
   @ApiOperation({
     summary: 'Get file count',
-    description: 'Get the total number of uploaded files',
+    description: 'Get the total number of uploaded files, optionally filtered by search query',
   })
+  @ApiQuery({ name: 'query', required: false, type: String, description: 'Search query to filter files by filename' })
   @ApiResponse({
     status: 200,
     description: 'File count retrieved successfully',
@@ -116,8 +119,8 @@ export class FileController {
       },
     },
   })
-  async getFileCount(): Promise<{ count: number }> {
-    const count = await this.fileService.getFileCount();
+  async getFileCount(@Query('query') query?: string): Promise<{ count: number }> {
+    const count = await this.fileService.getFileCount(query);
     return { count };
   }
 
@@ -135,7 +138,7 @@ export class FileController {
   ): Promise<void> {
     try {
       const { stream, fileInfo } = await this.fileService.getFileStream(id);
-      
+
       res.set({
         'Content-Type': fileInfo.mimetype,
         'Content-Disposition': `attachment; filename="${fileInfo.filename}"`,
@@ -165,7 +168,7 @@ export class FileController {
   ): Promise<void> {
     try {
       const { stream, fileInfo } = await this.fileService.getFileStream(id);
-      
+
       res.set({
         'Content-Type': fileInfo.mimetype,
         'Content-Disposition': `inline; filename="${fileInfo.filename}"`,

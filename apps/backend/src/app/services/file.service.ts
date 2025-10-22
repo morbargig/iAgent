@@ -83,7 +83,7 @@ export class FileService {
     // Enhanced deduplication: Check if a file with BOTH same content hash AND filename exists
     // This prevents deduplication when users intentionally rename files with same content
     const existing = await this.gridFSBucket
-      .find({ 
+      .find({
         'metadata.hash': hash,
         'filename': file.originalname  // Must match filename too!
       })
@@ -148,9 +148,9 @@ export class FileService {
     try {
       const objectId = new ObjectId(fileId);
       const fileInfo = await this.getFileInfo(fileId);
-      
+
       const downloadStream = this.gridFSBucket.openDownloadStream(objectId);
-      
+
       return {
         stream: downloadStream,
         fileInfo
@@ -164,7 +164,7 @@ export class FileService {
     try {
       const objectId = new ObjectId(fileId);
       const files = await this.gridFSBucket.find({ _id: objectId }).toArray();
-      
+
       if (files.length === 0) {
         throw new NotFoundException(`File with ID ${fileId} not found`);
       }
@@ -186,9 +186,20 @@ export class FileService {
     }
   }
 
-  async listFiles(limit: number = 50, skip: number = 0): Promise<FileInfo[]> {
+  async listFiles(limit: number = 50, skip: number = 0, query?: string): Promise<FileInfo[]> {
+    // Build MongoDB query filter
+    const filter: any = {};
+
+    // Add filename search filter if query is provided
+    if (query && query.trim()) {
+      filter.filename = {
+        $regex: query.trim(),
+        $options: 'i' // Case-insensitive search
+      };
+    }
+
     const files = await this.gridFSBucket
-      .find({})
+      .find(filter)
       .sort({ uploadDate: -1 })
       .limit(limit)
       .skip(skip)
@@ -213,8 +224,19 @@ export class FileService {
     }
   }
 
-  async getFileCount(): Promise<number> {
-    const files = await this.gridFSBucket.find({}).toArray();
+  async getFileCount(query?: string): Promise<number> {
+    // Build MongoDB query filter (same as in listFiles)
+    const filter: any = {};
+
+    // Add filename search filter if query is provided
+    if (query && query.trim()) {
+      filter.filename = {
+        $regex: query.trim(),
+        $options: 'i' // Case-insensitive search
+      };
+    }
+
+    const files = await this.gridFSBucket.find(filter).toArray();
     return files.length;
   }
 
@@ -245,12 +267,12 @@ export class FileService {
     metadata?: any
   ): Promise<FileUploadResult[]> {
     const results: FileUploadResult[] = [];
-    
+
     for (const file of files) {
       const result = await this.uploadFile(file, metadata);
       results.push(result);
     }
-    
+
     return results;
   }
 }

@@ -199,6 +199,8 @@ const translations: Translation = {
     selectedFile: 'אחד נבחר',
     file: 'קובץ',
     files: 'קבצים',
+    noDocuments: 'אין מסמכים',
+    noDocumentsFound: 'אין מסמכים שמתאימים לחיפוש "{{searchText}}"',
     deleteSelected: 'מחק נבחרים',
     thisDocument: 'המסמך הזה',
     thisDocuments: 'המסמכים האלה',

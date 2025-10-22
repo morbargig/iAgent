@@ -200,6 +200,8 @@ const translations: Translation = {
     selectedFile: 'one file selected',
     file: 'file',
     files: 'files',
+    noDocuments: 'No documents',
+    noDocumentsFound: 'No documents found for "{{searchText}}"',
     deleteMultipleDocuments: 'Delete Multiple Documents',
     deleteMultipleDocumentsConfirm: 'Are you sure you want to delete {{count}} documents? This action cannot be undone.',
     deleteSelected: 'Delete Selected',

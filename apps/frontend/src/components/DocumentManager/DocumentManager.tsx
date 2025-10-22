@@ -139,6 +139,7 @@ export const DocumentManager: React.FC<DocumentManagerProps> = ({
       />
 
       <DocumentList
+        searchQuery={searchQuery}
         documents={documents}
         loading={loading}
         viewMode={viewMode}

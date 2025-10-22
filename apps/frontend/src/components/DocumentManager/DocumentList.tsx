@@ -33,6 +33,7 @@ import { DocumentCard } from "./DocumentCard";
 import { ViewMode } from "./hooks/useDocumentUI";
 
 interface DocumentListProps {
+  searchQuery: string;
   documents: DocumentFile[];
   loading: boolean;
   viewMode: ViewMode;
@@ -50,6 +51,7 @@ interface DocumentListProps {
 }
 
 export const DocumentList: React.FC<DocumentListProps> = ({
+  searchQuery,
   documents,
   loading,
   viewMode,
@@ -117,10 +119,15 @@ export const DocumentList: React.FC<DocumentListProps> = ({
     return (
       <Box textAlign="center" py={4}>
         <Typography variant="h6" color="text.secondary">
-          {t("noDocuments")}
+          {t("files.noDocuments")}
         </Typography>
         <Typography variant="body2" color="text.secondary">
-          {t("files.uploadFirstDocument")}
+          {/* Todo add no documents found message with description and search text */}
+          {searchQuery
+            ? t("files.noDocumentsFound", {
+                searchText: searchQuery,
+              })
+            : null}
         </Typography>
       </Box>
     );

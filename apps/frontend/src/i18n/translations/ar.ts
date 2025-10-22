@@ -199,6 +199,8 @@ const translations: Translation = {
     selectedFile: 'ملف مختار',
     file: 'ملف',
     files: 'ملفات',
+    noDocuments: 'لا يوجد مستندات',
+    noDocumentsFound: 'لا يوجد مستندات موجودة ل "{{searchText}}"',
     deleteSelected: 'حذف المختار',
     thisDocument: 'هذا المستند',
     thisDocuments: 'هذه المستندات',
