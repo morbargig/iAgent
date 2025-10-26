@@ -17,7 +17,10 @@ env:
   NODE_VERSION: "20"
   # GitHub Pages configuration
   BASE_URL: "/iAgent/"
+  # Disable Nx Cloud completely
   NX_CLOUD_DISTRIBUTED_EXECUTION: "false"
+  NX_CLOUD_NO_ACCESS: "true"
+  NX_SKIP_CLOUD_CACHE: "true"
 
 jobs:
   deploy:
@@ -53,7 +56,7 @@ jobs:
             nx-${{ runner.os }}-${{ hashFiles('**/package-lock.json') }}-
 
       - name: 🏗️ Build frontend for production
-        run: npx nx build @iagent/frontend --configuration=production
+        run: npx nx build @iagent/frontend --configuration=production --no-cloud
         env:
           # GitHub Pages specific environment variables
           VITE_BASE_URL: ${{ env.BASE_URL }}
@@ -62,6 +65,8 @@ jobs:
           VITE_ENVIRONMENT: production
           NODE_ENV: production
           NX_CLOUD_DISTRIBUTED_EXECUTION: "false"
+          NX_SKIP_CLOUD_CACHE: "true"
+          NX_CLOUD_NO_ACCESS: "true"
 
       - name: 📊 Verify build output
         run: |

@@ -14,7 +14,10 @@ concurrency:
 
 env:
   NODE_VERSION: '20'
+  # Disable Nx Cloud completely
   NX_CLOUD_DISTRIBUTED_EXECUTION: 'false'
+  NX_CLOUD_NO_ACCESS: 'true'
+  NX_SKIP_CLOUD_CACHE: 'true'
 
 jobs:
   # Code Quality and Type Checking
@@ -139,9 +142,9 @@ jobs:
       - name: 🏗️ Build ${{ matrix.project }}
         run: |
           if [ "${{ matrix.project }}" == "frontend" ]; then
-            npx nx build @iagent/frontend --configuration=production
+            npx nx build @iagent/frontend --configuration=production --no-cloud
           else
-            npx nx build ${{ matrix.project }} --configuration=production
+            npx nx build ${{ matrix.project }} --configuration=production --no-cloud
           fi
         env:
           # GitHub Pages environment variables for frontend
@@ -149,6 +152,8 @@ jobs:
           VITE_API_BASE_URL: '/iAgent/api'
           VITE_ENVIRONMENT: 'production'
           NX_CLOUD_DISTRIBUTED_EXECUTION: 'false'
+          NX_SKIP_CLOUD_CACHE: 'true'
+          NX_CLOUD_NO_ACCESS: 'true'
 
       - name: 📊 Analyze build size
         if: matrix.project == 'frontend'
