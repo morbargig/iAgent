@@ -42,7 +42,8 @@ export const environment = {
       'https://morbargig.github.io',
       'https://iagent-1-jzyj.onrender.com',
       'http://localhost:3000',
-      'http://localhost:3030'
+      'http://localhost:3030',
+      `http://localhost:${process.env.PORT || 3030}`
     ],
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization', 'Cache-Control', 'x-user-id'],

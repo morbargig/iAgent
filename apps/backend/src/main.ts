@@ -12,7 +12,7 @@ import { environment } from './environments/environment';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
-  
+
   // Enable CORS for frontend communication
   if (environment.features.enableCors) {
     app.enableCors({
@@ -22,7 +22,7 @@ async function bootstrap() {
       credentials: environment.cors.credentials,
     });
   }
-  
+
   const globalPrefix = 'api';
   app.setGlobalPrefix(globalPrefix);
 
@@ -42,7 +42,8 @@ async function bootstrap() {
       .addTag('Chat Management', 'Chat CRUD operations')
       .addTag('Environment', 'Environment configuration endpoints')
       .addTag('Files', 'File upload/download endpoints')
-      .addServer(`http://localhost:${process.env.PORT || 3000}`, `${environment.production ? 'Production' : 'Development'} server`)
+      .addServer('https://iagent-1-jzyj.onrender.com', 'Production server')
+      .addServer(`http://localhost:${process.env.PORT || 3030}`, 'Development server')
       .addBearerAuth(
         {
           type: 'http',
@@ -77,7 +78,7 @@ async function bootstrap() {
 
   const port = process.env.PORT || 3030;
   await app.listen(port);
-  
+
   Logger.log(
     `🚀 Application is running on: http://localhost:${port}/${globalPrefix}`
   );
