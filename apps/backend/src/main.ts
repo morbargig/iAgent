@@ -28,6 +28,10 @@ async function bootstrap() {
 
   // Swagger configuration
   if (environment.features.enableSwagger) {
+    // Determine base URL from environment
+    const port = process.env.PORT || 3030;
+    const baseUrl = process.env.BASE_URL || `http://localhost:${port}`;
+    
     const config = new DocumentBuilder()
       .setTitle(environment.swagger.title)
       .setDescription(environment.swagger.description)
@@ -42,8 +46,7 @@ async function bootstrap() {
       .addTag('Chat Management', 'Chat CRUD operations')
       .addTag('Environment', 'Environment configuration endpoints')
       .addTag('Files', 'File upload/download endpoints')
-      .addServer('https://iagent-1-jzyj.onrender.com', 'Production server')
-      .addServer(`http://localhost:${process.env.PORT || 3030}`, 'Development server')
+      .addServer(baseUrl, environment.production ? 'Production' : 'Development')
       .addBearerAuth(
         {
           type: 'http',
