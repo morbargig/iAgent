@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
+import { getApiUrl } from "../config/config";
 
 interface ChatFilter {
     filterId: string;
@@ -200,7 +201,7 @@ export const useFilterManagement = ({
             // If we have authToken, also try API call
             if (authToken) {
                 const response = await fetch(
-                    `http://localhost:3030/api/chats/${currentChatId}/filters`,
+                    getApiUrl(`/chats/${currentChatId}/filters`),
                     {
                         method: "POST",
                         headers: {
@@ -262,7 +263,7 @@ export const useFilterManagement = ({
             // If we have authToken, also try API call
             if (authToken) {
                 const response = await fetch(
-                    `http://localhost:3030/api/chats/${currentChatId}/active-filter`,
+                    getApiUrl(`/chats/${currentChatId}/active-filter`),
                     {
                         method: "PUT",
                         headers: {
@@ -316,7 +317,7 @@ export const useFilterManagement = ({
             // Also try API call if authenticated
             if (authToken) {
                 const response = await fetch(
-                    `http://localhost:3030/api/chats/${currentChatId}/filters`,
+                    getApiUrl(`/chats/${currentChatId}/filters`),
                     {
                         headers: {
                             Authorization: `Bearer ${authToken}`,
@@ -405,7 +406,7 @@ export const useFilterManagement = ({
                     // Also try API call if authenticated
                     if (authToken) {
                         await fetch(
-                            `http://localhost:3030/api/chats/filters/${renameDialogFilter.filterId}`,
+                            getApiUrl(`/chats/filters/${renameDialogFilter.filterId}`),
                             {
                                 method: "PUT",
                                 headers: {

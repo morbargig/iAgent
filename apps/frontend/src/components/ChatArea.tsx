@@ -50,6 +50,7 @@ import {
 import { useTranslation } from "../contexts/TranslationContext";
 import { LanguageSwitcher } from "./LanguageSwitcher";
 import { FilterDetailsDialog } from "./FilterDetailsDialog";
+import { getApiUrl, getBaseApiUrl } from "../config/config";
 
 interface ChatAreaProps {
   messages: Message[];
@@ -508,7 +509,7 @@ const MessageBubble = ({
                 ),
                 userId: "user",
                 status: "ready" as const,
-                url: `http://localhost:3030/api/files/${f.id}`,
+                url: getApiUrl(`/files/${f.id}`),
                 metadata: {},
               }))}
               isDarkMode={isDarkMode}
@@ -1583,7 +1584,7 @@ export function ChatArea({
 
     try {
       const response = await fetch(
-        `/api/chats/filters/${activeMessage.filterSnapshot.filterId}`,
+        `${getBaseApiUrl()}/api/chats/filters/${activeMessage.filterSnapshot.filterId}`,
         {
           method: "PUT",
           headers: {

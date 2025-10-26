@@ -28,6 +28,7 @@ import {
 } from "@iagent/stream-mocks";
 import { useMockMode } from "../hooks/useMockMode";
 import { useSidebarState, useThemeMode } from "../hooks/useLocalStorage";
+import { getBaseApiUrl } from "../config/config";
 
 import { generateUniqueId } from "../utils/id-generator";
 
@@ -602,7 +603,7 @@ const App = () => {
           setStreamingConversationId(null); // Clear streaming conversation
         },
         isMockMode, // useMock
-        "http://localhost:3030",
+        getBaseApiUrl(), // baseUrl
         translation,
         authToken || undefined, // authToken
         chatId, // chatId
@@ -969,7 +970,7 @@ const App = () => {
         // useMock flag
         isMockMode,
         // baseUrl for API mode
-        "http://localhost:3030",
+        getBaseApiUrl(),
         // translation function
         translation,
         // authToken for API mode

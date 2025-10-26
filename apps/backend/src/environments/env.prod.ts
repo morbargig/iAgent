@@ -38,7 +38,12 @@ export const environment = {
     expiresIn: process.env.JWT_EXPIRES_IN || '1h'
   },
   cors: {
-    origins: process.env.CORS_ORIGINS ? process.env.CORS_ORIGINS.split(',') : ['https://iagent.com'],
+    origins: process.env.CORS_ORIGINS ? process.env.CORS_ORIGINS.split(',') : [
+      'https://morbargig.github.io',
+      'https://iagent-1-jzyj.onrender.com',
+      'http://localhost:3000',
+      'http://localhost:3030'
+    ],
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization', 'Cache-Control', 'x-user-id'],
     credentials: true

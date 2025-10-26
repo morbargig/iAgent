@@ -4,6 +4,7 @@
 import React from 'react';
 import { DocumentFile } from '../types/document.types';
 import { DocumentService } from '../services/documentService';
+import { API_CONFIG } from '../config/config';
 
 export interface FileActionsConfig {
     baseUrl?: string;
@@ -21,7 +22,7 @@ export interface FileActionsReturn {
 
 export const useFileActions = (config: FileActionsConfig = {}): FileActionsReturn => {
     const {
-        baseUrl = 'http://localhost:3030/api',
+        baseUrl = API_CONFIG.BASE_URL,
         onPreviewCallback,
         onDownloadCallback,
         onError,

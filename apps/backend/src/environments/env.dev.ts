@@ -39,7 +39,13 @@ export const environment = {
     expiresIn: '24h'
   },
   cors: {
-    origins: ['http://localhost:3000', 'http://localhost:3030'],
+    origins: [
+      'http://localhost:3000',
+      'http://localhost:3001',
+      'http://localhost:3030',
+      'https://morbargig.github.io',
+      'https://iagent-1-jzyj.onrender.com'
+    ],
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization', 'Cache-Control', 'x-user-id'],
     credentials: true

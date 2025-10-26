@@ -15,6 +15,7 @@ import {
 import { mockDocumentStore } from './mockDocumentStore';
 import { FileProcessingService } from './fileProcessingService';
 import { FileUrlService } from './fileUrlService';
+import { API_CONFIG } from '../config/config';
 
 export class DocumentService {
   private baseUrl: string;
@@ -23,7 +24,7 @@ export class DocumentService {
   private useMockData = false; // Use live API by default
   private currentUserId = 'demo-user'; // Default user ID for mock
 
-  constructor(baseUrl = 'http://localhost:3030/api') {
+  constructor(baseUrl = API_CONFIG.BASE_URL) {
     this.baseUrl = baseUrl;
   }
 

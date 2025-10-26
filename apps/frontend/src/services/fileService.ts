@@ -1,5 +1,6 @@
 // File management service for MongoDB GridFS
 import { FILE_UPLOAD_CONFIG, formatFileSize as configFormatFileSize, getFileCategory } from '../config/fileUpload';
+import { API_CONFIG } from '../config/config';
 
 export interface FileUploadResult {
   id: string;
@@ -158,7 +159,7 @@ export function getFileIconColor(mimeType: string, isDarkMode: boolean): string 
 }
 
 class FileService {
-  private baseUrl = 'http://localhost:3030/api/files';
+  private baseUrl = `${API_CONFIG.BASE_URL}/files`;
 
   async uploadFile(file: File): Promise<FileUploadResult> {
     const formData = new FormData();
