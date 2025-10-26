@@ -3,7 +3,7 @@ name: 🚀 Deploy to GitHub Pages
 on:
   # Deploy on push to main branch (after CI passes)
   push:
-    branches: [main]
+    branches: [main, docker-backend]
 
   # Allow manual deployment
   workflow_dispatch:
@@ -114,21 +114,13 @@ jobs:
 
           echo "✅ Deployment files prepared"
 
-      - name: 🔧 Setup GitHub Pages
-        uses: actions/configure-pages@v4
-
-      - name: 📦 Upload artifact
-        uses: actions/upload-pages-artifact@v3
-        with:
-          path: ./dist/apps/frontend
-
       - name: 🚀 Deploy to GitHub Pages
         id: deployment
         uses: peaceiris/actions-gh-pages@v3
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_dir: ./dist/apps/frontend
-          cname: ${{ github.repository_owner }}.github.io
+          # Do not set CNAME as we want the default GitHub Pages URL
 
       - name: 📋 Deployment summary
         run: |
