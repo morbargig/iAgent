@@ -44,6 +44,7 @@ export const environment = {
       'http://localhost:3001',
       'http://localhost:3030',
       'https://morbargig.github.io',
+      'https://bargigsoftwar.github.io',
       'https://iagent-1-jzyj.onrender.com',
       `http://localhost:${process.env.PORT || 3030}`
     ],

@@ -40,6 +40,7 @@ export const environment = {
   cors: {
     origins: process.env.CORS_ORIGINS ? process.env.CORS_ORIGINS.split(',') : [
       'https://morbargig.github.io',
+      "https://bargigsoftwar.github.io",
       'https://iagent-1-jzyj.onrender.com',
       'http://localhost:3000',
       'http://localhost:3030',
