@@ -53,11 +53,12 @@ jobs:
             nx-${{ runner.os }}-${{ hashFiles('**/package-lock.json') }}-
 
       - name: 🏗️ Build frontend for production
-        run: npx nx build frontend --configuration=production --skip-nx-cache
+        run: npx nx build @iagent/frontend --configuration=production
         env:
           # GitHub Pages specific environment variables
           VITE_BASE_URL: ${{ env.BASE_URL }}
-          VITE_API_BASE_URL: ${{ env.BASE_URL }}api/
+          VITE_API_BASE_URL: https://iagent-1-jzyj.onrender.com/api
+          VITE_BASE_API_URL: https://iagent-1-jzyj.onrender.com/api
           VITE_ENVIRONMENT: production
           NODE_ENV: production
           NX_CLOUD_DISTRIBUTED_EXECUTION: "false"

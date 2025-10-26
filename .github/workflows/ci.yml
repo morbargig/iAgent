@@ -137,7 +137,12 @@ jobs:
             nx-${{ runner.os }}-${{ hashFiles('**/package-lock.json') }}-
 
       - name: 🏗️ Build ${{ matrix.project }}
-        run: npx nx build ${{ matrix.project }} --configuration=production --skip-nx-cache
+        run: |
+          if [ "${{ matrix.project }}" == "frontend" ]; then
+            npx nx build @iagent/frontend --configuration=production
+          else
+            npx nx build ${{ matrix.project }} --configuration=production
+          fi
         env:
           # GitHub Pages environment variables for frontend
           VITE_BASE_URL: '/iAgent/'

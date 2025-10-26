@@ -4,7 +4,14 @@
  * Central configuration for API endpoints and URLs
  */
 
+import { environment } from '../environments/environment';
+
 const getBaseUrl = (): string => {
+  // Use environment configuration first
+  if (environment.api?.baseUrl) {
+    return environment.api.baseUrl;
+  }
+  
   const envUrl = import.meta.env.VITE_API_URL;
   
   if (envUrl) {
@@ -16,7 +23,7 @@ const getBaseUrl = (): string => {
 };
 
 // Base URL for API requests (without /api suffix)
-export const API_BASE_URL = import.meta.env.VITE_BASE_API_URL || 'https://iagent-1-jzyj.onrender.com';
+export const API_BASE_URL = environment.api?.baseUrl.replace('/api', '') || 'https://iagent-1-jzyj.onrender.com';
 
 export const API_CONFIG = {
   // Base URL for API requests
@@ -31,8 +38,8 @@ export const API_CONFIG = {
   
   // Timeout configurations
   TIMEOUT: {
-    default: 30000, // 30 seconds
-    upload: 120000, // 2 minutes for file uploads
+    default: environment.api?.timeout || 30000, // 30 seconds
+    upload: environment.api?.uploadTimeout || 120000, // 2 minutes for file uploads
   },
 } as const;
 
