@@ -3,7 +3,7 @@ name: 🚀 Deploy to GitHub Pages
 on:
   # Deploy on push to main branch (after CI passes)
   push:
-    branches: [main]
+    branches: [main, docker-backend]
 
   # Allow manual deployment
   workflow_dispatch:
@@ -17,7 +17,10 @@ env:
   NODE_VERSION: "20"
   # GitHub Pages configuration
   BASE_URL: "/iAgent/"
+  # Disable Nx Cloud completely
   NX_CLOUD_DISTRIBUTED_EXECUTION: "false"
+  NX_CLOUD_NO_ACCESS: "true"
+  NX_SKIP_CLOUD_CACHE: "true"
 
 jobs:
   deploy:
@@ -53,14 +56,17 @@ jobs:
             nx-${{ runner.os }}-${{ hashFiles('**/package-lock.json') }}-
 
       - name: 🏗️ Build frontend for production
-        run: npx nx build frontend --configuration=production --skip-nx-cache
+        run: npx nx build @iagent/frontend --configuration=production --no-cloud
         env:
           # GitHub Pages specific environment variables
           VITE_BASE_URL: ${{ env.BASE_URL }}
-          VITE_API_BASE_URL: ${{ env.BASE_URL }}api/
+          VITE_API_BASE_URL: https://iagent-1-jzyj.onrender.com/api
+          VITE_BASE_API_URL: https://iagent-1-jzyj.onrender.com/api
           VITE_ENVIRONMENT: production
           NODE_ENV: production
           NX_CLOUD_DISTRIBUTED_EXECUTION: "false"
+          NX_SKIP_CLOUD_CACHE: "true"
+          NX_CLOUD_NO_ACCESS: "true"
 
       - name: 📊 Verify build output
         run: |
@@ -114,21 +120,13 @@ jobs:
 
           echo "✅ Deployment files prepared"
 
-      - name: 🔧 Setup GitHub Pages
-        uses: actions/configure-pages@v4
-
-      - name: 📦 Upload artifact
-        uses: actions/upload-pages-artifact@v3
-        with:
-          path: ./dist/apps/frontend
-
       - name: 🚀 Deploy to GitHub Pages
         id: deployment
         uses: peaceiris/actions-gh-pages@v3
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_dir: ./dist/apps/frontend
-          cname: ${{ github.repository_owner }}.github.io
+          # Do not set CNAME as we want the default GitHub Pages URL
 
       - name: 📋 Deployment summary
         run: |

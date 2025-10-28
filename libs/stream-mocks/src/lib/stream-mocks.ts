@@ -15,6 +15,16 @@ export interface Message {
     name?: string;
     config?: Record<string, any>;
   } | null; // Filter configuration snapshot at time of message creation
+  attachments?: Array<{
+    id: string;
+    filename?: string;
+    name?: string;
+    size: number;
+    mimetype?: string;
+    mimeType?: string;
+    uploadDate?: string;
+    uploadedAt?: string;
+  }>;
   metadata?: {
     index?: number;
     total_tokens?: number;
@@ -396,7 +406,7 @@ export class StreamingClient {
     onToken: (token: string, metadata?: any) => void,
     onComplete: () => void,
     onError: (error: Error) => void,
-    baseUrl = 'http://localhost:3000',
+    baseUrl = 'http://localhost:3030',
     authToken?: string,
     chatId?: string,
     tools?: any[],
@@ -534,7 +544,7 @@ export class StreamingClient {
     onComplete: () => void,
     onError: (error: Error) => void,
     useMock = false,
-    baseUrl = 'http://localhost:3000',
+    baseUrl = 'http://localhost:3030',
     t?: TranslationFunction,
     authToken?: string,
     chatId?: string,

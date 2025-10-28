@@ -150,5 +150,8 @@ export const useTranslation = () => {
   if (!context) {
     throw new Error("useTranslation must be used within a TranslationProvider");
   }
-  return context;
+
+  const isRTL = context.currentLang === "he" || context.currentLang === "ar";
+
+  return { ...context, isRTL };
 };

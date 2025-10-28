@@ -42,6 +42,7 @@ import {
 } from "@mui/icons-material";
 import { type Message } from "@iagent/stream-mocks";
 import { MarkdownRenderer } from "./MarkdownRenderer";
+import { FileAttachmentCard } from "./FileAttachmentCard";
 import {
   extractPlainTextFromMarkdown,
   copyToClipboard,
@@ -49,6 +50,7 @@ import {
 import { useTranslation } from "../contexts/TranslationContext";
 import { LanguageSwitcher } from "./LanguageSwitcher";
 import { FilterDetailsDialog } from "./FilterDetailsDialog";
+import { getApiUrl, getBaseApiUrl } from "../config/config";
 
 interface ChatAreaProps {
   messages: Message[];
@@ -491,6 +493,29 @@ const MessageBubble = ({
             lineHeight: 1.7,
           }}
         >
+          {/* File Attachments - Rich preview cards with download/preview buttons */}
+          {message.attachments && message.attachments.length > 0 && (
+            <FileAttachmentCard
+              files={message.attachments.map((f: any) => ({
+                id: f.id,
+                name: f.filename || f.name,
+                originalName: f.filename || f.name,
+                size: f.size,
+                type: f.mimetype || f.mimeType || "application/octet-stream",
+                mimeType:
+                  f.mimetype || f.mimeType || "application/octet-stream",
+                uploadedAt: new Date(
+                  f.uploadDate || f.uploadedAt || Date.now()
+                ),
+                userId: "user",
+                status: "ready" as const,
+                url: getApiUrl(`/files/${f.id}`),
+                metadata: {},
+              }))}
+              isDarkMode={isDarkMode}
+            />
+          )}
+
           <MarkdownRenderer
             content={message.content}
             isDarkMode={isDarkMode}
@@ -1559,7 +1584,7 @@ export function ChatArea({
 
     try {
       const response = await fetch(
-        `/api/chats/filters/${activeMessage.filterSnapshot.filterId}`,
+        `${getBaseApiUrl()}/api/chats/filters/${activeMessage.filterSnapshot.filterId}`,
         {
           method: "PUT",
           headers: {

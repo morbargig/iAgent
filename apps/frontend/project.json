@@ -14,10 +14,31 @@
       },
       "configurations": {
         "development": {
-          "mode": "development"
+          "mode": "development",
+          "fileReplacements": [
+            {
+              "replace": "apps/frontend/src/environments/environment.ts",
+              "with": "apps/frontend/src/environments/environment.dev.ts"
+            }
+          ]
+        },
+        "staging": {
+          "mode": "production",
+          "fileReplacements": [
+            {
+              "replace": "apps/frontend/src/environments/environment.ts",
+              "with": "apps/frontend/src/environments/environment.staging.ts"
+            }
+          ]
         },
         "production": {
-          "mode": "production"
+          "mode": "production",
+          "fileReplacements": [
+            {
+              "replace": "apps/frontend/src/environments/environment.ts",
+              "with": "apps/frontend/src/environments/environment.prod.ts"
+            }
+          ]
         }
       }
     },

@@ -26,6 +26,7 @@ import {
 } from "@mui/icons-material";
 
 import { useMockMode } from "../hooks/useMockMode";
+import { getApiUrl } from "../config/config";
 
 interface LoginFormProps {
   onLogin: (token: string, userId: string, email: string) => void;
@@ -63,7 +64,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({
         return;
       }
 
-      const response = await fetch("http://localhost:3000/api/auth/login", {
+      const response = await fetch(getApiUrl('/auth/login'), {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -97,7 +98,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({
         return;
       }
 
-      const response = await fetch("http://localhost:3000/api/auth/demo-token");
+      const response = await fetch(getApiUrl('/auth/demo-token'));
       const data = await response.json();
       onLogin(data.token, data.userId, data.email);
     } catch (err) {

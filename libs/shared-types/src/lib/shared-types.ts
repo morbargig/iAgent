@@ -111,3 +111,26 @@ export interface UIEvent {
   type: 'theme-change' | 'language-change' | 'sidebar-toggle' | 'mock-toggle';
   payload: any;
 }
+
+// File Upload Types
+export interface FileMetadata {
+  fileId: string;
+  name: string;
+  size: number;
+  type: string;
+  uploadedAt: Date;
+  chatId?: string;
+  userId?: string;
+}
+
+export interface ChatMessageAttachment {
+  fileId: string;
+  metadata: FileMetadata;
+}
+
+export interface FileUploadConfig {
+  maxFileSize: number;
+  maxTotalSize: number;
+  maxFileCount: number;
+  acceptedTypes: string[];
+}
