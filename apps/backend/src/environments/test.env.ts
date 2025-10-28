@@ -1,4 +1,6 @@
-export const environment = {
+import type { Environment } from './environment.type';
+
+export const environment: Environment = {
   production: false,
   apiUrl: 'http://localhost:3030/api',
   frontendUrl: 'http://localhost:3000',

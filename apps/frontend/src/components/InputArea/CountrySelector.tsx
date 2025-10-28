@@ -32,6 +32,7 @@ export const CountrySelector: React.FC<CountrySelectorProps> = ({
   return (
     <>
       {/* Country Selector Button */}
+      {/* TODO: fix popover position */}
       <Box
         id="iagent-country-selector"
         className="iagent-country-dropdown"

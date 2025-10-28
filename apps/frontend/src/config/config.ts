@@ -9,17 +9,20 @@ import { environment } from '../environments/environment';
 const getBaseUrl = (): string => {
   // Use environment configuration first
   if (environment.api?.baseUrl) {
+    // console.log('🔧 Using API URL from environment:', environment.api.baseUrl);
     return environment.api.baseUrl;
   }
   
   const envUrl = import.meta.env.VITE_API_URL;
   
   if (envUrl) {
+    // console.log('🔧 Using API URL from env variable:', envUrl);
     return envUrl.includes('/api') ? envUrl : `${envUrl}/api`;
   }
   
-  // Development default
-  return 'http://localhost:3030/api';
+  // Default to production API for safety
+  // console.log('⚠️ No API URL configured, defaulting to production API');
+  return 'https://iagent-1-jzyj.onrender.com/api';
 };
 
 // Base URL for API requests (without /api suffix)

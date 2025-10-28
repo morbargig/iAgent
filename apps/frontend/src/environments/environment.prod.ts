@@ -1,13 +1,18 @@
 // Production environment configuration
+import type { Environment } from './environment.type';
 
-export const environment = {
+// Get API URL once
+const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'https://iagent-1-jzyj.onrender.com/api';
+
+export const environment: Environment = {
   production: true,
-  apiUrl: import.meta.env.VITE_API_BASE_URL || 'https://iagent-1-jzyj.onrender.com/api',
+  env: 'prod',
+  apiUrl: apiBaseUrl,
   baseUrl: import.meta.env.VITE_BASE_URL || '/',
   
   // API Configuration
   api: {
-    baseUrl: import.meta.env.VITE_API_BASE_URL || 'https://iagent-1-jzyj.onrender.com/api',
+    baseUrl: apiBaseUrl,
     timeout: 30000,
     uploadTimeout: 120000,
   },
@@ -28,7 +33,7 @@ export const environment = {
   
   // Logging Configuration
   logging: {
-    level: 'error',
+    level: import.meta.env.VITE_LOG_LEVEL || 'error',
     enableConsole: false,
   }
 };

@@ -12,11 +12,14 @@ pnpm-debug.log*
 /.nx/workspace-data
 
 # Environment variables
+# Ignore general .env file (may contain secrets)
 .env
+# Ignore local overrides
 .env.local
 .env.development.local
 .env.test.local
 .env.production.local
+# Track .env.development and .env.production as they contain default configs
 
 # IDE and editor files
 .idea/
