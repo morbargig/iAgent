@@ -1,4 +1,6 @@
-export const environment = {
+import type { Environment } from './environment.type';
+
+export const environment: Environment = {
   production: true,
   apiUrl: process.env.API_URL || 'https://api.iagent.com',
   frontendUrl: process.env.FRONTEND_URL || 'https://iagent.com',

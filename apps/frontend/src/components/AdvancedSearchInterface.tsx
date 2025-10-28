@@ -31,7 +31,7 @@ export function AdvancedSearchInterface({
 
   // State management
   const [searchQuery, setSearchQuery] = useState("");
-  const [filterText, setFilterText] = useState("סיון דפי טריביקוק");
+  const [filterText, setFilterText] = useState("סיון דפי פייסבוק");
   const [excludeAmi, setExcludeAmi] = useState(false);
   const [includeAmi, setIncludeAmi] = useState(false);
   const [selectedDays, setSelectedDays] = useState(7);

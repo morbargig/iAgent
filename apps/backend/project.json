@@ -28,18 +28,6 @@
             }
           ]
         },
-        "staging": {
-          "optimization": false,
-          "extractLicenses": false,
-          "sourceMap": true,
-          "watch": true,
-          "fileReplacements": [
-            {
-              "replace": "apps/backend/src/environments/environment.ts",
-              "with": "apps/backend/src/environments/env.staging.ts"
-            }
-          ]
-        },
         "test": {
           "optimization": false,
           "extractLicenses": false,
@@ -77,11 +65,6 @@
       "configurations": {
         "development": {
           "buildTarget": "@iagent/backend:build:development",
-          "watch": true,
-          "runBuildTargetDependencies": true
-        },
-        "staging": {
-          "buildTarget": "@iagent/backend:build:staging",
           "watch": true,
           "runBuildTargetDependencies": true
         },

@@ -119,6 +119,7 @@ export class FileProcessingService {
     }
   }
 
+  // TODO: please check all this simulate logic
   // Simulate PDF text extraction
   private static simulatePdfTextExtraction(fileName: string): string {
     const mockTexts = {
@@ -130,6 +131,7 @@ export class FileProcessingService {
     return mockTexts[fileName as keyof typeof mockTexts] || `PDF content from ${fileName}`;
   }
 
+  // TODO: please check all this simulate logic
   // Simulate Word text extraction
   private static simulateWordTextExtraction(fileName: string): string {
     const mockTexts = {
@@ -141,6 +143,7 @@ export class FileProcessingService {
     return mockTexts[fileName as keyof typeof mockTexts] || `Word document content from ${fileName}`;
   }
 
+  // TODO: please check all this simulate logic
   // Simulate Excel text extraction
   private static simulateExcelTextExtraction(fileName: string): string {
     const mockTexts = {
@@ -152,6 +155,7 @@ export class FileProcessingService {
     return mockTexts[fileName as keyof typeof mockTexts] || `Excel spreadsheet content from ${fileName}`;
   }
 
+  // TODO: please check all this simulate logic
   // Simulate PowerPoint text extraction
   private static simulatePowerPointTextExtraction(fileName: string): string {
     const mockTexts = {

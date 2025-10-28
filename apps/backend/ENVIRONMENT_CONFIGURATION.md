@@ -7,7 +7,6 @@ The backend application uses **file replacement** in `project.json` to switch be
 
 ### Available Environments:
 - **Development** (`env.dev.ts`) - Local development environment
-- **Staging** (`env.staging.ts`) - Staging/pre-production environment  
 - **Test** (`env.test.ts`) - Testing environment
 - **Production** (`env.prod.ts`) - Production environment
 
@@ -24,9 +23,6 @@ npx nx serve backend
 # or explicitly:
 npx nx serve backend --configuration=development
 
-# Staging
-npx nx serve backend --configuration=staging
-
 # Test
 npx nx serve backend --configuration=test
 
@@ -39,9 +35,6 @@ npx nx serve backend --configuration=production
 ```bash
 # Development
 npx nx build backend --configuration=development
-
-# Staging
-npx nx build backend --configuration=staging
 
 # Test
 npx nx build backend --configuration=test
@@ -58,11 +51,11 @@ npx nx build backend --configuration=production
 
 Example from `project.json`:
 ```json
-"staging": {
+"production": {
   "fileReplacements": [
     {
       "replace": "apps/backend/src/environments/environment.ts",
-      "with": "apps/backend/src/environments/env.staging.ts"
+      "with": "apps/backend/src/environments/env.prod.ts"
     }
   ]
 }
@@ -94,12 +87,12 @@ Example response:
 ```json
 {
   "production": false,
-  "apiUrl": "https://staging-api.iagent.com",
-  "frontendUrl": "https://staging.iagent.com",
+  "apiUrl": "https://api.iagent.com",
+  "frontendUrl": "https://iagent.com",
   "swagger": {
     "enabled": true,
-    "title": "iAgent API - Staging",
-    "description": "Staging environment API documentation",
+    "title": "iAgent API - Development",
+    "description": "Development environment API documentation",
     "version": "1.0.0"
   },
   ...
@@ -140,7 +133,7 @@ Each environment file supports runtime environment variable overrides using `pro
 Example:
 ```bash
 # With custom API URL
-API_URL=https://custom-api.com PORT=3030 npx nx serve backend --configuration=staging
+API_URL=https://custom-api.com PORT=3030 npx nx serve backend --configuration=development
 
 # With MongoDB configuration
 MONGODB_URI="mongodb+srv://appuser:password@cluster0.giuoosh.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0" DB_NAME="filesdb" npx nx serve backend --configuration=development
@@ -194,7 +187,7 @@ MAX_FILE_SIZE=10485760 MAX_FILE_COUNT=10 npx nx serve backend --configuration=de
    docker-compose down -v  # Warning: This removes all data!
    ```
 
-### Option 2: Remote MongoDB (Production/Staging)
+### Option 2: Remote MongoDB (Production)
 
 1. **Set environment variables:**
    ```bash
@@ -257,7 +250,6 @@ Files are stored in MongoDB GridFS with the following metadata:
 apps/backend/src/environments/
 ├── environment.ts      # Base file (gets replaced at build time)
 ├── env.dev.ts         # Development environment
-├── env.staging.ts     # Staging environment
 ├── env.test.ts        # Test environment
 └── env.prod.ts        # Production environment
 ```
@@ -275,7 +267,7 @@ apps/backend/src/environments/
 ### Environment not switching?
 - Make sure you're building with the correct `--configuration` flag
 - Clean the build output: `rm -rf dist/apps/backend`
-- Rebuild: `npx nx build backend --configuration=staging`
+- Rebuild: `npx nx build backend --configuration=production`
 
 ### Port already in use?
 - Kill existing processes: `lsof -ti:3001 | xargs kill -9`

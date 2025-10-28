@@ -4,7 +4,7 @@
 
 ### Phase 1: Backend Infrastructure ✅
 - [x] Created `docker-compose.yaml` with MongoDB configuration
-- [x] Updated all environment files (environment.ts, env.dev.ts, env.test.ts, env.prod.ts, env.staging.ts)
+- [x] Updated all environment files (environment.ts, env.dev.ts, env.test.ts, env.prod.ts)
   - Added `demoMode` support
   - Added `mongodb.uriLocal` and `mongodb.activeUri`
   - Added `fileUpload` limits (maxFileSize, maxTotalSize, maxFileCount, acceptedTypes)
@@ -213,7 +213,7 @@ npx nx serve backend --configuration=production
 
 1. **Test the integration thoroughly** using the checklist above
 2. **Deploy Docker MongoDB** and verify local development works
-3. **Configure remote MongoDB** for staging/production
+3. **Configure remote MongoDB** for production
 4. **Train team** on new file upload workflow
 5. **Monitor file storage** usage and adjust limits as needed
 

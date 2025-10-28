@@ -1,7 +1,11 @@
 // Mock Document Store
 // In-memory mock data store for development and testing
 
-import { DocumentFile, DocumentMetadata } from '../types/document.types';
+// NOTE: This mock store is implemented but NOT currently being used.
+// The DocumentService has mock mode support via setMockMode(), but it's never called.
+// Components create new DocumentService instances instead of using the singleton.
+// The mock store functionality is complete but disconnected from the UI.
+import { DocumentFile } from '../types/document.types';
 
 // Mock document data
 const mockDocuments: DocumentFile[] = [
@@ -145,7 +149,7 @@ export class MockDocumentStore {
   updateDocument(id: string, updates: Partial<DocumentFile>): DocumentFile | null {
     const index = this.documents.findIndex(doc => doc.id === id);
     if (index === -1) return null;
-    
+
     this.documents[index] = { ...this.documents[index], ...updates };
     return this.documents[index];
   }
@@ -154,7 +158,7 @@ export class MockDocumentStore {
   deleteDocument(id: string): boolean {
     const index = this.documents.findIndex(doc => doc.id === id);
     if (index === -1) return false;
-    
+
     this.documents.splice(index, 1);
     return true;
   }
@@ -162,31 +166,31 @@ export class MockDocumentStore {
   // Search documents
   searchDocuments(query: string, filters?: any): DocumentFile[] {
     let results = [...this.documents];
-    
+
     if (query) {
       const searchTerm = query.toLowerCase();
-      results = results.filter(doc => 
+      results = results.filter(doc =>
         doc.name.toLowerCase().includes(searchTerm) ||
         doc.metadata?.extractedText?.toLowerCase().includes(searchTerm) ||
         doc.metadata?.summary?.toLowerCase().includes(searchTerm)
       );
     }
-    
+
     if (filters?.type) {
       results = results.filter(doc => doc.type === filters.type);
     }
-    
+
     if (filters?.status && filters.status.length > 0) {
       results = results.filter(doc => filters.status.includes(doc.status));
     }
-    
+
     if (filters?.dateRange) {
       results = results.filter(doc => {
         const docDate = new Date(doc.uploadedAt);
         return docDate >= filters.dateRange.start && docDate <= filters.dateRange.end;
       });
     }
-    
+
     return results;
   }
 
@@ -201,7 +205,7 @@ export class MockDocumentStore {
     const allResults = query || filters ? this.searchDocuments(query || '', filters) : this.documents;
     const startIndex = (page - 1) * limit;
     const endIndex = startIndex + limit;
-    
+
     return {
       documents: allResults.slice(startIndex, endIndex),
       total: allResults.length,
@@ -229,13 +233,13 @@ export class MockDocumentStore {
       byStatus: {} as Record<string, number>,
       totalSize: 0
     };
-    
+
     this.documents.forEach(doc => {
       stats.byType[doc.type] = (stats.byType[doc.type] || 0) + 1;
       stats.byStatus[doc.status] = (stats.byStatus[doc.status] || 0) + 1;
       stats.totalSize += doc.size;
     });
-    
+
     return stats;
   }
 

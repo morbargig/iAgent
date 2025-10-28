@@ -1,6 +1,7 @@
 // File URL Service
 // Handles URL generation for files, downloads, and previews
 
+// TODO: please make sure preview and all funcs used in project code.
 export class FileUrlService {
   private static baseUrl = '/api/files';
 

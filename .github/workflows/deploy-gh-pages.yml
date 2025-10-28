@@ -3,7 +3,7 @@ name: 🚀 Deploy to GitHub Pages
 on:
   # Deploy on push to main branch (after CI passes)
   push:
-    branches: [main, docker-backend]
+    branches: [main]
 
   # Allow manual deployment
   workflow_dispatch:
