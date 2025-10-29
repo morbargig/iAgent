@@ -5,6 +5,7 @@ import {
   ExpandMore as ExpandMoreIcon,
 } from "@mui/icons-material";
 import BasicDateRangePicker from "../BasicDateRangePicker";
+import { useTranslation } from "../../contexts/TranslationContext";
 
 interface TimeRangeOption {
   value: string;
@@ -56,6 +57,8 @@ export const DateRangeSelector: React.FC<DateRangeSelectorProps> = ({
   onReset,
   onClose,
 }) => {
+  const { isRTL } = useTranslation();
+
   return (
     <>
       {/* Date Range Selector Button */}
@@ -65,6 +68,7 @@ export const DateRangeSelector: React.FC<DateRangeSelectorProps> = ({
         onClick={onDateClick}
         sx={{
           display: "flex",
+          position: "relative",
           alignItems: "center",
           gap: "6px",
           backgroundColor: isDarkMode ? "#565869" : "#e5e7eb",
@@ -104,7 +108,7 @@ export const DateRangeSelector: React.FC<DateRangeSelectorProps> = ({
       {datePopoverOpen && (
         <Box
           sx={{
-            position: "fixed",
+            position: "absolute",
             top: 0,
             insetInlineStart: 0,
             insetInlineEnd: 0,
@@ -117,8 +121,9 @@ export const DateRangeSelector: React.FC<DateRangeSelectorProps> = ({
           <Box
             sx={{
               position: "absolute",
-              bottom: "120px", // Approximate position above the input area
-              left: "200px", // Approximate position
+              bottom: "80px",
+              left: isRTL ? "50px" : "auto",
+              right: isRTL ? "auto" : "50px",
               backgroundColor: isDarkMode ? "#2f2f2f" : "#ffffff",
               border: `1px solid ${isDarkMode ? "#4a4a4a" : "#e1e5e9"}`,
               borderRadius: "8px",

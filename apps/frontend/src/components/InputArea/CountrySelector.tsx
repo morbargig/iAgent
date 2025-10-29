@@ -1,6 +1,7 @@
 import React from "react";
 import { Box, Typography } from "@mui/material";
 import { ExpandMore as ExpandMoreIcon } from "@mui/icons-material";
+import { useTranslation } from "../../contexts/TranslationContext";
 
 interface FlagOption {
   code: string;
@@ -29,6 +30,8 @@ export const CountrySelector: React.FC<CountrySelectorProps> = ({
   onFlagToggle,
   onClose,
 }) => {
+  const { isRTL } = useTranslation();
+
   return (
     <>
       {/* Country Selector Button */}
@@ -38,6 +41,7 @@ export const CountrySelector: React.FC<CountrySelectorProps> = ({
         onClick={onFlagClick}
         sx={{
           display: "flex",
+          position: "relative",
           alignItems: "center",
           backgroundColor: isDarkMode ? "#565869" : "#e5e7eb",
           border: `1px solid ${isDarkMode ? "#6b6d7a" : "#d1d5db"}`,
@@ -147,7 +151,7 @@ export const CountrySelector: React.FC<CountrySelectorProps> = ({
       {flagPopoverOpen && (
         <Box
           sx={{
-            position: "fixed",
+            position: "absolute",
             top: 0,
             insetInlineStart: 0,
             insetInlineEnd: 0,
@@ -160,8 +164,9 @@ export const CountrySelector: React.FC<CountrySelectorProps> = ({
           <Box
             sx={{
               position: "absolute",
-              bottom: "120px", // Approximate position above the input area
-              left: "50px", // Approximate position
+              bottom: "80px",
+              left: isRTL ? "auto" : "0",
+              right: isRTL ? "0" : "auto",
               backgroundColor: isDarkMode ? "#40414f" : "#ffffff",
               border: `1px solid ${isDarkMode ? "#565869" : "#e5e7eb"}`,
               borderRadius: "12px",
