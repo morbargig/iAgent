@@ -30,6 +30,7 @@ interface InputControlsProps {
   // Country Selection
   selectedFlags: string[];
   flagPopoverOpen: boolean;
+  flagAnchorEl: HTMLElement | null;
   flagOptions: FlagOption[];
   onFlagClick: (event: React.MouseEvent<HTMLElement>) => void;
   onFlagToggle: (flagCode: string) => void;
@@ -43,6 +44,7 @@ interface InputControlsProps {
   dateRange: [Date | null, Date | null];
   tempDateRange: [Date | null, Date | null];
   datePopoverOpen: boolean;
+  dateAnchorEl: HTMLElement | null;
   timeRangeOptions: TimeRangeOption[];
   getDateRangeButtonText: () => string;
   onDateClick: (event: React.MouseEvent<HTMLElement>) => void;
@@ -99,6 +101,7 @@ export const InputControls: React.FC<InputControlsProps> = ({
   // Country Selection
   selectedFlags,
   flagPopoverOpen,
+  flagAnchorEl,
   flagOptions,
   onFlagClick,
   onFlagToggle,
@@ -112,6 +115,7 @@ export const InputControls: React.FC<InputControlsProps> = ({
   dateRange,
   tempDateRange,
   datePopoverOpen,
+  dateAnchorEl,
   timeRangeOptions,
   getDateRangeButtonText,
   onDateClick,
@@ -190,6 +194,7 @@ export const InputControls: React.FC<InputControlsProps> = ({
         <CountrySelector
           selectedFlags={selectedFlags}
           flagPopoverOpen={flagPopoverOpen}
+          flagAnchorEl={flagAnchorEl}
           flagOptions={flagOptions}
           isDarkMode={isDarkMode}
           t={t}
@@ -207,6 +212,7 @@ export const InputControls: React.FC<InputControlsProps> = ({
           dateRange={dateRange}
           tempDateRange={tempDateRange}
           datePopoverOpen={datePopoverOpen}
+          dateAnchorEl={dateAnchorEl}
           timeRangeOptions={timeRangeOptions}
           isDarkMode={isDarkMode}
           t={t}

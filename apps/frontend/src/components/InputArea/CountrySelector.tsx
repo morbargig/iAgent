@@ -1,5 +1,5 @@
 import React from "react";
-import { Box, Typography } from "@mui/material";
+import { Box, Typography, Popover } from "@mui/material";
 import { ExpandMore as ExpandMoreIcon } from "@mui/icons-material";
 import { useTranslation } from "../../contexts/TranslationContext";
 
@@ -12,6 +12,7 @@ interface FlagOption {
 interface CountrySelectorProps {
   selectedFlags: string[];
   flagPopoverOpen: boolean;
+  flagAnchorEl: HTMLElement | null;
   flagOptions: FlagOption[];
   isDarkMode: boolean;
   t: (key: string) => string;
@@ -23,6 +24,7 @@ interface CountrySelectorProps {
 export const CountrySelector: React.FC<CountrySelectorProps> = ({
   selectedFlags,
   flagPopoverOpen,
+  flagAnchorEl,
   flagOptions,
   isDarkMode,
   t,
@@ -148,25 +150,21 @@ export const CountrySelector: React.FC<CountrySelectorProps> = ({
       </Box>
 
       {/* Flag Multi-Select Dropdown */}
-      {flagPopoverOpen && (
-        <Box
-          sx={{
-            position: "absolute",
-            top: 0,
-            insetInlineStart: 0,
-            insetInlineEnd: 0,
-            bottom: 0,
-            zIndex: 9998,
-            backgroundColor: "transparent",
-          }}
-          onClick={onClose}
-        >
-          <Box
-            sx={{
-              position: "absolute",
-              bottom: "80px",
-              left: isRTL ? "auto" : "0",
-              right: isRTL ? "0" : "auto",
+      <Popover
+        open={flagPopoverOpen}
+        anchorEl={flagAnchorEl}
+        onClose={onClose}
+        anchorOrigin={{
+          vertical: "top",
+          horizontal: isRTL ? "right" : "left",
+        }}
+        transformOrigin={{
+          vertical: "bottom",
+          horizontal: isRTL ? "right" : "left",
+        }}
+        slotProps={{
+          paper: {
+            sx: {
               backgroundColor: isDarkMode ? "#40414f" : "#ffffff",
               border: `1px solid ${isDarkMode ? "#565869" : "#e5e7eb"}`,
               borderRadius: "12px",
@@ -175,88 +173,85 @@ export const CountrySelector: React.FC<CountrySelectorProps> = ({
                 : "0 8px 25px rgba(0, 0, 0, 0.15)",
               padding: "16px",
               maxWidth: "400px",
-              zIndex: 9999,
-            }}
-            onClick={(e) => e.stopPropagation()}
-          >
+              marginTop: "-8px", // Adjust positioning to match previous layout
+            },
+          },
+        }}
+      >
+        <Box
+          sx={{
+            display: "grid",
+            gridTemplateColumns: "repeat(2, 1fr)",
+            gap: "8px",
+            maxWidth: "280px",
+          }}
+        >
+          {flagOptions.map((option) => (
             <Box
+              key={option.code}
+              onClick={() => onFlagToggle(option.code)}
               sx={{
-                display: "grid",
-                gridTemplateColumns: "repeat(2, 1fr)",
-                gap: "8px",
-                maxWidth: "280px",
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                gap: "6px",
+                padding: "12px 8px",
+                cursor: "pointer",
+                borderRadius: "8px",
+                transition: "all 0.2s ease",
+                backgroundColor: selectedFlags.includes(option.code)
+                  ? isDarkMode
+                    ? "rgba(33, 150, 243, 0.2)"
+                    : "rgba(33, 150, 243, 0.1)"
+                  : "transparent",
+                border: selectedFlags.includes(option.code)
+                  ? "2px solid #2196f3"
+                  : "2px solid transparent",
+                "&:hover": {
+                  backgroundColor: selectedFlags.includes(option.code)
+                    ? isDarkMode
+                      ? "rgba(33, 150, 243, 0.3)"
+                      : "rgba(33, 150, 243, 0.15)"
+                    : isDarkMode
+                      ? "rgba(255, 255, 255, 0.05)"
+                      : "rgba(0, 0, 0, 0.04)",
+                  transform: "translateY(-2px)",
+                  boxShadow: "0 4px 12px rgba(0, 0, 0, 0.15)",
+                },
               }}
             >
-              {flagOptions.map((option) => (
-                <Box
-                  key={option.code}
-                  onClick={() => onFlagToggle(option.code)}
-                  sx={{
-                    display: "flex",
-                    flexDirection: "column",
-                    alignItems: "center",
-                    gap: "6px",
-                    padding: "12px 8px",
-                    cursor: "pointer",
-                    borderRadius: "8px",
-                    transition: "all 0.2s ease",
-                    backgroundColor: selectedFlags.includes(option.code)
-                      ? isDarkMode
-                        ? "rgba(33, 150, 243, 0.2)"
-                        : "rgba(33, 150, 243, 0.1)"
-                      : "transparent",
-                    border: selectedFlags.includes(option.code)
-                      ? "2px solid #2196f3"
-                      : "2px solid transparent",
-                    "&:hover": {
-                      backgroundColor: selectedFlags.includes(option.code)
-                        ? isDarkMode
-                          ? "rgba(33, 150, 243, 0.3)"
-                          : "rgba(33, 150, 243, 0.15)"
-                        : isDarkMode
-                          ? "rgba(255, 255, 255, 0.05)"
-                          : "rgba(0, 0, 0, 0.04)",
-                      transform: "translateY(-2px)",
-                      boxShadow: "0 4px 12px rgba(0, 0, 0, 0.15)",
-                    },
-                  }}
-                >
-                  <Box
-                    sx={{
-                      fontSize: "24px",
-                      width: "32px",
-                      height: "32px",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                    }}
-                  >
-                    {option.flag}
-                  </Box>
-                  <Typography
-                    sx={{
-                      fontSize: "11px",
-                      color: selectedFlags.includes(option.code)
-                        ? "#2196f3"
-                        : isDarkMode
-                          ? "#ececf1"
-                          : "#374151",
-                      direction: "rtl",
-                      fontWeight: selectedFlags.includes(option.code)
-                        ? 600
-                        : 400,
-                      textAlign: "center",
-                      lineHeight: 1.2,
-                    }}
-                  >
-                    {t(option.nameKey)}
-                  </Typography>
-                </Box>
-              ))}
+              <Box
+                sx={{
+                  fontSize: "24px",
+                  width: "32px",
+                  height: "32px",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}
+              >
+                {option.flag}
+              </Box>
+              <Typography
+                sx={{
+                  fontSize: "11px",
+                  color: selectedFlags.includes(option.code)
+                    ? "#2196f3"
+                    : isDarkMode
+                      ? "#ececf1"
+                      : "#374151",
+                  direction: "rtl",
+                  fontWeight: selectedFlags.includes(option.code) ? 600 : 400,
+                  textAlign: "center",
+                  lineHeight: 1.2,
+                }}
+              >
+                {t(option.nameKey)}
+              </Typography>
             </Box>
-          </Box>
+          ))}
         </Box>
-      )}
+      </Popover>
     </>
   );
 };
