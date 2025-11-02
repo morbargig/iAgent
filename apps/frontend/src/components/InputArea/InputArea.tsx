@@ -570,6 +570,7 @@ export function InputArea({
               // Country Selection
               selectedFlags={countrySelection.selectedFlags}
               flagPopoverOpen={countrySelection.flagPopoverOpen}
+              flagAnchorEl={countrySelection.flagAnchorEl}
               flagOptions={countrySelection.flagOptions}
               onFlagClick={countrySelection.handleFlagClick}
               onFlagToggle={countrySelection.handleFlagToggle}
@@ -582,6 +583,7 @@ export function InputArea({
               dateRange={dateRange.dateRange}
               tempDateRange={dateRange.tempDateRange}
               datePopoverOpen={dateRange.datePopoverOpen}
+              dateAnchorEl={dateRange.dateAnchorEl}
               timeRangeOptions={dateRange.timeRangeOptions}
               getDateRangeButtonText={dateRange.getDateRangeButtonText}
               onDateClick={dateRange.handleDateClick}

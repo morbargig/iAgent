@@ -1344,7 +1344,8 @@ export default function BasicDateRangePicker({
         )}
 
         {/* Duration */}
-        {currentValue[0] && currentValue[1] && (
+        {/* TODO: Add duration back in once we find space for it  */}
+        {/* {currentValue[0] && currentValue[1] && (
           <Box
             sx={{
               p: 1,
@@ -1369,7 +1370,7 @@ export default function BasicDateRangePicker({
               : {getDurationText(currentValue[0], currentValue[1])}
             </Typography>
           </Box>
-        )}
+        )} */}
       </Stack>
     </Box>
   );
