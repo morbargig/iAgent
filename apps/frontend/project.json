@@ -22,15 +22,6 @@
             }
           ]
         },
-        "staging": {
-          "mode": "production",
-          "fileReplacements": [
-            {
-              "replace": "apps/frontend/src/environments/environment.ts",
-              "with": "apps/frontend/src/environments/environment.staging.ts"
-            }
-          ]
-        },
         "production": {
           "mode": "production",
           "fileReplacements": [
@@ -55,7 +46,8 @@
         },
         "production": {
           "buildTarget": "@iagent/frontend:build:production",
-          "hmr": false
+          "hmr": true,
+          "mode": "production"
         }
       }
     },

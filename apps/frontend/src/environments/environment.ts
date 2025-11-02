@@ -1,14 +1,19 @@
 // Default environment configuration
 // This file will be replaced by file replacement in project.json
+import type { Environment } from './environment.type';
 
-export const environment = {
+// Get API URL once
+const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3030/api';
+
+export const environment: Environment = {
   production: false,
-  apiUrl: import.meta.env.VITE_API_BASE_URL || 'http://localhost:3030/api',
+  env: 'local',
+  apiUrl: apiBaseUrl,
   baseUrl: import.meta.env.VITE_BASE_URL || '/',
   
   // API Configuration
   api: {
-    baseUrl: import.meta.env.VITE_API_BASE_URL || 'http://localhost:3030/api',
+    baseUrl: apiBaseUrl,
     timeout: 30000,
     uploadTimeout: 120000,
   },

@@ -242,11 +242,6 @@ The CD workflow (`.github/workflows/cd.yml`) handles automated deployment after 
   - SEO optimization (robots.txt, sitemap)
   - Jekyll bypass (.nojekyll)
 
-##### Staging Deployment
-- **Target**: Staging server (configurable)
-- **Trigger**: Manual or develop branch
-- **Purpose**: Testing in production-like environment
-
 #### 5. 🧪 Post-deployment Testing
 - **Purpose**: Verify deployment success
 - **Actions**:
@@ -266,7 +261,6 @@ The CD workflow (`.github/workflows/cd.yml`) handles automated deployment after 
 | Environment | URL | Trigger | Purpose |
 |-------------|-----|---------|---------|
 | **Production** | GitHub Pages | CI success on main | Live application |
-| **Staging** | Custom server | Manual/develop | Testing environment |
 | **Development** | Local | Manual | Development testing |
 
 ## 📊 Workflow Visualization
@@ -292,10 +286,8 @@ graph LR
     A[Pre-deployment] --> B[Production Build]
     B --> C[Quality Gate]
     C --> D[Deploy Production]
-    C --> E[Deploy Staging]
-    D --> F[Post-deployment Tests]
-    E --> F
-    F --> G[Notifications]
+    D --> E[Post-deployment Tests]
+    E --> F[Notifications]
 ```
 
 ## 🛠️ Setup & Configuration
@@ -323,7 +315,6 @@ Update these in the CD workflow:
 ```yaml
 env:
   PRODUCTION_URL: 'https://your-username.github.io/iAgent'
-  STAGING_URL: 'https://staging.your-domain.com'
 ```
 
 ### Custom Domain Setup
@@ -401,7 +392,6 @@ After studying this CI/CD setup, you should understand:
    - Add a new security check
 
 2. **Customize CD Pipeline**:
-   - Add a staging environment
    - Implement blue-green deployment
    - Add custom notifications
 

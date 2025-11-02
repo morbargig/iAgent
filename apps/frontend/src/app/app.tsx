@@ -11,7 +11,6 @@ import {
   type SendMessageData,
 } from "../components/InputArea/InputArea";
 import { LoginForm } from "../components/LoginForm";
-import { FileManagerDialog } from "../components/FileManagerDialog";
 import {
   ReportDetailsPanel,
   type ReportData,
@@ -29,8 +28,18 @@ import {
 import { useMockMode } from "../hooks/useMockMode";
 import { useSidebarState, useThemeMode } from "../hooks/useLocalStorage";
 import { getBaseApiUrl } from "../config/config";
+// import { environment } from "../environments/environment";
 
 import { generateUniqueId } from "../utils/id-generator";
+
+// Debug: Log environment info
+// console.log('🔍 Environment Check:', {
+//   env: environment.env,
+//   production: environment.production,
+//   apiUrl: environment.apiUrl,
+//   apiBaseUrl: environment.api?.baseUrl,
+//   getBaseApiUrl: getBaseApiUrl()
+// });
 
 // iagent-inspired Design System
 // Philosophy: Clean, minimal, muted aesthetic with subtle interactions
@@ -1250,18 +1259,6 @@ const App = () => {
             onWidthChange={handleReportPanelWidthChange}
           />
         </Box>
-
-        {/* File Manager Dialog */}
-        <FileManagerDialog
-          open={isFileManagerOpen}
-          onClose={() => setIsFileManagerOpen(false)}
-          onFileSelected={(file) => {
-            console.log("File selected for attachment:", file);
-            // You can add the file to the message or handle it as needed
-          }}
-          title="Attach File to Message"
-          showAttachButton={true}
-        />
       </Box>
     </ThemeProvider>
   );

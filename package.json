@@ -54,8 +54,6 @@
     "date-fns": "^4.1.0",
     "dotenv": "^17.2.3",
     "lucide-react": "^0.515.0",
-    "mongodb": "^6.20.0",
-    "mongoose": "^8.19.1",
     "multer": "^2.0.2",
     "react": "^19.1.0",
     "react-day-picker": "^9.9.0",

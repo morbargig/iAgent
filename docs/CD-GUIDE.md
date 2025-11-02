@@ -43,20 +43,15 @@ Our CD pipeline is triggered after successful CI completion and handles deployme
 graph TD
     A[✅ CI Success] --> B[🔍 Pre-deployment Checks]
     
-    B --> C{Environment?}
-    C -->|Production| D[🏗️ Production Build]
-    C -->|Staging| E[🧪 Staging Build]
+    B --> C[🏗️ Production Build]
     
-    D --> F[🛡️ Quality Gate]
-    E --> F
+    C --> D[🛡️ Quality Gate]
     
-    F --> G{Quality OK?}
-    G -->|Yes| H[🌐 Deploy Production]
-    G -->|Yes| I[🧪 Deploy Staging]
-    G -->|No| J[❌ Block Deployment]
+    D --> E{Quality OK?}
+    E -->|Yes| F[🌐 Deploy Production]
+    E -->|No| G[❌ Block Deployment]
     
-    H --> K[🧪 Post-deployment Tests]
-    I --> K
+    F --> H[🧪 Post-deployment Tests]
     
     K --> L{Tests Pass?}
     L -->|Yes| M[📢 Success Notification]
@@ -310,23 +305,6 @@ strategy:
    # echo "your-domain.com" > dist/apps/frontend/CNAME
    ```
 
-#### Staging Deployment
-
-**Purpose**: Deploy to staging environment for testing.
-
-**Duration**: ~2-3 minutes  
-**Target**: Configurable staging server  
-
-##### What happens:
-
-1. **Download Build Artifacts**
-2. **Deploy to Staging Environment**
-   ```bash
-   # Example deployment commands (customize for your setup)
-   # rsync -avz dist/apps/frontend/ user@staging-server:/var/www/html/
-   # ssh user@staging-server "sudo systemctl reload nginx"
-   ```
-
 #### Success Criteria:
 - ✅ Deployment completes without errors
 - ✅ Files uploaded successfully
@@ -441,19 +419,15 @@ strategy:
 
 ```mermaid
 graph TD
-    A[🔧 Development] --> B[🧪 Staging]
-    B --> C[🌐 Production]
+    A[🔧 Development] --> B[🌐 Production]
     
     A1[Local Development] --> A
     A2[Feature Branches] --> A
-    A3[Integration Testing] --> B
-    B1[User Acceptance Testing] --> B
-    B2[Performance Testing] --> B
-    C1[Live Users] --> C
+    A3[Integration Testing] --> A
+    B1[Live Users] --> B
     
     style A fill:#e3f2fd
-    style B fill:#fff3e0
-    style C fill:#e8f5e8
+    style B fill:#e8f5e8
 ```
 
 ### Environment Configuration
@@ -461,7 +435,6 @@ graph TD
 | Environment | Purpose | URL | Deployment Trigger | Approvals |
 |-------------|---------|-----|-------------------|-----------|
 | **Development** | Feature development | `localhost:4200` | Manual | None |
-| **Staging** | Pre-production testing | `staging.example.com` | Develop branch CI | Optional |
 | **Production** | Live application | `example.com` | Main branch CI | Required |
 
 ### Environment Variables
@@ -473,11 +446,6 @@ VITE_ENVIRONMENT: "production"
 VITE_ANALYTICS_ID: "GA-PROD-123"
 NODE_ENV: "production"
 
-# Staging Environment  
-VITE_API_BASE_URL: "https://api-staging.example.com"
-VITE_ENVIRONMENT: "staging"
-VITE_ANALYTICS_ID: "GA-STAGING-123"
-NODE_ENV: "staging"
 ```
 
 ## 🛡️ Quality Gates
@@ -619,8 +587,6 @@ Deploy to small percentage of users:
      run: |
        if [[ "${{ matrix.environment }}" == "production" ]]; then
          echo "REACT_APP_API_URL=https://api.prod.com" >> .env
-       else
-         echo "REACT_APP_API_URL=https://api.staging.com" >> .env
        fi
    ```
 
@@ -641,14 +607,12 @@ Deploy to small percentage of users:
 
 ### Intermediate Exercises
 
-1. **Multi-Environment Matrix**
+1. **Environment Configuration**
    ```yaml
    strategy:
      matrix:
-       environment: ['staging', 'production']
+       environment: ['production']
        include:
-         - environment: staging
-           url: https://staging.example.com
          - environment: production
            url: https://example.com
    ```

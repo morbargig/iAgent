@@ -1,3 +1,4 @@
+// TODO: add types in general in this file.
 import {
   Controller,
   Post,
@@ -226,6 +227,7 @@ export class FileController {
 
   // ==================== CHAT-ATTACHED FILE ENDPOINTS ====================
 
+  // TODO: add message id
   @Post('chat/:chatId/upload')
   @UseGuards(JwtAuthGuard)
   @UseInterceptors(FilesInterceptor('files', 10)) // Max 10 files per request

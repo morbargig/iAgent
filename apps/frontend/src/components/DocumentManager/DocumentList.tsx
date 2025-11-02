@@ -86,6 +86,7 @@ export const DocumentList: React.FC<DocumentListProps> = ({
             />
           ))
         ) : (
+          // TODO: fix style
           // Grid view skeletons
           <Box
             sx={{

@@ -52,6 +52,7 @@ export const FileAttachment: React.FC<FileAttachmentProps> = ({
     fileService.previewFile(file.id);
   };
 
+  // TODO: please reuse getFileIcon in general
   const getFileIcon = (mimetype: string) => {
     if (mimetype.startsWith("image/")) return <ImageIcon />;
     if (mimetype.startsWith("video/")) return <VideoIcon />;

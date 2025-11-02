@@ -1,6 +1,8 @@
 // This file will be replaced by file replacement in project.json
 // Default to development environment
-export const environment = {
+import type { Environment } from './environment.type';
+
+export const environment: Environment = {
   production: false,
   apiUrl: 'http://localhost:3030/api',
   frontendUrl: 'http://localhost:3000',
@@ -26,6 +28,19 @@ export const environment = {
     maxTotalSize: parseInt(process.env.MAX_TOTAL_SIZE || '52428800'), // Default: 50MB (50 * 1024 * 1024)
     maxFileCount: parseInt(process.env.MAX_FILE_COUNT || '8'), // Default: 8 files
     acceptedTypes: process.env.ACCEPTED_FILE_TYPES?.split(',') || [] // Empty = all types
+  },
+
+  database: {
+    host: process.env.DB_HOST || 'localhost',
+    port: parseInt(process.env.DB_PORT || '5432'),
+    username: process.env.DB_USERNAME || 'default_user',
+    password: process.env.DB_PASSWORD || 'default_password',
+    database: process.env.DB_NAME || 'iagent_default'
+  },
+  
+  jwt: {
+    secret: process.env.JWT_SECRET || 'default-jwt-secret-key',
+    expiresIn: process.env.JWT_EXPIRES_IN || '24h'
   },
 
   swagger: {
