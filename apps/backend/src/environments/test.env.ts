@@ -50,7 +50,8 @@ export const environment: Environment = {
     enabled: true,
     title: 'iAgent API - Test',
     description: 'Test environment API documentation',
-    version: '1.0.0'
+    version: '1.0.0',
+    serverUrl: 'http://localhost:3030'
   },
   logging: {
     level: 'debug',

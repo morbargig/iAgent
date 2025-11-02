@@ -50,7 +50,7 @@ export class FileController {
   })
   @ApiResponse({ status: 400, description: 'Bad request - no file provided' })
   async uploadFile(
-    // @ts-ignore
+    // @ts-expect-error - Multer file type
     @UploadedFile() file: Express.Multer.File,
   ): Promise<FileUploadResult> {
     if (!file) {
@@ -260,7 +260,7 @@ export class FileController {
   async uploadChatFiles(
     @Param('chatId') chatId: string,
     @UserId() userId: string,
-    // @ts-ignore
+    // @ts-expect-error - Multer files type
     @UploadedFiles() files: Express.Multer.File[]
   ): Promise<FileUploadResult[]> {
     if (!files || files.length === 0) {

@@ -48,6 +48,7 @@ export interface Environment {
     title: string;
     description: string;
     version: string;
+    serverUrl?: string;
   };
   
   logging: {

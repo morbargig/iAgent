@@ -40,7 +40,7 @@ export class FileService {
   /**
    * Validate file against environment limits
    */
-  // @ts-ignore
+  // @ts-expect-error - Multer file type
   private validateFile(file: Express.Multer.File): void {
     const { maxFileSize, acceptedTypes } = environment.fileUpload;
 
@@ -71,7 +71,7 @@ export class FileService {
   }
 
   async uploadFile(
-    // @ts-ignore
+    // @ts-expect-error - Multer file type
     file: Express.Multer.File,
     metadata?: any
   ): Promise<FileUploadResult> {
@@ -268,7 +268,7 @@ export class FileService {
    * Upload multiple files
    */
   async uploadFiles(
-    // @ts-ignore
+    // @ts-expect-error - Multer files type
     files: Express.Multer.File[],
     metadata?: any
   ): Promise<FileUploadResult[]> {

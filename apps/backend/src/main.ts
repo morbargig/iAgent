@@ -28,9 +28,26 @@ async function bootstrap() {
 
   // Swagger configuration
   if (environment.features.enableSwagger) {
-    // Determine base URL from environment
-    const port = process.env.PORT || 3030;
-    const baseUrl = process.env.BASE_URL || `http://localhost:${port}`;
+    // Use serverUrl from environment configuration
+    let baseUrl = environment.swagger.serverUrl;
+    
+    // Fallback if serverUrl is not set
+    if (!baseUrl) {
+      const port = process.env.PORT || 3030;
+      if (environment.production) {
+        baseUrl = process.env.RENDER_EXTERNAL_URL || process.env.API_URL || `https://iagent-1-jzyj.onrender.com`;
+      } else {
+        baseUrl = `http://localhost:${port}`;
+      }
+    }
+    
+    // Ensure HTTPS in production
+    if (environment.production && baseUrl.startsWith('http://')) {
+      baseUrl = baseUrl.replace('http://', 'https://');
+    }
+    
+    // Log the Swagger base URL for debugging
+    Logger.log(`📚 Swagger API Base URL: ${baseUrl}`);
     
     const config = new DocumentBuilder()
       .setTitle(environment.swagger.title)
@@ -68,6 +85,14 @@ async function bootstrap() {
         .swagger-ui .info .title { color: #10a37f }
       `,
       customfavIcon: 'https://avatars.githubusercontent.com/u/6936373?s=200&v=4',
+      swaggerOptions: {
+        // Preserve the selected server in the UI
+        persistAuthorization: true,
+        // Show the base server URL properly
+        displayRequestDuration: true,
+        // Enable deep linking
+        deepLinking: true,
+      },
     });
   }
 

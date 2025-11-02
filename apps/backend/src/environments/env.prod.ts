@@ -56,7 +56,8 @@ export const environment: Environment = {
     enabled: process.env.ENABLE_SWAGGER !== 'false', // Default to true unless explicitly disabled
     title: 'iAgent API - Production',
     description: 'Production environment API documentation',
-    version: '1.0.0'
+    version: '1.0.0',
+    serverUrl: process.env.RENDER_EXTERNAL_URL || process.env.API_URL || 'https://iagent-1-jzyj.onrender.com'
   },
   logging: {
     level: process.env.LOG_LEVEL || 'info',
