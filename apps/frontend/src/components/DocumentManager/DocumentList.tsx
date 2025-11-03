@@ -4,13 +4,11 @@ import {
   Typography,
   List,
   ListItem,
-  ListItemIcon,
   ListItemText,
   ListItemSecondaryAction,
   Avatar,
   Skeleton,
   Checkbox,
-  IconButton,
   Pagination,
   PaginationItem,
 } from "@mui/material";
@@ -18,7 +16,8 @@ import {
   ArrowBack,
   ArrowForward,
   Delete as DeleteIcon,
-  MoreVert as MoreIcon,
+  Visibility as PreviewIcon,
+  Download as DownloadIcon,
 } from "@mui/icons-material";
 import { useTheme } from "@mui/material/styles";
 import { format } from "date-fns";
@@ -31,6 +30,8 @@ import {
 import { useTranslation } from "../../contexts/TranslationContext";
 import { DocumentCard } from "./DocumentCard";
 import { ViewMode } from "./hooks/useDocumentUI";
+import { MoreOptionsMenu } from "../MoreOptionsMenu";
+import { useFileActions } from "../../hooks/useFileActions";
 
 interface DocumentListProps {
   searchQuery: string;
@@ -48,6 +49,8 @@ interface DocumentListProps {
   onDeleteClick: (document: DocumentFile) => void;
   onPageChange: (page: number) => void;
   isDocumentSelected: (document: DocumentFile) => boolean;
+  onPreview?: (document: DocumentFile) => void;
+  onDownload?: (document: DocumentFile) => void;
 }
 
 export const DocumentList: React.FC<DocumentListProps> = ({
@@ -66,10 +69,19 @@ export const DocumentList: React.FC<DocumentListProps> = ({
   onDeleteClick,
   onPageChange,
   isDocumentSelected,
+  onPreview,
+  onDownload,
 }) => {
   const theme = useTheme();
-  const { t } = useTranslation();
-  const { isRTL } = useTranslation();
+  const { t, isRTL } = useTranslation();
+  
+  const { handlePreview, handleDownload } = useFileActions({
+    onPreviewCallback: onPreview,
+    onDownloadCallback: onDownload,
+    onError: (error, action) => {
+      console.error(`${action} failed:`, error);
+    },
+  });
 
   // Loading skeleton component
   if (loading) {
@@ -161,21 +173,37 @@ export const DocumentList: React.FC<DocumentListProps> = ({
                   },
                 }}
               >
-                {selectionMode && (
-                  <ListItemIcon>
-                    <Checkbox
-                      checked={isSelected}
-                      onChange={() => onToggleSelection?.(document)}
-                      onClick={(e) => e.stopPropagation()}
-                    />
-                  </ListItemIcon>
-                )}
-                <ListItemIcon>
-                  <Avatar sx={{ bgcolor: `${color}20` }}>
-                    <Icon sx={{ color: color }} />
-                  </Avatar>
-                </ListItemIcon>
+                {/* 1. Checkbox - Always at start */}
+                <Checkbox
+                  checked={isSelected}
+                  onChange={() => onToggleSelection?.(document)}
+                  onClick={(e) => e.stopPropagation()}
+                  size="small"
+                  disabled={!selectionMode}
+                  sx={{ 
+                    opacity: selectionMode ? 1 : 0,
+                    pointerEvents: selectionMode ? "auto" : "none",
+                    marginInlineEnd: 1,
+                    flexShrink: 0,
+                  }}
+                />
+                
+                {/* 2. File Icon */}
+                <Avatar 
+                  sx={{ 
+                    bgcolor: `${color}20`, 
+                    width: 40, 
+                    height: 40,
+                    marginInlineEnd: 2,
+                    flexShrink: 0,
+                  }}
+                >
+                  <Icon sx={{ color: color, fontSize: 20 }} />
+                </Avatar>
+                
+                {/* 3. File Name */}
                 <ListItemText
+                  sx={{ flex: 1, minWidth: 0 }}
                   primary={document.name}
                   secondary={
                     <Typography variant="body2" color="text.secondary">
@@ -185,26 +213,54 @@ export const DocumentList: React.FC<DocumentListProps> = ({
                     </Typography>
                   }
                 />
-                <ListItemSecondaryAction>
-                  {selectionMode ? (
-                    <IconButton
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        onDeleteClick(document);
-                      }}
-                      size="small"
-                      color="error"
-                    >
-                      <DeleteIcon />
-                    </IconButton>
-                  ) : (
-                    <IconButton
-                      onClick={(e) => onContextMenu(e, document)}
-                      size="small"
-                    >
-                      <MoreIcon />
-                    </IconButton>
-                  )}
+                
+                {/* 4. More Action Button - Always at end */}
+                <ListItemSecondaryAction sx={{ flexShrink: 0 }}>
+                  <MoreOptionsMenu
+                    items={[
+                      {
+                        id: "preview",
+                        label: "Preview in new tab",
+                        icon: <PreviewIcon sx={{ fontSize: 18 }} />,
+                        onClick: (e: React.MouseEvent) => {
+                          e.stopPropagation();
+                          handlePreview(document);
+                        },
+                      },
+                      {
+                        id: "download",
+                        label: "Download",
+                        icon: <DownloadIcon sx={{ fontSize: 18 }} />,
+                        onClick: (e: React.MouseEvent) => {
+                          e.stopPropagation();
+                          handleDownload(document);
+                        },
+                      },
+                      ...(selectionMode
+                        ? [
+                            {
+                              id: "delete",
+                              label: "Delete",
+                              icon: <DeleteIcon sx={{ fontSize: 18 }} />,
+                              color: "error" as const,
+                              onClick: (e: React.MouseEvent) => {
+                                e.stopPropagation();
+                                onDeleteClick(document);
+                              },
+                            },
+                          ]
+                        : [
+                            {
+                              id: "more",
+                              label: "More options",
+                              onClick: (e: React.MouseEvent) => {
+                                e.stopPropagation();
+                                onContextMenu(e as any, document);
+                              },
+                            },
+                          ]),
+                    ]}
+                  />
                 </ListItemSecondaryAction>
               </ListItem>
             );
@@ -237,6 +293,8 @@ export const DocumentList: React.FC<DocumentListProps> = ({
                   onToggleSelection={onToggleSelection}
                   onContextMenu={onContextMenu}
                   onDeleteClick={onDeleteClick}
+                  onPreview={onPreview}
+                  onDownload={onDownload}
                 />
               );
             })}

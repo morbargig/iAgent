@@ -7,12 +7,12 @@ import {
   Typography,
   Avatar,
   Checkbox,
-  IconButton,
   Tooltip,
 } from "@mui/material";
 import {
+  Visibility as PreviewIcon,
+  Download as DownloadIcon,
   Delete as DeleteIcon,
-  MoreVert as MoreIcon,
 } from "@mui/icons-material";
 import { useTheme } from "@mui/material/styles";
 import { format } from "date-fns";
@@ -22,6 +22,8 @@ import {
   getFileIconComponent,
   getFileTypeName,
 } from "../../types/document.types";
+import { useFileActions } from "../../hooks/useFileActions";
+import { MoreOptionsMenu, MoreOptionsMenuItem } from "../MoreOptionsMenu";
 
 interface DocumentCardProps {
   document: DocumentFile;
@@ -31,6 +33,8 @@ interface DocumentCardProps {
   onToggleSelection?: (document: DocumentFile) => void;
   onContextMenu: (event: React.MouseEvent, document: DocumentFile) => void;
   onDeleteClick: (document: DocumentFile) => void;
+  onPreview?: (document: DocumentFile) => void;
+  onDownload?: (document: DocumentFile) => void;
 }
 
 export const DocumentCard: React.FC<DocumentCardProps> = ({
@@ -41,10 +45,51 @@ export const DocumentCard: React.FC<DocumentCardProps> = ({
   onToggleSelection,
   onContextMenu,
   onDeleteClick,
+  onPreview,
+  onDownload,
 }) => {
   const theme = useTheme();
   const { Icon, color } = getFileIconComponent(document.mimeType);
   const isDarkMode = theme.palette.mode === "dark";
+
+  const { handlePreview, handleDownload } = useFileActions({
+    onPreviewCallback: onPreview,
+    onDownloadCallback: onDownload,
+    onError: (error, action) => {
+      console.error(`${action} failed:`, error);
+    },
+  });
+
+  const menuItems: MoreOptionsMenuItem[] = [
+    {
+      id: "preview",
+      label: "Preview in new tab",
+      icon: <PreviewIcon sx={{ fontSize: 18 }} />,
+      onClick: (e) => {
+        e.stopPropagation();
+        handlePreview(document);
+      },
+    },
+    {
+      id: "download",
+      label: "Download",
+      icon: <DownloadIcon sx={{ fontSize: 18 }} />,
+      onClick: (e) => {
+        e.stopPropagation();
+        handleDownload(document);
+      },
+    },
+    {
+      id: "delete",
+      label: "Delete",
+      icon: <DeleteIcon sx={{ fontSize: 18 }} />,
+      color: "error",
+      onClick: (e) => {
+        e.stopPropagation();
+        onDeleteClick(document);
+      },
+    },
+  ];
 
   return (
     <Card
@@ -103,6 +148,11 @@ export const DocumentCard: React.FC<DocumentCardProps> = ({
           position: "relative",
         }}
       >
+        <MoreOptionsMenu
+          items={menuItems}
+          buttonPosition="absolute"
+          buttonPositionStyles={{ top: 8, left: 8 }}
+        />
         {selectionMode && (
           <Checkbox
             checked={isSelected}
@@ -120,7 +170,6 @@ export const DocumentCard: React.FC<DocumentCardProps> = ({
             }}
             size="small"
           />
-          
         )}
         <Box
           display="flex"
@@ -219,50 +268,9 @@ export const DocumentCard: React.FC<DocumentCardProps> = ({
           pt: 0,
           pb: 1,
           px: 1,
-          justifyContent: "center",
           minHeight: "40px",
         }}
-      >
-        {selectionMode ? (
-          <IconButton
-            onClick={(e) => {
-              e.stopPropagation();
-              onDeleteClick(document);
-            }}
-            size="small"
-            sx={{
-              color: theme.palette.error.main,
-              "&:hover": {
-                backgroundColor: isDarkMode
-                  ? "rgba(220, 38, 38, 0.1)"
-                  : "rgba(220, 38, 38, 0.08)",
-              },
-            }}
-          >
-            <DeleteIcon fontSize="small" />
-          </IconButton>
-        ) : (
-          <IconButton
-            onClick={(e) => onContextMenu(e, document)}
-            size="small"
-            sx={{
-              color: isDarkMode
-                ? "rgba(255, 255, 255, 0.6)"
-                : "rgba(0, 0, 0, 0.6)",
-              "&:hover": {
-                backgroundColor: isDarkMode
-                  ? "rgba(255, 255, 255, 0.08)"
-                  : "rgba(0, 0, 0, 0.06)",
-                color: isDarkMode
-                  ? "rgba(255, 255, 255, 0.9)"
-                  : "rgba(0, 0, 0, 0.87)",
-              },
-            }}
-          >
-            <MoreIcon fontSize="small" />
-          </IconButton>
-        )}
-      </CardActions>
+      />
     </Card>
   );
 };
