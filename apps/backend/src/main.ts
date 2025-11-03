@@ -51,12 +51,11 @@ async function bootstrap() {
     
     const config = new DocumentBuilder()
       .setTitle(environment.swagger.title)
-      .setDescription(environment.swagger.description)
       .setVersion(environment.swagger.version)
       .setContact(
-        'iAgent Team',
-        'https://github.com/your-repo/iagent',
-        'contact@iagent.dev'
+        'iAgent',
+        'https://morbargig.github.io/iAgent/', // Website URL
+        'morbargig@gmail.com' 
       )
       .addTag('Chat', 'Chat and messaging endpoints')
       .addTag('Authentication', 'Authentication endpoints')

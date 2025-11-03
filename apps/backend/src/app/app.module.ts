@@ -16,16 +16,7 @@ import { FileService } from './services/file.service';
 import { Chat, ChatSchema, ChatMessage, ChatMessageSchema, ChatFilter, ChatFilterSchema } from './schemas/chat.schema';
 import { environment } from '../environments/environment';
 
-const isDemoMode = environment.demoMode || !environment.mongodb.activeUri;
-
-// Base module configuration
-const baseModuleConfig = {
-  controllers: [AppController, ChatController, EnvironmentController, FileController],
-  providers: [AppService, AuthService, AuthGuard, ChatService, FileService, JwtStrategy, JwtAuthGuard],
-};
-
-// MongoDB configuration for production mode
-const mongoDbConfig = {
+@Module({
   imports: [
     PassportModule,
     JwtModule.register({
@@ -34,9 +25,8 @@ const mongoDbConfig = {
     }),
     MongooseModule.forRootAsync({
       useFactory: () => {
-        const uri = environment.mongodb.activeUri;
-        const mode = environment.demoMode ? 'LOCAL' : 'REMOTE';
-        console.log(`🚀 Connecting to MongoDB (${mode})...`);
+        const uri = environment.mongodb.uri;
+        console.log(`🚀 Connecting to MongoDB...`);
         console.log(`📁 Database: ${environment.mongodb.dbName}`);
         return {
           uri,
@@ -50,31 +40,12 @@ const mongoDbConfig = {
       { name: ChatFilter.name, schema: ChatFilterSchema }
     ])
   ],
-  ...baseModuleConfig,
-};
-
-// Demo mode configuration (no MongoDB)
-const demoConfig = {
-  imports: [
-    PassportModule,
-    JwtModule.register({
-      secret: process.env.JWT_SECRET || 'demo-secret-key-for-development',
-      signOptions: { expiresIn: '1d' },
-    }),
-  ],
-  ...baseModuleConfig,
-};
-
-@Module(isDemoMode ? demoConfig : mongoDbConfig)
+  controllers: [AppController, ChatController, EnvironmentController, FileController],
+  providers: [AppService, AuthService, AuthGuard, ChatService, FileService, JwtStrategy, JwtAuthGuard],
+})
 export class AppModule {
   constructor() {
-    if (isDemoMode) {
-      console.log('🚨 Demo Mode Enabled: MongoDB connection completely disabled');
-      console.log('📝 All data will be stored in memory and will not persist');
-    } else {
-      const mode = environment.demoMode ? 'Local MongoDB (Docker)' : 'Remote MongoDB';
-      console.log(`🚀 Production Mode: ${mode} connection enabled`);
-    }
+    console.log('🚀 MongoDB connection enabled');
     
     // Log file upload limits
     console.log('📤 File Upload Limits:');

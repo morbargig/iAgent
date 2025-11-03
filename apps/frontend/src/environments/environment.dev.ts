@@ -21,7 +21,6 @@ export const environment: Environment = {
   app: {
     name: 'iAgent',
     version: '1.0.0',
-    demoMode: import.meta.env.VITE_DEMO_MODE === 'true',
   },
   
   // Feature Flags

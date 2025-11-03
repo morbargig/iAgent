@@ -48,7 +48,7 @@ export class ChatController {
   @Public()
   @ApiOperation({
     summary: 'Get chat service status',
-    description: 'Returns the status of the chat service including demo mode information (public endpoint)'
+    description: 'Returns the status of the chat service (public endpoint)'
   })
   @ApiResponse({
     status: HttpStatus.OK,
@@ -56,16 +56,14 @@ export class ChatController {
     schema: {
       type: 'object',
       properties: {
-        isDemoMode: { type: 'boolean' },
-        reason: { type: 'string' },
+        status: { type: 'string' },
         timestamp: { type: 'string' }
       }
     }
   })
   getStatus() {
-    const demoStatus = this.chatService.getDemoStatus();
     return {
-      ...demoStatus,
+      status: 'ok',
       timestamp: new Date().toISOString()
     };
   }
@@ -83,8 +81,7 @@ export class ChatController {
       properties: {
         totalChats: { type: 'number' },
         archivedChats: { type: 'number' },
-        totalMessages: { type: 'number' },
-        isDemoMode: { type: 'boolean' }
+        totalMessages: { type: 'number' }
       }
     }
   })
