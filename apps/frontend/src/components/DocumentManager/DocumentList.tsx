@@ -92,10 +92,10 @@ export const DocumentList: React.FC<DocumentListProps> = ({
             sx={{
               display: "grid",
               gridTemplateColumns: {
-                xs: "repeat(2, 1fr)",
-                sm: "repeat(3, 1fr)",
-                md: "repeat(4, 1fr)",
-                lg: "repeat(4, 1fr)",
+                xs: "repeat(3, 1fr)",
+                sm: "repeat(4, 1fr)",
+                md: "repeat(5, 1fr)",
+                lg: "repeat(6, 1fr)",
               },
               gap: { xs: 1, sm: 2 },
             }}
@@ -217,10 +217,10 @@ export const DocumentList: React.FC<DocumentListProps> = ({
             sx={{
               display: "grid",
               gridTemplateColumns: {
-                xs: "repeat(2, 1fr)",
-                sm: "repeat(3, 1fr)",
-                md: "repeat(4, 1fr)",
-                lg: "repeat(4, 1fr)",
+                xs: "repeat(3, 1fr)",
+                sm: "repeat(4, 1fr)",
+                md: "repeat(5, 1fr)",
+                lg: "repeat(6, 1fr)",
               },
               gap: { xs: 1, sm: 2 },
             }}
