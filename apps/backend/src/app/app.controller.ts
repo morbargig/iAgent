@@ -217,7 +217,7 @@ export class AppController {
         });
       }
     } catch (error: any) {
-      console.log('Failed to save user message (demo mode):', error.message);
+      console.log('Failed to save user message:', error.message);
     }
 
     // Enhanced mock responses with markdown examples
@@ -341,7 +341,7 @@ And here's a **table example**:
         }
       });
     } catch (error: any) {
-      console.log('Failed to save assistant message (demo mode):', error.message);
+      console.log('Failed to save assistant message:', error.message);
     }
 
     return response;

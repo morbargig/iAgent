@@ -149,20 +149,45 @@ When running the backend, comprehensive API documentation is available at:
 
 ### Environment Variables
 
-Create `.env` files in the respective app directories:
+⚠️ **Important**: Sensitive data (MongoDB connection strings, JWT secrets, passwords) are no longer hardcoded. You **MUST** configure environment variables before running the application.
 
-**Frontend** (`apps/frontend/.env`):
+#### Backend Environment Setup
+
+1. **Copy the example environment file**:
+   ```bash
+   cp apps/backend/.env.example apps/backend/.env
+   ```
+
+2. **Fill in your actual values** in `apps/backend/.env`:
+   ```bash
+   # Required variables (see .env.example for full list)
+   MONGODB_URI=your_mongodb_connection_string_here
+   JWT_SECRET=your_jwt_secret_key_here
+   DB_USERNAME=your_database_username
+   DB_PASSWORD=your_database_password
+   ```
+
+3. **Generate a secure JWT secret** (recommended):
+   ```bash
+   openssl rand -base64 32
+   ```
+
+📋 **See** [`apps/backend/.env.example`](./apps/backend/.env.example) for a complete list of all environment variables.
+
+#### Frontend Environment Setup
+
+Create `apps/frontend/.env`:
 ```bash
 VITE_API_BASE_URL=http://localhost:3000
 VITE_MOCK_MODE=false
 ```
 
-**Backend** (`apps/backend/.env`):
-```bash
-PORT=3000
-NODE_ENV=development
-CORS_ORIGIN=http://localhost:4200
-```
+#### GitHub Actions Secrets
+
+For CI/CD workflows, configure secrets in GitHub:
+- Repository Settings → Secrets and variables → Actions
+
+📋 **See** [`.github/SECRETS.md`](./.github/SECRETS.md) for a complete guide on configuring GitHub Actions secrets.
 
 ## 🚀 Deployment
 

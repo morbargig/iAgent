@@ -109,9 +109,7 @@ Each environment file supports runtime environment variable overrides using `pro
 - `FRONTEND_URL` - Override the frontend URL
 
 ### MongoDB Configuration
-- `DEMO_MODE` - Use local MongoDB when `true`, remote when `false`
-- `MONGODB_URI_LOCAL` - Local MongoDB connection string (default: `mongodb://localhost:27017`)
-- `MONGODB_URI` - Remote MongoDB connection string (MongoDB Atlas or remote instance)
+- `MONGODB_URI` - MongoDB connection string - REQUIRED (can be local `mongodb://localhost:27017` or remote MongoDB Atlas)
 - `DB_NAME` - MongoDB database name (default: `filesdb`)
 
 ### Authentication
@@ -125,7 +123,6 @@ Each environment file supports runtime environment variable overrides using `pro
 - `ACCEPTED_FILE_TYPES` - Comma-separated list of accepted MIME types (empty = all types)
 
 ### Other Configuration
-- `DB_HOST`, `DB_PORT`, `DB_USERNAME`, `DB_PASSWORD` - Database configuration (if using other databases)
 - `CORS_ORIGINS` - Comma-separated list of CORS origins
 - `ENABLE_SWAGGER` - Enable/disable Swagger documentation
 - `LOG_LEVEL` - Logging level (debug, info, warn, error)
@@ -138,8 +135,8 @@ API_URL=https://custom-api.com PORT=3030 npx nx serve backend --configuration=de
 # With MongoDB configuration
 MONGODB_URI="mongodb+srv://appuser:password@cluster0.giuoosh.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0" DB_NAME="filesdb" npx nx serve backend --configuration=development
 
-# With DEMO_MODE enabled (use local Docker MongoDB)
-DEMO_MODE=true MONGODB_URI_LOCAL=mongodb://localhost:27017 npx nx serve backend --configuration=development
+# With local MongoDB
+MONGODB_URI=mongodb://localhost:27017 npx nx serve backend --configuration=development
 
 # With file upload limits
 MAX_FILE_SIZE=10485760 MAX_FILE_COUNT=10 npx nx serve backend --configuration=development
@@ -157,8 +154,7 @@ MAX_FILE_SIZE=10485760 MAX_FILE_COUNT=10 npx nx serve backend --configuration=de
 
 2. **Set environment variables:**
    ```bash
-   export DEMO_MODE=true
-   export MONGODB_URI_LOCAL=mongodb://localhost:27017
+   export MONGODB_URI=mongodb://localhost:27017
    export DB_NAME=filesdb
    ```
 
@@ -191,7 +187,6 @@ MAX_FILE_SIZE=10485760 MAX_FILE_COUNT=10 npx nx serve backend --configuration=de
 
 1. **Set environment variables:**
    ```bash
-   export DEMO_MODE=false
    export MONGODB_URI="mongodb+srv://username:password@cluster.mongodb.net/"
    export DB_NAME=filesdb
    ```
@@ -208,28 +203,24 @@ MAX_FILE_SIZE=10485760 MAX_FILE_COUNT=10 npx nx serve backend --configuration=de
    # ✅ MongoDB connected successfully!
    ```
 
-### MongoDB Connection Modes
-
-The application automatically selects the MongoDB URI based on `DEMO_MODE`:
+### MongoDB Connection
 
 ```typescript
 // In environment files:
 mongodb: {
-  uriLocal: process.env.MONGODB_URI_LOCAL || 'mongodb://localhost:27017',
-  uri: process.env.MONGODB_URI || 'mongodb+srv://...',
-  dbName: process.env.DB_NAME || 'filesdb',
-  
-  // Computed URI based on demo mode
-  get activeUri(): string {
-    return this.demoMode ? this.uriLocal : this.uri;
-  }
+  uri: process.env.MONGODB_URI || (() => {
+    throw new Error('MONGODB_URI is required');
+  })(),
+  dbName: process.env.DB_NAME || 'filesdb'
 }
 ```
 
-**Behavior:**
-- `DEMO_MODE=true` → Uses `uriLocal` (Docker MongoDB)
-- `DEMO_MODE=false` → Uses `uri` (Remote MongoDB)
-- No MongoDB available → Falls back to in-memory storage (data not persisted)
+**Connection String Formats:**
+- Local MongoDB: `mongodb://localhost:27017`
+- MongoDB Atlas: `mongodb+srv://username:password@cluster.mongodb.net/?retryWrites=true&w=majority`
+- Remote MongoDB: `mongodb://user:pass@host:port/database`
+
+**Note**: Simply set `MONGODB_URI` to your desired MongoDB connection string (local or remote) to connect to that database. If `MONGODB_URI` is missing, the application will throw an error.
 
 ### File Storage
 

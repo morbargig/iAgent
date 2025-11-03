@@ -18,7 +18,6 @@ export interface Environment {
   app: {
     name: string;
     version: string;
-    demoMode: boolean;
   };
   
   features: {

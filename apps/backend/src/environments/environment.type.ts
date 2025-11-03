@@ -7,13 +7,10 @@ export interface Environment {
   production: boolean;
   apiUrl: string;
   frontendUrl: string;
-  demoMode: boolean;
   
   mongodb: {
-    uriLocal: string;
     uri: string;
     dbName: string;
-    activeUri: string;
   };
   
   fileUpload: {
@@ -21,14 +18,6 @@ export interface Environment {
     maxTotalSize: number;
     maxFileCount: number;
     acceptedTypes: string[];
-  };
-  
-  database: {
-    host: string;
-    port: number;
-    username: string;
-    password: string;
-    database: string;
   };
   
   jwt: {

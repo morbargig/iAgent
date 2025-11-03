@@ -3,22 +3,14 @@ import type { Environment } from './environment.type';
 export const environment: Environment = {
   production: false,
   apiUrl: 'http://localhost:3030/api',
-  frontendUrl: 'http://localhost:3000',
-
-  // Demo mode support - uses local MongoDB when true
-  demoMode: process.env.DEMO_MODE === 'true',
+  frontendUrl: 'https://morbargig.github.io/iAgent/',
 
   mongodb: {
-    // Local MongoDB (docker) URI
-    uriLocal: process.env.MONGODB_URI_LOCAL || 'mongodb://localhost:27017',
-    // Remote MongoDB URI
-    uri: process.env.MONGODB_URI || 'mongodb+srv://appuser:VruPdc3d4pKYEUwO@cluster0.giuoosh.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0',
-    dbName: process.env.DB_NAME || 'filesdb',
-
-    // Computed URI based on demo mode
-    get activeUri(): string {
-      return environment.demoMode ? this.uriLocal : this.uri;
-    }
+    // MongoDB connection URI - REQUIRED: Set MONGODB_URI environment variable
+    uri: process.env.MONGODB_URI || (() => {
+      throw new Error('MONGODB_URI environment variable is required. Please set it in your test environment.');
+    })(),
+    dbName: process.env.DB_NAME || 'filesdb'
   },
 
   // File upload limits - Environment configurable with defaults
@@ -29,13 +21,6 @@ export const environment: Environment = {
     acceptedTypes: process.env.ACCEPTED_FILE_TYPES?.split(',') || [] // Empty = all types
   },
 
-  database: {
-    host: 'localhost',
-    port: 5432,
-    username: 'test_user',
-    password: 'test_password',
-    database: 'iagent_test'
-  },
   jwt: {
     secret: 'test-jwt-secret-key',
     expiresIn: '1h'
