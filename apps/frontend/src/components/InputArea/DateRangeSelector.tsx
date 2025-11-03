@@ -108,6 +108,7 @@ export const DateRangeSelector: React.FC<DateRangeSelectorProps> = ({
 
       {/* Date Range Popover */}
       <Popover
+        id="iagent-date-range-popover"
         open={datePopoverOpen}
         anchorEl={dateAnchorEl}
         onClose={onClose}
@@ -121,6 +122,7 @@ export const DateRangeSelector: React.FC<DateRangeSelectorProps> = ({
         }}
         slotProps={{
           paper: {
+            id: "iagent-date-range-popover-paper",
             sx: {
               backgroundColor: isDarkMode ? "#2f2f2f" : "#ffffff",
               border: `1px solid ${isDarkMode ? "#4a4a4a" : "#e1e5e9"}`,
@@ -128,32 +130,43 @@ export const DateRangeSelector: React.FC<DateRangeSelectorProps> = ({
               boxShadow: isDarkMode
                 ? "0 4px 20px rgba(0, 0, 0, 0.4)"
                 : "0 4px 20px rgba(0, 0, 0, 0.1)",
-              minWidth: "550px",
-              maxWidth: "650px",
+              minWidth: dateRangeTab === 0 ? "450px" : "auto",
+              maxWidth: dateRangeTab === 0 ? "550px" : "none",
+              width: dateRangeTab === 0 ? "450px" : "fit-content",
               overflow: "hidden",
               display: "flex",
               flexDirection: "column",
               marginTop: "-8px", // Adjust positioning to match previous layout
+              transition:
+                "width 0.2s ease-in-out, min-width 0.2s ease-in-out, max-width 0.2s ease-in-out",
             },
           },
         }}
       >
         {/* Main content area with side tabs */}
-        <Box sx={{ display: "flex", flex: 1 }}>
+        <Box
+          id="iagent-date-range-popover-main"
+          sx={{ display: "flex", flex: 1, direction: isRTL ? "rtl" : "ltr" }}
+        >
           {/* Side Tab Buttons */}
           <Box
+            id="iagent-date-range-popover-tabs"
             sx={{
               display: "flex",
               flexDirection: "column",
-              width: "140px",
+              width: "160px",
+              minWidth: "160px",
               backgroundColor: isDarkMode ? "#1a1a1a" : "#f8f9fa",
-              borderRadius: "6px 0 0 0",
+              borderRadius: isRTL ? "0 6px 0 0" : "6px 0 0 0",
               padding: "16px 8px",
               gap: "8px",
               justifyContent: "flex-end",
+              flexShrink: 0,
+              direction: isRTL ? "rtl" : "ltr",
             }}
           >
             <Box
+              id="iagent-date-range-popover-tab-custom-range"
               onClick={() => onDateRangeTabChange(0)}
               sx={{
                 padding: "12px 8px",
@@ -179,6 +192,11 @@ export const DateRangeSelector: React.FC<DateRangeSelectorProps> = ({
                       : "#6b7280",
                 boxShadow:
                   dateRangeTab === 0 ? "0 1px 3px rgba(0, 0, 0, 0.12)" : "none",
+                whiteSpace: "normal",
+                wordBreak: "break-word",
+                overflow: "hidden",
+                textOverflow: "ellipsis",
+                lineHeight: 1.4,
                 "&:hover": {
                   backgroundColor:
                     dateRangeTab === 0
@@ -194,6 +212,7 @@ export const DateRangeSelector: React.FC<DateRangeSelectorProps> = ({
               {t("dateRange.customRange")}
             </Box>
             <Box
+              id="iagent-date-range-popover-tab-date-picker"
               onClick={() => onDateRangeTabChange(1)}
               sx={{
                 padding: "12px 8px",
@@ -219,6 +238,11 @@ export const DateRangeSelector: React.FC<DateRangeSelectorProps> = ({
                       : "#6b7280",
                 boxShadow:
                   dateRangeTab === 1 ? "0 1px 3px rgba(0, 0, 0, 0.12)" : "none",
+                whiteSpace: "normal",
+                wordBreak: "break-word",
+                overflow: "hidden",
+                textOverflow: "ellipsis",
+                lineHeight: 1.4,
                 "&:hover": {
                   backgroundColor:
                     dateRangeTab === 1
@@ -236,10 +260,21 @@ export const DateRangeSelector: React.FC<DateRangeSelectorProps> = ({
           </Box>
 
           {/* Content Area */}
-          <Box sx={{ flex: 1, padding: "16px", paddingBottom: "8px" }}>
+          <Box
+            id="iagent-date-range-popover-content"
+            sx={{
+              flex: 1,
+              padding: "16px",
+              paddingBottom: "8px",
+              minWidth: 0,
+              overflow: "auto",
+              direction: isRTL ? "rtl" : "ltr",
+            }}
+          >
             {dateRangeTab === 0 ? (
               // Custom Range Tab
               <Box
+                id={`iagent-date-range-popover-content-tab-${dateRangeTab}`}
                 sx={{
                   display: "flex",
                   flexDirection: "column",
@@ -260,9 +295,11 @@ export const DateRangeSelector: React.FC<DateRangeSelectorProps> = ({
                 </Typography>
 
                 <Box
+                  className="!p-0"
                   sx={{
                     display: "flex",
                     gap: "8px",
+                    padding: "0",
                     alignItems: "center",
                     direction: "ltr",
                     flexDirection: "row",
@@ -418,6 +455,7 @@ export const DateRangeSelector: React.FC<DateRangeSelectorProps> = ({
             ) : (
               // Date Picker Tab
               <Box
+                id={`iagent-date-range-popover-content-tab-${dateRangeTab}`}
                 sx={{
                   display: "flex",
                   flexDirection: "column",
@@ -454,6 +492,7 @@ export const DateRangeSelector: React.FC<DateRangeSelectorProps> = ({
 
         {/* Bottom Action Buttons */}
         <Box
+          id="iagent-date-range-popover-actions"
           sx={{
             display: "flex",
             justifyContent: "flex-start",
@@ -465,6 +504,7 @@ export const DateRangeSelector: React.FC<DateRangeSelectorProps> = ({
           }}
         >
           <Button
+            id="iagent-date-range-popover-reset-button"
             onClick={onReset}
             variant="text"
             size="small"
@@ -493,6 +533,7 @@ export const DateRangeSelector: React.FC<DateRangeSelectorProps> = ({
           </Button>
 
           <Button
+            id="iagent-date-range-popover-apply-button"
             onClick={onApply}
             variant="contained"
             size="small"

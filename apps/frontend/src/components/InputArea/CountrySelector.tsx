@@ -152,6 +152,7 @@ export const CountrySelector: React.FC<CountrySelectorProps> = ({
 
       {/* Flag Multi-Select Dropdown */}
       <Popover
+        id="iagent-country-popover"
         open={flagPopoverOpen}
         anchorEl={flagAnchorEl}
         onClose={onClose}
@@ -165,6 +166,7 @@ export const CountrySelector: React.FC<CountrySelectorProps> = ({
         }}
         slotProps={{
           paper: {
+            id: "iagent-country-popover-paper",
             sx: {
               backgroundColor: isDarkMode ? "#40414f" : "#ffffff",
               border: `1px solid ${isDarkMode ? "#565869" : "#e5e7eb"}`,
@@ -180,6 +182,7 @@ export const CountrySelector: React.FC<CountrySelectorProps> = ({
         }}
       >
         <Box
+          id="iagent-country-popover-grid"
           sx={{
             display: "grid",
             gridTemplateColumns: "repeat(2, 1fr)",
@@ -190,6 +193,7 @@ export const CountrySelector: React.FC<CountrySelectorProps> = ({
           {flagOptions.map((option) => (
             <Box
               key={option.code}
+              id={`iagent-country-popover-item-${option.code}`}
               onClick={() => onFlagToggle(option.code)}
               sx={{
                 display: "flex",

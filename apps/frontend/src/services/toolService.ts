@@ -1,4 +1,4 @@
-import React from 'react';
+import { useState, useEffect } from 'react';
 import type { ToolSchema } from '../components/ToolSettingsDialog';
 
 // Mock tool schemas - in real implementation, this would fetch from the server
@@ -82,11 +82,11 @@ export class ToolService {
       errors.push('Pages selection is required');
     }
 
-    // Keywords remain optional as before
-    // if (tool.configurationFields.requiredWords?.required && 
-    //     (!configuration.parameters?.requiredWords?.length)) {
-    //   errors.push('Required words are needed');
-    // }
+    // Check if required words field is required and configured
+    if (tool.configurationFields.requiredWords?.required && 
+        (!configuration.parameters?.requiredWords?.length)) {
+      errors.push('Required words are needed');
+    }
 
     return {
       valid: errors.length === 0,
@@ -97,11 +97,11 @@ export class ToolService {
 
 // Hook to use tool schemas
 export function useToolSchemas() {
-  const [toolSchemas, setToolSchemas] = React.useState<ToolSchema[]>([]);
-  const [loading, setLoading] = React.useState(true);
-  const [error, setError] = React.useState<string | null>(null);
+  const [toolSchemas, setToolSchemas] = useState<ToolSchema[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  React.useEffect(() => {
+  useEffect(() => {
     const fetchSchemas = async () => {
       try {
         setLoading(true);

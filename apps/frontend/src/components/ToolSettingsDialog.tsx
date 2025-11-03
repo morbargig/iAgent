@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   Dialog,
   DialogTitle,
@@ -83,34 +83,79 @@ export const ToolSettingsDialog: React.FC<ToolSettingsDialogProps> = ({
   isLoading = false,
 }) => {
   const { t } = useTranslation();
-  const [localConfigs, setLocalConfigs] = useState<{ [toolId: string]: ToolConfiguration }>({});
+  
+  // Track if we've initialized to prevent reset during interactions
+  const initializedRef = useRef(false);
+  
+  // Local state - only reset when dialog opens
+  const [localConfigs, setLocalConfigs] = useState<{ [toolId: string]: ToolConfiguration }>(() => {
+    // Initialize with default configs for all tools
+    const initial: { [toolId: string]: ToolConfiguration } = {};
+    tools.forEach(tool => {
+      initial[tool.id] = {
+        toolId: tool.id,
+        enabled: false,
+        parameters: {},
+      };
+    });
+    return initial;
+  });
+  
   const [expandedTool, setExpandedTool] = useState<string | null>(null);
   const [newWord, setNewWord] = useState<{ [toolId: string]: string }>({});
 
-  // Initialize local configurations
+  // Initialize local configurations ONLY when dialog opens
   useEffect(() => {
-    setLocalConfigs(configurations);
-  }, [configurations]);
+    if (open && !initializedRef.current) {
+      // Create initial configs from props, ensuring all tools have a config
+      const initial: { [toolId: string]: ToolConfiguration } = {};
+      tools.forEach(tool => {
+        const existingConfig = configurations[tool.id];
+        if (existingConfig) {
+          initial[tool.id] = { ...existingConfig };
+        } else {
+          initial[tool.id] = {
+            toolId: tool.id,
+            enabled: false,
+            parameters: {},
+          };
+        }
+      });
+      setLocalConfigs(initial);
+      initializedRef.current = true;
+    } else if (!open) {
+      // Reset when dialog closes
+      initializedRef.current = false;
+    }
+  }, [open, tools, configurations]);
 
-  const handleToolToggle = (toolId: string, enabled: boolean) => {
-    const config = localConfigs[toolId] || {
+  // Helper to get or create config for a tool
+  const getToolConfig = (toolId: string): ToolConfiguration => {
+    return localConfigs[toolId] || {
       toolId,
       enabled: false,
       parameters: {},
     };
-    
-    const newConfig = { ...config, enabled };
-    setLocalConfigs(prev => ({ ...prev, [toolId]: newConfig }));
+  };
+
+  // Update config for a tool
+  const updateToolConfig = (toolId: string, updater: (config: ToolConfiguration) => ToolConfiguration) => {
+    setLocalConfigs(prev => {
+      const current = getToolConfig(toolId);
+      const updated = updater(current);
+      return { ...prev, [toolId]: updated };
+    });
+  };
+
+  const handleToolToggle = (toolId: string, enabled: boolean) => {
+    updateToolConfig(toolId, (config) => ({
+      ...config,
+      enabled,
+    }));
   };
 
   const handlePagesChange = (toolId: string, selectedPages: string[]) => {
-    const config = localConfigs[toolId] || {
-      toolId,
-      enabled: true,
-      parameters: {},
-    };
-    
-    const newConfig = {
+    updateToolConfig(toolId, (config) => ({
       ...config,
       parameters: {
         ...config.parameters,
@@ -119,19 +164,11 @@ export const ToolSettingsDialog: React.FC<ToolSettingsDialogProps> = ({
           selectedPages,
         },
       },
-    };
-    
-    setLocalConfigs(prev => ({ ...prev, [toolId]: newConfig }));
+    }));
   };
 
   const handleInclusionTypeChange = (toolId: string, inclusionType: 'include' | 'include_only' | 'exclude') => {
-    const config = localConfigs[toolId] || {
-      toolId,
-      enabled: true,
-      parameters: {},
-    };
-    
-    const newConfig: ToolConfiguration = {
+    updateToolConfig(toolId, (config) => ({
       ...config,
       parameters: {
         ...config.parameters,
@@ -140,55 +177,41 @@ export const ToolSettingsDialog: React.FC<ToolSettingsDialogProps> = ({
           inclusionType: inclusionType || 'include',
         },
       },
-    };
-    
-    setLocalConfigs(prev => ({ ...prev, [toolId]: newConfig }));
+    }));
   };
 
   const handleAddRequiredWord = (toolId: string) => {
     const word = newWord[toolId]?.trim();
     if (!word) return;
 
-    const config = localConfigs[toolId] || {
-      toolId,
-      enabled: true,
-      parameters: {},
-    };
-    
-    const currentWords = config.parameters.requiredWords || [];
-    if (currentWords.includes(word)) return;
+    updateToolConfig(toolId, (config) => {
+      const currentWords = config.parameters.requiredWords || [];
+      if (currentWords.includes(word)) return config;
 
-    const newConfig = {
-      ...config,
-      parameters: {
-        ...config.parameters,
-        requiredWords: [...currentWords, word],
-      },
-    };
+      return {
+        ...config,
+        parameters: {
+          ...config.parameters,
+          requiredWords: [...currentWords, word],
+        },
+      };
+    });
     
-    setLocalConfigs(prev => ({ ...prev, [toolId]: newConfig }));
     setNewWord(prev => ({ ...prev, [toolId]: '' }));
   };
 
   const handleRemoveRequiredWord = (toolId: string, wordToRemove: string) => {
-    const config = localConfigs[toolId] || {
-      toolId,
-      enabled: true,
-      parameters: {},
-    };
-    
-    const newConfig = {
+    updateToolConfig(toolId, (config) => ({
       ...config,
       parameters: {
         ...config.parameters,
         requiredWords: (config.parameters.requiredWords || []).filter(word => word !== wordToRemove),
       },
-    };
-    
-    setLocalConfigs(prev => ({ ...prev, [toolId]: newConfig }));
+    }));
   };
 
   const handleSave = () => {
+    // Save all configurations
     Object.values(localConfigs).forEach(config => {
       onConfigurationChange(config.toolId, config);
     });
@@ -196,7 +219,23 @@ export const ToolSettingsDialog: React.FC<ToolSettingsDialogProps> = ({
   };
 
   const handleCancel = () => {
-    setLocalConfigs(configurations);
+    // Reset to initial configurations
+    const initial: { [toolId: string]: ToolConfiguration } = {};
+    tools.forEach(tool => {
+      const existingConfig = configurations[tool.id];
+      if (existingConfig) {
+        initial[tool.id] = { ...existingConfig };
+      } else {
+        initial[tool.id] = {
+          toolId: tool.id,
+          enabled: false,
+          parameters: {},
+        };
+      }
+    });
+    setLocalConfigs(initial);
+    setNewWord({});
+    setExpandedTool(null);
     onClose();
   };
 
@@ -204,15 +243,18 @@ export const ToolSettingsDialog: React.FC<ToolSettingsDialogProps> = ({
     const config = localConfigs[toolId];
     const tool = tools.find(t => t.id === toolId);
     
-    if (!config?.enabled || !tool?.requiresConfiguration) return true;
+    // If tool is disabled or doesn't require configuration, it's considered configured
+    if (!config?.enabled || !tool?.requiresConfiguration) {
+      return true;
+    }
     
     // Check if required fields are configured
-    if (tool?.configurationFields?.pages?.required && 
+    if (tool.configurationFields.pages?.required && 
         (!config.parameters.pages?.selectedPages?.length)) {
       return false;
     }
     
-    if (tool?.configurationFields?.requiredWords?.required && 
+    if (tool.configurationFields.requiredWords?.required && 
         (!config.parameters.requiredWords?.length)) {
       return false;
     }
@@ -270,11 +312,7 @@ export const ToolSettingsDialog: React.FC<ToolSettingsDialogProps> = ({
 
         <Box sx={{ p: 2 }}>
           {tools.map((tool) => {
-            const config = localConfigs[tool.id] || {
-              toolId: tool.id,
-              enabled: false,
-              parameters: {},
-            };
+            const config = getToolConfig(tool.id);
             const isConfigured = isToolConfigured(tool.id);
             const needsConfig = config.enabled && tool.requiresConfiguration && !isConfigured;
 
@@ -283,7 +321,6 @@ export const ToolSettingsDialog: React.FC<ToolSettingsDialogProps> = ({
                 key={tool.id}
                 expanded={tool.requiresConfiguration && expandedTool === tool.id}
                 onChange={(_, isExpanded) => {
-                  // Only allow expansion for tools that have configuration fields
                   if (tool.requiresConfiguration) {
                     setExpandedTool(isExpanded ? tool.id : null);
                   }
@@ -304,18 +341,31 @@ export const ToolSettingsDialog: React.FC<ToolSettingsDialogProps> = ({
                       my: 1,
                     },
                   }}
+                  onClick={(e) => {
+                    // Prevent accordion toggle when clicking on the switch area
+                    const target = e.target as HTMLElement;
+                    if (target.closest('.MuiFormControlLabel-root') || target.closest('.MuiSwitch-root')) {
+                      e.stopPropagation();
+                    }
+                  }}
                 >
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, flex: 1 }}>
                     <FormControlLabel
                       control={
                         <Switch
                           checked={config.enabled}
-                          onChange={(e) => handleToolToggle(tool.id, e.target.checked)}
+                          onChange={(e) => {
+                            e.stopPropagation();
+                            handleToolToggle(tool.id, e.target.checked);
+                          }}
                           onClick={(e) => e.stopPropagation()}
+                          onMouseDown={(e) => e.stopPropagation()}
                         />
                       }
                       label=""
                       sx={{ m: 0 }}
+                      onClick={(e) => e.stopPropagation()}
+                      onMouseDown={(e) => e.stopPropagation()}
                     />
                     
                     <Box sx={{ flex: 1 }}>
@@ -497,4 +547,4 @@ export const ToolSettingsDialog: React.FC<ToolSettingsDialogProps> = ({
       </DialogActions>
     </Dialog>
   );
-}; 
+};

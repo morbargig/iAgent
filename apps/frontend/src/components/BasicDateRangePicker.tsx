@@ -895,7 +895,8 @@ export default function BasicDateRangePicker({
     <Box
       sx={{
         width: "100%",
-        maxWidth: "360px",
+        maxWidth: "100%",
+        minWidth: 0,
         p: 2,
         position: "relative",
         // RTL-aware margins
@@ -905,6 +906,7 @@ export default function BasicDateRangePicker({
         display: "flex",
         flexDirection: "column",
         alignItems: isRTL ? "flex-end" : "flex-start",
+        boxSizing: "border-box",
       }}
     >
       {/* Clear */}
