@@ -3,9 +3,6 @@ import {
   Box,
   Typography,
   List,
-  ListItem,
-  ListItemText,
-  ListItemSecondaryAction,
   Avatar,
   Skeleton,
   Checkbox,
@@ -155,12 +152,15 @@ export const DocumentList: React.FC<DocumentListProps> = ({
             const isSelected = isDocumentSelected(document);
             const { Icon, color } = getFileIconComponent(document.mimeType);
             return (
-              <ListItem
+              <Box
                 key={document.id}
                 onClick={() => onDocumentClick(document)}
                 sx={{
+                  display: "flex",
+                  alignItems: "center",
                   borderRadius: 1,
                   mb: 1,
+                  p: 1,
                   cursor: "pointer",
                   border: isSelected
                     ? `2px solid ${theme.palette.primary.main}`
@@ -171,9 +171,11 @@ export const DocumentList: React.FC<DocumentListProps> = ({
                   "&:hover": {
                     backgroundColor: theme.palette.action.hover,
                   },
+                  flexDirection: "row", // Always left-to-right: checkbox → icon → text → actions
+                  direction: "ltr", // Force LTR direction for this container
                 }}
               >
-                {/* 1. Checkbox - Always at start */}
+                {/* 1. Checkbox - Always at start (left) */}
                 <Checkbox
                   checked={isSelected}
                   onChange={() => onToggleSelection?.(document)}
@@ -183,39 +185,38 @@ export const DocumentList: React.FC<DocumentListProps> = ({
                   sx={{ 
                     opacity: selectionMode ? 1 : 0,
                     pointerEvents: selectionMode ? "auto" : "none",
-                    marginInlineEnd: 1,
+                    marginRight: 1,
                     flexShrink: 0,
                   }}
                 />
                 
-                {/* 2. File Icon */}
+                {/* 2. File Icon - After checkbox */}
                 <Avatar 
                   sx={{ 
                     bgcolor: `${color}20`, 
                     width: 40, 
                     height: 40,
-                    marginInlineEnd: 2,
+                    marginRight: 2,
                     flexShrink: 0,
                   }}
                 >
                   <Icon sx={{ color: color, fontSize: 20 }} />
                 </Avatar>
                 
-                {/* 3. File Name */}
-                <ListItemText
-                  sx={{ flex: 1, minWidth: 0 }}
-                  primary={document.name}
-                  secondary={
-                    <Typography variant="body2" color="text.secondary">
-                      {getFileTypeName(document.mimeType)} •{" "}
-                      {formatFileSize(document.size)} •{" "}
-                      {format(document.uploadedAt, "MMM dd, yyyy")}
-                    </Typography>
-                  }
-                />
+                {/* 3. File Name - Takes remaining space */}
+                <Box sx={{ flex: 1, minWidth: 0, marginRight: 2 }}>
+                  <Typography variant="body1" noWrap>
+                    {document.name}
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    {getFileTypeName(document.mimeType)} •{" "}
+                    {formatFileSize(document.size)} •{" "}
+                    {format(document.uploadedAt, "MMM dd, yyyy")}
+                  </Typography>
+                </Box>
                 
-                {/* 4. More Action Button - Always at end */}
-                <ListItemSecondaryAction sx={{ flexShrink: 0 }}>
+                {/* 4. More Action Button - Always at end (right) */}
+                <Box sx={{ flexShrink: 0 }}>
                   <MoreOptionsMenu
                     items={[
                       {
@@ -261,8 +262,8 @@ export const DocumentList: React.FC<DocumentListProps> = ({
                           ]),
                     ]}
                   />
-                </ListItemSecondaryAction>
-              </ListItem>
+                </Box>
+              </Box>
             );
           })}
         </List>
