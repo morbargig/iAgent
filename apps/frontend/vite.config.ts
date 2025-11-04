@@ -2,7 +2,6 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import { nxViteTsPaths } from '@nx/vite/plugins/nx-tsconfig-paths.plugin';
-// import * as path from 'path';
 
 export default defineConfig(({ mode }) => {
   // Determine base URL based on environment
@@ -40,11 +39,9 @@ export default defineConfig(({ mode }) => {
       nxViteTsPaths(),
     ],
 
-    // resolve: {
-    //   alias: {
-    //     '@iagent/stream-mocks': path.resolve(__dirname, '../../libs/stream-mocks/src/index.ts'),
-    //   },
-    // },
+    resolve: {
+      conditions: ['@iagent/workspace', 'import', 'module', 'default'],
+    },
 
     css: {
       postcss: './postcss.config.cjs',
@@ -76,7 +73,9 @@ export default defineConfig(({ mode }) => {
 
     // Optional parity for dev transforms:
     esbuild: { target: 'es2020' },
-    optimizeDeps: { esbuildOptions: { target: 'es2020' } },
+    optimizeDeps: {
+      esbuildOptions: { target: 'es2020' },
+    },
 
     test: {
       globals: true,

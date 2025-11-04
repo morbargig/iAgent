@@ -84,7 +84,6 @@ async function bootstrap() {
         .swagger-ui .topbar { display: none }
         .swagger-ui .info .title { color: #10a37f }
       `,
-      customfavIcon: 'https://avatars.githubusercontent.com/u/6936373?s=200&v=4',
       swaggerOptions: {
         // Preserve the selected server in the UI
         persistAuthorization: true,
