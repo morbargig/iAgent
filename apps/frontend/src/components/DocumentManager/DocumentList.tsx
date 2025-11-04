@@ -221,7 +221,7 @@ export const DocumentList: React.FC<DocumentListProps> = ({
                     items={[
                       {
                         id: "preview",
-                        label: "Preview in new tab",
+                        label: t("files.previewInNewTab"),
                         icon: <PreviewIcon sx={{ fontSize: 18 }} />,
                         onClick: (e: React.MouseEvent) => {
                           e.stopPropagation();
@@ -230,7 +230,7 @@ export const DocumentList: React.FC<DocumentListProps> = ({
                       },
                       {
                         id: "download",
-                        label: "Download",
+                        label: t("files.download"),
                         icon: <DownloadIcon sx={{ fontSize: 18 }} />,
                         onClick: (e: React.MouseEvent) => {
                           e.stopPropagation();
@@ -241,7 +241,7 @@ export const DocumentList: React.FC<DocumentListProps> = ({
                         ? [
                             {
                               id: "delete",
-                              label: "Delete",
+                              label: t("files.delete"),
                               icon: <DeleteIcon sx={{ fontSize: 18 }} />,
                               color: "error" as const,
                               onClick: (e: React.MouseEvent) => {
@@ -253,7 +253,7 @@ export const DocumentList: React.FC<DocumentListProps> = ({
                         : [
                             {
                               id: "more",
-                              label: "More options",
+                              label: t("files.moreOptions"),
                               onClick: (e: React.MouseEvent) => {
                                 e.stopPropagation();
                                 onContextMenu(e as any, document);

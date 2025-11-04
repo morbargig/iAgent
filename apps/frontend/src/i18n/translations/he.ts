@@ -239,6 +239,11 @@ const translations: Translation = {
     maxFilesExceeded: 'מקסימום {{maxFiles}} קבצים מותר',
     uploadFailedFallback: 'העלאה נכשלה',
     supportedFormatsList: 'PDF, Word, Excel, PowerPoint, Text, RTF, CSV',
+    // Menu actions
+    previewInNewTab: 'תצוגה מקדימה בלשונית חדשה',
+    download: 'הורדה',
+    delete: 'מחק',
+    moreOptions: 'אפשרויות נוספות',
     // FileManagement specific keys
     management: {
       title: 'ניהול קבצי MongoDB GridFS',

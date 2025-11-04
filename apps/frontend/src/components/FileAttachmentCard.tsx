@@ -18,6 +18,7 @@ import {
 } from "../types/document.types";
 import { useFileActions } from "../hooks/useFileActions";
 import { MoreOptionsMenu } from "./MoreOptionsMenu";
+import { useTranslation } from "../contexts/TranslationContext";
 
 interface FileAttachmentCardProps {
   files: DocumentFile[];
@@ -32,6 +33,7 @@ export const FileAttachmentCard: React.FC<FileAttachmentCardProps> = ({
   onPreview,
   onDownload,
 }) => {
+  const { t } = useTranslation();
   const { handlePreview, handleDownload } = useFileActions({
     onPreviewCallback: onPreview,
     onDownloadCallback: onDownload,
@@ -125,7 +127,7 @@ export const FileAttachmentCard: React.FC<FileAttachmentCardProps> = ({
                 items={[
                   {
                     id: "preview",
-                    label: "Preview in new tab",
+                    label: t("files.previewInNewTab"),
                     icon: <PreviewIcon sx={{ fontSize: 18 }} />,
                     onClick: (e) => {
                       e.stopPropagation();
@@ -134,7 +136,7 @@ export const FileAttachmentCard: React.FC<FileAttachmentCardProps> = ({
                   },
                   {
                     id: "download",
-                    label: "Download",
+                    label: t("files.download"),
                     icon: <DownloadIcon sx={{ fontSize: 18 }} />,
                     onClick: (e) => {
                       e.stopPropagation();

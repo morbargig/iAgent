@@ -24,6 +24,7 @@ import {
 } from "../../types/document.types";
 import { useFileActions } from "../../hooks/useFileActions";
 import { MoreOptionsMenu, MoreOptionsMenuItem } from "../MoreOptionsMenu";
+import { useTranslation } from "../../contexts/TranslationContext";
 
 interface DocumentCardProps {
   document: DocumentFile;
@@ -51,6 +52,7 @@ export const DocumentCard: React.FC<DocumentCardProps> = ({
   const theme = useTheme();
   const { Icon, color } = getFileIconComponent(document.mimeType);
   const isDarkMode = theme.palette.mode === "dark";
+  const { t } = useTranslation();
 
   const { handlePreview, handleDownload } = useFileActions({
     onPreviewCallback: onPreview,
@@ -63,7 +65,7 @@ export const DocumentCard: React.FC<DocumentCardProps> = ({
   const menuItems: MoreOptionsMenuItem[] = [
     {
       id: "preview",
-      label: "Preview in new tab",
+      label: t("files.previewInNewTab"),
       icon: <PreviewIcon sx={{ fontSize: 18 }} />,
       onClick: (e) => {
         e.stopPropagation();
@@ -72,7 +74,7 @@ export const DocumentCard: React.FC<DocumentCardProps> = ({
     },
     {
       id: "download",
-      label: "Download",
+      label: t("files.download"),
       icon: <DownloadIcon sx={{ fontSize: 18 }} />,
       onClick: (e) => {
         e.stopPropagation();
@@ -81,7 +83,7 @@ export const DocumentCard: React.FC<DocumentCardProps> = ({
     },
     {
       id: "delete",
-      label: "Delete",
+      label: t("files.delete"),
       icon: <DeleteIcon sx={{ fontSize: 18 }} />,
       color: "error",
       onClick: (e) => {
