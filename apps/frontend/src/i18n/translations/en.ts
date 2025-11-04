@@ -241,6 +241,11 @@ const translations: Translation = {
     maxFilesExceeded: 'Maximum {{maxFiles}} files allowed',
     uploadFailedFallback: 'Upload failed',
     supportedFormatsList: 'PDF, Word, Excel, PowerPoint, Text, RTF, CSV',
+    // Menu actions
+    previewInNewTab: 'Preview in new tab',
+    download: 'Download',
+    delete: 'Delete',
+    moreOptions: 'More options',
     // FileManagement specific keys
     management: {
       title: 'MongoDB GridFS File Management',

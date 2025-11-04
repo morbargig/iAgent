@@ -13,7 +13,6 @@ import {
   ListItemIcon,
   ListItemText,
   ListItemSecondaryAction,
-  IconButton,
   Alert,
   useTheme,
   Fade,
@@ -27,6 +26,7 @@ import {
   Cancel as CancelIcon,
   InsertDriveFile as FileIcon,
 } from "@mui/icons-material";
+import { MoreOptionsMenu } from "./MoreOptionsMenu";
 import { useDropzone } from "react-dropzone";
 import {
   DocumentFile,
@@ -365,24 +365,38 @@ export const DocumentUpload: React.FC<DocumentUploadProps> = ({
                     }
                   />
                   <ListItemSecondaryAction>
-                    {uploadState.status === "uploading" && (
-                      <IconButton
-                        onClick={() => cancelUpload(fileId)}
-                        size="small"
-                      >
-                        <CancelIcon />
-                      </IconButton>
-                    )}
-                    {(uploadState.status === "completed" ||
-                      uploadState.status === "error" ||
-                      uploadState.status === "cancelled") && (
-                      <IconButton
-                        onClick={() => removeFile(fileId)}
-                        size="small"
-                      >
-                        <CloseIcon />
-                      </IconButton>
-                    )}
+                    <MoreOptionsMenu
+                      items={[
+                        ...(uploadState.status === "uploading"
+                          ? [
+                              {
+                                id: "cancel",
+                                label: "Cancel upload",
+                                icon: <CancelIcon sx={{ fontSize: 18 }} />,
+                                onClick: (e: React.MouseEvent) => {
+                                  e.stopPropagation();
+                                  cancelUpload(fileId);
+                                },
+                              },
+                            ]
+                          : []),
+                        ...(uploadState.status === "completed" ||
+                        uploadState.status === "error" ||
+                        uploadState.status === "cancelled"
+                          ? [
+                              {
+                                id: "remove",
+                                label: "Remove",
+                                icon: <CloseIcon sx={{ fontSize: 18 }} />,
+                                onClick: (e: React.MouseEvent) => {
+                                  e.stopPropagation();
+                                  removeFile(fileId);
+                                },
+                              },
+                            ]
+                          : []),
+                      ]}
+                    />
                   </ListItemSecondaryAction>
                 </ListItem>
               ))}

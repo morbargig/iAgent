@@ -3,14 +3,9 @@ import {
   Box,
   Typography,
   List,
-  ListItem,
-  ListItemIcon,
-  ListItemText,
-  ListItemSecondaryAction,
   Avatar,
   Skeleton,
   Checkbox,
-  IconButton,
   Pagination,
   PaginationItem,
 } from "@mui/material";
@@ -18,7 +13,8 @@ import {
   ArrowBack,
   ArrowForward,
   Delete as DeleteIcon,
-  MoreVert as MoreIcon,
+  Visibility as PreviewIcon,
+  Download as DownloadIcon,
 } from "@mui/icons-material";
 import { useTheme } from "@mui/material/styles";
 import { format } from "date-fns";
@@ -31,6 +27,8 @@ import {
 import { useTranslation } from "../../contexts/TranslationContext";
 import { DocumentCard } from "./DocumentCard";
 import { ViewMode } from "./hooks/useDocumentUI";
+import { MoreOptionsMenu } from "../MoreOptionsMenu";
+import { useFileActions } from "../../hooks/useFileActions";
 
 interface DocumentListProps {
   searchQuery: string;
@@ -48,6 +46,8 @@ interface DocumentListProps {
   onDeleteClick: (document: DocumentFile) => void;
   onPageChange: (page: number) => void;
   isDocumentSelected: (document: DocumentFile) => boolean;
+  onPreview?: (document: DocumentFile) => void;
+  onDownload?: (document: DocumentFile) => void;
 }
 
 export const DocumentList: React.FC<DocumentListProps> = ({
@@ -66,10 +66,19 @@ export const DocumentList: React.FC<DocumentListProps> = ({
   onDeleteClick,
   onPageChange,
   isDocumentSelected,
+  onPreview,
+  onDownload,
 }) => {
   const theme = useTheme();
-  const { t } = useTranslation();
-  const { isRTL } = useTranslation();
+  const { t, isRTL } = useTranslation();
+  
+  const { handlePreview, handleDownload } = useFileActions({
+    onPreviewCallback: onPreview,
+    onDownloadCallback: onDownload,
+    onError: (error, action) => {
+      console.error(`${action} failed:`, error);
+    },
+  });
 
   // Loading skeleton component
   if (loading) {
@@ -92,10 +101,10 @@ export const DocumentList: React.FC<DocumentListProps> = ({
             sx={{
               display: "grid",
               gridTemplateColumns: {
-                xs: "repeat(2, 1fr)",
-                sm: "repeat(3, 1fr)",
-                md: "repeat(4, 1fr)",
-                lg: "repeat(4, 1fr)",
+                xs: "repeat(3, 1fr)",
+                sm: "repeat(4, 1fr)",
+                md: "repeat(5, 1fr)",
+                lg: "repeat(6, 1fr)",
               },
               gap: { xs: 1, sm: 2 },
             }}
@@ -143,12 +152,15 @@ export const DocumentList: React.FC<DocumentListProps> = ({
             const isSelected = isDocumentSelected(document);
             const { Icon, color } = getFileIconComponent(document.mimeType);
             return (
-              <ListItem
+              <Box
                 key={document.id}
                 onClick={() => onDocumentClick(document)}
                 sx={{
+                  display: "flex",
+                  alignItems: "center",
                   borderRadius: 1,
                   mb: 1,
+                  p: 1,
                   cursor: "pointer",
                   border: isSelected
                     ? `2px solid ${theme.palette.primary.main}`
@@ -159,54 +171,99 @@ export const DocumentList: React.FC<DocumentListProps> = ({
                   "&:hover": {
                     backgroundColor: theme.palette.action.hover,
                   },
+                  flexDirection: "row", // Always left-to-right: checkbox → icon → text → actions
+                  direction: "ltr", // Force LTR direction for this container
                 }}
               >
-                {selectionMode && (
-                  <ListItemIcon>
-                    <Checkbox
-                      checked={isSelected}
-                      onChange={() => onToggleSelection?.(document)}
-                      onClick={(e) => e.stopPropagation()}
-                    />
-                  </ListItemIcon>
-                )}
-                <ListItemIcon>
-                  <Avatar sx={{ bgcolor: `${color}20` }}>
-                    <Icon sx={{ color: color }} />
-                  </Avatar>
-                </ListItemIcon>
-                <ListItemText
-                  primary={document.name}
-                  secondary={
-                    <Typography variant="body2" color="text.secondary">
-                      {getFileTypeName(document.mimeType)} •{" "}
-                      {formatFileSize(document.size)} •{" "}
-                      {format(document.uploadedAt, "MMM dd, yyyy")}
-                    </Typography>
-                  }
+                {/* 1. Checkbox - Always at start (left) */}
+                <Checkbox
+                  checked={isSelected}
+                  onChange={() => onToggleSelection?.(document)}
+                  onClick={(e) => e.stopPropagation()}
+                  size="small"
+                  disabled={!selectionMode}
+                  sx={{ 
+                    opacity: selectionMode ? 1 : 0,
+                    pointerEvents: selectionMode ? "auto" : "none",
+                    marginRight: 1,
+                    flexShrink: 0,
+                  }}
                 />
-                <ListItemSecondaryAction>
-                  {selectionMode ? (
-                    <IconButton
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        onDeleteClick(document);
-                      }}
-                      size="small"
-                      color="error"
-                    >
-                      <DeleteIcon />
-                    </IconButton>
-                  ) : (
-                    <IconButton
-                      onClick={(e) => onContextMenu(e, document)}
-                      size="small"
-                    >
-                      <MoreIcon />
-                    </IconButton>
-                  )}
-                </ListItemSecondaryAction>
-              </ListItem>
+                
+                {/* 2. File Icon - After checkbox */}
+                <Avatar 
+                  sx={{ 
+                    bgcolor: `${color}20`, 
+                    width: 40, 
+                    height: 40,
+                    marginRight: 2,
+                    flexShrink: 0,
+                  }}
+                >
+                  <Icon sx={{ color: color, fontSize: 20 }} />
+                </Avatar>
+                
+                {/* 3. File Name - Takes remaining space */}
+                <Box sx={{ flex: 1, minWidth: 0, marginRight: 2 }}>
+                  <Typography variant="body1" noWrap>
+                    {document.name}
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    {getFileTypeName(document.mimeType)} •{" "}
+                    {formatFileSize(document.size)} •{" "}
+                    {format(document.uploadedAt, "MMM dd, yyyy")}
+                  </Typography>
+                </Box>
+                
+                {/* 4. More Action Button - Always at end (right) */}
+                <Box sx={{ flexShrink: 0 }}>
+                  <MoreOptionsMenu
+                    items={[
+                      {
+                        id: "preview",
+                        label: t("files.previewInNewTab"),
+                        icon: <PreviewIcon sx={{ fontSize: 18 }} />,
+                        onClick: (e: React.MouseEvent) => {
+                          e.stopPropagation();
+                          handlePreview(document);
+                        },
+                      },
+                      {
+                        id: "download",
+                        label: t("files.download"),
+                        icon: <DownloadIcon sx={{ fontSize: 18 }} />,
+                        onClick: (e: React.MouseEvent) => {
+                          e.stopPropagation();
+                          handleDownload(document);
+                        },
+                      },
+                      ...(selectionMode
+                        ? [
+                            {
+                              id: "delete",
+                              label: t("files.delete"),
+                              icon: <DeleteIcon sx={{ fontSize: 18 }} />,
+                              color: "error" as const,
+                              onClick: (e: React.MouseEvent) => {
+                                e.stopPropagation();
+                                onDeleteClick(document);
+                              },
+                            },
+                          ]
+                        : [
+                            {
+                              id: "more",
+                              label: t("files.moreOptions"),
+                              onClick: (e: React.MouseEvent) => {
+                                e.stopPropagation();
+                                onContextMenu(e as any, document);
+                              },
+                            },
+                          ]),
+                    ]}
+                  />
+                </Box>
+              </Box>
             );
           })}
         </List>
@@ -217,10 +274,10 @@ export const DocumentList: React.FC<DocumentListProps> = ({
             sx={{
               display: "grid",
               gridTemplateColumns: {
-                xs: "repeat(2, 1fr)",
-                sm: "repeat(3, 1fr)",
-                md: "repeat(4, 1fr)",
-                lg: "repeat(4, 1fr)",
+                xs: "repeat(3, 1fr)",
+                sm: "repeat(4, 1fr)",
+                md: "repeat(5, 1fr)",
+                lg: "repeat(6, 1fr)",
               },
               gap: { xs: 1, sm: 2 },
             }}
@@ -237,6 +294,8 @@ export const DocumentList: React.FC<DocumentListProps> = ({
                   onToggleSelection={onToggleSelection}
                   onContextMenu={onContextMenu}
                   onDeleteClick={onDeleteClick}
+                  onPreview={onPreview}
+                  onDownload={onDownload}
                 />
               );
             })}

@@ -6,9 +6,6 @@ import {
   Box,
   Paper,
   Typography,
-  IconButton,
-  Tooltip,
-  useTheme,
 } from "@mui/material";
 import {
   Download as DownloadIcon,
@@ -20,6 +17,8 @@ import {
   getFileIconComponent,
 } from "../types/document.types";
 import { useFileActions } from "../hooks/useFileActions";
+import { MoreOptionsMenu } from "./MoreOptionsMenu";
+import { useTranslation } from "../contexts/TranslationContext";
 
 interface FileAttachmentCardProps {
   files: DocumentFile[];
@@ -34,7 +33,7 @@ export const FileAttachmentCard: React.FC<FileAttachmentCardProps> = ({
   onPreview,
   onDownload,
 }) => {
-  const theme = useTheme();
+  const { t } = useTranslation();
   const { handlePreview, handleDownload } = useFileActions({
     onPreviewCallback: onPreview,
     onDownloadCallback: onDownload,
@@ -124,57 +123,28 @@ export const FileAttachmentCard: React.FC<FileAttachmentCardProps> = ({
 
             {/* Action Buttons */}
             <Box display="flex" gap={0.5} flexShrink={0}>
-              <Tooltip title="Preview in new tab">
-                <IconButton
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handlePreview(file);
-                  }}
-                  size="small"
-                  sx={{
-                    width: 36,
-                    height: 36,
-                    backgroundColor: isDarkMode
-                      ? "rgba(255, 255, 255, 0.08)"
-                      : "rgba(0, 0, 0, 0.04)",
-                    color: isDarkMode ? "#d1d5db" : "#6b7280",
-                    "&:hover": {
-                      backgroundColor: isDarkMode
-                        ? "rgba(255, 255, 255, 0.12)"
-                        : "rgba(0, 0, 0, 0.08)",
-                      color: theme.palette.primary.main,
+              <MoreOptionsMenu
+                items={[
+                  {
+                    id: "preview",
+                    label: t("files.previewInNewTab"),
+                    icon: <PreviewIcon sx={{ fontSize: 18 }} />,
+                    onClick: (e) => {
+                      e.stopPropagation();
+                      handlePreview(file);
                     },
-                  }}
-                >
-                  <PreviewIcon sx={{ fontSize: 18 }} />
-                </IconButton>
-              </Tooltip>
-
-              <Tooltip title="Download">
-                <IconButton
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleDownload(file);
-                  }}
-                  size="small"
-                  sx={{
-                    width: 36,
-                    height: 36,
-                    backgroundColor: isDarkMode
-                      ? "rgba(255, 255, 255, 0.08)"
-                      : "rgba(0, 0, 0, 0.04)",
-                    color: isDarkMode ? "#d1d5db" : "#6b7280",
-                    "&:hover": {
-                      backgroundColor: isDarkMode
-                        ? "rgba(255, 255, 255, 0.12)"
-                        : "rgba(0, 0, 0, 0.08)",
-                      color: theme.palette.primary.main,
+                  },
+                  {
+                    id: "download",
+                    label: t("files.download"),
+                    icon: <DownloadIcon sx={{ fontSize: 18 }} />,
+                    onClick: (e) => {
+                      e.stopPropagation();
+                      handleDownload(file);
                     },
-                  }}
-                >
-                  <DownloadIcon sx={{ fontSize: 18 }} />
-                </IconButton>
-              </Tooltip>
+                  },
+                ]}
+              />
             </Box>
           </Paper>
         );
