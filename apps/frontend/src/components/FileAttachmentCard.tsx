@@ -47,7 +47,7 @@ export const FileAttachmentCard: React.FC<FileAttachmentCardProps> = ({
   }
 
   return (
-    <Box sx={{ display: "flex", flexDirection: "column", gap: 1.5, mb: 2 }}>
+    <Box className="flex flex-col gap-6 mb-8">
       {files.map((file) => {
         const { Icon, color } = getFileIconComponent(file.mimeType);
 
@@ -55,74 +55,47 @@ export const FileAttachmentCard: React.FC<FileAttachmentCardProps> = ({
           <Paper
             key={file.id}
             elevation={0}
-            sx={{
-              display: "flex",
-              alignItems: "center",
-              gap: 1.5,
-              p: 1.5,
-              borderRadius: "12px",
-              backgroundColor: isDarkMode
-                ? "rgba(255, 255, 255, 0.05)"
-                : "rgba(0, 0, 0, 0.02)",
-              border: `1px solid ${isDarkMode ? "rgba(255, 255, 255, 0.1)" : "rgba(0, 0, 0, 0.08)"}`,
-              transition: "all 0.2s ease",
-              "&:hover": {
-                backgroundColor: isDarkMode
-                  ? "rgba(255, 255, 255, 0.08)"
-                  : "rgba(0, 0, 0, 0.04)",
-                boxShadow: isDarkMode
-                  ? "0 4px 12px rgba(0, 0, 0, 0.3)"
-                  : "0 4px 12px rgba(0, 0, 0, 0.08)",
-                borderColor: isDarkMode
-                  ? "rgba(255, 255, 255, 0.15)"
-                  : "rgba(0, 0, 0, 0.12)",
-              },
-            }}
+            className={`flex items-center gap-6 p-6 rounded-xl transition-all duration-200 ${
+              isDarkMode
+                ? "bg-white/5 border border-white/10 hover:bg-white/8 hover:shadow-lg hover:shadow-black/30 hover:border-white/15"
+                : "bg-black/2 border border-black/8 hover:bg-black/4 hover:shadow-lg hover:shadow-black/8 hover:border-black/12"
+            }`}
           >
             {/* File Icon with Type-Specific Color */}
             <Box
-              sx={{
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                width: 48,
-                height: 48,
-                borderRadius: "10px",
+              className="flex items-center justify-center w-12 h-12 rounded-[10px] flex-shrink-0"
+              style={{
                 backgroundColor: isDarkMode ? `${color}20` : `${color}15`,
                 color: color,
-                flexShrink: 0,
               }}
             >
               <Icon sx={{ fontSize: 28 }} />
             </Box>
 
             {/* File Info */}
-            <Box flex={1} minWidth={0}>
+            <Box className="flex-1 min-w-0">
               <Typography
                 variant="body2"
                 fontWeight={600}
                 noWrap
-                sx={{
-                  color: isDarkMode ? "#ffffff" : "#1f2937",
-                  fontSize: "0.9375rem",
-                  mb: 0.25,
-                }}
+                className={`text-[0.9375rem] mb-1 ${
+                  isDarkMode ? "text-white" : "text-gray-800"
+                }`}
               >
                 {file.name}
               </Typography>
               <Typography
                 variant="caption"
-                sx={{
-                  color: isDarkMode ? "#9ca3af" : "#6b7280",
-                  fontSize: "0.8125rem",
-                }}
+                className={`text-[0.8125rem] ${
+                  isDarkMode ? "text-gray-400" : "text-gray-500"
+                }`}
               >
                 {formatFileSize(file.size)}
               </Typography>
             </Box>
 
             {/* Action Buttons */}
-            <Box display="flex" gap={0.5} flexShrink={0}>
+            <Box className="flex gap-2 flex-shrink-0">
               <MoreOptionsMenu
                 items={[
                   {

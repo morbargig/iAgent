@@ -96,60 +96,21 @@ export const DocumentCard: React.FC<DocumentCardProps> = ({
   return (
     <Card
       elevation={0}
-      sx={{
-        height: "100%",
-        display: "flex",
-        flexDirection: "column",
-        cursor: "pointer",
-        borderRadius: "12px",
-        border: isSelected
-          ? `2px solid ${theme.palette.primary.main}`
-          : `1px solid ${
-              isDarkMode
-                ? "rgba(255, 255, 255, 0.1)"
-                : "rgba(0, 0, 0, 0.08)"
-            }`,
-        backgroundColor: isSelected
+      className={`h-full flex flex-col cursor-pointer rounded-xl transition-all duration-200 ease-in-out ${
+        isSelected
           ? isDarkMode
-            ? "rgba(59, 130, 246, 0.1)"
-            : "rgba(59, 130, 246, 0.05)"
+            ? "bg-blue-500/10 border-2 border-blue-500 hover:bg-blue-500/15 hover:border-blue-500"
+            : "bg-blue-500/5 border-2 border-blue-500 hover:bg-blue-500/8 hover:border-blue-500"
           : isDarkMode
-          ? "rgba(255, 255, 255, 0.03)"
-          : "rgba(0, 0, 0, 0.02)",
-        transition: "all 0.2s cubic-bezier(0.4, 0, 0.2, 1)",
-        "&:hover": {
-          backgroundColor: isSelected
-            ? isDarkMode
-              ? "rgba(59, 130, 246, 0.15)"
-              : "rgba(59, 130, 246, 0.08)"
-            : isDarkMode
-            ? "rgba(255, 255, 255, 0.05)"
-            : "rgba(0, 0, 0, 0.04)",
-          borderColor: isSelected
-            ? theme.palette.primary.main
-            : isDarkMode
-            ? "rgba(255, 255, 255, 0.15)"
-            : "rgba(0, 0, 0, 0.12)",
-          boxShadow: isDarkMode
-            ? "0 4px 12px rgba(0, 0, 0, 0.3)"
-            : "0 4px 12px rgba(0, 0, 0, 0.08)",
-          transform: "translateY(-2px)",
-        },
+          ? "bg-white/3 border border-white/10 hover:bg-white/5 hover:border-white/15 hover:shadow-lg hover:shadow-black/30"
+          : "bg-black/2 border border-black/8 hover:bg-black/4 hover:border-black/12 hover:shadow-lg hover:shadow-black/8"
+      } hover:-translate-y-0.5`}
+      style={{
+        borderColor: isSelected ? theme.palette.primary.main : undefined,
       }}
       onClick={() => onDocumentClick(document)}
     >
-      <CardContent
-        sx={{
-          flexGrow: 1,
-          pb: 1,
-          pt: 2,
-          px: 2,
-          display: "flex",
-          flexDirection: "column",
-          justifyContent: "center",
-          position: "relative",
-        }}
-      >
+      <CardContent className="flex-grow pb-4 pt-8 px-8 flex flex-col justify-center relative">
         <MoreOptionsMenu
           items={menuItems}
           buttonPosition="absolute"
@@ -160,12 +121,10 @@ export const DocumentCard: React.FC<DocumentCardProps> = ({
             checked={isSelected}
             onChange={() => onToggleSelection?.(document)}
             onClick={(e) => e.stopPropagation()}
+            className={`absolute top-2 right-2 z-10 ${
+              isDarkMode ? "text-white/70" : "text-black/60"
+            }`}
             sx={{
-              position: "absolute",
-              top: 8,
-              right: 8,
-              zIndex: 1,
-              color: isDarkMode ? "rgba(255, 255, 255, 0.7)" : "rgba(0, 0, 0, 0.6)",
               "&.Mui-checked": {
                 color: theme.palette.primary.main,
               },
@@ -173,21 +132,14 @@ export const DocumentCard: React.FC<DocumentCardProps> = ({
             size="small"
           />
         )}
-        <Box
-          display="flex"
-          flexDirection="column"
-          alignItems="center"
-          justifyContent="center"
-          width="100%"
-          sx={{ mx: "auto", px: selectionMode ? 0 : 0.5 }}
-        >
+        <Box className={`flex flex-col items-center justify-center w-full mx-auto ${
+          selectionMode ? "px-0" : "px-2"
+        }`}>
         
             <Avatar
-              sx={{
-                bgcolor: `${color}15`,
-                width: { xs: 52, sm: 60 },
-                height: { xs: 52, sm: 60 },
-                mb: 1.5,
+              className="mb-6 w-[52px] h-[52px] sm:w-[60px] sm:h-[60px]"
+              style={{
+                backgroundColor: `${color}15`,
                 border: `1px solid ${color}30`,
               }}
             >
@@ -203,20 +155,9 @@ export const DocumentCard: React.FC<DocumentCardProps> = ({
                 variant="body2"
                 fontWeight={500}
                 textAlign="center"
-                sx={{
-                  mb: 0.75,
-                  display: "-webkit-box",
-                  WebkitLineClamp: 2,
-                  WebkitBoxOrient: "vertical",
-                  overflow: "hidden",
-                  wordBreak: "break-word",
-                  lineHeight: 1.3,
-                  color: isDarkMode
-                    ? "rgba(255, 255, 255, 0.9)"
-                    : "rgba(0, 0, 0, 0.87)",
-                  fontSize: { xs: "13px", sm: "14px" },
-                  px: 0.5,
-                }}
+                className={`mb-3 line-clamp-2 break-words leading-[1.3] text-[13px] sm:text-[14px] px-2 ${
+                  isDarkMode ? "text-white/90" : "text-black/87"
+                }`}
               >
                 {document.name}
               </Typography>
@@ -224,55 +165,33 @@ export const DocumentCard: React.FC<DocumentCardProps> = ({
             <Typography
               variant="caption"
               textAlign="center"
-              sx={{
-                display: "block",
-                mb: 0.25,
-                color: isDarkMode
-                  ? "rgba(255, 255, 255, 0.6)"
-                  : "rgba(0, 0, 0, 0.6)",
-                fontSize: "11px",
-                fontWeight: 400,
-              }}
+              className={`block mb-1 text-[11px] font-normal ${
+                isDarkMode ? "text-white/60" : "text-black/60"
+              }`}
             >
               {getFileTypeName(document.mimeType)}
             </Typography>
             <Typography
               variant="caption"
               textAlign="center"
-              sx={{
-                display: "block",
-                mb: 0.25,
-                color: isDarkMode
-                  ? "rgba(255, 255, 255, 0.5)"
-                  : "rgba(0, 0, 0, 0.5)",
-                fontSize: "11px",
-              }}
+              className={`block mb-1 text-[11px] ${
+                isDarkMode ? "text-white/50" : "text-black/50"
+              }`}
             >
               {formatFileSize(document.size)}
             </Typography>
             <Typography
               variant="caption"
               textAlign="center"
-              sx={{
-                display: "block",
-                color: isDarkMode
-                  ? "rgba(255, 255, 255, 0.5)"
-                  : "rgba(0, 0, 0, 0.5)",
-                fontSize: "10px",
-              }}
+              className={`block text-[10px] ${
+                isDarkMode ? "text-white/50" : "text-black/50"
+              }`}
             >
               {format(document.uploadedAt, "MMM dd, yyyy")}
             </Typography>
         </Box>
       </CardContent>
-      <CardActions
-        sx={{
-          pt: 0,
-          pb: 1,
-          px: 1,
-          minHeight: "40px",
-        }}
-      />
+      <CardActions className="pt-0 pb-4 px-4 min-h-[40px]" />
     </Card>
   );
 };

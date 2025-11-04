@@ -91,30 +91,19 @@ export const DocumentList: React.FC<DocumentListProps> = ({
               key={index}
               variant="rectangular"
               height={60}
-              sx={{ mb: 1, borderRadius: 1 }}
+              className="mb-4 rounded"
             />
           ))
         ) : (
           // TODO: fix style
           // Grid view skeletons
-          <Box
-            sx={{
-              display: "grid",
-              gridTemplateColumns: {
-                xs: "repeat(3, 1fr)",
-                sm: "repeat(4, 1fr)",
-                md: "repeat(5, 1fr)",
-                lg: "repeat(6, 1fr)",
-              },
-              gap: { xs: 1, sm: 2 },
-            }}
-          >
+          <Box className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-4 sm:gap-8">
             {Array.from({ length: 8 }).map((_, index) => (
               <Skeleton
                 key={index}
                 variant="rectangular"
                 height={200}
-                sx={{ borderRadius: 1 }}
+                className="rounded"
               />
             ))}
           </Box>
@@ -126,7 +115,7 @@ export const DocumentList: React.FC<DocumentListProps> = ({
   // Empty state
   if (!loading && documents.length === 0) {
     return (
-      <Box textAlign="center" py={4}>
+      <Box className="text-center py-16">
         <Typography variant="h6" color="text.secondary">
           {t("files.noDocuments")}
         </Typography>
@@ -147,7 +136,7 @@ export const DocumentList: React.FC<DocumentListProps> = ({
     <>
       {viewMode === "list" ? (
         // List View
-        <List sx={{ maxHeight, overflow: "auto" }}>
+        <List className="overflow-auto" style={{ maxHeight }}>
           {documents.map((document) => {
             const isSelected = isDocumentSelected(document);
             const { Icon, color } = getFileIconComponent(document.mimeType);
@@ -155,24 +144,17 @@ export const DocumentList: React.FC<DocumentListProps> = ({
               <Box
                 key={document.id}
                 onClick={() => onDocumentClick(document)}
-                sx={{
-                  display: "flex",
-                  alignItems: "center",
-                  borderRadius: 1,
-                  mb: 1,
-                  p: 1,
-                  cursor: "pointer",
-                  border: isSelected
-                    ? `2px solid ${theme.palette.primary.main}`
-                    : "1px solid transparent",
-                  backgroundColor: isSelected
-                    ? theme.palette.action.selected
-                    : "transparent",
-                  "&:hover": {
-                    backgroundColor: theme.palette.action.hover,
-                  },
-                  flexDirection: "row", // Always left-to-right: checkbox → icon → text → actions
-                  direction: "ltr", // Force LTR direction for this container
+                className={`flex items-center rounded mb-4 p-4 cursor-pointer flex-row direction-ltr ${
+                  isSelected
+                    ? "border-2"
+                    : "border border-transparent"
+                } ${
+                  isSelected
+                    ? "bg-blue-500/10 dark:bg-blue-500/10"
+                    : "bg-transparent hover:bg-black/5 dark:hover:bg-white/5"
+                }`}
+                style={{
+                  borderColor: isSelected ? theme.palette.primary.main : undefined,
                 }}
               >
                 {/* 1. Checkbox - Always at start (left) */}
@@ -182,29 +164,23 @@ export const DocumentList: React.FC<DocumentListProps> = ({
                   onClick={(e) => e.stopPropagation()}
                   size="small"
                   disabled={!selectionMode}
-                  sx={{ 
-                    opacity: selectionMode ? 1 : 0,
-                    pointerEvents: selectionMode ? "auto" : "none",
-                    marginRight: 1,
-                    flexShrink: 0,
-                  }}
+                  className={`mr-4 flex-shrink-0 ${
+                    selectionMode ? "opacity-100" : "opacity-0 pointer-events-none"
+                  }`}
                 />
                 
                 {/* 2. File Icon - After checkbox */}
                 <Avatar 
-                  sx={{ 
-                    bgcolor: `${color}20`, 
-                    width: 40, 
-                    height: 40,
-                    marginRight: 2,
-                    flexShrink: 0,
+                  className="w-10 h-10 mr-8 flex-shrink-0"
+                  style={{ 
+                    backgroundColor: `${color}20`,
                   }}
                 >
                   <Icon sx={{ color: color, fontSize: 20 }} />
                 </Avatar>
                 
                 {/* 3. File Name - Takes remaining space */}
-                <Box sx={{ flex: 1, minWidth: 0, marginRight: 2 }}>
+                <Box className="flex-1 min-w-0 mr-8">
                   <Typography variant="body1" noWrap>
                     {document.name}
                   </Typography>
@@ -216,7 +192,7 @@ export const DocumentList: React.FC<DocumentListProps> = ({
                 </Box>
                 
                 {/* 4. More Action Button - Always at end (right) */}
-                <Box sx={{ flexShrink: 0 }}>
+                <Box className="flex-shrink-0">
                   <MoreOptionsMenu
                     items={[
                       {
@@ -269,19 +245,8 @@ export const DocumentList: React.FC<DocumentListProps> = ({
         </List>
       ) : (
         // Grid View
-        <Box sx={{ maxHeight, overflow: "auto" }}>
-          <Box
-            sx={{
-              display: "grid",
-              gridTemplateColumns: {
-                xs: "repeat(3, 1fr)",
-                sm: "repeat(4, 1fr)",
-                md: "repeat(5, 1fr)",
-                lg: "repeat(6, 1fr)",
-              },
-              gap: { xs: 1, sm: 2 },
-            }}
-          >
+        <Box className="overflow-auto" style={{ maxHeight }}>
+          <Box className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-4 sm:gap-8">
             {documents.map((document) => {
               const isSelected = isDocumentSelected(document);
               return (
@@ -304,7 +269,7 @@ export const DocumentList: React.FC<DocumentListProps> = ({
       )}
 
       {totalPages > 1 && (
-        <Box display="flex" justifyContent="center" mt={2} dir="ltr">
+        <Box className="flex justify-center mt-8 dir-ltr">
           <Pagination
             count={totalPages}
             page={page}
