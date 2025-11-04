@@ -151,23 +151,35 @@ When running the backend, comprehensive API documentation is available at:
 
 ⚠️ **Important**: Sensitive data (MongoDB connection strings, JWT secrets, passwords) are no longer hardcoded. You **MUST** configure environment variables before running the application.
 
+#### Getting Environment Configuration Files
+
+**Note**: The `.env` and `.env.prod` files containing production credentials are **not included** in this repository for security reasons.
+
+- **To get the environment configuration files**, please contact [@morbargig](https://github.com/morbargig) on GitHub
+- **Alternatively**, you can create your own `.env` files using the `.env.example` template and your own credentials
+
+See the sections below for setting up your environment files.
+
 #### Backend Environment Setup
 
-1. **Copy the example environment file**:
-   ```bash
-   cp apps/backend/.env.example apps/backend/.env
-   ```
+1. **Option A: Get environment files from the maintainer**
+   - Contact [@morbargig](https://github.com/morbargig) to request the `.env` and `.env.prod` files
+   - Place them in `apps/backend/` directory
 
-2. **Fill in your actual values** in `apps/backend/.env`:
-   ```bash
-   # Required variables (see .env.example for full list)
-   MONGODB_URI=your_mongodb_connection_string_here
-   JWT_SECRET=your_jwt_secret_key_here
-   DB_USERNAME=your_database_username
-   DB_PASSWORD=your_database_password
-   ```
+2. **Option B: Create your own environment files**
+   - Copy the example environment file:
+     ```bash
+     cp apps/backend/.env.example apps/backend/.env
+     ```
+   - Fill in your actual values in `apps/backend/.env`:
+     ```bash
+     # Required variables (see .env.example for full list)
+     MONGODB_URI=your_mongodb_connection_string_here
+     JWT_SECRET=your_jwt_secret_key_here
+     DB_NAME=filesdb
+     ```
 
-3. **Generate a secure JWT secret** (recommended):
+3. **Generate a secure JWT secret** (if creating your own):
    ```bash
    openssl rand -base64 32
    ```

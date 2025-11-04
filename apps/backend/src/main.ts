@@ -11,7 +11,8 @@ import { AppModule } from './app/app.module.js';
 import { environment } from './environments/environment';
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
+  try {
+    const app = await NestFactory.create(AppModule);
 
   // Enable CORS for frontend communication
   if (environment.features.enableCors) {
@@ -120,6 +121,14 @@ async function bootstrap() {
   Logger.log(
     `🔄 Streaming endpoints available for real-time chat functionality`
   );
+  } catch (error) {
+    Logger.error('❌ Failed to start application:', error);
+    Logger.error('💡 Make sure MONGODB_URI and JWT_SECRET are set in your environment variables');
+    process.exit(1);
+  }
 }
 
-bootstrap();
+bootstrap().catch((error) => {
+  console.error('❌ Fatal error during bootstrap:', error);
+  process.exit(1);
+});
