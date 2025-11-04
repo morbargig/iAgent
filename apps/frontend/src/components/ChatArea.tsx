@@ -40,7 +40,7 @@ import {
   PlayArrow as ApplyIcon,
   Visibility as ViewIcon,
 } from "@mui/icons-material";
-import { type Message } from "@iagent/stream-mocks";
+import { type Message } from "@iagent/chat-types";
 import { MarkdownRenderer } from "./MarkdownRenderer";
 import { FileAttachmentCard } from "./FileAttachmentCard";
 import {

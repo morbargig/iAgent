@@ -38,7 +38,7 @@
   ],
   "references": [
     {
-      "path": "../../libs/stream-mocks/tsconfig.lib.json"
+      "path": "../../libs/chat-types/tsconfig.lib.json"
     }
   ]
 }

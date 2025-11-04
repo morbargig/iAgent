@@ -98,8 +98,6 @@ export default async (): Promise<Config> => {
     
     // Module name mapping for better imports
     moduleNameMapper: {
-      '^@iagent/shared-types$': '<rootDir>/libs/shared-types/src/index.ts',
-      '^@iagent/shared-utils$': '<rootDir>/libs/shared-utils/src/index.ts',
       '^@iagent/(.*)$': '<rootDir>/libs/$1/src/index.ts',
     },
     

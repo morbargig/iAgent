@@ -2,6 +2,7 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import { nxViteTsPaths } from '@nx/vite/plugins/nx-tsconfig-paths.plugin';
+import path from 'path';
 
 export default defineConfig(({ mode }) => {
   // Determine base URL based on environment
@@ -41,6 +42,9 @@ export default defineConfig(({ mode }) => {
 
     resolve: {
       conditions: ['@iagent/workspace', 'import', 'module', 'default'],
+      alias: {
+        '@iagent/chat-types': path.resolve(__dirname, '../../libs/chat-types/src/index.ts'),
+      },
     },
 
     css: {

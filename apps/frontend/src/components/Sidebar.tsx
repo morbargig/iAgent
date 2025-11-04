@@ -26,7 +26,7 @@ import {
   Close as CancelIcon,
   Psychology as GeneratingIcon,
 } from "@mui/icons-material";
-import { type Conversation } from "@iagent/stream-mocks";
+import { type Conversation } from "@iagent/chat-types";
 import { useTranslation } from "../contexts/TranslationContext";
 
 interface SidebarProps {

@@ -10,16 +10,7 @@
       "path": "./apps/backend"
     },
     {
-      "path": "./libs/stream-mocks"
-    },
-    {
-      "path": "./libs/types"
-    },
-    {
-      "path": "./libs/shared-types"
-    },
-    {
-      "path": "./libs/shared-utils"
+      "path": "./libs/chat-types"
     }
   ]
 }

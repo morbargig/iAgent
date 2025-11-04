@@ -3,7 +3,7 @@
   "include": [],
   "references": [
     {
-      "path": "../../libs/stream-mocks"
+      "path": "../../libs/chat-types"
     },
     {
       "path": "./tsconfig.app.json"

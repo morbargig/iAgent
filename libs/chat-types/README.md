@@ -1,7 +1,7 @@
-# stream-mocks
+# chat-types
 
 This library was generated with [Nx](https://nx.dev).
 
 ## Building
 
-Run `nx build stream-mocks` to build the library.
+Run `nx build chat-types` to build the library.

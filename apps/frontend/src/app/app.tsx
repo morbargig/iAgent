@@ -24,7 +24,7 @@ import {
   updateMessageContent,
   type Message,
   type Conversation,
-} from "@iagent/stream-mocks";
+} from "@iagent/chat-types";
 import { useMockMode } from "../hooks/useMockMode";
 import { useSidebarState, useThemeMode } from "../hooks/useLocalStorage";
 import { getBaseApiUrl } from "../config/config";
@@ -611,9 +611,7 @@ const App = () => {
           setIsLoading(false);
           setStreamingConversationId(null); // Clear streaming conversation
         },
-        isMockMode, // useMock
         getBaseApiUrl(), // baseUrl
-        translation,
         authToken || undefined, // authToken
         chatId, // chatId
         toolsArray, // tools
