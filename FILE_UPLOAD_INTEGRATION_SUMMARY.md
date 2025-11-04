@@ -5,7 +5,6 @@
 ### Phase 1: Backend Infrastructure ✅
 - [x] Created `docker-compose.yaml` with MongoDB configuration
 - [x] Updated all environment files (environment.ts, env.dev.ts, env.test.ts, env.prod.ts)
-  - Added `demoMode` support
   - Added `mongodb.uriLocal` and `mongodb.activeUri`
   - Added `fileUpload` limits (maxFileSize, maxTotalSize, maxFileCount, acceptedTypes)
 - [x] Updated main.ts to use port 3030

@@ -5,21 +5,14 @@ import type { Environment } from './environment.type';
 export const environment: Environment = {
   production: false,
   apiUrl: 'http://localhost:3030/api',
-  frontendUrl: 'http://localhost:3000',
-
-  // Demo mode support - uses local MongoDB when true
-  demoMode: process.env.DEMO_MODE === 'true',
+  frontendUrl: 'https://morbargig.github.io/iAgent/',
 
   mongodb: {
-    // Local MongoDB (docker) URI
-    uriLocal: process.env.MONGODB_URI_LOCAL || 'mongodb://localhost:27017',
-    // Remote MongoDB URI
-    uri: process.env.MONGODB_URI || 'mongodb+srv://appuser:VruPdc3d4pKYEUwO@cluster0.giuoosh.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0',
-    dbName: process.env.DB_NAME || 'filesdb',
-    // Computed URI based on demo mode
-    get activeUri(): string {
-      return environment.demoMode ? this.uriLocal : this.uri;
-    }
+    // MongoDB connection URI - REQUIRED: Set MONGODB_URI environment variable
+    uri: process.env.MONGODB_URI || (() => {
+      throw new Error('MONGODB_URI environment variable is required. Please set it in your .env file.');
+    })(),
+    dbName: process.env.DB_NAME || 'filesdb'
   },
 
   // File upload limits - Environment configurable with defaults
@@ -29,17 +22,11 @@ export const environment: Environment = {
     maxFileCount: parseInt(process.env.MAX_FILE_COUNT || '8'), // Default: 8 files
     acceptedTypes: process.env.ACCEPTED_FILE_TYPES?.split(',') || [] // Empty = all types
   },
-
-  database: {
-    host: process.env.DB_HOST || 'localhost',
-    port: parseInt(process.env.DB_PORT || '5432'),
-    username: process.env.DB_USERNAME || 'default_user',
-    password: process.env.DB_PASSWORD || 'default_password',
-    database: process.env.DB_NAME || 'iagent_default'
-  },
   
   jwt: {
-    secret: process.env.JWT_SECRET || 'default-jwt-secret-key',
+    secret: process.env.JWT_SECRET || (() => {
+      throw new Error('JWT_SECRET environment variable is required. Please set it in your .env file.');
+    })(),
     expiresIn: process.env.JWT_EXPIRES_IN || '24h'
   },
 

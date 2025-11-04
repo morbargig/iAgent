@@ -57,8 +57,17 @@ export class EnvironmentController {
         mongodb: {
           type: 'object',
           properties: {
-            uri: { type: 'string' },
-            dbName: { type: 'string' }
+            dbName: { type: 'string' },
+            configured: { type: 'boolean' }
+          }
+        },
+        fileUpload: {
+          type: 'object',
+          properties: {
+            maxFileSize: { type: 'number' },
+            maxTotalSize: { type: 'number' },
+            maxFileCount: { type: 'number' },
+            acceptedTypes: { type: 'array', items: { type: 'string' } }
           }
         }
       }
@@ -74,8 +83,21 @@ export class EnvironmentController {
       logging: environment.logging,
       features: environment.features,
       cors: environment.cors,
-      mongodb: environment.mongodb,
-      // Exclude sensitive data like database credentials and JWT secrets
+      mongodb: {
+        // Only return database name, NOT the connection URI (contains credentials)
+        dbName: environment.mongodb.dbName,
+        // Indicate if MongoDB is configured without exposing the URI
+        configured: !!environment.mongodb.uri
+      },
+      fileUpload: {
+        maxFileSize: environment.fileUpload.maxFileSize,
+        maxTotalSize: environment.fileUpload.maxTotalSize,
+        maxFileCount: environment.fileUpload.maxFileCount,
+        acceptedTypes: environment.fileUpload.acceptedTypes
+      },
+      // Exclude sensitive data:
+      // - JWT secrets (environment.jwt.secret)
+      // - MongoDB URI with credentials (environment.mongodb.uri)
       timestamp: new Date().toISOString(),
       nodeEnv: process.env.NODE_ENV || 'development'
     };

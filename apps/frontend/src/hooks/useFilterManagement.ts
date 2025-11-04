@@ -229,7 +229,7 @@ export const useFilterManagement = ({
         if (!currentChatId) return;
 
         try {
-            // For demo mode, update localStorage
+            // Update localStorage as backup
             const existingFilters = localStorage.getItem(
                 `chatFilters_${currentChatId}`
             );

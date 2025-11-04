@@ -44,11 +44,9 @@ All environment files support:
 
 ```typescript
 {
-  demoMode: boolean,  // Use local MongoDB when true
   mongodb: {
-    uriLocal: string,  // Local MongoDB URI (Docker)
-    uri: string,       // Remote MongoDB URI
-    activeUri: string  // Computed based on demoMode
+    uri: string,       // MongoDB connection URI (local or remote)
+    dbName: string     // Database name
   },
   fileUpload: {
     maxFileSize: number,     // Default: 5MB
@@ -115,25 +113,24 @@ API_CONFIG = {
 
 2. **Set environment variable:**
    ```bash
-   export DEMO_MODE=true
-   export MONGODB_URI_LOCAL=mongodb://localhost:27017
+   export MONGODB_URI=mongodb://localhost:27017
+   export DB_NAME=filesdb
    ```
 
 3. **Verify connection:**
-   - Backend will log: `🚀 Connecting to MongoDB (LOCAL)...`
+   - Backend will log: `🚀 Connecting to MongoDB...`
    - Files are stored in GridFS bucket 'fs'
 
 ### Remote MongoDB (Production)
 
 1. **Set environment variables:**
    ```bash
-   export DEMO_MODE=false
    export MONGODB_URI=mongodb+srv://user:password@cluster.mongodb.net/
    export DB_NAME=filesdb
    ```
 
 2. **Backend will connect to remote MongoDB:**
-   - Backend will log: `🚀 Connecting to MongoDB (REMOTE)...`
+   - Backend will log: `🚀 Connecting to MongoDB...`
 
 ## Environment Variables
 
@@ -142,9 +139,7 @@ API_CONFIG = {
 ```bash
 # Backend
 PORT=3030
-DEMO_MODE=true  # or false for remote MongoDB
-MONGODB_URI_LOCAL=mongodb://localhost:27017
-MONGODB_URI=mongodb+srv://...  # Your remote MongoDB URI
+MONGODB_URI=mongodb://localhost:27017  # or mongodb+srv://... for remote MongoDB
 DB_NAME=filesdb
 
 # Optional - File Upload Limits (uses defaults if not set)
@@ -271,9 +266,8 @@ export interface FileUploadConfig {
    - Search and filter files
 
 3. **MongoDB Connections**
-   - Test with `DEMO_MODE=true` (local Docker)
-   - Test with `DEMO_MODE=false` (remote MongoDB)
-   - Test fallback when MongoDB unavailable
+   - Test with `MONGODB_URI=mongodb://localhost:27017` (local MongoDB)
+   - Test with `MONGODB_URI=mongodb+srv://...` (remote MongoDB)
 
 4. **File Deduplication**
    - Upload same file twice → deduplicates
@@ -288,8 +282,8 @@ export interface FileUploadConfig {
 Solution:
 1. Check Docker is running: docker ps
 2. Check MongoDB container: docker-compose ps
-3. Verify MONGODB_URI_LOCAL is correct
-4. Check DEMO_MODE=true
+3. Verify MONGODB_URI is set correctly: `echo $MONGODB_URI`
+4. Test connection: `mongosh $MONGODB_URI`
 ```
 
 **Problem:** Cannot connect to remote MongoDB
@@ -298,7 +292,7 @@ Solution:
 1. Verify MONGODB_URI is correct
 2. Check network connectivity
 3. Verify credentials
-4. Check DEMO_MODE=false
+4. Check MONGODB_URI is set to remote connection string
 ```
 
 ### File Upload Issues
