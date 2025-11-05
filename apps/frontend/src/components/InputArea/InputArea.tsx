@@ -1,5 +1,5 @@
 import React from "react";
-import { Box, Snackbar, Alert, IconButton } from "@mui/material";
+import { Snackbar, Alert } from "@mui/material";
 import { Clear as ClearIcon } from "@mui/icons-material";
 import { useTranslation } from "../../contexts/TranslationContext";
 import { Translate } from "../Translate";
@@ -389,104 +389,42 @@ export function InputArea({
   return (
     <>
       {/* Input Area Container */}
-      <Box
+      <div
         id="iagent-input-area"
-        className="iagent-input-container"
+        className="fixed bottom-0 left-0 right-0 z-50 pt-10 pb-5 px-5 bg-gradient-to-t from-white via-white/95 to-white/40 shadow-lg"
         ref={inputAreaUI.inputContainerRef}
-        sx={{
-          position: "fixed",
-          bottom: 0,
-          insetInlineStart:
-            effectiveSidebarWidth > 0 ? `${effectiveSidebarWidth}px` : "0",
-          insetInlineEnd:
-            effectiveReportPanelWidth > 0
-              ? `${effectiveReportPanelWidth}px`
-              : "0",
-          zIndex: 10,
-          background: isDarkMode
-            ? "linear-gradient(180deg, rgba(52, 53, 65, 0) 0%, rgba(52, 53, 65, 0.8) 50%, #343541 100%)"
-            : "linear-gradient(180deg, rgba(255, 255, 255, 0) 0%, rgba(255, 255, 255, 0.8) 50%, #ffffff 100%)",
-          paddingTop: "20px",
-          paddingBottom: "20px",
-          transition:
-            "inset-inline-start 300ms cubic-bezier(0.4, 0, 0.2, 1), inset-inline-end 300ms cubic-bezier(0.4, 0, 0.2, 1)",
-          "@media (max-width: 768px)": {
-            insetInlineStart: 0,
-            insetInlineEnd: 0,
-            paddingBottom: "env(safe-area-inset-bottom, 10px)",
-            paddingTop: "10px",
-          },
+        style={{
+          insetInlineStart: effectiveSidebarWidth > 0 ? `${effectiveSidebarWidth}px` : '0',
+          insetInlineEnd: effectiveReportPanelWidth > 0 ? `${effectiveReportPanelWidth}px` : '0',
         }}
       >
         {/* Input Area Content Wrapper with Drag & Drop */}
-        <Box
+        <div
           id="iagent-input-content"
-          className="iagent-input-content-wrapper"
+          className="max-w-3xl mx-auto px-5 w-full relative"
           onDragEnter={fileHandling.handleDragEnter}
           onDragLeave={fileHandling.handleDragLeave}
           onDragOver={fileHandling.handleDragOver}
           onDrop={fileHandling.handleDropFiles}
-          sx={{
-            maxWidth: "768px",
-            margin: "0 auto",
-            paddingInlineStart: "20px",
-            paddingInlineEnd: "20px",
-            width: "100%",
-            boxSizing: "border-box",
-            transition: "all 300ms cubic-bezier(0.4, 0, 0.2, 1)",
-            position: "relative",
-            "@media (max-width: 600px)": {
-              paddingInlineStart: "10px",
-              paddingInlineEnd: "10px",
-            },
-          }}
         >
           {/* Drag Overlay */}
           {fileHandling.isDragging && (
-            <Box
-              sx={{
-                position: "absolute",
-                top: 0,
-                insetInlineStart: 0,
-                insetInlineEnd: 0,
-                bottom: 0,
-                backgroundColor: "rgba(59, 130, 246, 0.1)",
-                border: "2px dashed #3b82f6",
-                borderRadius: "24px",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                zIndex: 10,
-                pointerEvents: "none",
-              }}
-            >
-              <Box sx={{ fontSize: "18px", color: "#3b82f6" }}>
+            <div className="absolute inset-0 bg-blue-50 border-2 border-dashed border-blue-500 rounded-xl flex items-center justify-center z-10">
+              <div className="text-blue-600">
                 {t("files.dropFilesHere")}
-              </Box>
-            </Box>
+              </div>
+            </div>
           )}
 
           {/* Main Input Form Container */}
-          <Box
+          <div
             id="iagent-input-form"
-            className="iagent-input-form-container"
-            sx={{
-              display: "flex",
-              flexDirection: "column",
-              borderRadius: "24px",
-              backgroundColor: isDarkMode ? "#40414f" : "#f7f7f8",
-              border: inputAreaUI.isFocused
-                ? `1px solid ${isDarkMode ? "#565869" : "#d1d5db"}`
-                : `1px solid ${isDarkMode ? "#565869" : "#d1d5db"}`,
-              boxShadow: inputAreaUI.isFocused
-                ? `0 0 0 2px ${isDarkMode ? "rgba(255, 255, 255, 0.1)" : "rgba(0, 0, 0, 0.05)"}`
-                : "0 2px 6px rgba(0, 0, 0, 0.05)",
-              direction: inputAreaUI.textDirection,
-              minHeight: "80px",
-              "&:hover": {
-                boxShadow: "0 2px 12px rgba(0, 0, 0, 0.1)",
-              },
-            }}
+            className={`flex flex-col rounded-3xl bg-white border border-gray-200 shadow-sm ${
+              inputAreaUI.isFocused 
+                ? 'ring-2 ring-blue-500' 
+                : ''
+            }`}
+            style={{ direction: inputAreaUI.textDirection }}
           >
             {/* File Attachments */}
             <FileAttachments
@@ -499,10 +437,10 @@ export function InputArea({
             />
 
             {/* Main Textarea Container */}
-            <Box sx={{ position: "relative" }}>
+            <div className="relative">
               <textarea
                 id="iagent-message-input"
-                className="iagent-textarea-input"
+                className={`bg-transparent ${inputAreaUI.needsToolConfiguration ? 'opacity-60 text-orange-500' : 'text-gray-900'} ${showClearButton && value.trim() ? 'pr-10' : 'pr-4'}`}
                 ref={inputAreaUI.textareaRef}
                 value={value}
                 onChange={(e) => onChange(e.target.value)}
@@ -515,55 +453,29 @@ export function InputArea({
                     : inputAreaUI.debugPlaceholder
                 }
                 disabled={disabled || inputAreaUI.needsToolConfiguration}
-                style={{
-                  ...inputAreaUI.textareaStyle,
-                  opacity: inputAreaUI.needsToolConfiguration ? 0.6 : 1,
-                  cursor: inputAreaUI.needsToolConfiguration
-                    ? "not-allowed"
-                    : "text",
-                  color: inputAreaUI.needsToolConfiguration
-                    ? isDarkMode
-                      ? "#ff9800"
-                      : "#f57c00"
-                    : inputAreaUI.textareaStyle.color,
-                  paddingRight:
-                    showClearButton && value.trim() ? "40px" : "16px",
-                }}
+                autoComplete="off"
+                data-form-type="message-input"
+                aria-label="Message input"
+                aria-multiline="true"
+                style={inputAreaUI.textareaStyle}
               />
 
               {/* Clear Button - Absolutely Positioned */}
               {showClearButton && value.trim() && (
-                <IconButton
+                <button
+                  type="button"
                   onClick={() => {
                     onChange("");
                     onClear?.();
                   }}
                   disabled={disabled}
-                  sx={{
-                    position: "absolute",
-                    top: "8px",
-                    right: isRTL ? "auto" : "8px",
-                    left: isRTL ? "8px" : "auto",
-                    width: "24px",
-                    height: "24px",
-                    backgroundColor: "transparent",
-                    color: isDarkMode ? "#8e8ea0" : "#6b7280",
-                    borderRadius: "12px",
-                    transition: "all 0.2s ease",
-                    zIndex: 1,
-                    "&:hover": {
-                      backgroundColor: isDarkMode
-                        ? "rgba(255, 255, 255, 0.1)"
-                        : "rgba(0, 0, 0, 0.05)",
-                      color: isDarkMode ? "#ffffff" : "#374151",
-                    },
-                  }}
+                  className={`absolute top-2 ${isRTL ? 'left-2' : 'right-2'} w-6 h-6 text-gray-500 hover:text-gray-900 disabled:opacity-50`}
                   title={t("input.clearTooltip")}
                 >
-                  <ClearIcon sx={{ fontSize: 14 }} />
-                </IconButton>
+                  <ClearIcon className="text-sm" />
+                </button>
               )}
-            </Box>
+            </div>
 
             {/* Input Controls */}
             <InputControls
@@ -641,24 +553,18 @@ export function InputArea({
               isDarkMode={isDarkMode}
               t={t}
             />
-          </Box>
+          </div>
 
           {/* Helper Text */}
           <Translate
             i18nKey="input.disclaimer"
             fallback="AI can make mistakes. Check important info."
             as="div"
-            style={{
-              display: "block",
-              marginTop: "8px",
-              color: isDarkMode ? "#8e8ea0" : "#6b7280",
-              fontSize: "12px",
-              lineHeight: "16px",
-              direction: "inherit",
-            }}
+            className="mt-2 text-xs text-gray-500"
+            style={{ direction: 'inherit' }}
           />
-        </Box>
-      </Box>
+        </div>
+      </div>
 
       {/* Hidden file input for quick upload */}
       <input
@@ -666,7 +572,7 @@ export function InputArea({
         type="file"
         multiple
         onChange={fileHandling.handleFileSelect}
-        style={{ display: "none" }}
+        className="hidden"
         disabled={disabled}
       />
 
