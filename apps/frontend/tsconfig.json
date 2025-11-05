@@ -3,6 +3,9 @@
   "include": [],
   "references": [
     {
+      "path": "../../libs/front/react"
+    },
+    {
       "path": "../../libs/chat-types"
     },
     {

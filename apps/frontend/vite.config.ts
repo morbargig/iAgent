@@ -44,6 +44,7 @@ export default defineConfig(({ mode }) => {
       conditions: ['@iagent/workspace', 'import', 'module', 'default'],
       alias: {
         '@iagent/chat-types': path.resolve(__dirname, '../../libs/chat-types/src/index.ts'),
+        '@iagent/front-react': path.resolve(__dirname, '../../libs/front/react/src/index.ts'),
       },
     },
 

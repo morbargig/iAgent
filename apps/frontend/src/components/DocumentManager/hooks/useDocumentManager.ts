@@ -1,7 +1,7 @@
 import { useState, useCallback, useEffect } from "react";
 import { DocumentFile, DocumentSearchFilters } from "../../../types/document.types";
 import { DocumentService } from "../../../services/documentService";
-import useDebounce from "../../../hooks/useDebouncer";
+import { useDebounce } from "../../../hooks/useDebouncer";
 
 export const useDocumentManager = () => {
     const [documentService] = useState(() => new DocumentService());

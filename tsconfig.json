@@ -11,6 +11,9 @@
     },
     {
       "path": "./libs/chat-types"
+    },
+    {
+      "path": "./libs/front/react"
     }
   ]
 }

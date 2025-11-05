@@ -1,5 +1,11 @@
 # 🤖 iAgent - AI Chat Application
 
+> **📖 Documentation:**
+> - **[DESIGN_PATTERNS_GUIDE.md](./DESIGN_PATTERNS_GUIDE.md)** - Generic design patterns and architectural principles (read first)
+> - **[INFRASTRUCTURE_GUIDE.md](./INFRASTRUCTURE_GUIDE.md)** - Project-specific implementation details
+> - **[STYLE_GUIDE.md](./STYLE_GUIDE.md)** - CSS style guidelines and design system
+> - **[.cursorrules](./.cursorrules)** - AI assistant rules and patterns
+
 [![Made with Nx](https://img.shields.io/badge/Made%20with-Nx-blue)](https://nx.dev)
 [![TypeScript](https://img.shields.io/badge/TypeScript-007ACC?logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
 [![React](https://img.shields.io/badge/React-20232A?logo=react&logoColor=61DAFB)](https://reactjs.org/)

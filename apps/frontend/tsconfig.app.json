@@ -39,6 +39,9 @@
   "references": [
     {
       "path": "../../libs/chat-types/tsconfig.lib.json"
+    },
+    {
+      "path": "../../libs/front/react/tsconfig.lib.json"
     }
   ]
 }
