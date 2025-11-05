@@ -43,28 +43,32 @@ export const useAnimatedPlaceholder = ({
     let timeoutId: ReturnType<typeof setTimeout>;
 
     if (phase === 'typing') {
-      if (currentText.length < currentExample.length) {
-        timeoutId = setTimeout(() => {
-          setCurrentText(currentExample.slice(0, currentText.length + 1));
-        }, typingSpeed);
-      } else {
-        timeoutId = setTimeout(() => {
-          setPhase('pausing');
-        }, pauseDuration);
-      }
+      timeoutId = setTimeout(() => {
+        setCurrentText((prevText) => {
+          if (prevText.length < currentExample.length) {
+            return currentExample.slice(0, prevText.length + 1);
+          } else {
+            setPhase('pausing');
+            return prevText;
+          }
+        });
+      }, typingSpeed);
     } else if (phase === 'pausing') {
       timeoutId = setTimeout(() => {
         setPhase('deleting');
       }, pauseDuration);
     } else if (phase === 'deleting') {
-      if (currentText.length > 0) {
-        timeoutId = setTimeout(() => {
-          setCurrentText(currentText.slice(0, -1));
-        }, deletingSpeed);
-      } else {
-        setCurrentIndex((prevIndex) => (prevIndex + 1) % examples.length);
-        setPhase('typing');
-      }
+      timeoutId = setTimeout(() => {
+        setCurrentText((prevText) => {
+          if (prevText.length > 0) {
+            return prevText.slice(0, -1);
+          } else {
+            setCurrentIndex((prevIndex) => (prevIndex + 1) % examples.length);
+            setPhase('typing');
+            return prevText;
+          }
+        });
+      }, deletingSpeed);
     }
 
     return () => {
@@ -72,7 +76,7 @@ export const useAnimatedPlaceholder = ({
         clearTimeout(timeoutId);
       }
     };
-  }, [currentText, currentIndex, phase, examples, isActive, typingSpeed, pauseDuration, deletingSpeed]);
+  }, [currentIndex, phase, examples, isActive, typingSpeed, pauseDuration, deletingSpeed]);
 
   return currentText;
 }; 

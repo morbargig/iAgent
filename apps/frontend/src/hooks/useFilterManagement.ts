@@ -312,18 +312,24 @@ export const useFilterManagement = ({
 
             // Also try API call if authenticated
             if (authToken) {
-                const response = await fetch(
-                    getApiUrl(`/chats/${currentChatId}/filters`),
-                    {
-                        headers: {
-                            Authorization: `Bearer ${authToken}`,
-                        },
-                    }
-                );
+                try {
+                    const response = await fetch(
+                        getApiUrl(`/chats/${currentChatId}/filters`),
+                        {
+                            headers: {
+                                Authorization: `Bearer ${authToken}`,
+                            },
+                        }
+                    );
 
-                if (response.ok) {
-                    const apiFilters = await response.json();
-                    console.log("✅ API filters loaded:", apiFilters.length);
+                    if (response.ok) {
+                        const apiFilters = await response.json();
+                        console.log("✅ API filters loaded:", apiFilters.length);
+                    } else if (response.status === 401) {
+                        console.warn("⚠️ Unauthorized - auth token may be expired or invalid");
+                    }
+                } catch (apiError) {
+                    console.warn("⚠️ Failed to load filters from API (continuing with localStorage):", apiError);
                 }
             }
         } catch (error) {

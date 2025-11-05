@@ -49,19 +49,6 @@ export const useDateRange = ({ t }: UseDateRangeProps) => {
 
   const committedTab = dateRangeSettings.committedTab;
 
-  useEffect(() => {
-    const startDateString = dateRange[0]?.toISOString();
-    const endDateString = dateRange[1]?.toISOString();
-
-    setDateRangeSettings((prev) => ({
-      ...prev,
-      datePicker: {
-        startDate: startDateString || null,
-        endDate: endDateString || null,
-      },
-    }));
-  }, [dateRange, setDateRangeSettings]);
-
   const setDateRangeTab = (tab: number) => {
     setDateRangeSettings((prev) => ({
       ...prev,
