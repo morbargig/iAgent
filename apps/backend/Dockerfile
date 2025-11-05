@@ -26,7 +26,7 @@ COPY apps/backend/jest.config.js ./apps/backend/
 COPY libs/ ./libs/
 
 # Install all dependencies (including dev dependencies for build)
-RUN npm ci && npm cache clean --force
+RUN npm i && npm cache clean --force
 
 # Copy the entire apps/backend directory (including src)
 COPY apps/backend/ ./apps/backend/
