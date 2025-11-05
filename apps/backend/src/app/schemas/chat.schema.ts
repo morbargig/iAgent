@@ -144,8 +144,8 @@ export const ChatMessageSchema = SchemaFactory.createForClass(ChatMessage);
 export const ChatSchema = SchemaFactory.createForClass(Chat);
 
 // Add indexes for better performance
+// Note: filterId already has unique: true which creates an index automatically
 ChatFilterSchema.index({ userId: 1, chatId: 1 });
-ChatFilterSchema.index({ filterId: 1 });
 ChatFilterSchema.index({ userId: 1, isActive: 1 });
 
 ChatMessageSchema.index({ chatId: 1, timestamp: 1 });
