@@ -156,35 +156,6 @@ export class FileController {
     }
   }
 
-  @Get(':id/preview')
-  @ApiOperation({
-    summary: 'Preview a file',
-    description: 'Stream a file for inline preview in browser',
-  })
-  @ApiParam({ name: 'id', description: 'File ID' })
-  @ApiResponse({ status: 200, description: 'File streamed for preview' })
-  @ApiResponse({ status: 404, description: 'File not found' })
-  async previewFile(
-    @Param('id') id: string,
-    @Res() res: Response,
-  ): Promise<void> {
-    try {
-      const { stream, fileInfo } = await this.fileService.getFileStream(id);
-
-      res.set({
-        'Content-Type': fileInfo.mimetype,
-        'Content-Disposition': `inline; filename="${fileInfo.filename}"`,
-        'Content-Length': fileInfo.size.toString(),
-      });
-
-      stream.pipe(res);
-    } catch (error) {
-      if (error instanceof NotFoundException) {
-        throw error;
-      }
-      throw new NotFoundException(`File with ID ${id} not found`);
-    }
-  }
 
   @Get(':id/info')
   @ApiOperation({

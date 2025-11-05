@@ -1,5 +1,4 @@
-import { Controller, Get, Post, Body, Sse, Res, HttpStatus } from '@nestjs/common';
-import { Observable, switchMap, of, delay } from 'rxjs';
+import { Controller, Get, Post, Body, Res, HttpStatus } from '@nestjs/common';
 import type { Response } from 'express';
 import {
   ApiTags,
@@ -10,16 +9,12 @@ import {
   getSchemaPath,
   ApiProduces,
   ApiConsumes,
-  ApiBadRequestResponse,
-  ApiInternalServerErrorResponse,
-
   ApiUnauthorizedResponse
 } from '@nestjs/swagger';
 
 import { ChatService } from './services/chat.service';
-import { UserId, ApiJwtAuth } from './decorators/auth.decorator';
-// import { AuthService, LoginRequest, LoginResponse } from './auth/auth.service';
-// import { AuthGuard, AuthenticatedRequest } from './auth/auth.guard';
+import { AuthService } from './auth/auth.service';
+import type { LoginRequest, LoginResponse } from './auth/auth.service';
 import {
   ChatRequestDto,
   ChatResponseDto,
@@ -37,16 +32,14 @@ interface ChatMessage {
   timestamp: Date;
 }
 
-interface MessageEvent {
-  data: string;
-}
 
 @ApiTags('Chat API')
 @ApiExtraModels(ChatRequestDto, ChatResponseDto, StreamTokenDto, ErrorResponseDto, HealthCheckDto, AuthTokenDto, ToolSelectionDto)
 @Controller()
 export class AppController {
   constructor(
-    private readonly chatService: ChatService
+    private readonly chatService: ChatService,
+    private readonly authService: AuthService
   ) { }
 
   @Get()
@@ -70,10 +63,7 @@ export class AppController {
       endpoints: {
         health: '/api',
         login: '/api/auth/login',
-        demo: '/api/auth/demo-token',
-        chat: '/api/chat',
         stream: '/api/chat/stream',
-        sse: '/api/chat/sse-stream',
         docs: '/api/docs'
       }
     };
@@ -88,8 +78,8 @@ export class AppController {
     schema: {
       type: 'object',
       properties: {
-        email: { type: 'string', example: 'demo@example.com' },
-        password: { type: 'string', example: 'demo123' }
+        email: { type: 'string', example: 'user@example.com' },
+        password: { type: 'string', example: 'password' }
       }
     }
   })
@@ -110,242 +100,10 @@ export class AppController {
   @ApiUnauthorizedResponse({
     description: 'Invalid credentials'
   })
-  async login(@Body() loginRequest: any): Promise<any> {
-    // Simple hardcoded authentication
-    if (loginRequest.email === 'demo@example.com' && loginRequest.password === 'demo123') {
-      return {
-        token: 'demo-jwt-token-12345',
-        userId: 'user_123456789',
-        email: 'demo@example.com',
-        role: 'user',
-        expiresIn: '24h'
-      };
-    }
-    throw new Error('Invalid credentials');
+  async login(@Body() loginRequest: LoginRequest): Promise<LoginResponse> {
+    return await this.authService.login(loginRequest);
   }
 
-  @Get('auth/demo-token')
-  @ApiOperation({
-    summary: 'Get demo token',
-    description: 'Get a demo authentication token for testing (demo@example.com)'
-  })
-  @ApiResponse({
-    status: HttpStatus.OK,
-    description: 'Demo token generated',
-    schema: {
-      type: 'object',
-      properties: {
-        token: { type: 'string' },
-        userId: { type: 'string' },
-        email: { type: 'string' },
-        message: { type: 'string' }
-      }
-    }
-  })
-  getDemoToken(): any {
-    return {
-      token: 'demo-jwt-token-12345',
-      userId: 'user_123456789',
-      email: 'demo@example.com',
-      message: 'Use this token for testing. Include it in your requests as auth.token or Authorization: Bearer <token>'
-    };
-  }
-
-  @Post('chat')
-  @ApiJwtAuth()
-  @ApiOperation({
-    summary: 'Send a chat message',
-    description: 'Send a message to the AI assistant and receive a complete response. This endpoint returns the full response at once. Requires Bearer token authentication.'
-  })
-  @ApiConsumes('application/json')
-  @ApiProduces('application/json')
-  @ApiBody({
-    type: ChatRequestDto,
-    description: 'Chat request containing conversation history',
-    schema: {
-      $ref: getSchemaPath(ChatRequestDto)
-    }
-  })
-  @ApiResponse({
-    status: HttpStatus.OK,
-    description: 'Successfully generated AI response',
-    type: String,
-    content: {
-      'application/json': {
-        schema: {
-          type: 'string',
-          example: 'Hello! I\'d be happy to help you with TypeScript. What specific topic would you like to learn about?'
-        }
-      }
-    }
-  })
-  @ApiBadRequestResponse({
-    description: 'Invalid request format, validation error, or missing x-user-id header',
-    type: ErrorResponseDto,
-    schema: {
-      $ref: getSchemaPath(ErrorResponseDto)
-    }
-  })
-  @ApiInternalServerErrorResponse({
-    description: 'Internal server error',
-    type: ErrorResponseDto
-  })
-  async chat(@UserId() userId: string, @Body() request: any): Promise<string> {
-    const { messages, chatId } = request;
-
-    // Convert DTOs to internal format with defaults
-    const processedMessages: ChatMessage[] = messages.map((msg: any) => ({
-      id: msg.id || Date.now().toString(),
-      role: msg.role,
-      content: msg.content,
-      timestamp: msg.timestamp || new Date()
-    }));
-
-    const lastMessage = processedMessages[processedMessages.length - 1];
-
-    // Save user message if it doesn't exist yet
-    try {
-      if (lastMessage.role === 'user') {
-        await this.chatService.addMessage({
-          id: lastMessage.id,
-          chatId: chatId || 'default-chat',
-          userId,
-          role: lastMessage.role,
-          content: lastMessage.content,
-          timestamp: lastMessage.timestamp,
-          metadata: {}
-        });
-      }
-    } catch (error: any) {
-      console.log('Failed to save user message:', error.message);
-    }
-
-    // Enhanced mock responses with markdown examples
-    const responses = [
-      `Hello! I'm a **ChatGPT Clone** built with React and NestJS in an Nx monorepo. How can I help you today?
-
-Here are some things I can help with:
-- 💻 Code explanations and debugging
-- 📝 Writing and editing
-- 🧮 Math and calculations
-- 🎨 Creative projects`,
-
-      `That's an interesting question! Let me think about that...
-
-Here's a quick **code example** in TypeScript:
-
-\`\`\`typescript
-interface User {
-  id: string;
-  name: string;
-  email: string;
-}
-
-const createUser = (userData: Partial<User>): User => {
-  return {
-    id: generateId(),
-    ...userData
-  } as User;
-};
-\`\`\`
-
-This demonstrates type safety and object composition.`,
-
-      `I'm a mock AI assistant designed to demonstrate the **frontend-backend communication** in this Nx workspace.
-
-## Key Features:
-1. **Real-time streaming** - Token-by-token generation
-2. **Markdown support** - Rich text formatting
-3. **Modern UI** - ChatGPT-like interface
-4. **Monorepo architecture** - Nx workspace organization
-
-> This is a blockquote example showing how markdown is rendered in the chat interface.`,
-
-      `This project showcases a **modern tech stack**:
-
-### Frontend:
-- React 19 with TypeScript
-- Material-UI components
-- Vite for fast development
-- Real-time streaming support
-
-### Backend:
-- NestJS framework
-- Server-Sent Events (SSE)
-- CORS enabled
-- TypeScript throughout
-
-### Development:
-- Nx monorepo tooling
-- ESLint & Prettier
-- Jest for testing
-
-*All managed efficiently in a single workspace!*`,
-
-      `Feel free to ask me anything! I'll provide helpful responses to demonstrate the chat functionality.
-
-Here's a **mathematical equation** example:
-
-The quadratic formula: $x = \\frac{-b \\pm \\sqrt{b^2 - 4ac}}{2a}$
-
-And here's a **table example**:
-
-| Feature | Status | Notes |
-|---------|--------|-------|
-| Streaming | ✅ | Token-by-token generation |
-| Markdown | ✅ | Full support |
-| Dark Theme | ✅ | ChatGPT-like styling |
-| Mobile | ✅ | Responsive design |
-
-**Lists work too:**
-- [x] Completed feature
-- [x] Another completed item
-- [ ] Future enhancement
-- [ ] Another planned feature`,
-    ];
-
-    // Simple response logic based on user input
-    let response: string;
-    const userContent = lastMessage.content.toLowerCase();
-
-    if (userContent.includes('hello') || userContent.includes('hi')) {
-      response = responses[0];
-    } else if (userContent.includes('code') || userContent.includes('typescript') || userContent.includes('programming')) {
-      response = responses[1];
-    } else if (userContent.includes('nx') || userContent.includes('monorepo') || userContent.includes('architecture')) {
-      response = responses[2];
-    } else if (userContent.includes('tech') || userContent.includes('stack') || userContent.includes('framework')) {
-      response = responses[3];
-    } else if (userContent.includes('markdown') || userContent.includes('table') || userContent.includes('math')) {
-      response = responses[4];
-    } else {
-      response = responses[Math.floor(Math.random() * responses.length)];
-    }
-
-    // Add a realistic delay
-    await new Promise(resolve => setTimeout(resolve, 500 + Math.random() * 1000));
-
-    // Save assistant response
-    try {
-      const assistantMessageId = `msg_${Date.now()}_assistant`;
-      await this.chatService.addMessage({
-        id: assistantMessageId,
-        chatId: chatId || 'default-chat',
-        userId,
-        role: 'assistant',
-        content: response,
-        timestamp: new Date(),
-        metadata: {
-          model: 'demo-assistant',
-          tokens: response.split(' ').length
-        }
-      });
-    } catch (error: any) {
-      console.log('Failed to save assistant message:', error.message);
-    }
-
-    return response;
-  }
 
   @Post('chat/stream')
   // @UseGuards(AuthGuard)
@@ -1268,101 +1026,4 @@ What aspect of the Nx setup interests you most?`,
     return responses[Math.floor(Math.random() * responses.length)] as string;
   }
 
-  @Sse('chat/sse-stream')
-  @ApiOperation({
-    summary: 'Send a chat message with Server-Sent Events streaming',
-    description: 'Send a message to the AI assistant and receive a streaming response via Server-Sent Events (SSE). Each token is sent as a separate event with metadata.'
-  })
-  @ApiProduces('text/event-stream')
-  @ApiResponse({
-    status: HttpStatus.OK,
-    description: 'Successfully started SSE streaming',
-    content: {
-      'text/event-stream': {
-        schema: {
-          type: 'object',
-          properties: {
-            data: {
-              type: 'string',
-              description: 'JSON stringified StreamTokenDto containing token and metadata',
-              example: '{"token": "Hello", "done": false, "metadata": {"index": 1, "total_tokens": 150}}'
-            }
-          }
-        }
-      }
-    }
-  })
-  @ApiBadRequestResponse({
-    description: 'Invalid request format or validation error',
-    type: ErrorResponseDto
-  })
-  @ApiInternalServerErrorResponse({
-    description: 'Internal server error during SSE streaming',
-    type: ErrorResponseDto
-  })
-  async sseStreamChat(@Body() request: any): Promise<Observable<MessageEvent>> {
-    const { messages } = request;
-
-    // Use the enhanced contextual response generation
-    const response = await this.generateContextualResponse(messages);
-
-    // Use the improved tokenization
-    const tokens = this.tokenizeResponse(response);
-
-    return of(null).pipe(
-      delay(200), // Initial thinking delay
-      switchMap(() => {
-        let tokenIndex = 0;
-
-        return new Observable<MessageEvent>((subscriber) => {
-          const sendNextToken = () => {
-            if (tokenIndex < tokens.length) {
-              const token = tokens[tokenIndex];
-              const delay = this.calculateStreamingDelay(token, tokenIndex, tokens);
-
-              // Send the current token
-              const tokenEvent: MessageEvent = {
-                data: JSON.stringify({
-                  token,
-                  done: false,
-                  metadata: {
-                    index: tokenIndex + 1,
-                    total_tokens: tokens.length,
-                    progress: Math.round((tokenIndex / tokens.length) * 100),
-                    estimated_remaining_ms: Math.round((tokens.length - tokenIndex) * 80)
-                  }
-                })
-              };
-
-              subscriber.next(tokenEvent);
-              tokenIndex++;
-
-              // Schedule next token
-              setTimeout(sendNextToken, delay);
-            } else {
-              // Send completion event
-              const completeEvent: MessageEvent = {
-                data: JSON.stringify({
-                  token: '',
-                  done: true,
-                  metadata: {
-                    index: tokens.length,
-                    total_tokens: tokens.length,
-                    progress: 100,
-                    estimated_remaining_ms: 0
-                  }
-                })
-              };
-
-              subscriber.next(completeEvent);
-              subscriber.complete();
-            }
-          };
-
-          // Start the streaming
-          setTimeout(sendNextToken, 100);
-        });
-      })
-    );
-  }
 }

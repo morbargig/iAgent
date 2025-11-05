@@ -44,8 +44,8 @@ export const LoginForm: React.FC<LoginFormProps> = ({
 }) => {
   const { useMockMode: isMockMode, toggleMockMode } = useMockMode();
   const [credentials, setCredentials] = useState<LoginCredentials>({
-    email: "demo@example.com",
-    password: "demo123",
+    email: "",
+    password: "",
   });
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -86,27 +86,6 @@ export const LoginForm: React.FC<LoginFormProps> = ({
     }
   };
 
-  const handleDemoLogin = async () => {
-    setIsLoading(true);
-    setError(null);
-
-    try {
-      if (isMockMode) {
-        // Mock demo login
-        await new Promise((resolve) => setTimeout(resolve, 500));
-        onLogin("mock-demo-token-67890", "demo-user-id", "demo@example.com");
-        return;
-      }
-
-      const response = await fetch(getApiUrl('/auth/demo-token'));
-      const data = await response.json();
-      onLogin(data.token, data.userId, data.email);
-    } catch (err) {
-      setError("Failed to get demo token");
-    } finally {
-      setIsLoading(false);
-    }
-  };
 
   const handleInputChange =
     (field: keyof LoginCredentials) =>
@@ -329,65 +308,6 @@ export const LoginForm: React.FC<LoginFormProps> = ({
                   : "Login"}
             </Button>
           </form>
-
-          <Divider sx={{ my: 2 }}>
-            <Typography variant="body2" color="textSecondary">
-              or
-            </Typography>
-          </Divider>
-
-          {/* Demo Login */}
-          <Button
-            fullWidth
-            variant="outlined"
-            size="large"
-            onClick={handleDemoLogin}
-            disabled={isLoading}
-            sx={{
-              py: 1.5,
-              borderColor: isMockMode ? "#ff6b35" : "#667eea",
-              color: isMockMode ? "#ff6b35" : "#667eea",
-              "&:hover": {
-                borderColor: isMockMode ? "#e55a2b" : "#5a6fd8",
-                backgroundColor: isMockMode
-                  ? isDarkMode
-                    ? "rgba(255, 107, 53, 0.1)"
-                    : "rgba(255, 107, 53, 0.05)"
-                  : isDarkMode
-                    ? "rgba(102, 126, 234, 0.1)"
-                    : "rgba(102, 126, 234, 0.05)",
-              },
-            }}
-          >
-            {isMockMode ? "Try Mock Demo" : "Try Demo Account"}
-          </Button>
-
-          {/* Demo Credentials Info */}
-          <Box
-            sx={{
-              mt: 3,
-              p: 2,
-              backgroundColor: isDarkMode ? "#1a1a1a" : "#f5f5f5",
-              borderRadius: 1,
-            }}
-          >
-            <Typography variant="caption" color="textSecondary" display="block">
-              {isMockMode ? "Mock Mode Info:" : "Demo Credentials:"}
-            </Typography>
-            {isMockMode ? (
-              <Typography variant="body2" sx={{ fontFamily: "monospace" }}>
-                Any email/password works in mock mode
-                <br />
-                Simulated responses only
-              </Typography>
-            ) : (
-              <Typography variant="body2" sx={{ fontFamily: "monospace" }}>
-                Email: demo@example.com
-                <br />
-                Password: demo123
-              </Typography>
-            )}
-          </Box>
         </CardContent>
       </Card>
     </Box>

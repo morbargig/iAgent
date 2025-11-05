@@ -21,17 +21,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
 
   async validate(payload: JwtPayload) {
     // In production, you might want to check if user exists in database
-    // For demo purposes, we'll accept any valid JWT payload
-    
-    // Handle demo token
-    if (payload.sub === 'user_123456789') {
-      return {
-        userId: payload.sub,
-        email: payload.email || 'demo@example.com',
-      };
-    }
-    
-    // Handle regular JWT tokens
+    // Return user information from JWT payload
     return {
       userId: payload.sub,
       email: payload.email,

@@ -27,20 +27,15 @@ export class AuthService {
   
   // Mock users database - In production, use a real database
   private readonly users: User[] = [
-    {
-      userId: 'user_123456789',
-      email: 'demo@example.com',
-      password: 'demo123', // In production: hash this with bcrypt
-      role: 'user',
-      createdAt: new Date()
-    },
-    {
-      userId: 'admin_987654321',
-      email: 'admin@example.com',
-      password: 'admin123',
-      role: 'admin',
-      createdAt: new Date()
-    }
+    // Add your users here
+    // Example:
+    // {
+    //   userId: 'user_123456789',
+    //   email: 'user@example.com',
+    //   password: 'password', // In production: hash this with bcrypt
+    //   role: 'user',
+    //   createdAt: new Date()
+    // }
   ];
 
   async login(loginRequest: LoginRequest): Promise<LoginResponse> {
@@ -130,21 +125,4 @@ export class AuthService {
       .digest('base64url');
   }
 
-  // Demo method to create a token for testing
-  createDemoToken(userId = 'user_123456789'): string {
-    const user = this.users.find(u => u.userId === userId);
-    if (!user) {
-      throw new Error('User not found');
-    }
-
-    const payload = {
-      userId: user.userId,
-      email: user.email,
-      role: user.role,
-      iat: Math.floor(Date.now() / 1000),
-      exp: Math.floor(Date.now() / 1000) + (24 * 60 * 60)
-    };
-
-    return this.createSimpleJWT(payload);
-  }
 } 

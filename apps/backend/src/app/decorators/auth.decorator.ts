@@ -5,15 +5,7 @@ import { ApiBearerAuth } from '@nestjs/swagger';
 // In production, you'd use proper JWT validation with secret keys
 function decodeToken(token: string): { userId: string; email?: string } | null {
   try {
-    // For demo purposes, we'll accept simple patterns or the demo token
-    if (token === 'demo-jwt-token-12345') {
-      return {
-        userId: 'user_123456789',
-        email: 'demo@example.com'
-      };
-    }
-    
-    // Try to decode a base64 encoded JSON token (for demo)
+    // Try to decode a base64 encoded JSON token
     if (token.startsWith('eyJ') || token.includes('.')) {
       // This looks like a JWT, but for demo we'll just extract user info differently
       // In production, use proper JWT libraries like @nestjs/jwt

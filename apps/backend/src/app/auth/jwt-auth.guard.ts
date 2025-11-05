@@ -20,20 +20,7 @@ export class JwtAuthGuard extends AuthGuard('jwt') {
       return true;
     }
 
-    const request = context.switchToHttp().getRequest();
-    const authHeader = request.headers.authorization;
-
-    // Handle demo token specially
-    if (authHeader === 'Bearer demo-jwt-token-12345') {
-      // Inject user info directly for demo token
-      request.user = {
-        userId: 'user_123456789',
-        email: 'demo@example.com',
-      };
-      return true;
-    }
-
-    // For all other tokens, use standard JWT validation
+    // Use standard JWT validation
     return super.canActivate(context);
   }
 

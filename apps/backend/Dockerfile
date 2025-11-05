@@ -63,14 +63,17 @@ EXPOSE 3030
 
 # Add health check
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
-  CMD node -e "const http=require('http');const options={host:'localhost',port:3000,path:'/api/health',timeout:2000};const req=http.request(options,(res)=>{process.exit(res.statusCode===200?0:1)});req.on('error',()=>process.exit(1));req.end();" || exit 1
+  CMD node -e "const http=require('http');const port=process.env.PORT||3030;const options={host:'localhost',port:port,path:'/api',timeout:2000};const req=http.request(options,(res)=>{process.exit(res.statusCode===200?0:1)});req.on('error',()=>process.exit(1));req.end();" || exit 1
 
 # Use dumb-init to handle signals properly
 ENTRYPOINT ["dumb-init", "--"]
 
-# Set environment variables
+# Set environment variables with defaults
 ENV NODE_ENV=production
 ENV PORT=3030
+ENV MONGODB_URI=mongodb://localhost:27017/filesdb
+ENV DB_NAME=filesdb
+ENV JWT_SECRET=demo-secret-key-for-development
 
 # Start the application
 CMD ["node", "main.js"]
