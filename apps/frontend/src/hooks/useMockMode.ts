@@ -1,40 +1,26 @@
-import { useState, useEffect } from 'react';
+import { useAppLocalStorage } from './storage';
 
-export function useMockMode() {
-  const [useMockMode, setUseMockMode] = useState<boolean>(() => {
-    // Initialize from localStorage or default to true (Mock mode)
-    const stored = localStorage.getItem('chatbot-use-mock-mode');
-    return stored ? JSON.parse(stored) : true;
-  });
+export const useMockMode = () => {
+  const [appSettings, setAppSettings] = useAppLocalStorage('app-settings');
+  const useMockMode = appSettings.mockMode;
 
   const toggleMockMode = () => {
-    setUseMockMode(prev => {
-      const newValue = !prev;
-      localStorage.setItem('chatbot-use-mock-mode', JSON.stringify(newValue));
-      return newValue;
-    });
+    setAppSettings((prev) => ({
+      ...prev,
+      mockMode: !prev.mockMode,
+    }));
   };
 
   const setMockMode = (enabled: boolean) => {
-    setUseMockMode(enabled);
-    localStorage.setItem('chatbot-use-mock-mode', JSON.stringify(enabled));
+    setAppSettings((prev) => ({
+      ...prev,
+      mockMode: enabled,
+    }));
   };
-
-  // Sync with localStorage changes from other tabs
-  useEffect(() => {
-    const handleStorageChange = (e: StorageEvent) => {
-      if (e.key === 'chatbot-use-mock-mode' && e.newValue) {
-        setUseMockMode(JSON.parse(e.newValue));
-      }
-    };
-
-    window.addEventListener('storage', handleStorageChange);
-    return () => window.removeEventListener('storage', handleStorageChange);
-  }, []);
 
   return {
     useMockMode,
     toggleMockMode,
-    setMockMode
+    setMockMode,
   };
-} 
+};

@@ -59,7 +59,6 @@ export const useFilterManagement = ({
     const [selectedFilterForDetails, setSelectedFilterForDetails] =
         useState<ChatFilter | null>(null);
 
-    // Create synchronized configurations that match enabled tools
     const synchronizedConfigurations = Object.keys(toolConfigurations).reduce(
         (synced: { [toolId: string]: any }, toolId) => {
             synced[toolId] = {
@@ -76,7 +75,6 @@ export const useFilterManagement = ({
 
         console.log("🔄 Applying filter to UI:", filter.name, config);
 
-        // Apply date filter
         if (config.dateFilter) {
             if (
                 config.dateFilter.type === "custom" &&
@@ -99,12 +97,10 @@ export const useFilterManagement = ({
             }
         }
 
-        // Apply selected countries
         if (config.selectedCountries) {
             setSelectedFlags(config.selectedCountries);
         }
 
-        // Reset all tools first, then enable the ones in the filter
         Object.keys(enabledTools).forEach((toolId) => {
             if (enabledTools[toolId]) {
                 toggleTool(toolId); // Disable currently enabled tools

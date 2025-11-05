@@ -30,7 +30,6 @@ export const useDocumentDialog = ({
 
     const handleCloseDocsDialog = () => setDocsDialogOpen(false);
 
-    // File menu handlers
     const handleFileMenuClick = (event: React.MouseEvent<HTMLElement>) => {
         setFileMenuAnchor(event.currentTarget);
     };
@@ -41,7 +40,6 @@ export const useDocumentDialog = ({
 
     const handleQuickUpload = (fileInputRef: React.RefObject<HTMLInputElement>) => {
         handleFileMenuClose();
-        // Trigger the hidden file input
         fileInputRef.current?.click();
     };
 
@@ -50,19 +48,15 @@ export const useDocumentDialog = ({
         handleOpenDocsDialog();
     };
 
-    // Handle selecting a document from the dialog
     const handleDocumentSelectFromDialog = (document: any) => {
-        // Check file limit
         if (attachedFiles.length >= FILE_UPLOAD_CONFIG.MAX_FILE_COUNT) {
             setShowLimitWarning(true);
             return;
         }
 
-        // Prevent duplicates by id
         const exists = attachedFiles.some((f) => f.id === document.id);
 
         if (!exists) {
-            // Add as AttachedFile (already in MongoDB)
             const attachedFile: AttachedFile = {
                 id: document.id,
                 filename: document.name || document.filename,
@@ -80,7 +74,6 @@ export const useDocumentDialog = ({
         }
     };
 
-    // Handle removing a document from attachments
     const handleDocumentRemoveFromDialog = (document: any) => {
         setAttachedFiles((prev) => prev.filter((f) => f.id !== document.id));
     };

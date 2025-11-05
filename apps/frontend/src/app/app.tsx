@@ -26,7 +26,7 @@ import {
   type Conversation,
 } from "@iagent/chat-types";
 import { useMockMode } from "../hooks/useMockMode";
-import { useSidebarState, useThemeMode } from "../hooks/useLocalStorage";
+import { useAppLocalStorage, useAppSessionStorage, useMemoStorage } from "../hooks/storage";
 import { getBaseApiUrl } from "../config/config";
 // import { environment } from "../environments/environment";
 
@@ -311,12 +311,10 @@ const lightTheme = createTheme({
 });
 
 const App = () => {
-  const [isDarkMode, setIsDarkMode] = useThemeMode();
-  const [isSidebarOpen, setIsSidebarOpen] = useSidebarState();
-  const [conversations, setConversations] = useState<Conversation[]>([]);
-  const [currentConversationId, setCurrentConversationId] = useState<
-    string | null
-  >(null);
+  const [isDarkMode, setIsDarkMode] = useAppLocalStorage('chatbot-theme-mode');
+  const [isSidebarOpen, setIsSidebarOpen] = useAppLocalStorage('chatbot-sidebar-open');
+  const [conversations, setConversations] = useAppLocalStorage('chatbot-conversations');
+  const [currentConversationId, setCurrentConversationId] = useAppLocalStorage('chatbot-current-conversation-id');
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [streamingConversationId, setStreamingConversationId] = useState<
@@ -336,14 +334,13 @@ const App = () => {
   const [sidebarWidth, setSidebarWidth] = useState(250); // Track sidebar width
 
   // Authentication state
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [authToken, setAuthToken] = useState<string | null>(null);
-  // This variable is used in the component logic
-  const [userId, setUserId] = useState<string | null>(null);
-
-  // Explicit usage to satisfy TypeScript strict mode
-  if (userId !== null) console.log("User ID:", userId);
-  const [userEmail, setUserEmail] = useState<string | null>(null);
+  const [authToken, setAuthToken] = useAppSessionStorage('session-token');
+  const [userId, setUserId] = useAppSessionStorage('user-id');
+  const [userEmail, setUserEmail] = useAppSessionStorage('user-email');
+  const isAuthenticated = useMemoStorage(
+    () => Boolean(authToken && userId && userEmail),
+    [authToken, userId, userEmail]
+  );
 
   // Report panel state
   const [isReportPanelOpen, setIsReportPanelOpen] = useState(false);
@@ -655,70 +652,34 @@ const App = () => {
     setAuthToken(token);
     setUserId(userId);
     setUserEmail(email);
-    setIsAuthenticated(true);
-
-    // Save auth to localStorage
-    localStorage.setItem("chatbot-auth-token", token);
-    localStorage.setItem("chatbot-user-id", userId);
-    localStorage.setItem("chatbot-user-email", email);
   };
 
   const handleLogout = () => {
-    setAuthToken(null);
+    setAuthToken('');
     setUserId(null);
     setUserEmail(null);
-    setIsAuthenticated(false);
-
-    // Clear auth from localStorage
-    localStorage.removeItem("chatbot-auth-token");
-    localStorage.removeItem("chatbot-user-id");
-    localStorage.removeItem("chatbot-user-email");
-
-    // Clear conversations and other data
     setConversations([]);
     setCurrentConversationId(null);
-    localStorage.removeItem("chatbot-conversations");
-    localStorage.removeItem("chatbot-current-conversation-id");
   };
 
-  // Load conversations, theme preference, sidebar state, and auth from localStorage on mount
+  // Load and fix conversations on mount
   useEffect(() => {
-    const savedToken = localStorage.getItem("chatbot-auth-token");
-    const savedUserId = localStorage.getItem("chatbot-user-id");
-    const savedUserEmail = localStorage.getItem("chatbot-user-email");
-    const savedConversations = localStorage.getItem("chatbot-conversations");
-    const savedCurrentId = localStorage.getItem(
-      "chatbot-current-conversation-id"
-    );
-    const savedSidebarOpen = localStorage.getItem("chatbot-sidebar-open");
-
-    // Restore authentication if available
-    if (savedToken && savedUserId && savedUserEmail) {
-      setAuthToken(savedToken);
-      setUserId(savedUserId);
-      setUserEmail(savedUserEmail);
-      setIsAuthenticated(true);
-    }
-
-    if (savedConversations) {
+    if (conversations.length > 0) {
       try {
-        const parsedConversations = JSON.parse(savedConversations).map(
-          (conv: any) => ({
-            ...conv,
-            id: conv.id.includes("-") ? conv.id : generateUniqueId(), // Ensure unique ID format
-            lastUpdated: new Date(conv.lastUpdated),
-            messages: conv.messages.map((msg: any) => ({
-              ...msg,
-              id: msg.id.includes("-") ? msg.id : generateUniqueId(), // Ensure unique message IDs
-              timestamp: new Date(msg.timestamp),
-              isStreaming: false, // Reset streaming state on page load
-            })),
-          })
-        );
+        const fixedConversations = conversations.map((conv: any) => ({
+          ...conv,
+          id: conv.id?.includes("-") ? conv.id : generateUniqueId(),
+          lastUpdated: conv.lastUpdated ? new Date(conv.lastUpdated) : new Date(),
+          messages: (conv.messages || []).map((msg: any) => ({
+            ...msg,
+            id: msg.id?.includes("-") ? msg.id : generateUniqueId(),
+            timestamp: msg.timestamp ? new Date(msg.timestamp) : new Date(),
+            isStreaming: false,
+          })),
+        }));
 
-        // Check for duplicate IDs and fix them
         const seenIds = new Set();
-        const fixedConversations = parsedConversations.map((conv: any) => {
+        const deduplicatedConversations = fixedConversations.map((conv: any) => {
           if (seenIds.has(conv.id)) {
             conv.id = generateUniqueId();
           }
@@ -736,63 +697,31 @@ const App = () => {
           return conv;
         });
 
-        setConversations(fixedConversations);
+        if (JSON.stringify(deduplicatedConversations) !== JSON.stringify(conversations)) {
+          setConversations(deduplicatedConversations);
+        }
       } catch (error) {
-        console.error("Failed to load conversations from localStorage:", error);
-        // Clear corrupted data
-        localStorage.removeItem("chatbot-conversations");
-        localStorage.removeItem("chatbot-current-conversation-id");
+        console.error("Failed to fix conversations:", error);
+        setConversations([]);
       }
     }
 
-    if (savedCurrentId) {
-      setCurrentConversationId(savedCurrentId);
-    }
-
-    // Theme is now handled by useThemeMode hook
-
-    // Sidebar state is now handled by useSidebarState hook
     // Initialize responsive sidebar for new users only
-    if (savedSidebarOpen === null) {
-      const isMobile = window.innerWidth < 768; // Mobile breakpoint
-      const defaultSidebarState = !isMobile;
-      setIsSidebarOpen(defaultSidebarState);
+    if (!isSidebarOpen && window.innerWidth >= 768) {
+      const isMobile = window.innerWidth < 768;
+      setIsSidebarOpen(!isMobile);
     }
   }, []);
 
-  // Save conversations to localStorage whenever they change
-  useEffect(() => {
-    if (conversations.length > 0) {
-      localStorage.setItem(
-        "chatbot-conversations",
-        JSON.stringify(conversations)
-      );
-    }
-  }, [conversations]);
-
-  // Save current conversation ID to localStorage whenever it changes
-  useEffect(() => {
-    if (currentConversationId) {
-      localStorage.setItem(
-        "chatbot-current-conversation-id",
-        currentConversationId
-      );
-    } else {
-      localStorage.removeItem("chatbot-current-conversation-id");
-    }
-  }, [currentConversationId]);
 
   // Theme toggle now uses localStorage hook
   const toggleTheme = () => {
     setIsDarkMode(!isDarkMode);
   };
 
-  // Sidebar toggle now uses localStorage hook
+    // Sidebar toggle now uses localStorage hook
   const toggleSidebar = () => {
-    const newState = !isSidebarOpen;
-    setIsSidebarOpen(newState);
-    // Force immediate localStorage update for synchronization
-    localStorage.setItem("chatbot-sidebar-open", newState.toString());
+    setIsSidebarOpen(!isSidebarOpen);
   };
 
   // Handle sidebar width changes
@@ -1263,3 +1192,4 @@ const App = () => {
 };
 
 export default App;
+

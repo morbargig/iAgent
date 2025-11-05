@@ -1,0 +1,29 @@
+{
+  "name": "@iagent/front-react",
+  "version": "0.0.1",
+  "type": "module",
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    "./package.json": "./package.json",
+    ".": {
+      "@iagent/workspace": "./src/index.ts",
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "default": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist",
+    "!**/*.tsbuildinfo"
+  ],
+  "dependencies": {
+    "react": "^18.2.0",
+    "usehooks-ts": "^3.0.0",
+    "lodash": "^4.17.21"
+  },
+  "peerDependencies": {
+    "react": "^18.2.0"
+  }
+}

@@ -4,26 +4,13 @@ import {
   TranslationState,
   SUPPORTED_LANGUAGES,
 } from "../i18n/types";
+import { useAppLocalStorage } from "../hooks/storage";
 
 const TranslationContext = createContext<TranslationContextType | undefined>(
   undefined
 );
 
-const STORAGE_KEY = "preferred_language";
-const DIRECTION_STORAGE_KEY = "preferred_direction";
-
 const getInitialLanguage = (): string => {
-  // First try to get from localStorage
-  const storedLang = localStorage.getItem(STORAGE_KEY);
-  if (
-    storedLang &&
-    (storedLang === "none" ||
-      SUPPORTED_LANGUAGES.some((lang) => lang.code === storedLang))
-  ) {
-    return storedLang;
-  }
-
-  // Then try browser language
   const browserLang = navigator.language.split("-")[0];
   return SUPPORTED_LANGUAGES.some((lang) => lang.code === browserLang)
     ? browserLang
@@ -36,25 +23,17 @@ const setDocumentDirection = (lang: string) => {
       SUPPORTED_LANGUAGES.find((l) => l.code === lang)?.direction || "ltr";
     document.documentElement.lang = lang;
     document.documentElement.dir = direction;
-    localStorage.setItem(DIRECTION_STORAGE_KEY, direction);
-  }
-};
-
-const restoreDocumentDirection = () => {
-  const storedDirection = localStorage.getItem(DIRECTION_STORAGE_KEY);
-  const storedLang = localStorage.getItem(STORAGE_KEY);
-
-  if (storedDirection && storedLang) {
-    document.documentElement.dir = storedDirection;
-    document.documentElement.lang = storedLang;
   }
 };
 
 export const TranslationProvider: React.FC<{ children: React.ReactNode }> = ({
   children,
 }) => {
+  const [userPreferences, setUserPreferences] = useAppLocalStorage('user-preferences');
+  const initialLang = userPreferences.language || getInitialLanguage();
+  
   const [state, setState] = useState<TranslationState>({
-    currentLang: getInitialLanguage(),
+    currentLang: initialLang,
     translations: {},
     isLoading: false,
     error: null,
@@ -98,7 +77,7 @@ export const TranslationProvider: React.FC<{ children: React.ReactNode }> = ({
     }
 
     setState((prev) => ({ ...prev, currentLang: lang }));
-    localStorage.setItem(STORAGE_KEY, lang);
+    setUserPreferences((prev) => ({ ...prev, language: lang }));
     setDocumentDirection(lang);
   };
 
@@ -128,8 +107,7 @@ export const TranslationProvider: React.FC<{ children: React.ReactNode }> = ({
   };
 
   useEffect(() => {
-    // Restore document direction on mount
-    restoreDocumentDirection();
+    setDocumentDirection(state.currentLang);
     loadTranslation(state.currentLang);
   }, []);
 

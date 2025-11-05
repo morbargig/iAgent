@@ -17,6 +17,7 @@ import {
   Share as ShareIcon,
   Visibility as ViewIcon,
 } from "@mui/icons-material";
+import { useAppLocalStorage } from "../hooks/storage";
 
 export interface ReportData {
   id: string;
@@ -282,14 +283,7 @@ export const ReportDetailsPanel = React.forwardRef<
     const isMobile = useMediaQuery(theme.breakpoints.down("md"));
 
     // State for resizable width
-    const [panelWidth, setPanelWidth] = useState<number>(() => {
-      try {
-        const saved = localStorage.getItem("report-panel-width");
-        return saved ? parseInt(saved, 10) : initialWidth;
-      } catch {
-        return initialWidth;
-      }
-    });
+    const [panelWidth, setPanelWidth] = useAppLocalStorage('report-panel-width');
     const [isResizing, setIsResizing] = useState(false);
     const resizeRef = useRef<HTMLDivElement>(null);
 
@@ -320,16 +314,7 @@ export const ReportDetailsPanel = React.forwardRef<
 
     const handleMouseUp = useCallback(() => {
       setIsResizing(false);
-      // Save to localStorage
-      try {
-        localStorage.setItem("report-panel-width", panelWidth.toString());
-      } catch (error) {
-        console.warn(
-          "Failed to save report panel width to localStorage:",
-          error
-        );
-      }
-    }, [panelWidth]);
+    }, []);
 
     // Add global mouse event listeners for resize
     useEffect(() => {

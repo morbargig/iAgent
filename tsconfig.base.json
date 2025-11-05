@@ -1,5 +1,6 @@
 {
   "compilerOptions": {
+    "baseUrl": ".",
     "composite": true,
     "declarationMap": true,
     "emitDeclarationOnly": true,
@@ -20,6 +21,10 @@
     "target": "es2022",
     "customConditions": [
       "@iagent/workspace"
-    ]
+    ],
+    "paths": {
+      "@iagent/front-react": ["libs/front/react/src/index.ts"],
+      "@iagent/front-react/*": ["libs/front/react/src/*"]
+    }
   }
 }

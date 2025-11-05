@@ -28,6 +28,7 @@ import {
 } from "@mui/icons-material";
 import { type Conversation } from "@iagent/chat-types";
 import { useTranslation } from "../contexts/TranslationContext";
+import { useAppLocalStorage } from "../hooks/storage";
 
 interface SidebarProps {
   conversations: Conversation[];
@@ -73,14 +74,7 @@ export const Sidebar = React.forwardRef<HTMLDivElement, SidebarProps>(
     const [editingTitle, setEditingTitle] = useState<string>("");
 
     // State for resizable width
-    const [sidebarWidth, setSidebarWidth] = useState<number>(() => {
-      try {
-        const saved = localStorage.getItem("sidebar-width");
-        return saved ? parseInt(saved, 10) : 250;
-      } catch {
-        return 250;
-      }
-    });
+    const [sidebarWidth, setSidebarWidth] = useAppLocalStorage('sidebar-width');
     const [isResizing, setIsResizing] = useState(false);
     const resizeRef = useRef<HTMLDivElement>(null);
 
@@ -138,13 +132,7 @@ export const Sidebar = React.forwardRef<HTMLDivElement, SidebarProps>(
 
     const handleMouseUp = useCallback(() => {
       setIsResizing(false);
-      // Save to localStorage
-      try {
-        localStorage.setItem("sidebar-width", sidebarWidth.toString());
-      } catch (error) {
-        console.warn("Failed to save sidebar width to localStorage:", error);
-      }
-    }, [sidebarWidth]);
+    }, []);
 
     // Add global mouse event listeners for resize
     useEffect(() => {

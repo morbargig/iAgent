@@ -2,7 +2,6 @@ import { useState, useRef } from "react";
 import { validateFiles } from "../services/fileService";
 import { useDocumentService } from "../services/documentService";
 
-// Unified file state interfaces
 interface UploadingFile {
     localFile: File;
     tempId: string;
@@ -40,11 +39,9 @@ export const useFileHandling = ({ t }: UseFileHandlingProps) => {
     const fileInputRef = useRef<HTMLInputElement>(null);
     const documentService = useDocumentService();
 
-    // Upload file immediately when selected
     const uploadFileImmediately = async (file: File): Promise<void> => {
         const tempId = `upload_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 
-        // Add to uploading files
         const uploadingFile: UploadingFile = {
             localFile: file,
             tempId,
@@ -55,7 +52,6 @@ export const useFileHandling = ({ t }: UseFileHandlingProps) => {
         setUploadingFiles((prev) => [...prev, uploadingFile]);
 
         try {
-            // Upload via documentService
             const result = await documentService.uploadFile(file, {}, (progress) => {
                 setUploadingFiles((prev) =>
                     prev.map((f) =>
@@ -67,7 +63,6 @@ export const useFileHandling = ({ t }: UseFileHandlingProps) => {
             if (result.success && result.document) {
                 const doc = result.document;
 
-                // Mark as completed
                 setUploadingFiles((prev) =>
                     prev.map((f) =>
                         f.tempId === tempId
@@ -87,7 +82,6 @@ export const useFileHandling = ({ t }: UseFileHandlingProps) => {
                     )
                 );
 
-                // Move to attached files after a short delay
                 setTimeout(() => {
                     setAttachedFiles((prev) => [
                         ...prev,
@@ -101,7 +95,6 @@ export const useFileHandling = ({ t }: UseFileHandlingProps) => {
                         },
                     ]);
 
-                    // Remove from uploading files
                     setUploadingFiles((prev) => prev.filter((f) => f.tempId !== tempId));
                 }, 500);
             } else {
@@ -133,7 +126,6 @@ export const useFileHandling = ({ t }: UseFileHandlingProps) => {
 
         const fileArray = Array.from(files);
 
-        // Get current uploading files for validation
         const currentLocalFiles = uploadingFiles.map((f) => f.localFile);
 
         const validation = validateFiles(fileArray, currentLocalFiles);
@@ -144,12 +136,10 @@ export const useFileHandling = ({ t }: UseFileHandlingProps) => {
             return;
         }
 
-        // Upload files immediately
         for (const file of fileArray) {
             await uploadFileImmediately(file);
         }
 
-        // Reset the input value to allow selecting the same file again
         if (fileInputRef.current) {
             fileInputRef.current.value = "";
         }
@@ -164,7 +154,6 @@ export const useFileHandling = ({ t }: UseFileHandlingProps) => {
     const handleDragLeave = (e: React.DragEvent) => {
         e.preventDefault();
         e.stopPropagation();
-        // Only set dragging to false if we're leaving the container
         if (e.currentTarget === e.target) {
             setIsDragging(false);
         }
@@ -185,7 +174,6 @@ export const useFileHandling = ({ t }: UseFileHandlingProps) => {
 
         const fileArray = Array.from(files);
 
-        // Get current uploading files for validation
         const currentLocalFiles = uploadingFiles.map((f) => f.localFile);
 
         const validation = validateFiles(fileArray, currentLocalFiles);
@@ -196,7 +184,6 @@ export const useFileHandling = ({ t }: UseFileHandlingProps) => {
             return;
         }
 
-        // Upload files immediately
         for (const file of fileArray) {
             await uploadFileImmediately(file);
         }

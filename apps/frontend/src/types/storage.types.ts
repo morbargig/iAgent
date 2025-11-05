@@ -1,0 +1,138 @@
+export type TypeGuard<T> = (value: unknown) => value is T;
+
+export type UseStorageReturn<T> = [
+  T,
+  (value: T | ((prev: T) => T)) => void,
+  () => void
+];
+
+export type UseLocalStorageReturn<T> = [
+  T,
+  (value: T | ((prev: T) => T)) => void
+];
+
+export interface ToolConfiguration {
+  toolId: string;
+  enabled: boolean;
+  parameters: {
+    pages?: {
+      selectedPages: string[];
+      inclusionType?: 'include' | 'include_only' | 'exclude';
+    };
+    requiredWords?: string[];
+    [key: string]: unknown;
+  };
+}
+
+export interface DateRangeSettings {
+  activeTab: number;
+  committedTab: number;
+  customRange: {
+    amount: number;
+    type: 'minutes' | 'hours' | 'days' | 'weeks' | 'months' | 'years';
+  };
+  datePicker: {
+    startDate: string | null;
+    endDate: string | null;
+  };
+}
+
+export interface LocalStorageValues {
+  'chatbot-sidebar-open': boolean;
+  'chatbot-theme-mode': boolean;
+  'chatbot-conversations': Array<{
+    id: string;
+    title?: string;
+    messages?: unknown[];
+    createdAt?: string;
+    updatedAt?: string;
+  }>;
+  'chatbot-current-conversation-id': string | null;
+  'sidebar-width': number;
+  'report-panel-width': number;
+  'enabled-tools': Record<string, boolean>;
+  'tool-configurations': Record<string, ToolConfiguration>;
+  'selected-countries': string[];
+  'available-countries': Array<{
+    code: string;
+    flag: string;
+    nameKey: string;
+  }>;
+  'date-range-settings': DateRangeSettings;
+  'user-preferences': {
+    language: string;
+    notificationsEnabled?: boolean;
+    [key: string]: unknown;
+  };
+  'app-settings': {
+    mockMode: boolean;
+    [key: string]: unknown;
+  };
+}
+
+export type LocalStorageKeys = keyof LocalStorageValues;
+
+export interface SessionStorageValues {
+  'session-token': string;
+  'user-id': string | null;
+  'user-email': string | null;
+  'temp-data': Record<string, unknown>;
+  'form-state': Record<string, unknown>;
+  'cart-items': Array<{
+    id: string;
+    quantity: number;
+    [key: string]: unknown;
+  }>;
+}
+
+export type SessionStorageKeys = keyof SessionStorageValues;
+
+export const localStorageDefaults: LocalStorageValues = {
+  'chatbot-sidebar-open': false,
+  'chatbot-theme-mode': true,
+  'chatbot-conversations': [],
+  'chatbot-current-conversation-id': null,
+  'sidebar-width': 250,
+  'report-panel-width': 350,
+  'enabled-tools': {},
+  'tool-configurations': {},
+  'selected-countries': ['PS', 'LB', 'SA', 'IQ'],
+  'available-countries': [
+    { code: 'PS', flag: '🇵🇸', nameKey: 'countries.palestine' },
+    { code: 'LB', flag: '🇱🇧', nameKey: 'countries.lebanon' },
+    { code: 'SA', flag: '🇸🇦', nameKey: 'countries.saudi_arabia' },
+    { code: 'IQ', flag: '🇮🇶', nameKey: 'countries.iraq' },
+    { code: 'SY', flag: '🇸🇾', nameKey: 'countries.syria' },
+    { code: 'JO', flag: '🇯🇴', nameKey: 'countries.jordan' },
+    { code: 'EG', flag: '🇪🇬', nameKey: 'countries.egypt' },
+    { code: 'IL', flag: '🇮🇱', nameKey: 'countries.israel' },
+  ],
+  'date-range-settings': {
+    activeTab: 0,
+    committedTab: 0,
+    customRange: {
+      amount: 1,
+      type: 'months',
+    },
+    datePicker: {
+      startDate: null,
+      endDate: null,
+    },
+  },
+  'user-preferences': {
+    language: 'en',
+  },
+  'app-settings': {
+    mockMode: true,
+  },
+};
+
+export const sessionStorageDefaults: SessionStorageValues = {
+  'session-token': '',
+  'user-id': null,
+  'user-email': null,
+  'temp-data': {},
+  'form-state': {},
+  'cart-items': [],
+};
+

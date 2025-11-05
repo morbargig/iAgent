@@ -58,10 +58,17 @@ export const LoginForm: React.FC<LoginFormProps> = ({
 
     try {
       if (isMockMode) {
-        // Mock login - simulate success after delay
-        await new Promise((resolve) => setTimeout(resolve, 1000));
-        onLogin("mock-token-12345", "mock-user-id", credentials.email);
+        const email = credentials.email || `mock-user-${Date.now()}@example.com`;
+        const userId = `mock-user-${Date.now()}`;
+        const token = `mock-token-${Date.now()}`;
+        
+        await new Promise((resolve) => setTimeout(resolve, 500));
+        onLogin(token, userId, email);
         return;
+      }
+
+      if (!credentials.email || !credentials.password) {
+        throw new Error("Email and password are required");
       }
 
       const response = await fetch(getApiUrl('/auth/login'), {
@@ -238,6 +245,8 @@ export const LoginForm: React.FC<LoginFormProps> = ({
               value={credentials.email}
               onChange={handleInputChange("email")}
               disabled={isLoading}
+              required={!isMockMode}
+              helperText={isMockMode ? "Optional in mock mode" : ""}
               sx={{ mb: 2 }}
               variant="outlined"
             />
@@ -249,6 +258,8 @@ export const LoginForm: React.FC<LoginFormProps> = ({
               value={credentials.password}
               onChange={handleInputChange("password")}
               disabled={isLoading}
+              required={!isMockMode}
+              helperText={isMockMode ? "Optional in mock mode" : ""}
               sx={{ mb: 3 }}
               variant="outlined"
               InputProps={{

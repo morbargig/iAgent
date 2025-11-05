@@ -1,53 +1,29 @@
-import { useState, useEffect } from 'react';
-import type { ToolConfiguration } from '../components/ToolSettingsDialog';
+import { useAppLocalStorage } from './storage';
+import type { ToolConfiguration } from '../types/storage.types';
 
-export function useToolToggles() {
-  const [enabledTools, setEnabledTools] = useState<{ [key: string]: boolean }>(() => {
-    // Initialize from localStorage or default to false for all tools
-    const stored = localStorage.getItem('chatbot-enabled-tools');
-    return stored ? JSON.parse(stored) : {
-      'tool-x': false,
-      'tool-y': false,
-      'tool-z': false
-    };
-  });
-
-  const [toolConfigurations, setToolConfigurations] = useState<{ [key: string]: ToolConfiguration }>(() => {
-    // Initialize configurations from localStorage
-    const stored = localStorage.getItem('chatbot-tool-configurations');
-    return stored ? JSON.parse(stored) : {};
-  });
+export const useToolToggles = () => {
+  const [enabledTools, setEnabledTools] = useAppLocalStorage('enabled-tools');
+  const [toolConfigurations, setToolConfigurations] = useAppLocalStorage('tool-configurations');
 
   const toggleTool = (toolId: string) => {
-    setEnabledTools(prev => {
-      const newValue = {
-        ...prev,
-        [toolId]: !prev[toolId]
-      };
-      localStorage.setItem('chatbot-enabled-tools', JSON.stringify(newValue));
-      return newValue;
-    });
+    setEnabledTools((prev: Record<string, boolean>) => ({
+      ...prev,
+      [toolId]: !prev[toolId],
+    }));
   };
 
   const setToolEnabled = (toolId: string, enabled: boolean) => {
-    setEnabledTools(prev => {
-      const newValue = {
-        ...prev,
-        [toolId]: enabled
-      };
-      localStorage.setItem('chatbot-enabled-tools', JSON.stringify(newValue));
-      return newValue;
-    });
+    setEnabledTools((prev: Record<string, boolean>) => ({
+      ...prev,
+      [toolId]: enabled,
+    }));
   };
 
   const setToolConfiguration = (toolId: string, config: ToolConfiguration) => {
-    setToolConfigurations(prev => {
-      const newConfigs = { ...prev, [toolId]: config };
-      localStorage.setItem('chatbot-tool-configurations', JSON.stringify(newConfigs));
-      return newConfigs;
-    });
-
-    // Also update the enabled state
+    setToolConfigurations((prev: Record<string, ToolConfiguration>) => ({
+      ...prev,
+      [toolId]: { ...config, toolId },
+    }));
     setToolEnabled(toolId, config.enabled);
   };
 
@@ -58,20 +34,12 @@ export function useToolToggles() {
   const isToolConfigured = (toolId: string, toolSchema?: any): boolean => {
     const config = toolConfigurations[toolId];
     
-    // If tool is not enabled or doesn't require configuration, it's considered configured
     if (!config?.enabled || !toolSchema?.requiresConfiguration) return true;
     
-    // Check if required fields are properly configured
     if (toolSchema.configurationFields?.pages?.required && 
         (!config.parameters?.pages?.selectedPages?.length)) {
       return false;
     }
-    
-    // Keywords remain optional, so we don't check for them
-    // if (toolSchema.configurationFields?.requiredWords?.required && 
-    //     (!config.parameters?.requiredWords?.length)) {
-    //   return false;
-    // }
     
     return true;
   };
@@ -92,20 +60,6 @@ export function useToolToggles() {
     });
   };
 
-  // Sync with localStorage changes from other tabs
-  useEffect(() => {
-    const handleStorageChange = (e: StorageEvent) => {
-      if (e.key === 'chatbot-enabled-tools' && e.newValue) {
-        setEnabledTools(JSON.parse(e.newValue));
-      } else if (e.key === 'chatbot-tool-configurations' && e.newValue) {
-        setToolConfigurations(JSON.parse(e.newValue));
-      }
-    };
-
-    window.addEventListener('storage', handleStorageChange);
-    return () => window.removeEventListener('storage', handleStorageChange);
-  }, []);
-
   return {
     enabledTools,
     toolConfigurations,
@@ -116,6 +70,6 @@ export function useToolToggles() {
     isToolConfigured,
     getEnabledToolsRequiringConfig,
     hasUnconfiguredTools,
-    isToolEnabled: (toolId: string) => enabledTools[toolId] || false
+    isToolEnabled: (toolId: string) => enabledTools[toolId] || false,
   };
-} 
+};
