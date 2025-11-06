@@ -121,6 +121,7 @@ export const useFileActions = (config: FileActionsConfig = {}): FileActionsRetur
                                 }
                             }
                         } catch (_e) {
+                            // Silently ignore download errors
                         }
                     }, 2000);
                 }

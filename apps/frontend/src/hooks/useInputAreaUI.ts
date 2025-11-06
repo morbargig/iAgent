@@ -76,9 +76,9 @@ export const useInputAreaUI = ({
     const debugPlaceholder = animatedPlaceholder ?? "";
 
     const onHeightChangeRef = useRef(onHeightChange);
-    onHeightChangeRef.current = onHeightChange;
 
     useEffect(() => {
+        onHeightChangeRef.current = onHeightChange;
         if (textareaRef.current) {
             textareaRef.current.style.height = "auto";
             textareaRef.current.style.height = `${Math.min(textareaRef.current.scrollHeight, 200)}px`;

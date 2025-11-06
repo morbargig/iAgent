@@ -2,12 +2,14 @@ import React, { useState } from "react";
 import { Box, Typography, useTheme, Collapse, IconButton } from "@mui/material";
 import type { Theme } from "@mui/material/styles";
 import {
-  ChatContentBlock,
   ParsedMessageContent,
   buildParsedMessageContent,
+} from "@iagent/chat-types";
+import {
+  ChatContentBlock,
   decodeBase64Json,
   decodeBase64Text,
-} from "@iagent/chat-types";
+} from "@iagent/shared-renderer";
 import {
   ExpandMore as ExpandMoreIcon,
   ExpandLess as ExpandLessIcon,

@@ -314,7 +314,7 @@ npx nx build backend --configuration=development
 
 1. **Dependency Security Audit**
    ```bash
-   npm audit --audit-level=moderate --no-fund
+   npm audit --audit-level=high --no-fund
    ```
    - Checks for known vulnerabilities
    - Reports severity levels

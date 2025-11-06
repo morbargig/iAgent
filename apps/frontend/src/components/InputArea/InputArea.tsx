@@ -189,28 +189,14 @@ export function InputArea({
   const effectiveSidebarWidth = sidebarOpen ? sidebarWidth : 0;
   const effectiveReportPanelWidth = reportPanelOpen ? reportPanelWidth : 0;
 
-  // Handle key down events
-  const handleKeyDown = (event: React.KeyboardEvent) => {
-    if (event.key === "Enter" && !event.shiftKey) {
-      event.preventDefault();
+  // Extract values needed for handleKeyDown to avoid ref access issues
+  const needsToolConfig = inputAreaUI.needsToolConfiguration;
+  const attachedFilesCount = fileHandling.attachedFiles.length;
 
-      // If tools need configuration, open settings dialog
-      if (inputAreaUI.needsToolConfiguration && value.trim()) {
-        setToolSettingsOpen(true);
-        return;
-      }
+  // Use ref for handleSubmit to avoid dependency issues
+  const handleSubmitRef = React.useRef<() => Promise<void>>(null);
 
-      if (
-        (value.trim() || fileHandling.attachedFiles.length > 0) &&
-        !disabled &&
-        !isLoading
-      ) {
-        handleSubmit();
-      }
-    }
-  };
-
-  const handleSubmit = async () => {
+  const handleSubmit = React.useCallback(async () => {
     if (isLoading && onStop) {
       onStop();
     } else if (
@@ -316,7 +302,33 @@ export function InputArea({
       // Clear all files after successful send
       fileHandling.clearAllFiles();
     }
-  };
+  }, [isLoading, onStop, value, fileHandling.attachedFiles, fileHandling.uploadingFiles, disabled, inputAreaUI.needsToolConfiguration, setToolSettingsOpen, dateRange, countrySelection.selectedFlags, enabledTools, filterManagement, onSend, t, fileHandling.setFileError, fileHandling.setShowFileError, fileHandling.clearAllFiles]);
+
+  // Update ref when handleSubmit changes
+  React.useEffect(() => {
+    handleSubmitRef.current = handleSubmit;
+  }, [handleSubmit]);
+
+  // Handle key down events
+  const handleKeyDown = React.useCallback((event: React.KeyboardEvent) => {
+    if (event.key === "Enter" && !event.shiftKey) {
+      event.preventDefault();
+
+      // If tools need configuration, open settings dialog
+      if (needsToolConfig && value.trim()) {
+        setToolSettingsOpen(true);
+        return;
+      }
+
+      if (
+        (value.trim() || attachedFilesCount > 0) &&
+        !disabled &&
+        !isLoading
+      ) {
+        handleSubmitRef.current?.();
+      }
+    }
+  }, [needsToolConfig, value, attachedFilesCount, disabled, isLoading, setToolSettingsOpen]);
 
   // Tool toggle handler with hint ring
   const handleToolToggle = (toolId: string) => {
