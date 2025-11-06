@@ -194,7 +194,7 @@ export function InputArea({
   const attachedFilesCount = fileHandling.attachedFiles.length;
 
   // Use ref for handleSubmit to avoid dependency issues
-  const handleSubmitRef = React.useRef<() => Promise<void>>(null);
+  const handleSubmitRef = React.useRef<(() => Promise<void>) | null>(null);
 
   const handleSubmit = React.useCallback(async () => {
     if (isLoading && onStop) {
@@ -302,7 +302,7 @@ export function InputArea({
       // Clear all files after successful send
       fileHandling.clearAllFiles();
     }
-  }, [isLoading, onStop, value, fileHandling.attachedFiles, fileHandling.uploadingFiles, disabled, inputAreaUI.needsToolConfiguration, setToolSettingsOpen, dateRange, countrySelection.selectedFlags, enabledTools, filterManagement, onSend, t, fileHandling.setFileError, fileHandling.setShowFileError, fileHandling.clearAllFiles]);
+  }, [isLoading, onStop, value, fileHandling.attachedFiles.length, fileHandling.uploadingFiles.length, disabled, inputAreaUI.needsToolConfiguration, setToolSettingsOpen, dateRange.committedTab, dateRange.rangeAmount, dateRange.rangeType, dateRange.dateRange, countrySelection.selectedFlags, enabledTools, filterManagement.activeFilter, filterManagement.synchronizedConfigurations, onSend, t, fileHandling.setFileError, fileHandling.setShowFileError, fileHandling.clearAllFiles]);
 
   // Update ref when handleSubmit changes
   React.useEffect(() => {
@@ -331,7 +331,7 @@ export function InputArea({
   }, [needsToolConfig, value, attachedFilesCount, disabled, isLoading, setToolSettingsOpen]);
 
   // Tool toggle handler with hint ring
-  const handleToolToggle = (toolId: string) => {
+  const handleToolToggle = React.useCallback((toolId: string) => {
     const isCurrentlyEnabled = enabledTools[toolId];
 
     // Toggle the tool
@@ -358,10 +358,10 @@ export function InputArea({
         // Could add hint ring animation here if needed
       }
     }
-  };
+  }, [enabledTools, toggleTool, toolConfigurations, setToolConfiguration, toolSchemas]);
 
   // Tool settings handlers
-  const handleToolConfigurationChange = (
+  const handleToolConfigurationChange = React.useCallback((
     toolId: string,
     config: ToolConfiguration
   ) => {
@@ -371,10 +371,10 @@ export function InputArea({
     if (enabledTools[toolId] !== config.enabled) {
       setToolEnabled(toolId, config.enabled);
     }
-  };
+  }, [enabledTools, setToolConfiguration, setToolEnabled]);
 
-  // Get filter preview for the dialog
-  const getFilterPreview = () => {
+  // Get filter preview for the dialog - memoized to avoid recalculation
+  const getFilterPreview = React.useMemo(() => {
     const dateText =
       dateRange.dateRangeTab === 0
         ? `${dateRange.rangeAmount} ${t(`dateRange.${dateRange.rangeType}`)} ${t("dateRange.ago")}`
@@ -387,15 +387,17 @@ export function InputArea({
       tools: Object.keys(enabledTools).filter((toolId) => enabledTools[toolId]),
       dateRange: dateText,
     };
-  };
+  }, [dateRange.dateRangeTab, dateRange.rangeAmount, dateRange.rangeType, dateRange.dateRange, countrySelection.selectedFlags, enabledTools, t]);
 
   // Disable send button if files are uploading
-  const isUploading = fileHandling.uploadingFiles.length > 0;
-  const canSend =
+  const isUploading = React.useMemo(() => fileHandling.uploadingFiles.length > 0, [fileHandling.uploadingFiles.length]);
+  const canSend = React.useMemo(() =>
     Boolean(value.trim()) &&
     !disabled &&
     !inputAreaUI.needsToolConfiguration &&
-    !isUploading;
+    !isUploading,
+    [value, disabled, inputAreaUI.needsToolConfiguration, isUploading]
+  );
   const showStopButton = isLoading;
 
   return (
@@ -717,7 +719,7 @@ export function InputArea({
         onSave={filterManagement.handleSaveNewFilter}
         isDarkMode={isDarkMode}
         mode="create"
-        filterPreview={getFilterPreview()}
+        filterPreview={getFilterPreview}
       />
 
       {/* Filter Name Dialog for Renaming Filters */}

@@ -1,5 +1,3 @@
-// Uncomment this line to use CSS modules
-// import styles from './app.module.css';
 import React, { useState, useRef, useEffect, useMemo } from "react";
 import { ThemeProvider, createTheme } from "@mui/material/styles";
 import { CssBaseline, Box } from "@mui/material";
@@ -316,10 +314,7 @@ const App = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useAppLocalStorage('chatbot-sidebar-open');
   const [currentConversationId, setCurrentConversationId] = useAppLocalStorage('chatbot-current-conversation-id');
   
-  // Chat list (metadata only - names, IDs, etc.) for sidebar
   const [chatList, setChatList] = useState<Array<{ id: string; title: string; lastUpdated: Date }>>([]);
-  
-  // Loaded conversations (full with messages) - only current and streaming
   const [loadedConversations, setLoadedConversations] = useState<Map<string, Conversation>>(new Map());
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -327,22 +322,12 @@ const App = () => {
     string | null
   >(null);
   
-  // Store accumulated stream content in a ref so it persists across renders
   const accumulatedStreamContentRef = useRef<string>("");
-  // These variables are used in the component logic
-  const [error, setError] = useState<string | null>(null);
-  const [currentAbortController, setCurrentAbortController] =
-    useState<AbortController | null>(null);
-
-  // Explicit usage to satisfy TypeScript strict mode
-  if (error !== null) console.log("Error state:", error);
-  if (currentAbortController !== null) console.log("AbortController active");
-  const streamingClient = useRef(new StreamingClient());
+  const streamingClientRef = useRef<StreamingClient | null>(null);
   const sidebarRef = useRef<HTMLDivElement>(null);
   const [inputAreaHeight, setInputAreaHeight] = useState(80); // Track input area height
   const [sidebarWidth, setSidebarWidth] = useState(250); // Track sidebar width
 
-  // Authentication state
   const [authToken, setAuthToken] = useAppSessionStorage('session-token');
   const [userId, setUserId] = useAppSessionStorage('user-id');
   const [userEmail, setUserEmail] = useAppSessionStorage('user-email');
@@ -351,18 +336,33 @@ const App = () => {
     [authToken, userId, userEmail]
   );
 
-  // Report panel state
   const [isReportPanelOpen, setIsReportPanelOpen] = useState(false);
   const [reportData, setReportData] = useState<ReportData | null>(null);
   const [reportPanelWidth, setReportPanelWidth] = useState(350);
   const [isReportLoading, setIsReportLoading] = useState(false);
-
-  // File management state
   const [isFileManagerOpen, setIsFileManagerOpen] = useState(false);
   const [attachedFiles, setAttachedFiles] = useState<any[]>([]);
 
-  // Helper function to save current stream content to MongoDB
-  const saveCurrentStreamContent = async () => {
+  const { useMockMode: isMockMode, toggleMockMode } = useMockMode();
+  const { t: translation } = useTranslation();
+
+  const loadedConversationsRef = useRef<Map<string, Conversation>>(new Map());
+  loadedConversationsRef.current = loadedConversations;
+  const currentConversationIdRef = useRef<string | null>(null);
+  currentConversationIdRef.current = currentConversationId;
+
+  const updateLoadedConversation = React.useCallback((chatId: string, updater: (conv: Conversation) => Conversation) => {
+    setLoadedConversations((prev) => {
+      const updated = new Map(prev);
+      const conversation = updated.get(chatId);
+      if (conversation) {
+        updated.set(chatId, updater(conversation));
+      }
+      return updated;
+    });
+  }, []);
+
+  const saveCurrentStreamContent = React.useCallback(async () => {
     if (!streamingConversationId || !authToken || !userId) return;
 
     const currentContent = accumulatedStreamContentRef.current;
@@ -379,13 +379,12 @@ const App = () => {
               lastMessage,
               currentContent,
               false,
-              true // Mark as interrupted
+              true
             ),
           ],
           lastUpdated: new Date(),
         };
 
-        // Save to MongoDB
         chatService.saveChatToMongo(updatedConv, authToken, userId).catch((error) => {
           console.error("Failed to save stream content to MongoDB:", error);
         });
@@ -394,12 +393,11 @@ const App = () => {
       }
       return conv;
     });
-  };
+  }, [streamingConversationId, authToken, userId, updateLoadedConversation]);
 
-  // Stop generation function
-  const stopGeneration = () => {
-    if (streamingClient.current) {
-      streamingClient.current.abort();
+  const stopGeneration = React.useCallback(() => {
+    if (streamingClientRef.current) {
+      streamingClientRef.current.abort();
 
       // Save current stream content to MongoDB
       saveCurrentStreamContent();
@@ -408,26 +406,13 @@ const App = () => {
       setStreamingConversationId(null);
       accumulatedStreamContentRef.current = ""; // Clear ref
     }
-  };
+  }, [saveCurrentStreamContent]);
 
   const currentConversation = useMemo(() => {
     if (!currentConversationId) return null;
     return loadedConversations.get(currentConversationId) || null;
   }, [loadedConversations, currentConversationId]);
 
-  // Helper function to update a loaded conversation
-  const updateLoadedConversation = (chatId: string, updater: (conv: Conversation) => Conversation) => {
-    setLoadedConversations((prev) => {
-      const updated = new Map(prev);
-      const conversation = updated.get(chatId);
-      if (conversation) {
-        updated.set(chatId, updater(conversation));
-      }
-      return updated;
-    });
-  };
-
-  // Convert loaded conversations to array for sidebar (with metadata from chatList)
   const conversations = useMemo(() => {
     return chatList.map((chat) => {
       const loaded = loadedConversations.get(chat.id);
@@ -446,7 +431,7 @@ const App = () => {
     });
   }, [chatList, loadedConversations]);
 
-  const handleSendMessage = async (data: SendMessageData) => {
+  const handleSendMessage = React.useCallback(async (data: SendMessageData) => {
     const {
       content,
       dateFilter,
@@ -457,10 +442,12 @@ const App = () => {
     } = data;
     if (!content.trim() || isLoading) return;
 
+    const currentConvId = currentConversationIdRef.current;
+    const currentConv = loadedConversationsRef.current.get(currentConvId || '') || null;
+
     setIsLoading(true);
-    setStreamingConversationId(currentConversation?.id || null);
-    setError(null);
-    setInput(""); // Clear input immediately when sending
+    setStreamingConversationId(currentConv?.id || null);
+    setInput("");
 
     try {
       // Use the filter snapshot from the InputArea, or create a basic one if not provided
@@ -483,7 +470,6 @@ const App = () => {
         messageFilterSnapshot
       );
 
-      // Add attachments to user message if present
       if (attachments && attachments.length > 0) {
         (userMessage as any).attachments = attachments;
       }
@@ -495,30 +481,25 @@ const App = () => {
         messageFilterSnapshot
       );
 
-      // Update conversation with new messages and generate title if needed
       const shouldGenerateTitle =
-        currentConversation &&
-        currentConversation.titleKey === "sidebar.newChatTitle";
+        currentConv &&
+        currentConv.titleKey === "sidebar.newChatTitle";
       const conversationTitle = shouldGenerateTitle
         ? content.length > 50
           ? content.substring(0, 47) + "..."
           : content
-        : currentConversation?.title;
+        : currentConv?.title;
 
-      const updatedConversation: Conversation = currentConversation
+      const updatedConversation: Conversation = currentConv
         ? {
-            ...currentConversation,
+            ...currentConv,
             messages: [
-              ...currentConversation.messages,
+              ...currentConv.messages,
               userMessage,
               assistantMessage,
             ],
-            title: shouldGenerateTitle
-              ? conversationTitle!
-              : currentConversation.title,
-            titleKey: shouldGenerateTitle
-              ? undefined
-              : currentConversation.titleKey, // Remove titleKey when we have a custom title
+            title: shouldGenerateTitle ? conversationTitle! : currentConv.title,
+            titleKey: shouldGenerateTitle ? undefined : currentConv.titleKey,
             lastUpdated: new Date(),
           }
         : {
@@ -530,7 +511,7 @@ const App = () => {
             lastUpdated: new Date(),
           };
 
-      if (currentConversation) {
+      if (currentConv) {
         // Update existing conversation
         setLoadedConversations((prev) => {
           const updated = new Map(prev);
@@ -553,89 +534,48 @@ const App = () => {
           return updated;
         });
         setCurrentConversationId(updatedConversation.id);
-        setStreamingConversationId(updatedConversation.id); // Update streaming ID for new conversation
+        setStreamingConversationId(updatedConversation.id);
       }
 
-      // Save to MongoDB if authenticated
       if (authToken && userId) {
         chatService.saveChatToMongo(updatedConversation, authToken, userId).catch((error) => {
           console.error("Failed to save chat to MongoDB:", error);
         });
       }
 
-      if (!currentConversation) {
 
-        // Auto-create initial filter for new chat with current settings
-        setTimeout(() => {
-          const initialFilterConfig = {
-            dateFilter,
-            selectedCountries,
-            enabledTools,
-            createdAt: new Date().toISOString(),
-            mode: "assistant",
-            ami: { includeAMI: true, excludeAMI: false },
-          };
-
-          const initialFilter = {
-            filterId: `filter_${Date.now()}_initial`,
-            name: "Initial Settings",
-            config: initialFilterConfig,
-            isActive: true,
-            createdAt: new Date().toISOString(),
-          };
-
-          // Save to localStorage for new chat
-          localStorage.setItem(
-            `chatFilters_${updatedConversation.id}`,
-            JSON.stringify([initialFilter])
-          );
-          console.log(
-            "🎯 Auto-created initial filter for new chat:",
-            updatedConversation.id
-          );
-        }, 100);
-      }
-
-      // Generate chat ID for this conversation - use conversation ID if available
-      const chatId =
-        currentConversation?.id ||
-        `chat_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-
-      // Prepare tools array from enabled tools
+      const chatId = currentConv?.id || `chat_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
       const toolsArray = enabledTools.map((toolId) => ({
         id: toolId,
         enabled: true,
-        settings: {}, // Add any tool-specific settings if needed
+        settings: {},
       }));
 
-      // Track accumulated content for streaming
       let accumulatedContent = "";
-      accumulatedStreamContentRef.current = ""; // Reset on new stream
+      accumulatedStreamContentRef.current = "";
 
-      // Stream the response
-      await streamingClient.current.streamChat(
+      await streamingClientRef.current.streamChat(
         updatedConversation.messages,
         (token: string, metadata?: Record<string, any>) => {
           accumulatedContent += token;
-          accumulatedStreamContentRef.current = accumulatedContent; // Update ref
+          accumulatedStreamContentRef.current = accumulatedContent;
           updateLoadedConversation(updatedConversation.id, (conv) => {
-            const lastMessage = conv.messages[conv.messages.length - 1];
-            return {
-              ...conv,
-              messages: [
-                ...conv.messages.slice(0, -1),
-                updateMessageContent(
-                  lastMessage,
+                const lastMessage = conv.messages[conv.messages.length - 1];
+                return {
+                  ...conv,
+                  messages: [
+                    ...conv.messages.slice(0, -1),
+                    updateMessageContent(
+                      lastMessage,
                   accumulatedContent,
-                  true
-                ),
-              ],
-              lastUpdated: new Date(),
-            };
+                      true
+                    ),
+                  ],
+                  lastUpdated: new Date(),
+                };
           });
         },
         () => {
-          // Use the latest content from ref
           const finalContent = accumulatedStreamContentRef.current || accumulatedContent;
           updateLoadedConversation(updatedConversation.id, (conv) => {
             const lastMessage = conv.messages[conv.messages.length - 1];
@@ -652,7 +592,6 @@ const App = () => {
               lastUpdated: new Date(),
             };
 
-            // Save to MongoDB if authenticated
             if (authToken && userId) {
               chatService.saveChatToMongo(finalConversation, authToken, userId).catch((error) => {
                 console.error("Failed to save chat to MongoDB:", error);
@@ -662,11 +601,11 @@ const App = () => {
             return finalConversation;
           });
           setIsLoading(false);
-          setStreamingConversationId(null); // Clear streaming conversation
-          accumulatedStreamContentRef.current = ""; // Clear ref
+          setStreamingConversationId(null);
+          accumulatedStreamContentRef.current = "";
         },
         (error: Error) => {
-          setError(error.message);
+          console.error("Streaming error:", error);
           updateLoadedConversation(updatedConversation.id, (conv) => {
             const lastMessage = conv.messages[conv.messages.length - 1];
             return {
@@ -683,40 +622,24 @@ const App = () => {
             };
           });
           setIsLoading(false);
-          setStreamingConversationId(null); // Clear streaming conversation
+          setStreamingConversationId(null);
         },
-        getBaseApiUrl(), // baseUrl
-        authToken || undefined, // authToken
-        chatId, // chatId
-        toolsArray, // tools
-        dateFilter, // dateFilter
-        selectedCountries // selectedCountries
+        getBaseApiUrl(),
+        authToken || undefined,
+        chatId,
+        toolsArray,
+        dateFilter,
+        selectedCountries
       );
     } catch (error) {
-      setError(
-        error instanceof Error ? error.message : "An unknown error occurred"
-      );
+      console.error("Failed to send message:", error);
       setIsLoading(false);
     }
-  };
+  }, [isLoading, authToken, userId, translation, updateLoadedConversation, streamingClientRef]);
 
-  // Mock mode hook
-  const mockModeHook = useMockMode();
-  const isMockMode = mockModeHook.useMockMode;
-  const toggleMockMode = mockModeHook.toggleMockMode;
-
-  // Translation hook
-  const { t: translation } = useTranslation();
-
-  // Safe toggle function
   const handleMockModeToggle = React.useCallback(() => {
-    if (toggleMockMode) {
-      toggleMockMode();
-    }
+    toggleMockMode?.();
   }, [toggleMockMode]);
-
-  // Streaming client for both API and mock modes
-  const streamingClientRef = useRef<StreamingClient | null>(null);
 
   useEffect(() => {
     streamingClientRef.current = new StreamingClient();
@@ -740,7 +663,6 @@ const App = () => {
     setCurrentConversationId(null);
   };
 
-  // Load chat list from MongoDB on mount and when auth changes
   useEffect(() => {
     const loadChatList = async () => {
       if (!authToken || !userId) {
@@ -770,7 +692,6 @@ const App = () => {
     loadChatList();
   }, [authToken, userId]);
 
-  // Load current conversation messages on mount and when currentConversationId changes
   useEffect(() => {
     const loadCurrentConversation = async () => {
       if (!authToken || !currentConversationId) {
@@ -778,7 +699,7 @@ const App = () => {
       }
 
       // Don't reload if already loaded
-      if (loadedConversations.has(currentConversationId)) {
+      if (loadedConversationsRef.current.has(currentConversationId)) {
         return;
       }
 
@@ -798,21 +719,22 @@ const App = () => {
     };
 
     loadCurrentConversation();
-  }, [authToken, currentConversationId, loadedConversations]);
+  }, [authToken, currentConversationId]);
 
-  // Save streaming conversation periodically
+  const streamingConversationIdRef = useRef<string | null>(null);
+  streamingConversationIdRef.current = streamingConversationId;
+
   useEffect(() => {
     if (!streamingConversationId || !authToken || !userId) return;
 
-    const conversation = loadedConversations.get(streamingConversationId);
-    if (!conversation) return;
-
     // Save streaming conversation every 5 seconds
     const interval = setInterval(() => {
-      // Get the latest content from ref and update conversation before saving
+      const currentStreamingId = streamingConversationIdRef.current;
+      if (!currentStreamingId) return;
+
       const currentContent = accumulatedStreamContentRef.current;
       if (currentContent) {
-        updateLoadedConversation(streamingConversationId, (conv) => {
+        updateLoadedConversation(currentStreamingId, (conv) => {
           const lastMessage = conv.messages[conv.messages.length - 1];
           if (lastMessage && lastMessage.isStreaming) {
             return {
@@ -832,7 +754,7 @@ const App = () => {
         });
       }
 
-      const updatedConversation = loadedConversations.get(streamingConversationId);
+      const updatedConversation = loadedConversationsRef.current.get(currentStreamingId);
       if (updatedConversation) {
         chatService.saveChatToMongo(updatedConversation, authToken, userId).catch((error) => {
           console.error("Failed to save streaming conversation to MongoDB:", error);
@@ -841,16 +763,23 @@ const App = () => {
     }, 5000);
 
     return () => clearInterval(interval);
-  }, [streamingConversationId, loadedConversations, authToken, userId]);
+  }, [streamingConversationId, authToken, userId]);
 
-  // Save stream content on component unmount
+  const authTokenRef = useRef<string | null>(null);
+  const userIdRef = useRef<string | null>(null);
+  authTokenRef.current = authToken;
+  userIdRef.current = userId;
+
   useEffect(() => {
     return () => {
-      // Cleanup: save current stream content when component unmounts
-      if (streamingConversationId && authToken && userId) {
+      const currentStreamingId = streamingConversationIdRef.current;
+      const currentAuthToken = authTokenRef.current;
+      const currentUserId = userIdRef.current;
+
+      if (currentStreamingId && currentAuthToken && currentUserId) {
         const currentContent = accumulatedStreamContentRef.current;
         if (currentContent) {
-          const conversation = loadedConversations.get(streamingConversationId);
+          const conversation = loadedConversationsRef.current.get(currentStreamingId);
           if (conversation) {
             const lastMessage = conversation.messages[conversation.messages.length - 1];
             if (lastMessage && lastMessage.isStreaming) {
@@ -868,8 +797,7 @@ const App = () => {
                 lastUpdated: new Date(),
               };
 
-              // Save to MongoDB
-              chatService.saveChatToMongo(updatedConv, authToken, userId).catch((error) => {
+              chatService.saveChatToMongo(updatedConv, currentAuthToken, currentUserId).catch((error) => {
                 console.error("Failed to save stream content on unmount:", error);
               });
             }
@@ -877,16 +805,18 @@ const App = () => {
         }
       }
     };
-  }, [streamingConversationId, loadedConversations, authToken, userId]);
+  }, []);
 
-  // Save stream content on page reload/unload
   useEffect(() => {
-    const handleBeforeUnload = (event: BeforeUnloadEvent) => {
-      // Save current stream content before page unloads
-      if (streamingConversationId && authToken && userId) {
+    const handleBeforeUnload = () => {
+      const currentStreamingId = streamingConversationIdRef.current;
+      const currentAuthToken = authTokenRef.current;
+      const currentUserId = userIdRef.current;
+
+      if (currentStreamingId && currentAuthToken && currentUserId) {
         const currentContent = accumulatedStreamContentRef.current;
         if (currentContent) {
-          const conversation = loadedConversations.get(streamingConversationId);
+          const conversation = loadedConversationsRef.current.get(currentStreamingId);
           if (conversation) {
             const lastMessage = conversation.messages[conversation.messages.length - 1];
             if (lastMessage && lastMessage.isStreaming) {
@@ -904,8 +834,7 @@ const App = () => {
                 lastUpdated: new Date(),
               };
 
-              // Try to save synchronously (might not work, but attempt it)
-              chatService.saveChatToMongo(updatedConv, authToken, userId).catch((error) => {
+              chatService.saveChatToMongo(updatedConv, currentAuthToken, currentUserId).catch((error) => {
                 console.error("Failed to save stream content on page unload:", error);
               });
             }
@@ -921,10 +850,9 @@ const App = () => {
       window.removeEventListener("beforeunload", handleBeforeUnload);
       window.removeEventListener("pagehide", handleBeforeUnload);
     };
-  }, [streamingConversationId, loadedConversations, authToken, userId]);
+  }, []);
 
-  // Initialize responsive sidebar for new users only
-  useEffect(() => {
+    useEffect(() => {
     if (!isSidebarOpen && window.innerWidth >= 768) {
       const isMobile = window.innerWidth < 768;
       setIsSidebarOpen(!isMobile);
@@ -932,23 +860,19 @@ const App = () => {
   }, []);
 
 
-  // Theme toggle now uses localStorage hook
-  const toggleTheme = () => {
-    setIsDarkMode(!isDarkMode);
-  };
+  const toggleTheme = React.useCallback(() => {
+    setIsDarkMode((prev) => !prev);
+  }, []);
 
-    // Sidebar toggle now uses localStorage hook
-  const toggleSidebar = () => {
-    setIsSidebarOpen(!isSidebarOpen);
-  };
+  const toggleSidebar = React.useCallback(() => {
+    setIsSidebarOpen((prev) => !prev);
+  }, []);
 
-  // Handle sidebar width changes
-  const handleSidebarWidthChange = (width: number) => {
+  const handleSidebarWidthChange = React.useCallback((width: number) => {
     setSidebarWidth(width);
-  };
+  }, []);
 
-  // Load conversation when selected from sidebar
-  const loadConversation = async (chatId: string) => {
+  const loadConversation = React.useCallback(async (chatId: string) => {
     if (!authToken) return;
 
     // Don't reload if already loaded
@@ -971,9 +895,9 @@ const App = () => {
     } catch (error) {
       console.error(`Failed to load conversation ${chatId}:`, error);
     }
-  };
+  }, [authToken, loadedConversations]);
 
-  const createNewConversation = async () => {
+  const createNewConversation = React.useCallback(async () => {
     const newConversation: Conversation = {
       id: generateUniqueId(),
       title: translation("sidebar.newChatTitle"),
@@ -984,7 +908,6 @@ const App = () => {
       lastUpdated: new Date(),
     };
 
-    // Add to chat list
     setChatList((prev) => [
       {
         id: newConversation.id,
@@ -994,7 +917,6 @@ const App = () => {
       ...prev,
     ]);
 
-    // Add to loaded conversations
     setLoadedConversations((prev) => {
       const updated = new Map(prev);
       updated.set(newConversation.id, newConversation);
@@ -1003,7 +925,6 @@ const App = () => {
 
     setCurrentConversationId(newConversation.id);
 
-    // Save to MongoDB if authenticated
     if (authToken && userId) {
       try {
         await chatService.saveChatToMongo(newConversation, authToken, userId);
@@ -1011,9 +932,9 @@ const App = () => {
         console.error("Failed to save new conversation to MongoDB:", error);
       }
     }
-  };
+  }, [authToken, userId, translation]);
 
-  const deleteConversation = async (id: string) => {
+  const deleteConversation = React.useCallback(async (id: string) => {
     // Remove from chat list
     setChatList((prev) => prev.filter((chat) => chat.id !== id));
 
@@ -1028,7 +949,6 @@ const App = () => {
       setCurrentConversationId(null);
     }
 
-    // Delete from MongoDB if authenticated
     if (authToken) {
       try {
         await chatService.deleteChat(id, authToken);
@@ -1037,9 +957,9 @@ const App = () => {
         console.error("Failed to delete conversation from MongoDB:", error);
       }
     }
-  };
+  }, [authToken]);
 
-  const renameConversation = async (id: string, newTitle: string) => {
+  const renameConversation = React.useCallback(async (id: string, newTitle: string) => {
     // Update chat list
     setChatList((prev) =>
       prev.map((chat) =>
@@ -1047,7 +967,6 @@ const App = () => {
       )
     );
 
-    // Update loaded conversation if it exists
     setLoadedConversations((prev) => {
       const updated = new Map(prev);
       const conversation = updated.get(id);
@@ -1055,14 +974,13 @@ const App = () => {
         updated.set(id, {
           ...conversation,
           title: newTitle,
-          titleKey: undefined, // Remove titleKey when setting custom title
+          titleKey: undefined,
           lastUpdated: new Date(),
         });
       }
       return updated;
     });
 
-    // Update in MongoDB if authenticated
     if (authToken) {
       try {
         await chatService.updateChatName(id, newTitle, authToken);
@@ -1071,11 +989,14 @@ const App = () => {
         console.error("Failed to rename conversation in MongoDB:", error);
       }
     }
-  };
+  }, [authToken]);
 
-  const refreshMessage = async (messageId: string) => {
-    const conversation = currentConversation;
-    if (!conversation || isLoading) return;
+  const refreshMessage = React.useCallback(async (messageId: string) => {
+    const currentConvId = currentConversationIdRef.current;
+    if (!currentConvId || isLoading) return;
+    
+    const conversation = loadedConversationsRef.current.get(currentConvId);
+    if (!conversation) return;
 
     // Find the message and get the conversation history up to that point
     const messageIndex = conversation.messages.findIndex(
@@ -1093,20 +1014,18 @@ const App = () => {
       messagesToSend = conversation.messages.slice(0, messageIndex + 1);
       messagesToKeep = conversation.messages.slice(0, messageIndex + 1);
     } else {
-      // For assistant messages: find the previous user message and regenerate from there
       const previousUserMessageIndex = conversation.messages
         .slice(0, messageIndex)
         .reverse()
         .findIndex((m) => m.role === "user");
 
-      if (previousUserMessageIndex === -1) return; // No previous user message found
+      if (previousUserMessageIndex === -1) return;
 
       const actualUserIndex = messageIndex - 1 - previousUserMessageIndex;
       messagesToSend = conversation.messages.slice(0, actualUserIndex + 1);
       messagesToKeep = conversation.messages.slice(0, actualUserIndex + 1);
     }
 
-    // Create a new assistant message placeholder for streaming
     const newAssistantMessageId = generateUniqueId();
     const newAssistantMessage: Message = {
       id: newAssistantMessageId,
@@ -1119,8 +1038,8 @@ const App = () => {
     // Update conversation with messages up to user message + new assistant placeholder
     updateLoadedConversation(conversation.id, (conv) => ({
       ...conv,
-      messages: [...messagesToKeep, newAssistantMessage],
-      lastUpdated: new Date(),
+              messages: [...messagesToKeep, newAssistantMessage],
+              lastUpdated: new Date(),
     }));
 
     // Save to MongoDB if authenticated
@@ -1152,27 +1071,27 @@ const App = () => {
       } as AbortController);
 
       let currentContent = "";
+      accumulatedStreamContentRef.current = "";
 
-      await streamingClient.streamChat(
+      await streamingClientRef.current.streamChat(
         messagesToSend,
-        // onToken callback
         (token: string, metadata?: any) => {
           currentContent += token;
+          accumulatedStreamContentRef.current = currentContent;
 
-          // Update the message content with metadata
           updateLoadedConversation(conversation.id, (conv) => ({
             ...conv,
             messages: conv.messages.map((m) =>
-              m.id === newAssistantMessageId
-                ? {
-                    ...m,
-                    content: currentContent,
-                    metadata: metadata,
-                    isStreaming: true,
-                  }
-                : m
-            ),
-            lastUpdated: new Date(),
+                      m.id === newAssistantMessageId
+                        ? {
+                            ...m,
+                            content: currentContent,
+                            metadata: metadata,
+                            isStreaming: true,
+                          }
+                        : m
+                    ),
+                    lastUpdated: new Date(),
           }));
         },
         // onComplete callback
@@ -1183,13 +1102,12 @@ const App = () => {
               ...conv,
               messages: conv.messages.map((m) =>
                 m.id === newAssistantMessageId
-                  ? { ...m, content: currentContent, isStreaming: false }
+                  ? { ...m, content: finalContent, isStreaming: false }
                   : m
               ),
               lastUpdated: new Date(),
             };
 
-            // Save to MongoDB if authenticated
             if (authToken && userId) {
               chatService.saveChatToMongo(finalConversation, authToken, userId).catch((error) => {
                 console.error("Failed to save refreshed conversation to MongoDB:", error);
@@ -1200,26 +1118,19 @@ const App = () => {
           });
           setIsLoading(false);
           setStreamingConversationId(null);
-          setCurrentAbortController(null);
-          // console.log(`✅ Regeneration completed using ${isMockMode ? 'Mock' : 'API'} mode`);
+          accumulatedStreamContentRef.current = "";
         },
-        // onError callback
         (error: Error) => {
           console.error("Failed to refresh message:", error);
           throw error;
         },
-        // baseUrl for API mode
         getBaseApiUrl(),
-        // authToken for API mode
         authToken || undefined,
-        // chatId for API mode
         conversation.id,
-        // tools for API mode
         []
       );
     } catch (error) {
       console.error("Failed to refresh message:", error);
-      // Add error message
       const errorMessage: Message = {
         id: newAssistantMessageId,
         role: "assistant",
@@ -1231,18 +1142,21 @@ const App = () => {
       updateLoadedConversation(conversation.id, (conv) => ({
         ...conv,
         messages: conv.messages.map((m) =>
-          m.id === newAssistantMessageId ? errorMessage : m
-        ),
-        lastUpdated: new Date(),
+                  m.id === newAssistantMessageId ? errorMessage : m
+                ),
+                lastUpdated: new Date(),
       }));
     } finally {
       setIsLoading(false);
       setStreamingConversationId(null);
     }
-  };
+  }, [isLoading, authToken, userId, updateLoadedConversation, streamingClientRef]);
 
-  const editMessage = (messageId: string) => {
-    const conversation = currentConversation;
+  const editMessage = React.useCallback((messageId: string) => {
+    const currentConvId = currentConversationIdRef.current;
+    if (!currentConvId) return;
+    
+    const conversation = loadedConversationsRef.current.get(currentConvId);
     if (!conversation) return;
 
     const messageIndex = conversation.messages.findIndex(
@@ -1256,16 +1170,13 @@ const App = () => {
 
     const messageToEdit = conversation.messages[messageIndex];
 
-    // Set the input to the message content for editing
     setInput(messageToEdit.content);
-
-    // Remove all messages after this one (including this one) for regeneration
     const messagesToKeep = conversation.messages.slice(0, messageIndex);
 
     updateLoadedConversation(conversation.id, (conv) => ({
       ...conv,
-      messages: messagesToKeep,
-      lastUpdated: new Date(),
+              messages: messagesToKeep,
+              lastUpdated: new Date(),
     }));
 
     // Save to MongoDB if authenticated
@@ -1280,14 +1191,14 @@ const App = () => {
       });
     }
 
-    // console.log(`Editing message: "${messageToEdit.content}"`);
-  };
+  }, [authToken, userId, updateLoadedConversation]);
 
-  const deleteMessage = async (messageId: string) => {
-    if (!currentConversationId || !authToken) return;
+  const deleteMessage = React.useCallback(async (messageId: string) => {
+    const currentConvId = currentConversationIdRef.current;
+    if (!currentConvId || !authToken) return;
 
     // Update local state immediately for better UX
-    updateLoadedConversation(currentConversationId, (conv) => {
+    updateLoadedConversation(currentConvId, (conv) => {
       // Find the index of the message to delete
       const messageIndex = conv.messages.findIndex((msg) => msg.id === messageId);
       
@@ -1300,75 +1211,61 @@ const App = () => {
       const updatedMessages = conv.messages.slice(0, messageIndex);
       
       return {
-        ...conv,
+              ...conv,
         messages: updatedMessages,
-        lastUpdated: new Date(),
+              lastUpdated: new Date(),
       };
     });
 
-    // Delete from MongoDB via backend API
     try {
-      await chatService.deleteMessage(currentConversationId, messageId, authToken);
-      console.log(`✅ Message ${messageId} and subsequent messages deleted`);
+      await chatService.deleteMessage(currentConvId, messageId, authToken);
     } catch (error) {
       console.error("Failed to delete message from MongoDB:", error);
-      // Reload conversation from MongoDB to sync state
-      if (currentConversationId && authToken) {
+      if (currentConvId && authToken) {
         try {
-          const reloaded = await chatService.loadChatFromMongo(currentConversationId, authToken);
+          const reloaded = await chatService.loadChatFromMongo(currentConvId, authToken);
           if (reloaded) {
-            updateLoadedConversation(currentConversationId, () => reloaded);
+            updateLoadedConversation(currentConvId, () => reloaded);
           }
         } catch (reloadError) {
           console.error("Failed to reload conversation after delete error:", reloadError);
         }
       }
     }
-  };
+  }, [authToken, updateLoadedConversation]);
 
-  const shareMessage = (messageId: string) => {
-    // console.log('Sharing message:', messageId);
-    // Additional share tracking or analytics could go here
-  };
+  const shareMessage = React.useCallback(() => {
+    // Share functionality placeholder
+  }, []);
 
-  // Control button handlers
-  const handleVoiceInput = () => {
-    // TODO: Implement voice input functionality
-    console.log("Voice input clicked");
-    // You can implement Web Speech API here
-  };
+  const handleVoiceInput = React.useCallback(() => {}, []);
 
-  const handleClearInput = () => {
+  const handleClearInput = React.useCallback(() => {
     setInput("");
-    console.log("Input cleared");
-  };
+  }, []);
 
-  const handleAttachment = () => {
+  const handleAttachment = React.useCallback(() => {
     setIsFileManagerOpen(true);
-  };
+  }, []);
 
-  const handleFileUploaded = (file: any) => {
-    console.log("File uploaded:", file);
+  const handleFileUploaded = React.useCallback((file: any) => {
     setAttachedFiles((prev) => [...prev, file]);
-  };
+  }, []);
 
-  const handleRemoveAttachedFile = (fileId: string) => {
+  const handleRemoveAttachedFile = React.useCallback((fileId: string) => {
     setAttachedFiles((prev) => prev.filter((f) => f.id !== fileId));
-  };
+  }, []);
 
-  // Report panel handlers
-
-  const closeReportPanel = () => {
+  const closeReportPanel = React.useCallback(() => {
     setIsReportPanelOpen(false);
     setReportData(null);
-  };
+  }, []);
 
-  const handleReportPanelWidthChange = (width: number) => {
+  const handleReportPanelWidthChange = React.useCallback((width: number) => {
     setReportPanelWidth(width);
-  };
+  }, []);
 
-  // Function to open report from URL (for links in messages)
-  const openReportFromUrl = async (url: string) => {
+  const openReportFromUrl = React.useCallback(async (url: string) => {
     const reportId = parseReportId(url);
     if (!reportId) {
       console.error("Invalid report URL:", url);
@@ -1388,9 +1285,8 @@ const App = () => {
     } finally {
       setIsReportLoading(false);
     }
-  };
+  }, []);
 
-  // Show login form if not authenticated
   if (!isAuthenticated) {
     return (
       <ThemeProvider theme={currentTheme}>
@@ -1416,7 +1312,6 @@ const App = () => {
           color: "text.primary",
         }}
       >
-        {/* Main Layout Container */}
         <Box
           id="iagent-main-layout"
           className="iagent-layout-horizontal"
@@ -1426,7 +1321,6 @@ const App = () => {
             overflow: "hidden",
           }}
         >
-          {/* Sidebar Container */}
           <Sidebar
             ref={sidebarRef}
             open={isSidebarOpen}
@@ -1442,8 +1336,6 @@ const App = () => {
             streamingConversationId={streamingConversationId}
             onWidthChange={handleSidebarWidthChange}
           />
-
-          {/* Conversation Area Container */}
           <Box
             id="iagent-conversation-container"
             className="iagent-conversation-area"
@@ -1454,7 +1346,6 @@ const App = () => {
               overflow: "hidden",
             }}
           >
-            {/* Chat Messages Area */}
             <ChatArea
               messages={currentConversation?.messages || []}
               isLoading={isLoading}
@@ -1501,8 +1392,6 @@ const App = () => {
               authToken={authToken || undefined}
             />
           </Box>
-
-          {/* Report Details Panel */}
           <ReportDetailsPanel
             open={isReportPanelOpen}
             onClose={closeReportPanel}
