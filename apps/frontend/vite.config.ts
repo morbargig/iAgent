@@ -49,7 +49,7 @@ export default defineConfig(({ mode }) => {
     },
 
     css: {
-      postcss: './postcss.config.cjs',
+      postcss: path.join(__dirname, 'postcss.config.cjs'),
     },
 
     // Dynamic base URL configuration
