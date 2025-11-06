@@ -4,6 +4,9 @@
   "include": [],
   "references": [
     {
+      "path": "../shared/renderer"
+    },
+    {
       "path": "./tsconfig.lib.json"
     }
   ]

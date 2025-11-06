@@ -1,0 +1,28 @@
+{
+  "$schema": "https://json.schemastore.org/nest-cli",
+  "collection": "@nestjs/schematics",
+  "sourceRoot": "src",
+  "compilerOptions": {
+    "deleteOutDir": true,
+    "watchAssets": true,
+    "assets": ["**/*.json", "**/*.md"],
+    "watchAssetsIgnore": [
+      "**/*.spec.ts",
+      "**/*.test.ts",
+      "**/__tests__/**",
+      "**/__mocks__/**"
+    ]
+  },
+  "watchOptions": {
+    "ignore": [
+      "**/*.spec.ts",
+      "**/*.test.ts",
+      "**/__tests__/**",
+      "**/__mocks__/**",
+      "**/node_modules/**",
+      "**/dist/**",
+      "**/coverage/**"
+    ]
+  }
+}
+

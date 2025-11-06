@@ -22,7 +22,8 @@ import {
   ErrorResponseDto,
   HealthCheckDto,
   AuthTokenDto,
-  ToolSelectionDto
+  ToolSelectionDto,
+  ChatMessageDto
 } from './dto/chat.dto';
 
 interface ChatMessage {
@@ -163,224 +164,390 @@ export class AppController {
     description: 'Authentication required'
   })
   async streamChat(@Body() request: ChatRequestDto, @Res() res: Response) {
-    const { chatId, auth, messages, tools, requestTimestamp } = request;
-
-    // Log the enhanced request data
-    console.log('🔥 Enhanced Chat Request:', {
-      chatId,
-      userId: auth.userId,
-      messageCount: messages.length,
-      toolsEnabled: tools?.length || 0,
-      timestamp: requestTimestamp || new Date().toISOString()
-    });
-
-    // Convert DTOs to internal format with proper typing
-    const processedMessages: ChatMessage[] = messages.map((msg) => ({
-      id: msg.id,
-      role: msg.role,
-      content: msg.content,
-      timestamp: new Date(msg.timestamp)
-    }));
-
-    const lastMessage = processedMessages[processedMessages.length - 1];
-    const sessionId = `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-
-    // Save user message with filter data if it's a user message
-    if (lastMessage.role === 'user') {
-      try {
-        // Check if the message has filter data (from frontend)
-        const messageWithFilter = messages[messages.length - 1];
-        let filterId = null;
-        let filterSnapshot = null;
-
-        if (messageWithFilter.filterId && messageWithFilter.filterSnapshot) {
-          // Create/save the filter for this chat
-          const filterData = {
-            filterId: messageWithFilter.filterId,
-            name: messageWithFilter.filterSnapshot.name || 'Unnamed Filter',
-            filterConfig: messageWithFilter.filterSnapshot.config || {},
-            chatId: chatId,
-            userId: auth.userId
-          };
-
-          const savedFilter = await this.chatService.createFilter(filterData);
-          filterId = savedFilter.filterId;
-          filterSnapshot = messageWithFilter.filterSnapshot;
-
-          // Set as active filter for the chat
-          await this.chatService.setActiveFilter(chatId, filterId, auth.userId);
-
-          console.log('💾 Filter saved and set as active:', filterId);
-        }
-
-        // Save the user message with filter information
-        await this.chatService.addMessage({
-          id: lastMessage.id,
-          chatId: chatId,
-          userId: auth.userId,
-          role: lastMessage.role,
-          content: lastMessage.content,
-          timestamp: lastMessage.timestamp,
-          metadata: {},
-          filterId,
-          filterSnapshot: filterSnapshot || undefined
-        });
-
-        console.log('💬 User message saved with filter data');
-      } catch (error) {
-        console.error('Failed to save user message with filter data:', error);
-      }
-    }
-
-    // Set streaming headers for JSON
-    res.setHeader('Content-Type', 'application/json; charset=utf-8');
-    res.setHeader('Cache-Control', 'no-cache');
-    res.setHeader('Connection', 'keep-alive');
-    res.setHeader('Access-Control-Allow-Origin', '*');
-    res.setHeader('Access-Control-Allow-Headers', 'Cache-Control, Content-Type');
-
     try {
-      // Send start chunk
-      const startChunk = {
-        chunkType: 'start',
-        data: {
-          message: 'Starting response generation',
-          model: 'chatgpt-clone-v1',
-          promptTokens: this.countTokens(processedMessages),
-          categories: this.categorizeContent(lastMessage.content),
-          conversationLength: processedMessages.length
-        },
-        timestamp: new Date().toISOString(),
-        sessionId
-      };
-      res.write(JSON.stringify(startChunk) + '\n');
+      const { chatId, auth, messages, tools, requestTimestamp } = request;
 
-      // Generate contextual response based on conversation
-      const response = await this.generateContextualResponse(processedMessages);
+      // Validate required fields
+      if (!auth || !auth.userId) {
+        res.status(HttpStatus.BAD_REQUEST).json({
+          error: 'Authentication required',
+          message: 'Missing or invalid auth object with userId'
+        });
+        return;
+      }
 
-      // Tokenize the response for realistic streaming
-      const tokens = this.tokenizeResponse(response);
-      const startTime = new Date();
+      if (!chatId) {
+        res.status(HttpStatus.BAD_REQUEST).json({
+          error: 'Missing chatId',
+          message: 'chatId is required'
+        });
+        return;
+      }
 
-      // Initial thinking delay (like real AI processing)
-      await new Promise(resolve => setTimeout(resolve, 800 + Math.random() * 400));
+      if (!messages || !Array.isArray(messages) || messages.length === 0) {
+        res.status(HttpStatus.BAD_REQUEST).json({
+          error: 'Invalid messages',
+          message: 'messages array is required and must not be empty'
+        });
+        return;
+      }
 
-      let currentContent = '';
+      // Log the enhanced request data
+      console.log('🔥 Enhanced Chat Request:', {
+        chatId,
+        userId: auth.userId,
+        messageCount: messages.length,
+        toolsEnabled: tools?.length || 0,
+        timestamp: requestTimestamp || new Date().toISOString()
+      });
 
-      // Send metadata chunk with generation info
-      const metadataChunk = {
-        chunkType: 'metadata',
-        data: {
-          totalTokens: tokens.length,
-          estimatedDuration: tokens.length * 50, // rough estimate in ms
-          contentType: 'text/markdown',
-          language: 'en',
-          responseType: this.getResponseType(lastMessage.content)
-        },
-        timestamp: new Date().toISOString(),
-        sessionId
-      };
-      res.write(JSON.stringify(metadataChunk) + '\n');
+      // Convert DTOs to internal format with proper typing
+      const processedMessages: ChatMessage[] = messages.map((msg) => ({
+        id: msg.id,
+        role: msg.role,
+        content: msg.content,
+        timestamp: new Date(msg.timestamp)
+      }));
 
-      // Stream tokens one by one
-      for (let i = 0; i < tokens.length; i++) {
-        const token = tokens[i];
-        const isLast = i === tokens.length - 1;
+      const promptTokenCount = this.countTokens(processedMessages);
 
-        currentContent += token;
+      const chatName = this.deriveChatName(messages);
+      try {
+        await this.chatService.ensureChatExists({
+          chatId,
+          userId: auth.userId,
+          name: chatName
+        });
+      } catch (ensureError) {
+        console.error('Failed to ensure chat exists:', ensureError);
+        // Continue anyway - chat might already exist or we'll handle it later
+        // Don't fail the entire request if chat creation fails
+      }
 
-        // Create token chunk with structured data
-        const tokenChunk = {
-          chunkType: 'token',
+      let lastUserMessageIndex = -1;
+      for (let i = messages.length - 1; i >= 0; i--) {
+        if (messages[i].role === 'user') {
+          lastUserMessageIndex = i;
+          break;
+        }
+      }
+
+      const lastUserMessageDto = lastUserMessageIndex >= 0 ? messages[lastUserMessageIndex] : undefined;
+      const lastUserMessage = lastUserMessageIndex >= 0 ? processedMessages[lastUserMessageIndex] : undefined;
+      const assistantPlaceholderDto = messages[messages.length - 1];
+      const lastUserContent = lastUserMessage?.content || '';
+
+      const sessionId = `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+
+      // Save user message with filter data if it's a user message
+      if (lastUserMessage && lastUserMessageDto) {
+        try {
+          let filterId = null;
+          let filterSnapshot = null;
+
+          if (lastUserMessageDto.filterId && lastUserMessageDto.filterSnapshot) {
+            // Create/save the filter for this chat
+            const filterData = {
+              filterId: lastUserMessageDto.filterId,
+              name: lastUserMessageDto.filterSnapshot.name || 'Unnamed Filter',
+              filterConfig: lastUserMessageDto.filterSnapshot.config || {},
+              chatId,
+              userId: auth.userId
+            };
+
+            try {
+              const savedFilter = await this.chatService.createFilter(filterData);
+              filterId = savedFilter.filterId;
+            } catch (filterError) {
+              if ((filterError as { code?: number }).code !== 11000) {
+                throw filterError;
+              }
+              filterId = filterData.filterId;
+            }
+
+            filterSnapshot = lastUserMessageDto.filterSnapshot;
+
+            // Set as active filter for the chat
+            await this.chatService.setActiveFilter(chatId, auth.userId, filterId);
+
+            console.log('💾 Filter saved and set as active:', filterId);
+          }
+
+          // Save the user message with filter information
+          await this.chatService.addMessage({
+            id: lastUserMessage.id,
+            chatId,
+            userId: auth.userId,
+            role: lastUserMessage.role,
+            content: lastUserMessage.content,
+            timestamp: lastUserMessage.timestamp,
+            metadata: {
+              requestTimestamp: requestTimestamp || new Date().toISOString(),
+              tools: tools || []
+            },
+            filterId,
+            filterSnapshot: filterSnapshot || undefined
+          });
+
+          console.log('💬 User message saved with filter data');
+        } catch (error) {
+          console.error('Failed to save user message with filter data:', error);
+        }
+      }
+
+      // Set streaming headers for JSON
+      res.setHeader('Content-Type', 'application/json; charset=utf-8');
+      res.setHeader('Cache-Control', 'no-cache');
+      res.setHeader('Connection', 'keep-alive');
+      res.setHeader('Access-Control-Allow-Origin', '*');
+      res.setHeader('Access-Control-Allow-Headers', 'Cache-Control, Content-Type');
+
+      try {
+        // Send start chunk
+        const startChunk = {
+          chunkType: 'start',
           data: {
-            token,
-            index: i + 1,
-            totalTokens: tokens.length,
-            progress: Math.round(((i + 1) / tokens.length) * 100),
-            cumulativeContent: currentContent,
-            tokenType: this.getTokenType(token),
-            confidence: 0.92 + Math.random() * 0.07,
-            isLastToken: isLast
+            message: 'Starting response generation',
+            model: 'chatgpt-clone-v1',
+            promptTokens: promptTokenCount,
+            categories: this.categorizeContent(lastUserContent),
+            conversationLength: processedMessages.length
           },
           timestamp: new Date().toISOString(),
           sessionId
         };
+        res.write(JSON.stringify(startChunk) + '\n');
 
-        // Send token chunk
-        res.write(JSON.stringify(tokenChunk) + '\n');
+        // Generate contextual response based on conversation
+        const response = await this.generateContextualResponse(processedMessages);
 
-        // Send periodic progress metadata (every 10 tokens)
-        if (i > 0 && i % 10 === 0 && !isLast) {
-          const progressChunk = {
-            chunkType: 'progress',
+        // Tokenize the response for realistic streaming
+        const tokens = this.tokenizeResponse(response);
+        const startTime = new Date();
+
+        // Initial thinking delay (like real AI processing)
+        await new Promise(resolve => setTimeout(resolve, 800 + Math.random() * 400));
+
+        let currentContent = '';
+
+        // Send metadata chunk with generation info
+        const metadataChunk = {
+          chunkType: 'metadata',
+          data: {
+            totalTokens: tokens.length,
+            estimatedDuration: tokens.length * 50, // rough estimate in ms
+            contentType: 'text/markdown',
+            language: 'en',
+            responseType: this.getResponseType(lastUserContent)
+          },
+          timestamp: new Date().toISOString(),
+          sessionId
+        };
+        res.write(JSON.stringify(metadataChunk) + '\n');
+
+        // Send section start for answer section
+        const answerSectionStart = {
+          chunkType: 'section',
+          data: {
+            section: 'answer',
+            contentType: 'markdown',
+            action: 'start'
+          },
+          timestamp: new Date().toISOString(),
+          sessionId
+        };
+        res.write(JSON.stringify(answerSectionStart) + '\n');
+
+        // Stream tokens one by one
+        for (let i = 0; i < tokens.length; i++) {
+          const token = tokens[i];
+          const isLast = i === tokens.length - 1;
+
+          currentContent += token;
+
+          // Create token chunk with structured data
+          const tokenChunk = {
+            chunkType: 'token',
             data: {
+              token,
+              index: i + 1,
+              totalTokens: tokens.length,
               progress: Math.round(((i + 1) / tokens.length) * 100),
-              tokensProcessed: i + 1,
-              tokensRemaining: tokens.length - i - 1,
-              processingTimeMs: Date.now() - startTime.getTime(),
-              estimatedRemainingMs: Math.round((tokens.length - i - 1) * 50),
-              averageTokenTime: Math.round((Date.now() - startTime.getTime()) / (i + 1))
+              cumulativeContent: currentContent,
+              tokenType: this.getTokenType(token),
+              confidence: 0.92 + Math.random() * 0.07,
+              isLastToken: isLast
             },
             timestamp: new Date().toISOString(),
             sessionId
           };
-          res.write(JSON.stringify(progressChunk) + '\n');
+
+          // Send token chunk
+          res.write(JSON.stringify(tokenChunk) + '\n');
+
+          // Send periodic progress metadata (every 10 tokens)
+          if (i > 0 && i % 10 === 0 && !isLast) {
+            const progressChunk = {
+              chunkType: 'progress',
+              data: {
+                progress: Math.round(((i + 1) / tokens.length) * 100),
+                tokensProcessed: i + 1,
+                tokensRemaining: tokens.length - i - 1,
+                processingTimeMs: Date.now() - startTime.getTime(),
+                estimatedRemainingMs: Math.round((tokens.length - i - 1) * 50),
+                averageTokenTime: Math.round((Date.now() - startTime.getTime()) / (i + 1))
+              },
+              timestamp: new Date().toISOString(),
+              sessionId
+            };
+            res.write(JSON.stringify(progressChunk) + '\n');
+          }
+
+          // Realistic streaming delays based on token type
+          if (!isLast) {
+            const delay = this.calculateStreamingDelay(token, i, tokens);
+            await new Promise(resolve => setTimeout(resolve, delay));
+          }
         }
 
-        // Realistic streaming delays based on token type
-        if (!isLast) {
-          const delay = this.calculateStreamingDelay(token, i, tokens);
-          await new Promise(resolve => setTimeout(resolve, delay));
+        // Send completion chunk
+        try {
+          if (assistantPlaceholderDto?.role === 'assistant') {
+            await this.chatService.addMessage({
+              id: assistantPlaceholderDto.id,
+              chatId,
+              userId: auth.userId,
+              role: 'assistant',
+              content: currentContent,
+              timestamp: new Date(),
+              metadata: {
+                sessionId,
+                model: 'chatgpt-clone-v1',
+                usage: {
+                  promptTokens: promptTokenCount,
+                  completionTokens: tokens.length,
+                  totalTokens: promptTokenCount + tokens.length,
+                },
+                responseType: this.getResponseType(lastUserContent),
+              },
+              filterId: assistantPlaceholderDto.filterId || lastUserMessageDto?.filterId || null,
+              filterSnapshot: assistantPlaceholderDto.filterSnapshot || lastUserMessageDto?.filterSnapshot,
+            });
+
+            console.log('🤖 Assistant message saved to chat history');
+          }
+        } catch (saveError) {
+          console.error('Failed to save assistant message:', saveError);
+        }
+
+        // Send section end for answer section
+        const answerSectionEnd = {
+          chunkType: 'section',
+          data: {
+            section: 'answer',
+            contentType: 'markdown',
+            action: 'end'
+          },
+          timestamp: new Date().toISOString(),
+          sessionId
+        };
+        res.write(JSON.stringify(answerSectionEnd) + '\n');
+
+        const completeChunk = {
+          chunkType: 'complete',
+          data: {
+            message: 'Response generation completed successfully',
+            totalTokens: tokens.length,
+            totalProcessingTimeMs: Date.now() - startTime.getTime(),
+            finalContent: currentContent,
+            averageTokenTime: Math.round((Date.now() - startTime.getTime()) / tokens.length),
+            usage: {
+              promptTokens: promptTokenCount,
+              completionTokens: tokens.length,
+              totalTokens: promptTokenCount + tokens.length
+            },
+            quality: {
+              confidence: 0.95,
+              coherence: 0.92,
+              relevance: 0.96
+            }
+          },
+          timestamp: new Date().toISOString(),
+          sessionId
+        };
+        res.write(JSON.stringify(completeChunk) + '\n');
+
+        res.end();
+      } catch (innerError) {
+        console.error('Streaming error:', innerError);
+        console.error('Error stack:', innerError instanceof Error ? innerError.stack : 'No stack trace');
+
+        // Send error chunk if response hasn't been sent yet
+        if (!res.headersSent) {
+          res.setHeader('Content-Type', 'application/json; charset=utf-8');
+          res.setHeader('Cache-Control', 'no-cache');
+          res.setHeader('Connection', 'keep-alive');
+          res.setHeader('Access-Control-Allow-Origin', '*');
+        }
+
+        const errorChunk = {
+          chunkType: 'error',
+          data: {
+            error: {
+              message: 'An error occurred while generating the response',
+              code: 'GENERATION_ERROR',
+              details: innerError instanceof Error ? innerError.message : 'Unknown error',
+              timestamp: new Date().toISOString(),
+              recoverable: true
+            }
+          },
+          timestamp: new Date().toISOString(),
+          sessionId: sessionId || 'unknown'
+        };
+
+        try {
+          res.write(JSON.stringify(errorChunk) + '\n');
+          res.end();
+        } catch (writeError) {
+          console.error('Failed to write error chunk:', writeError);
+          try {
+            res.end();
+          } catch (endError) {
+            console.error('Failed to end response:', endError);
+          }
         }
       }
-
-      // Send completion chunk
-      const completeChunk = {
-        chunkType: 'complete',
-        data: {
-          message: 'Response generation completed successfully',
-          totalTokens: tokens.length,
-          totalProcessingTimeMs: Date.now() - startTime.getTime(),
-          finalContent: currentContent,
-          averageTokenTime: Math.round((Date.now() - startTime.getTime()) / tokens.length),
-          usage: {
-            promptTokens: this.countTokens(processedMessages),
-            completionTokens: tokens.length,
-            totalTokens: this.countTokens(processedMessages) + tokens.length
-          },
-          quality: {
-            confidence: 0.95,
-            coherence: 0.92,
-            relevance: 0.96
-          }
-        },
-        timestamp: new Date().toISOString(),
-        sessionId
-      };
-      res.write(JSON.stringify(completeChunk) + '\n');
-
-      res.end();
-    } catch (error) {
-      console.error('Streaming error:', error);
-
-      // Send error chunk
-      const errorChunk = {
-        chunkType: 'error',
-        data: {
-          error: {
-            message: 'An error occurred while generating the response',
-            code: 'GENERATION_ERROR',
-            details: error instanceof Error ? error.message : 'Unknown error',
+    } catch (outerError: unknown) {
+      console.error('Outer error in streamChat:', outerError);
+      console.error('Error stack:', outerError instanceof Error ? outerError.stack : 'No stack trace');
+      
+      if (!res.headersSent) {
+        res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({
+          error: 'Internal server error',
+          message: outerError instanceof Error ? outerError.message : 'Unknown error occurred'
+        });
+      } else {
+        try {
+          const errorChunk = {
+            chunkType: 'error',
+            data: {
+              error: {
+                message: 'An error occurred while processing the request',
+                code: 'REQUEST_ERROR',
+                details: outerError instanceof Error ? outerError.message : 'Unknown error',
+                timestamp: new Date().toISOString(),
+                recoverable: false
+              }
+            },
             timestamp: new Date().toISOString(),
-            recoverable: true
-          }
-        },
-        timestamp: new Date().toISOString(),
-        sessionId: sessionId || 'unknown'
-      };
-
-      res.write(JSON.stringify(errorChunk) + '\n');
-      res.end();
+            sessionId: 'unknown'
+          };
+          res.write(JSON.stringify(errorChunk) + '\n');
+          res.end();
+        } catch (endError) {
+          console.error('Failed to end response after outer error:', endError);
+        }
+      }
     }
   }
 
@@ -535,6 +702,20 @@ export class AppController {
     }
 
     return Math.round(Math.max(10, delay)); // Minimum 10ms delay
+  }
+
+  private deriveChatName(messages: ChatMessageDto[]): string {
+    const firstUserMessage = messages.find((msg) => msg.role === 'user' && msg.content?.trim().length);
+    if (!firstUserMessage) {
+      return 'New Chat';
+    }
+
+    const normalized = firstUserMessage.content.trim().replace(/\s+/g, ' ');
+    if (normalized.length <= 60) {
+      return normalized;
+    }
+
+    return `${normalized.slice(0, 57)}...`;
   }
 
   /**

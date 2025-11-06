@@ -39,6 +39,7 @@ import {
   FilterList as FilterIcon,
   PlayArrow as ApplyIcon,
   Visibility as ViewIcon,
+  Delete as DeleteIcon,
 } from "@mui/icons-material";
 import { type Message } from "@iagent/chat-types";
 import { MarkdownRenderer } from "./MarkdownRenderer";
@@ -685,6 +686,26 @@ const MessageBubble = ({
               <RefreshIcon sx={{ fontSize: 14 }} />
             </IconButton>
           </Tooltip>
+
+          <Tooltip title={t("message.delete")}>
+            <IconButton
+              onClick={() => onDeleteMessage?.(message.id)}
+              size="small"
+              sx={{
+                width: 28,
+                height: 28,
+                color: theme.palette.text.secondary,
+                borderRadius: "6px",
+                transition: "all 150ms cubic-bezier(0.4, 0, 0.2, 1)",
+                "&:hover": {
+                  backgroundColor: theme.palette.error.main + "20",
+                  color: theme.palette.error.main,
+                },
+              }}
+            >
+              <DeleteIcon sx={{ fontSize: 14 }} />
+            </IconButton>
+          </Tooltip>
         </Box>
       </Box>
     );
@@ -950,6 +971,27 @@ const MessageBubble = ({
             </IconButton>
           </Tooltip>
         )}
+
+        {/* Delete Message Button */}
+        <Tooltip title={t("message.delete")}>
+          <IconButton
+            onClick={() => onDeleteMessage?.(message.id)}
+            size="small"
+            sx={{
+              width: 28,
+              height: 28,
+              color: theme.palette.text.secondary,
+              borderRadius: "6px",
+              transition: "all 150ms cubic-bezier(0.4, 0, 0.2, 1)",
+              "&:hover": {
+                backgroundColor: theme.palette.error.main + "20",
+                color: theme.palette.error.main,
+              },
+            }}
+          >
+            <DeleteIcon sx={{ fontSize: 14 }} />
+          </IconButton>
+        </Tooltip>
       </Box>
 
       {/* Metadata */}

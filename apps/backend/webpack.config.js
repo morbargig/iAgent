@@ -6,6 +6,17 @@ module.exports = {
   output: {
     path: join(__dirname, '../../dist/apps/backend'),
   },
+  watchOptions: {
+    ignored: [
+      '**/*.spec.ts',
+      '**/*.test.ts',
+      '**/__tests__/**',
+      '**/__mocks__/**',
+      '**/node_modules/**',
+      '**/dist/**',
+      '**/coverage/**',
+    ],
+  },
   plugins: [
     new NxAppWebpackPlugin({
       target: 'node',

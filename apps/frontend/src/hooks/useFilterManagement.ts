@@ -125,7 +125,10 @@ export const useFilterManagement = ({
     };
 
     const handleSaveNewFilter = async (name: string, isGlobal: boolean) => {
-        if (!currentChatId) return;
+        if (!currentChatId || !authToken) {
+            console.error("Cannot create filter: missing chatId or authToken");
+            return;
+        }
 
         const filterConfig = {
             dateFilter:
@@ -149,220 +152,195 @@ export const useFilterManagement = ({
                 (toolId) => enabledTools[toolId]
             ),
             toolConfigurations: synchronizedConfigurations,
-            createdAt: new Date().toISOString(),
-            isGlobal: isGlobal,
         };
 
         const filterId = `filter_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 
-        const newFilter: ChatFilter = {
-            filterId,
-            name: name,
-            config: filterConfig,
-            isActive: true,
-            createdAt: new Date().toISOString(),
-        };
-
         try {
-            // Save to localStorage (for both global and chat-specific)
-            const storageKey = isGlobal
-                ? "globalFilters"
-                : `chatFilters_${currentChatId}`;
-            const existingFilters = localStorage.getItem(storageKey);
-            const filters = existingFilters ? JSON.parse(existingFilters) : [];
-
-            // For chat-specific filters, mark all other filters as inactive
-            if (!isGlobal) {
-                filters.forEach((f: ChatFilter) => (f.isActive = false));
-            }
-
-            // Add new filter
-            filters.push(newFilter);
-            localStorage.setItem(storageKey, JSON.stringify(filters));
-
-            // Update current chat filters and set as active
-            if (!isGlobal) {
-                setChatFilters(filters);
-            } else {
-                // For global filters, also add to current chat view
-                const currentFilters = [...chatFilters];
-                currentFilters.forEach((f) => (f.isActive = false));
-                setChatFilters([...currentFilters, newFilter]);
-            }
-
-            setActiveFilter(newFilter);
-
-            console.log(`✅ ${isGlobal ? "Global" : "Chat"} filter saved:`, name);
-
-            // If we have authToken, also try API call
-            if (authToken) {
-                const response = await fetch(
-                    getApiUrl(`/chats/${currentChatId}/filters`),
-                    {
-                        method: "POST",
-                        headers: {
-                            Authorization: `Bearer ${authToken}`,
-                            "Content-Type": "application/json",
-                        },
-                        body: JSON.stringify({
-                            name: name,
-                            filterConfig: filterConfig,
-                            isGlobal: isGlobal,
-                        }),
-                    }
-                );
-
-                if (response.ok) {
-                    console.log("✅ Filter also saved to API");
+            // Create filter via API
+            const response = await fetch(
+                getApiUrl(`/chats/${currentChatId}/filters`),
+                {
+                    method: "POST",
+                    headers: {
+                        Authorization: `Bearer ${authToken}`,
+                        "Content-Type": "application/json",
+                    },
+                    body: JSON.stringify({
+                        filterId: filterId,
+                        name: name,
+                        filterConfig: filterConfig,
+                        isActive: true,
+                    }),
                 }
+            );
+
+            if (!response.ok) {
+                const errorText = await response.text();
+                throw new Error(`Failed to create filter: ${response.status} ${errorText}`);
             }
+
+            const savedFilter = await response.json();
+            console.log("✅ Filter created via API:", savedFilter);
+
+            // Convert API response to ChatFilter format
+            const newFilter: ChatFilter = {
+                filterId: savedFilter.filterId,
+                name: savedFilter.name,
+                config: savedFilter.filterConfig,
+                isActive: savedFilter.isActive || true,
+                createdAt: savedFilter.createdAt || new Date().toISOString(),
+            };
+
+            // Reload filters to get updated list
+            await loadAllFilters();
+
+            // Set as active filter
+            await selectFilter(newFilter);
+
+            console.log(`✅ Filter created and activated:`, name);
         } catch (error) {
             console.error("Failed to create filter:", error);
+            throw error;
         }
     };
 
     const selectFilter = async (filter: ChatFilter) => {
-        if (!currentChatId) return;
+        if (!currentChatId || !authToken) {
+            console.error("Cannot select filter: missing chatId or authToken");
+            return;
+        }
 
         try {
-            // Update localStorage as backup
-            const existingFilters = localStorage.getItem(
-                `chatFilters_${currentChatId}`
-            );
-            if (existingFilters) {
-                const filters = JSON.parse(existingFilters);
-
-                // Mark all filters as inactive
-                filters.forEach((f: ChatFilter) => (f.isActive = false));
-
-                // Mark selected filter as active
-                const selectedFilter = filters.find(
-                    (f: ChatFilter) => f.filterId === filter.filterId
-                );
-                if (selectedFilter) {
-                    selectedFilter.isActive = true;
+            // Set active filter via API
+            const response = await fetch(
+                getApiUrl(`/chats/${currentChatId}/active-filter`),
+                {
+                    method: "PUT",
+                    headers: {
+                        Authorization: `Bearer ${authToken}`,
+                        "Content-Type": "application/json",
+                    },
+                    body: JSON.stringify({
+                        filterId: filter.filterId,
+                    }),
                 }
+            );
 
-                localStorage.setItem(
-                    `chatFilters_${currentChatId}`,
-                    JSON.stringify(filters)
-                );
-                setChatFilters(filters);
+            if (!response.ok) {
+                const errorText = await response.text();
+                throw new Error(`Failed to set active filter: ${response.status} ${errorText}`);
             }
+
+            // Reload filters to get updated active state
+            await loadAllFilters();
 
             setActiveFilter(filter);
             applyFilterToUI(filter);
             setFilterMenuAnchor(null);
 
             console.log("✅ Filter activated:", filter.name);
-
-            // If we have authToken, also try API call
-            if (authToken) {
-                const response = await fetch(
-                    getApiUrl(`/chats/${currentChatId}/active-filter`),
-                    {
-                        method: "PUT",
-                        headers: {
-                            Authorization: `Bearer ${authToken}`,
-                            "Content-Type": "application/json",
-                        },
-                        body: JSON.stringify({
-                            filterId: filter.filterId,
-                        }),
-                    }
-                );
-
-                if (response.ok) {
-                    console.log("✅ Filter also activated via API");
-                }
-            }
         } catch (error) {
             console.error("Failed to set active filter:", error);
+            throw error;
         }
     };
 
-    // Load both chat-specific and global filters
+    // Load filters from API
     const loadAllFilters = useCallback(async () => {
-        if (!currentChatId) return;
+        if (!currentChatId || !authToken) {
+            setChatFilters([]);
+            setActiveFilter(null);
+            return;
+        }
 
         try {
-            // Load chat-specific filters
-            const chatFilters = localStorage.getItem(`chatFilters_${currentChatId}`);
-            const chatFilterList = chatFilters ? JSON.parse(chatFilters) : [];
-
-            // Load global filters
-            const globalFilters = localStorage.getItem("globalFilters");
-            const globalFilterList = globalFilters ? JSON.parse(globalFilters) : [];
-
-            // Combine both lists
-            const allFilters = [
-                ...chatFilterList.map((f: ChatFilter) => ({ ...f, scope: "chat" })),
-                ...globalFilterList.map((f: ChatFilter) => ({ ...f, scope: "global" })),
-            ];
-
-            setChatFilters(allFilters);
-
-            // Find active filter
-            const activeFilter = allFilters.find((f: ChatFilter) => f.isActive);
-            setActiveFilter(activeFilter || null);
-
-            console.log(
-                `✅ Loaded ${chatFilterList.length} chat filters + ${globalFilterList.length} global filters`
+            const response = await fetch(
+                getApiUrl(`/chats/${currentChatId}/filters`),
+                {
+                    headers: {
+                        Authorization: `Bearer ${authToken}`,
+                    },
+                }
             );
 
-            // Also try API call if authenticated
-            if (authToken) {
-                try {
-                    const response = await fetch(
-                        getApiUrl(`/chats/${currentChatId}/filters`),
-                        {
-                            headers: {
-                                Authorization: `Bearer ${authToken}`,
-                            },
-                        }
-                    );
-
-                    if (response.ok) {
-                        const apiFilters = await response.json();
-                        console.log("✅ API filters loaded:", apiFilters.length);
-                    } else if (response.status === 401) {
-                        console.warn("⚠️ Unauthorized - auth token may be expired or invalid");
-                    }
-                } catch (apiError) {
-                    console.warn("⚠️ Failed to load filters from API (continuing with localStorage):", apiError);
+            if (!response.ok) {
+                if (response.status === 404) {
+                    // No filters found, which is fine
+                    setChatFilters([]);
+                    setActiveFilter(null);
+                    console.log("✅ No filters found for chat");
+                    return;
                 }
+                throw new Error(`Failed to load filters: ${response.status}`);
             }
+
+            const apiFilters = await response.json();
+            console.log("✅ API filters loaded:", apiFilters.length);
+
+            // Convert API response to ChatFilter format
+            const filters: ChatFilter[] = apiFilters.map((f: any) => ({
+                filterId: f.filterId,
+                name: f.name,
+                config: f.filterConfig,
+                isActive: f.isActive || false,
+                createdAt: f.createdAt || new Date().toISOString(),
+            }));
+
+            setChatFilters(filters);
+
+            // Find active filter
+            const activeFilter = filters.find((f: ChatFilter) => f.isActive);
+            setActiveFilter(activeFilter || null);
+
+            console.log(`✅ Loaded ${filters.length} filters from API`);
         } catch (error) {
-            console.error("Failed to load filters:", error);
+            console.error("Failed to load filters from API:", error);
+            // On error, set empty state
+            setChatFilters([]);
+            setActiveFilter(null);
         }
     }, [currentChatId, authToken]);
 
     const handleDeleteFilter = async (filter: ChatFilter) => {
-        try {
-            // Remove from localStorage
-            const isGlobal = (filter as any).scope === "global";
-            const storageKey = isGlobal
-                ? "globalFilters"
-                : `chatFilters_${currentChatId}`;
-            const existingFilters = JSON.parse(
-                localStorage.getItem(storageKey) || "[]"
-            );
-            const updatedFilters = existingFilters.filter(
-                (f: ChatFilter) => f.filterId !== filter.filterId
-            );
-            localStorage.setItem(storageKey, JSON.stringify(updatedFilters));
+        if (!authToken) {
+            console.error("Cannot delete filter: missing authToken");
+            return;
+        }
 
-            // Update state
-            setChatFilters(updatedFilters);
+        try {
+            // Delete filter via API
+            const response = await fetch(
+                getApiUrl(`/chats/filters/${filter.filterId}`),
+                {
+                    method: "DELETE",
+                    headers: {
+                        Authorization: `Bearer ${authToken}`,
+                    },
+                }
+            );
+
+            if (!response.ok) {
+                if (response.status === 404) {
+                    console.warn("Filter not found, may have already been deleted");
+                } else {
+                    const errorText = await response.text();
+                    throw new Error(`Failed to delete filter: ${response.status} ${errorText}`);
+                }
+            }
 
             // If this was the active filter, clear it
             if (activeFilter?.filterId === filter.filterId) {
                 setActiveFilter(null);
             }
 
-            console.log("Filter deleted:", filter.name);
+            // Reload filters to get updated list
+            await loadAllFilters();
+
+            console.log("✅ Filter deleted:", filter.name);
         } catch (error) {
             console.error("Error deleting filter:", error);
+            throw error;
         }
     };
 
@@ -380,49 +358,37 @@ export const useFilterManagement = ({
     };
 
     const handleSaveRename = async (newName: string) => {
-        if (!renameDialogFilter || !currentChatId) return;
-
-        const isGlobal = renameDialogFilter.config?.isGlobal;
-        const storageKey = isGlobal
-            ? "globalFilters"
-            : `chatFilters_${currentChatId}`;
+        if (!renameDialogFilter || !authToken) {
+            console.error("Cannot rename filter: missing filter or authToken");
+            return;
+        }
 
         try {
-            // Update in localStorage
-            const existingFilters = localStorage.getItem(storageKey);
-            if (existingFilters) {
-                const filters = JSON.parse(existingFilters);
-                const filterIndex = filters.findIndex(
-                    (f: ChatFilter) => f.filterId === renameDialogFilter.filterId
-                );
-
-                if (filterIndex !== -1) {
-                    filters[filterIndex].name = newName;
-                    localStorage.setItem(storageKey, JSON.stringify(filters));
-
-                    // Update UI
-                    loadAllFilters();
-
-                    console.log("✅ Filter renamed:", newName);
-
-                    // Also try API call if authenticated
-                    if (authToken) {
-                        await fetch(
-                            getApiUrl(`/chats/filters/${renameDialogFilter.filterId}`),
-                            {
-                                method: "PUT",
-                                headers: {
-                                    Authorization: `Bearer ${authToken}`,
-                                    "Content-Type": "application/json",
-                                },
-                                body: JSON.stringify({ name: newName }),
-                            }
-                        );
-                    }
+            // Update filter via API
+            const response = await fetch(
+                getApiUrl(`/chats/filters/${renameDialogFilter.filterId}`),
+                {
+                    method: "PUT",
+                    headers: {
+                        Authorization: `Bearer ${authToken}`,
+                        "Content-Type": "application/json",
+                    },
+                    body: JSON.stringify({ name: newName }),
                 }
+            );
+
+            if (!response.ok) {
+                const errorText = await response.text();
+                throw new Error(`Failed to rename filter: ${response.status} ${errorText}`);
             }
+
+            // Reload filters to get updated list
+            await loadAllFilters();
+
+            console.log("✅ Filter renamed:", newName);
         } catch (error) {
             console.error("Failed to rename filter:", error);
+            throw error;
         }
 
         setRenameDialogFilter(null);

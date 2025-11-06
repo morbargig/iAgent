@@ -1,5 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsString, IsEnum, IsOptional, IsArray, IsDateString, IsBoolean } from 'class-validator';
+import { IsString, IsEnum, IsOptional, IsArray, IsDateString, IsBoolean, MinLength } from 'class-validator';
 
 export class AuthTokenDto {
   @ApiProperty({
@@ -37,7 +37,7 @@ export class ToolSelectionDto {
     example: { maxResults: 5, language: 'en' }
   })
   @IsOptional()
-  parameters?: Record<string, any>;
+  parameters?: Record<string, unknown>;
 
   @ApiProperty({
     description: 'Whether the tool is enabled',
@@ -86,7 +86,7 @@ export class ChatMessageDto {
     }
   })
   @IsOptional()
-  metadata?: Record<string, any>;
+  metadata?: Record<string, unknown>;
 
   @ApiPropertyOptional({
     description: 'Filter ID associated with this message',
@@ -112,7 +112,7 @@ export class ChatMessageDto {
   filterSnapshot?: {
     filterId?: string;
     name?: string;
-    config?: Record<string, any>;
+    config?: Record<string, unknown>;
   };
 }
 
@@ -178,7 +178,7 @@ export class ChatRequestDto {
     }
   })
   @IsOptional()
-  clientInfo?: Record<string, any>;
+  clientInfo?: Record<string, unknown>;
 }
 
 export class ChatResponseDto {
@@ -201,6 +201,16 @@ export class ChatResponseDto {
     tokens: number;
     processing_time: number;
   };
+}
+
+export class UpdateChatNameDto {
+  @ApiProperty({
+    description: 'Readable chat name/title',
+    example: 'Weekly Intelligence Brief'
+  })
+  @IsString()
+  @MinLength(1)
+  name!: string;
 }
 
 export class StreamTokenDto {
@@ -227,6 +237,37 @@ export class StreamTokenDto {
     index: number;
     total_tokens: number;
   };
+}
+
+export class StreamSectionDto {
+  @ApiProperty({
+    description: 'Section type (reasoning, tool-t, tool-x, answer)',
+    enum: ['reasoning', 'tool-t', 'tool-x', 'answer'],
+    example: 'answer'
+  })
+  section!: 'reasoning' | 'tool-t' | 'tool-x' | 'answer';
+
+  @ApiProperty({
+    description: 'Content type within the section',
+    enum: ['citation', 'table', 'report', 'markdown'],
+    example: 'markdown'
+  })
+  contentType!: 'citation' | 'table' | 'report' | 'markdown';
+
+  @ApiProperty({
+    description: 'Content data (can be text, base64 JSON, etc.)',
+    example: 'This is the content...'
+  })
+  content!: string;
+
+  @ApiPropertyOptional({
+    description: 'Additional metadata for the section',
+    example: {
+      toolId: 'tool-x',
+      executionTime: 1500
+    }
+  })
+  metadata?: Record<string, unknown>;
 }
 
 export class ErrorResponseDto {

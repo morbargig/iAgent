@@ -25,7 +25,13 @@ export default defineConfig(({ mode }) => {
           '**/.nx/**',
           '**/coverage/**',
           '**/*.tsbuildinfo',
-          '**/tmp/**'
+          '**/tmp/**',
+          '**/*.spec.ts',
+          '**/*.test.ts',
+          '**/*.spec.tsx',
+          '**/*.test.tsx',
+          '**/__tests__/**',
+          '**/__mocks__/**'
         ]
       }
     },

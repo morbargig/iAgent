@@ -1,15 +1,17 @@
 import {
+  Body,
   Controller,
+  Delete,
   Get,
+  HttpCode,
+  HttpStatus,
+  InternalServerErrorException,
+  Logger,
+  Param,
   Post,
   Put,
-  Body,
-  Param,
-  HttpStatus,
-  UseGuards,
-  Logger,
   BadRequestException,
-  InternalServerErrorException
+  UseGuards,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -26,6 +28,7 @@ import { ChatService } from '../services/chat.service';
 import type { CreateFilterDto } from '../services/chat.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { UserId } from '../decorators/user.decorator';
+import { UpdateChatNameDto } from '../dto/chat.dto';
 
 @ApiTags('Chat Management')
 @Controller('chats')
@@ -38,8 +41,247 @@ export class ChatController {
 
   // ==================== CHAT ENDPOINTS ====================
 
+  @Get()
+  @ApiOperation({ summary: 'List chats for the authenticated user' })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'Chats retrieved successfully'
+  })
+  async listChats(@UserId() userId: string) {
+    try {
+      return await this.chatService.listChats(userId);
+    } catch (error) {
+      this.logger.error(`Failed to list chats for user ${userId}:`, error);
+      throw new InternalServerErrorException('Failed to retrieve chats');
+    }
+  }
+
+  @Post()
+  @ApiOperation({ summary: 'Create a new chat' })
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        chatId: { type: 'string', example: 'chat_1638360000000_abc123' },
+        name: { type: 'string', example: 'New Chat' }
+      },
+      required: ['chatId', 'name']
+    }
+  })
+  @ApiResponse({ status: HttpStatus.CREATED, description: 'Chat created successfully' })
+  async createChat(
+    @UserId() userId: string,
+    @Body() body: { chatId: string; name: string }
+  ) {
+    try {
+      return await this.chatService.createChat({
+        userId,
+        chatId: body.chatId,
+        name: body.name
+      });
+    } catch (error) {
+      this.logger.error(`Failed to create chat ${body.chatId} for user ${userId}:`, error);
+      throw new InternalServerErrorException('Failed to create chat');
+    }
+  }
+
+  @Get(':chatId')
+  @ApiOperation({ summary: 'Get a specific chat' })
+  @ApiParam({ name: 'chatId', description: 'Chat ID' })
+  @ApiResponse({ status: HttpStatus.OK, description: 'Chat retrieved successfully' })
+  async getChat(@Param('chatId') chatId: string, @UserId() userId: string) {
+    try {
+      return await this.chatService.getChat(chatId, userId);
+    } catch (error) {
+      this.logger.error(`Failed to get chat ${chatId} for user ${userId}:`, error);
+      throw error;
+    }
+  }
+
+  @Post(':chatId/messages')
+  @ApiOperation({ summary: 'Add a message to a chat' })
+  @ApiParam({ name: 'chatId', description: 'Chat ID' })
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        id: { type: 'string', example: 'msg_1638360000000_abc123' },
+        role: { type: 'string', enum: ['user', 'assistant', 'system'], example: 'user' },
+        content: { type: 'string', example: 'Hello!' },
+        timestamp: { type: 'string', format: 'date-time', example: '2024-01-01T12:00:00.000Z' },
+        metadata: { type: 'object', example: {} },
+        filterId: { type: 'string', nullable: true },
+        filterSnapshot: { type: 'object', nullable: true }
+      },
+      required: ['id', 'role', 'content', 'timestamp']
+    }
+  })
+  @ApiResponse({ status: HttpStatus.CREATED, description: 'Message added successfully' })
+  async addMessage(
+    @Param('chatId') chatId: string,
+    @UserId() userId: string,
+    @Body() body: {
+      id: string;
+      role: 'user' | 'assistant' | 'system';
+      content: string;
+      timestamp: string;
+      metadata?: Record<string, unknown>;
+      filterId?: string | null;
+      filterSnapshot?: {
+        filterId?: string;
+        name?: string;
+        config?: Record<string, unknown>;
+      } | null;
+    }
+  ) {
+    try {
+      return await this.chatService.addMessage({
+        id: body.id,
+        chatId,
+        userId,
+        role: body.role,
+        content: body.content,
+        timestamp: new Date(body.timestamp),
+        metadata: body.metadata,
+        filterId: body.filterId,
+        filterSnapshot: body.filterSnapshot
+      });
+    } catch (error) {
+      this.logger.error(`Failed to add message ${body.id} to chat ${chatId}:`, error);
+      throw new InternalServerErrorException('Failed to add message');
+    }
+  }
+
+  @Get(':chatId/messages')
+  @ApiOperation({ summary: 'Get all messages for a chat' })
+  @ApiParam({ name: 'chatId', description: 'Chat ID' })
+  @ApiResponse({ status: HttpStatus.OK, description: 'Messages retrieved successfully' })
+  async getChatMessages(@Param('chatId') chatId: string, @UserId() userId: string) {
+    try {
+      return await this.chatService.getChatMessages(chatId, userId);
+    } catch (error) {
+      this.logger.error(`Failed to get messages for chat ${chatId}:`, error);
+      throw error;
+    }
+  }
+
+  @Put(':chatId/name')
+  @ApiOperation({ summary: 'Rename chat' })
+  @ApiParam({ name: 'chatId', description: 'Chat ID' })
+  @ApiBody({ type: UpdateChatNameDto })
+  @ApiResponse({ status: HttpStatus.OK, description: 'Chat renamed successfully' })
+  async renameChat(
+    @Param('chatId') chatId: string,
+    @UserId() userId: string,
+    @Body() body: UpdateChatNameDto
+  ) {
+    try {
+      return await this.chatService.updateChatName(chatId, userId, body.name);
+    } catch (error) {
+      this.logger.error(`Failed to rename chat ${chatId}:`, error);
+      throw error;
+    }
+  }
+
+  @Delete(':chatId')
+  @ApiOperation({ summary: 'Delete chat and associated data' })
+  @ApiParam({ name: 'chatId', description: 'Chat ID' })
+  @ApiResponse({ status: HttpStatus.NO_CONTENT, description: 'Chat deleted successfully' })
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async deleteChat(@Param('chatId') chatId: string, @UserId() userId: string) {
+    try {
+      await this.chatService.deleteChat(chatId, userId);
+    } catch (error) {
+      this.logger.error(`Failed to delete chat ${chatId}:`, error);
+      throw error;
+    }
+  }
+
+  @Delete(':chatId/messages/:messageId')
+  @ApiOperation({ summary: 'Delete message and subsequent history' })
+  @ApiParam({ name: 'chatId', description: 'Chat ID' })
+  @ApiParam({ name: 'messageId', description: 'Message ID to delete from' })
+  @ApiResponse({ status: HttpStatus.NO_CONTENT, description: 'Chat history truncated successfully' })
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async deleteMessagesFrom(
+    @Param('chatId') chatId: string,
+    @Param('messageId') messageId: string,
+    @UserId() userId: string
+  ) {
+    try {
+      await this.chatService.deleteMessagesFrom(chatId, userId, messageId);
+    } catch (error) {
+      this.logger.error(`Failed to delete messages from ${messageId} in chat ${chatId}:`, error);
+      throw error;
+    }
+  }
+
 
   // ==================== FILTER ENDPOINTS ====================
+  // Note: More specific routes (filters/:filterId) must come before parameterized routes (:chatId/filters)
+
+  @Put('filters/:filterId')
+  @ApiOperation({
+    summary: 'Update a filter',
+    description: 'Updates filter configuration. Requires Bearer token authentication.'
+  })
+  @ApiParam({ name: 'filterId', description: 'Filter ID' })
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        name: { type: 'string', example: 'Updated Filter Name' },
+        filterConfig: { type: 'object', example: { updatedField: 'value' } },
+        isActive: { type: 'boolean', example: true }
+      }
+    }
+  })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'Filter updated successfully'
+  })
+  @ApiNotFoundResponse({ description: 'Filter not found' })
+  @ApiUnauthorizedResponse({ description: 'Missing or invalid Bearer token' })
+  async updateFilter(
+    @Param('filterId') filterId: string,
+    @UserId() userId: string,
+    @Body() updateData: Partial<CreateFilterDto>
+  ) {
+    try {
+      const updatedFilter = await this.chatService.updateFilter(filterId, userId, updateData);
+      this.logger.log(`Updated filter ${filterId} for user ${userId}`);
+      return updatedFilter;
+    } catch (error) {
+      this.logger.error(`Failed to update filter ${filterId}:`, error);
+      throw error;
+    }
+  }
+
+  @Delete('filters/:filterId')
+  @ApiOperation({
+    summary: 'Delete a filter',
+    description: 'Deletes a filter configuration. Requires Bearer token authentication.'
+  })
+  @ApiParam({ name: 'filterId', description: 'Filter ID' })
+  @ApiResponse({
+    status: HttpStatus.NO_CONTENT,
+    description: 'Filter deleted successfully'
+  })
+  @ApiNotFoundResponse({ description: 'Filter not found' })
+  @ApiUnauthorizedResponse({ description: 'Missing or invalid Bearer token' })
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async deleteFilter(
+    @Param('filterId') filterId: string,
+    @UserId() userId: string
+  ) {
+    try {
+      await this.chatService.deleteFilter(filterId, userId);
+      this.logger.log(`Deleted filter ${filterId} for user ${userId}`);
+    } catch (error) {
+      this.logger.error(`Failed to delete filter ${filterId}:`, error);
+      throw error;
+    }
+  }
 
   @Post(':chatId/filters')
   @ApiOperation({
@@ -80,7 +322,7 @@ export class ChatController {
   async createFilter(
     @Param('chatId') chatId: string,
     @UserId() userId: string,
-    @Body() filterData: any
+    @Body() filterData: Omit<CreateFilterDto, 'userId' | 'chatId'>
   ) {
     try {
       const createFilterDto: CreateFilterDto = {
@@ -132,45 +374,6 @@ export class ChatController {
       throw new InternalServerErrorException('Failed to retrieve filters');
     }
   }
-
-
-  @Put('filters/:filterId')
-  @ApiOperation({
-    summary: 'Update a filter',
-    description: 'Updates filter configuration. Requires Bearer token authentication.'
-  })
-  @ApiParam({ name: 'filterId', description: 'Filter ID' })
-  @ApiBody({
-    schema: {
-      type: 'object',
-      properties: {
-        name: { type: 'string', example: 'Updated Filter Name' },
-        filterConfig: { type: 'object', example: { updatedField: 'value' } },
-        isActive: { type: 'boolean', example: true }
-      }
-    }
-  })
-  @ApiResponse({
-    status: HttpStatus.OK,
-    description: 'Filter updated successfully'
-  })
-  @ApiNotFoundResponse({ description: 'Filter not found' })
-  @ApiUnauthorizedResponse({ description: 'Missing or invalid Bearer token' })
-  async updateFilter(
-    @Param('filterId') filterId: string,
-    @UserId() userId: string,
-    @Body() updateData: Partial<CreateFilterDto>
-  ) {
-    try {
-      const updatedFilter = await this.chatService.updateFilter(filterId, userId, updateData);
-      this.logger.log(`Updated filter ${filterId} for user ${userId}`);
-      return updatedFilter;
-    } catch (error) {
-      this.logger.error(`Failed to update filter ${filterId}:`, error);
-      throw error;
-    }
-  }
-
 
   @Put(':chatId/active-filter')
   @ApiOperation({

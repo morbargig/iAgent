@@ -1,3 +1,39 @@
+import type {
+  ChatContentBlock,
+  CustomElementNode,
+  ParsedMessageContent,
+  StreamingChunk,
+  StreamingMarkupBuilder,
+  StreamingTokenMetadata,
+  StreamingCompletionPayload,
+} from '@iagent/shared-renderer';
+import {
+  buildParsedMessageContent,
+  createStreamingMarkupBuilder,
+  encodeBase64Json,
+  encodeBase64Text,
+  decodeBase64Json,
+  decodeBase64Text,
+} from '@iagent/shared-renderer';
+
+export type {
+  ChatContentBlock,
+  CustomElementNode,
+  ParsedMessageContent,
+  StreamingChunk,
+  StreamingMarkupBuilder,
+  StreamingTokenMetadata,
+  StreamingCompletionPayload,
+} from '@iagent/shared-renderer';
+export {
+  encodeBase64Json,
+  encodeBase64Text,
+  decodeBase64Json,
+  decodeBase64Text,
+  buildParsedMessageContent,
+  createStreamingMarkupBuilder,
+} from '@iagent/shared-renderer';
+
 export function chatTypes(): string {
   return 'chat-types';
 }
@@ -13,7 +49,7 @@ export interface Message {
   filterSnapshot?: {
     filterId?: string;
     name?: string;
-    config?: Record<string, any>;
+    config?: Record<string, unknown>;
   } | null; // Filter configuration snapshot at time of message creation
   attachments?: Array<{
     id: string;
@@ -39,6 +75,7 @@ export interface Message {
     confidence?: number;
     categories?: string[];
   };
+  parsed?: ParsedMessageContent;
 }
 
 export interface Conversation {
@@ -94,9 +131,10 @@ export function tokenizeText(text: string): string[] {
 
 // Calculate realistic delay between chunks
 export function calculateDelay(chunk: string): number {
-  const baseDelay = 50;
+  const baseDelay = 40;
+  const lengthFactor = Math.min(chunk.trim().length * 4, 40);
   const randomFactor = Math.random() * 30;
-  return Math.max(20, baseDelay + randomFactor);
+  return Math.max(20, baseDelay + lengthFactor + randomFactor);
 }
 
 // Tokenization utility for realistic streaming
@@ -165,6 +203,121 @@ export function calculateStreamingDelay(token: string, index: number): number {
   return Math.max(20, baseDelay + randomFactor);
 }
 
+const normalizeLineEndings = (input: string): string => input.replace(/\r\n/g, '\n');
+
+const isDividerLine = (line: string): boolean => /^(?:-{3,}|\*{3,}|_{3,})$/.test(line.trim());
+
+const extractHeading = (line: string): { level: 1 | 2 | 3 | 4 | 5 | 6; text: string } | null => {
+  const match = line.trim().match(/^(#{1,6})\s+(.*)$/);
+  if (!match) {
+    return null;
+  }
+  const level = match[1].length as 1 | 2 | 3 | 4 | 5 | 6;
+  const text = match[2].trim();
+  return { level, text };
+};
+
+const extractListItem = (line: string): { ordered: boolean; text: string } | null => {
+  const trimmed = line.trim();
+  const unordered = trimmed.match(/^[-*+]\s+(.*)$/);
+  if (unordered) {
+    return { ordered: false, text: unordered[1].trim() };
+  }
+  const ordered = trimmed.match(/^(\d+)\.\s+(.*)$/);
+  if (ordered) {
+    return { ordered: true, text: ordered[2].trim() };
+  }
+  return null;
+};
+
+const isCodeFence = (line: string): { language?: string } | null => {
+  const trimmed = line.trim();
+  if (!trimmed.startsWith('```')) {
+    return null;
+  }
+  const language = trimmed.slice(3).trim();
+  return { language: language || undefined };
+};
+
+const isQuoteLine = (line: string): boolean => line.trim().startsWith('>');
+
+const isParagraphBoundary = (line: string): boolean => {
+  const trimmed = line.trim();
+  if (!trimmed) {
+    return true;
+  }
+  return (
+    isDividerLine(trimmed) ||
+    Boolean(extractHeading(trimmed)) ||
+    Boolean(extractListItem(trimmed)) ||
+    Boolean(isCodeFence(trimmed)) ||
+    isQuoteLine(trimmed)
+  );
+};
+
+const TABLE_DIVIDER_REGEX = /^\s*\|?(?:\s*:?-{3,}:?\s*\|)+\s*$/;
+
+const trimTableEdges = (line: string): string => line.replace(/^\s*\|/, '').replace(/\|\s*$/, '');
+
+const splitTableRow = (line: string): string[] => {
+  const cleaned = trimTableEdges(line.trim());
+  return cleaned
+    .split('|')
+    .map((cell) => cell.replace(/\\\|/g, '|').trim());
+};
+
+interface ParsedTableResult {
+  headers: string[];
+  rows: string[][];
+  nextIndex: number;
+}
+
+const tryParseTable = (lines: string[], startIndex: number): ParsedTableResult | null => {
+  if (startIndex + 1 >= lines.length) {
+    return null;
+  }
+
+  const headerLine = lines[startIndex];
+  const dividerLine = lines[startIndex + 1];
+
+  if (!headerLine.includes('|') || !TABLE_DIVIDER_REGEX.test(dividerLine)) {
+    return null;
+  }
+
+  const headers = splitTableRow(headerLine);
+  let nextIndex = startIndex + 2;
+  const rows: string[][] = [];
+
+  while (nextIndex < lines.length) {
+    const candidate = lines[nextIndex];
+    if (!candidate.trim() || !candidate.includes('|')) {
+      break;
+    }
+    const cells = splitTableRow(candidate);
+    rows.push(cells);
+    nextIndex++;
+  }
+
+  if (headers.length === 0 || rows.length === 0) {
+    return null;
+  }
+
+  return {
+    headers,
+    rows,
+    nextIndex
+  };
+};
+
+const TABLE_CAPTION_REGEX = /^(?:table|טבלה)\s*[:\-]\s*(.+)$/i;
+const REPORT_BLOCK_REGEX = /^report\s*[:\-]\s*(\{[\s\S]*\})$/i;
+
+export const hydrateMessagesWithParsedContent = (messages: Message[]): Message[] =>
+  messages.map((message) => ({
+    ...message,
+    parsed: buildParsedMessageContent(message.content),
+  }));
+
 // Frontend streaming utilities
 export class StreamingClient {
   private abortController: AbortController | null = null;
@@ -172,8 +325,8 @@ export class StreamingClient {
   // API streaming method with structured chunk handling
   async streamChat(
     messages: Message[],
-    onToken: (token: string, metadata?: Record<string, unknown>) => void,
-    onComplete: () => void,
+    onToken: (token: string, metadata?: StreamingTokenMetadata) => void,
+    onComplete: (result: StreamingCompletionPayload) => void,
     onError: (error: Error) => void,
     baseUrl = 'http://localhost:3030',
     authToken?: string,
@@ -232,13 +385,21 @@ export class StreamingClient {
       
       if (reader) {
         let buffer = '';
+        const markupBuilder = createStreamingMarkupBuilder();
+        let latestParsed = markupBuilder.getCurrent();
+        let completionMetadata: Record<string, unknown> | undefined;
         
         try {
           while (true) {
             const { done, value } = await reader.read();
             
             if (done) {
-              onComplete();
+              onComplete({
+                content: latestParsed.plainText || '',
+                parsed: latestParsed,
+                metadata: completionMetadata,
+                sessionId: completionMetadata?.sessionId as string | undefined,
+              });
               break;
             }
             
@@ -256,6 +417,8 @@ export class StreamingClient {
                   // Handle different chunk types
                   switch (structuredChunk.chunkType) {
                     case 'start':
+                      markupBuilder.reset();
+                      latestParsed = markupBuilder.getCurrent();
                       console.log('🚀 Stream started:', structuredChunk.data);
                       break;
                       
@@ -263,12 +426,25 @@ export class StreamingClient {
                       console.log('📊 Metadata:', structuredChunk.data);
                       break;
                       
+                    case 'section':
+                      // Handle section start/end events
+                      console.log(`📦 Section ${structuredChunk.data.action}:`, structuredChunk.data.section);
+                      break;
+                      
                     case 'token':
                       // Send token to the UI
+                      latestParsed = markupBuilder.append({
+                        token: structuredChunk.data.token,
+                        cumulativeContent: structuredChunk.data.cumulativeContent,
+                      });
+
                       onToken(structuredChunk.data.token, {
                         ...structuredChunk.data,
                         timestamp: structuredChunk.timestamp,
-                        sessionId: structuredChunk.sessionId
+                        sessionId: structuredChunk.sessionId,
+                        parsed: latestParsed,
+                        section: structuredChunk.data.section,
+                        contentType: structuredChunk.data.contentType,
                       });
                       break;
                       
@@ -278,8 +454,17 @@ export class StreamingClient {
                       
                     case 'complete':
                       console.log('✅ Stream completed:', structuredChunk.data);
-                      onComplete();
-                      return;
+                      completionMetadata = {
+                        ...structuredChunk.data,
+                        timestamp: structuredChunk.timestamp,
+                        sessionId: structuredChunk.sessionId,
+                      };
+                      if (typeof structuredChunk.data.finalContent === 'string') {
+                        latestParsed = markupBuilder.append({
+                          cumulativeContent: structuredChunk.data.finalContent,
+                        });
+                      }
+                      break;
                       
                     case 'error':
                       throw new Error(structuredChunk.data.error.message || 'Unknown streaming error');
@@ -323,7 +508,7 @@ export function createMessage(
   filterSnapshot?: {
     filterId?: string;
     name?: string;
-    config?: Record<string, any>;
+    config?: Record<string, unknown>;
   } | null
 ): Message {
   return {

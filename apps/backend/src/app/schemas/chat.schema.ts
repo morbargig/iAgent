@@ -99,7 +99,7 @@ export class ChatMessage {
 
 @Schema({ timestamps: true })
 export class Chat {
-  @Prop({ required: true, unique: true })
+  @Prop({ required: true })
   chatId!: string;
 
   @Prop({ required: true })
@@ -154,4 +154,6 @@ ChatMessageSchema.index({ filterId: 1 });
 
 ChatSchema.index({ userId: 1, lastMessageAt: -1 });
 ChatSchema.index({ userId: 1, archived: 1, lastMessageAt: -1 });
-ChatSchema.index({ activeFilterId: 1 }); 
+ChatSchema.index({ activeFilterId: 1 });
+// Compound unique index: chatId must be unique per user
+ChatSchema.index({ chatId: 1, userId: 1 }, { unique: true }); 

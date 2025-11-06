@@ -2,6 +2,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { ChatService } from './services/chat.service';
+import { AuthService } from './auth/auth.service';
 
 // Mock the problematic services to avoid decorator issues
 const mockAppService = {
@@ -30,6 +31,23 @@ const mockChatService = {
   getChatHistory: jest.fn().mockResolvedValue([]),
 };
 
+const mockAuthService = {
+  login: jest.fn().mockResolvedValue({
+    token: 'test-token',
+    userId: 'test-user-id',
+    email: 'test@example.com',
+    role: 'user',
+    expiresIn: '24h'
+  }),
+  validateToken: jest.fn().mockResolvedValue({
+    userId: 'test-user-id',
+    email: 'test@example.com',
+    password: 'hashed-password',
+    role: 'user',
+    createdAt: new Date()
+  }),
+};
+
 describe('AppController', () => {
   let app: TestingModule;
   let controller: AppController;
@@ -37,23 +55,29 @@ describe('AppController', () => {
   beforeAll(async () => {
     app = await Test.createTestingModule({
       controllers: [AppController],
-              providers: [
-          {
-            provide: AppService,
-            useValue: mockAppService,
-          },
-          {
-            provide: ChatService,
-            useValue: mockChatService,
-          },
-        ],
+      providers: [
+        {
+          provide: AppService,
+          useValue: mockAppService,
+        },
+        {
+          provide: ChatService,
+          useValue: mockChatService,
+        },
+        {
+          provide: AuthService,
+          useValue: mockAuthService,
+        },
+      ],
     }).compile();
 
     controller = app.get<AppController>(AppController);
   });
 
   afterAll(async () => {
-    await app.close();
+    if (app) {
+      await app.close();
+    }
   });
 
   describe('getData', () => {
