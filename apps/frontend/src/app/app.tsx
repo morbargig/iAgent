@@ -22,7 +22,11 @@ import {
   updateMessageContent,
   type Message,
   type Conversation,
+  type StreamingCompletionPayload,
+  type ParsedMessageContent,
+  buildParsedMessageContent,
 } from "@iagent/chat-types";
+import { convertMongoMessageToMessage } from "../utils/chunkConverter";
 import { useMockMode } from "../hooks/useMockMode";
 import { useAppLocalStorage, useAppSessionStorage, useMemoStorage } from "../hooks/storage";
 import { getBaseApiUrl } from "../config/config";
@@ -583,6 +587,7 @@ const App = () => {
 
       let accumulatedContent = "";
       accumulatedStreamContentRef.current = "";
+      let currentSections: Record<string, { content: string; parsed: ParsedMessageContent }> = {};
 
       if (!streamingClientRef.current) return;
       await streamingClientRef.current.streamChat(
@@ -590,35 +595,68 @@ const App = () => {
         (token: string, metadata?: Record<string, any>) => {
           accumulatedContent += token;
           accumulatedStreamContentRef.current = accumulatedContent;
+          
+          // Update sections if provided in metadata
+          if (metadata?.sections) {
+            currentSections = metadata.sections as Record<string, { content: string; parsed: ParsedMessageContent }>;
+          }
+          
           updateLoadedConversation(updatedConversation.id, (conv) => {
                 const lastMessage = conv.messages[conv.messages.length - 1];
                 return {
                   ...conv,
                   messages: [
                     ...conv.messages.slice(0, -1),
-                    updateMessageContent(
-                      lastMessage,
-                  accumulatedContent,
-                      true
-                    ),
+                    {
+                      ...updateMessageContent(
+                        lastMessage,
+                        accumulatedContent,
+                        true
+                      ),
+                      parsed: metadata?.parsed,
+                      sections: Object.keys(currentSections).length > 0 ? currentSections : undefined,
+                      currentSection: metadata?.section as 'reasoning' | 'tool-t' | 'tool-x' | 'answer' | undefined,
+                      metadata: {
+                        ...lastMessage.metadata,
+                        ...metadata,
+                      },
+                    },
                   ],
                   lastUpdated: new Date(),
                 };
           });
         },
-        () => {
-          const finalContent = accumulatedStreamContentRef.current || accumulatedContent;
+        (result: StreamingCompletionPayload) => {
+          const finalContent = result.content || accumulatedStreamContentRef.current || accumulatedContent;
+          const sections = result.metadata?.sections as Record<string, { content: string; parsed: ParsedMessageContent }> | undefined;
+          const currentSection = result.metadata?.currentSection as 'reasoning' | 'tool-t' | 'tool-x' | 'answer' | undefined;
+          
+          // Ensure parsed content is available - rebuild if sections exist but parsed is missing
+          let finalParsed = result.parsed;
+          if (!finalParsed && finalContent) {
+            finalParsed = buildParsedMessageContent(finalContent);
+          }
+          
           updateLoadedConversation(updatedConversation.id, (conv) => {
             const lastMessage = conv.messages[conv.messages.length - 1];
             const finalConversation = {
               ...conv,
               messages: [
                 ...conv.messages.slice(0, -1),
-                updateMessageContent(
-                  lastMessage,
-                  finalContent,
-                  false
-                ),
+                {
+                  ...updateMessageContent(
+                    lastMessage,
+                    finalContent,
+                    false
+                  ),
+                  parsed: finalParsed,
+                  sections: sections,
+                  currentSection: currentSection,
+                  metadata: {
+                    ...lastMessage.metadata,
+                    ...result.metadata,
+                  },
+                },
               ],
               lastUpdated: new Date(),
             };
@@ -933,16 +971,14 @@ const App = () => {
       const conversation: Conversation = {
         id: chatResponse.data.chatId,
         title: chatResponse.data.name,
-        messages: messagesResponse.data.map((msg: any) => ({
+        messages: messagesResponse.data.map((msg: any) => convertMongoMessageToMessage({
           id: msg.id,
-          role: msg.role === 'system' ? 'assistant' : msg.role,
+          role: msg.role,
           content: msg.content,
-          timestamp: new Date(msg.timestamp),
-          isStreaming: false,
-          isInterrupted: false,
-          filterId: msg.filterId || null,
-          filterSnapshot: msg.filterSnapshot || null,
+          timestamp: msg.timestamp,
           metadata: msg.metadata,
+          filterId: msg.filterId,
+          filterSnapshot: msg.filterSnapshot,
         })),
         createdAt: new Date(chatResponse.data.createdAt),
         updatedAt: new Date(chatResponse.data.lastMessageAt),
@@ -1158,15 +1194,29 @@ const App = () => {
           }));
         },
         // onComplete callback
-        () => {
+        (result: StreamingCompletionPayload) => {
           // Mark streaming as complete
-          const finalContent = accumulatedStreamContentRef.current || currentContent;
+          const finalContent = result.content || accumulatedStreamContentRef.current || currentContent;
+          const sections = result.metadata?.sections as Record<string, { content: string; parsed: ParsedMessageContent }> | undefined;
+          const currentSection = result.metadata?.currentSection as 'reasoning' | 'tool-t' | 'tool-x' | 'answer' | undefined;
+          
           updateLoadedConversation(conversation.id, (conv) => {
             const finalConversation = {
               ...conv,
               messages: conv.messages.map((m) =>
                 m.id === newAssistantMessageId
-                  ? { ...m, content: finalContent, isStreaming: false }
+                  ? { 
+                      ...m, 
+                      content: finalContent, 
+                      isStreaming: false,
+                      parsed: result.parsed,
+                      sections: sections,
+                      currentSection: currentSection,
+                      metadata: {
+                        ...m.metadata,
+                        ...result.metadata,
+                      },
+                    }
                   : m
               ),
               lastUpdated: new Date(),

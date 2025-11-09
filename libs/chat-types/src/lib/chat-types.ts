@@ -58,8 +58,12 @@ export interface Message {
     processing_time_ms?: number;
     confidence?: number;
     categories?: string[];
+    section?: 'reasoning' | 'tool-t' | 'tool-x' | 'answer';
+    contentType?: string;
   };
   parsed?: ParsedMessageContent;
+  sections?: Record<string, { content: string; parsed: ParsedMessageContent }>;
+  currentSection?: 'reasoning' | 'tool-t' | 'tool-x' | 'answer';
 }
 
 export interface Conversation {
@@ -372,16 +376,38 @@ export class StreamingClient {
         const markupBuilder = createStreamingMarkupBuilder();
         let latestParsed = markupBuilder.getCurrent();
         let completionMetadata: Record<string, unknown> | undefined;
+        let currentSection: 'reasoning' | 'tool-t' | 'tool-x' | 'answer' | undefined;
+        let sections: Record<string, { content: string; parsed: ParsedMessageContent }> = {};
+        const sectionBuilders: Record<string, ReturnType<typeof createStreamingMarkupBuilder>> = {};
         
         try {
           while (true) {
             const { done, value } = await reader.read();
             
             if (done) {
+              // Ensure all sections have parsed content before completing
+              const finalSections: Record<string, { content: string; parsed: ParsedMessageContent }> = {};
+              
+              // Build final sections from all section builders
+              Object.entries(sectionBuilders).forEach(([sectionKey, builder]) => {
+                const sectionParsed = builder.getCurrent();
+                finalSections[sectionKey] = {
+                  content: sectionParsed.plainText || '',
+                  parsed: sectionParsed,
+                };
+              });
+              
+              // Merge with any existing sections
+              Object.assign(sections, finalSections);
+              
               onComplete({
                 content: latestParsed.plainText || '',
                 parsed: latestParsed,
-                metadata: completionMetadata,
+                metadata: {
+                  ...completionMetadata,
+                  sections,
+                  currentSection,
+                },
                 sessionId: completionMetadata?.sessionId as string | undefined,
               });
               break;
@@ -403,6 +429,9 @@ export class StreamingClient {
                     case 'start':
                       markupBuilder.reset();
                       latestParsed = markupBuilder.getCurrent();
+                      currentSection = undefined;
+                      sections = {};
+                      Object.keys(sectionBuilders).forEach(key => delete sectionBuilders[key]);
                       console.log('🚀 Stream started:', structuredChunk.data);
                       break;
                       
@@ -412,23 +441,66 @@ export class StreamingClient {
                       
                     case 'section':
                       // Handle section start/end events
-                      console.log(`📦 Section ${structuredChunk.data.action}:`, structuredChunk.data.section);
+                      const sectionData = structuredChunk.data;
+                      const sectionName = sectionData.section as 'reasoning' | 'tool-t' | 'tool-x' | 'answer';
+                      
+                      if (sectionData.action === 'start') {
+                        currentSection = sectionName;
+                        if (!sectionBuilders[sectionName]) {
+                          sectionBuilders[sectionName] = createStreamingMarkupBuilder();
+                        }
+                        console.log(`📦 Section start:`, sectionName);
+                      } else if (sectionData.action === 'end') {
+                        if (sectionBuilders[sectionName]) {
+                          const sectionParsed = sectionBuilders[sectionName].getCurrent();
+                          sections[sectionName] = {
+                            content: sectionParsed.plainText || '',
+                            parsed: sectionParsed,
+                          };
+                        }
+                        console.log(`📦 Section end:`, sectionName);
+                        currentSection = undefined;
+                      }
                       break;
                       
                     case 'token':
                       // Send token to the UI
+                      const tokenSection = structuredChunk.data.section as 'reasoning' | 'tool-t' | 'tool-x' | 'answer' | undefined;
+                      const tokenContentType = structuredChunk.data.contentType;
+                      
+                      // Update main builder
                       latestParsed = markupBuilder.append({
                         token: structuredChunk.data.token,
                         cumulativeContent: structuredChunk.data.cumulativeContent,
                       });
+
+                      // Update section-specific builder if section is active
+                      if (tokenSection && sectionBuilders[tokenSection]) {
+                        // Append token to section builder - the builder will handle proper spacing
+                        const sectionBuilder = sectionBuilders[tokenSection];
+                        sectionBuilder.append({
+                          token: structuredChunk.data.token,
+                        });
+                        
+                        // Get the updated parsed content from the section builder
+                        const sectionParsed = sectionBuilder.getCurrent();
+                        sections[tokenSection] = {
+                          content: sectionParsed.plainText || '',
+                          parsed: sectionParsed,
+                        };
+                      }
 
                       onToken(structuredChunk.data.token, {
                         ...structuredChunk.data,
                         timestamp: structuredChunk.timestamp,
                         sessionId: structuredChunk.sessionId,
                         parsed: latestParsed,
-                        section: structuredChunk.data.section,
-                        contentType: structuredChunk.data.contentType,
+                        section: tokenSection,
+                        contentType: tokenContentType,
+                        sectionContent: tokenSection && sectionBuilders[tokenSection] 
+                          ? sectionBuilders[tokenSection].getCurrent().plainText 
+                          : undefined,
+                        sections: tokenSection ? { ...sections } : undefined,
                       });
                       break;
                       
@@ -438,10 +510,22 @@ export class StreamingClient {
                       
                     case 'complete':
                       console.log('✅ Stream completed:', structuredChunk.data);
+                      
+                      // Finalize all sections before completing
+                      Object.entries(sectionBuilders).forEach(([sectionKey, builder]) => {
+                        const sectionParsed = builder.getCurrent();
+                        sections[sectionKey] = {
+                          content: sectionParsed.plainText || '',
+                          parsed: sectionParsed,
+                        };
+                      });
+                      
                       completionMetadata = {
                         ...structuredChunk.data,
                         timestamp: structuredChunk.timestamp,
                         sessionId: structuredChunk.sessionId,
+                        sections,
+                        currentSection,
                       };
                       if (typeof structuredChunk.data.finalContent === 'string') {
                         latestParsed = markupBuilder.append({

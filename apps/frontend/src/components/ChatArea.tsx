@@ -522,8 +522,13 @@ const MessageBubble = ({
 
           <MarkdownRenderer
             content={message.content}
+            parsed={message.parsed}
             isDarkMode={isDarkMode}
             onOpenReport={onOpenReport}
+            sections={message.sections}
+            currentSection={message.currentSection}
+            section={message.metadata?.section as "reasoning" | "tool-t" | "tool-x" | "answer" | undefined}
+            contentType={message.metadata?.contentType as "citation" | "table" | "report" | "markdown" | undefined}
           />
 
           {message.isStreaming && (
@@ -756,8 +761,13 @@ const MessageBubble = ({
       >
         <MarkdownRenderer
           content={message.content}
+          parsed={message.parsed}
           isDarkMode={isDarkMode}
           onOpenReport={onOpenReport}
+          sections={message.sections}
+          currentSection={message.currentSection}
+          section={message.metadata?.section as "reasoning" | "tool-t" | "tool-x" | "answer" | undefined}
+          contentType={message.metadata?.contentType as "citation" | "table" | "report" | "markdown" | undefined}
         />
 
         {message.isStreaming && (

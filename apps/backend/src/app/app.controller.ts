@@ -318,24 +318,25 @@ export class AppController {
         };
         res.write(JSON.stringify(startChunk) + '\n');
 
-        // Generate contextual response based on conversation
-        const response = await this.generateContextualResponse(processedMessages);
+        // Detect tools from request
+        const hasToolT = tools && Array.isArray(tools) && tools.some((t: any) => t?.id === 'tool-t' || t?.name === 'tool-t');
+        const hasToolX = tools && Array.isArray(tools) && tools.some((t: any) => t?.id === 'tool-x' || t?.name === 'tool-x');
+        
+        // Determine if we should generate tool sections (30% chance or if tools are explicitly requested)
+        const shouldGenerateToolSections = (hasToolT || hasToolX) || Math.random() < 0.3;
 
-        // Tokenize the response for realistic streaming
-        const tokens = this.tokenizeResponse(response);
         const startTime = new Date();
-
-        // Initial thinking delay (like real AI processing)
-        await new Promise(resolve => setTimeout(resolve, 800 + Math.random() * 400));
-
+        let totalTokens = 0;
         let currentContent = '';
+        let toolTTokens: string[] = [];
+        let toolXTokens: string[] = [];
 
         // Send metadata chunk with generation info
         const metadataChunk = {
           chunkType: 'metadata',
           data: {
-            totalTokens: tokens.length,
-            estimatedDuration: tokens.length * 50, // rough estimate in ms
+            totalTokens: 0, // Will be updated
+            estimatedDuration: 0,
             contentType: 'text/markdown',
             language: 'en',
             responseType: this.getResponseType(lastUserContent)
@@ -344,6 +345,149 @@ export class AppController {
           sessionId
         };
         res.write(JSON.stringify(metadataChunk) + '\n');
+
+        // Stream tool sections if applicable
+        if (shouldGenerateToolSections) {
+          // Stream tool-t section if applicable
+          if (hasToolT || Math.random() < 0.5) {
+            const toolTContent = this.generateToolTSection();
+            toolTTokens = this.tokenizeResponse(toolTContent);
+            totalTokens += toolTTokens.length;
+
+            // Send tool-t section start
+            const toolTSectionStart = {
+              chunkType: 'section',
+              data: {
+                section: 'tool-t',
+                contentType: 'markdown',
+                action: 'start'
+              },
+              timestamp: new Date().toISOString(),
+              sessionId
+            };
+            res.write(JSON.stringify(toolTSectionStart) + '\n');
+
+            // Stream tool-t tokens
+            let toolTContentAccumulator = '';
+            for (let i = 0; i < toolTTokens.length; i++) {
+              const token = toolTTokens[i];
+              toolTContentAccumulator += token;
+              currentContent += token;
+
+              const tokenChunk = {
+                chunkType: 'token',
+                data: {
+                  token,
+                  index: i + 1,
+                  totalTokens: 0, // Will be updated later
+                  progress: 0,
+                  cumulativeContent: currentContent,
+                  tokenType: this.getTokenType(token),
+                  confidence: 0.92 + Math.random() * 0.07,
+                  isLastToken: false,
+                  section: 'tool-t',
+                  contentType: this.detectContentType(token, toolTContentAccumulator)
+                },
+                timestamp: new Date().toISOString(),
+                sessionId
+              };
+              res.write(JSON.stringify(tokenChunk) + '\n');
+
+              if (i < toolTTokens.length - 1) {
+                const delay = this.calculateStreamingDelay(token, i, toolTTokens);
+                await new Promise(resolve => setTimeout(resolve, delay));
+              }
+            }
+
+            // Send tool-t section end
+            const toolTSectionEnd = {
+              chunkType: 'section',
+              data: {
+                section: 'tool-t',
+                contentType: 'markdown',
+                action: 'end'
+              },
+              timestamp: new Date().toISOString(),
+              sessionId
+            };
+            res.write(JSON.stringify(toolTSectionEnd) + '\n');
+          }
+
+          // Stream tool-x section if applicable
+          if (hasToolX || Math.random() < 0.5) {
+            const toolXContent = this.generateToolXSection();
+            toolXTokens = this.tokenizeResponse(toolXContent);
+            totalTokens += toolXTokens.length;
+
+            // Send tool-x section start
+            const toolXSectionStart = {
+              chunkType: 'section',
+              data: {
+                section: 'tool-x',
+                contentType: 'markdown',
+                action: 'start'
+              },
+              timestamp: new Date().toISOString(),
+              sessionId
+            };
+            res.write(JSON.stringify(toolXSectionStart) + '\n');
+
+            // Stream tool-x tokens
+            let toolXContentAccumulator = '';
+            for (let i = 0; i < toolXTokens.length; i++) {
+              const token = toolXTokens[i];
+              toolXContentAccumulator += token;
+              currentContent += token;
+
+              const tokenChunk = {
+                chunkType: 'token',
+                data: {
+                  token,
+                  index: toolTTokens.length + i + 1,
+                  totalTokens: 0,
+                  progress: 0,
+                  cumulativeContent: currentContent,
+                  tokenType: this.getTokenType(token),
+                  confidence: 0.92 + Math.random() * 0.07,
+                  isLastToken: false,
+                  section: 'tool-x',
+                  contentType: this.detectContentType(token, toolXContentAccumulator)
+                },
+                timestamp: new Date().toISOString(),
+                sessionId
+              };
+              res.write(JSON.stringify(tokenChunk) + '\n');
+
+              if (i < toolXTokens.length - 1) {
+                const delay = this.calculateStreamingDelay(token, i, toolXTokens);
+                await new Promise(resolve => setTimeout(resolve, delay));
+              }
+            }
+
+            // Send tool-x section end
+            const toolXSectionEnd = {
+              chunkType: 'section',
+              data: {
+                section: 'tool-x',
+                contentType: 'markdown',
+                action: 'end'
+              },
+              timestamp: new Date().toISOString(),
+              sessionId
+            };
+            res.write(JSON.stringify(toolXSectionEnd) + '\n');
+          }
+        }
+
+        // Generate contextual response based on conversation
+        const response = await this.generateContextualResponse(processedMessages);
+
+        // Tokenize the response for realistic streaming
+        const answerTokens = this.tokenizeResponse(response);
+        totalTokens += answerTokens.length;
+
+        // Initial thinking delay (like real AI processing)
+        await new Promise(resolve => setTimeout(resolve, 800 + Math.random() * 400));
 
         // Send section start for answer section
         const answerSectionStart = {
@@ -359,9 +503,9 @@ export class AppController {
         res.write(JSON.stringify(answerSectionStart) + '\n');
 
         // Stream tokens one by one
-        for (let i = 0; i < tokens.length; i++) {
-          const token = tokens[i];
-          const isLast = i === tokens.length - 1;
+        for (let i = 0; i < answerTokens.length; i++) {
+          const token = answerTokens[i];
+          const isLast = i === answerTokens.length - 1;
 
           currentContent += token;
 
@@ -370,13 +514,15 @@ export class AppController {
             chunkType: 'token',
             data: {
               token,
-              index: i + 1,
-              totalTokens: tokens.length,
-              progress: Math.round(((i + 1) / tokens.length) * 100),
+              index: toolTTokens.length + toolXTokens.length + i + 1,
+              totalTokens: totalTokens,
+              progress: Math.round(((toolTTokens.length + toolXTokens.length + i + 1) / totalTokens) * 100),
               cumulativeContent: currentContent,
               tokenType: this.getTokenType(token),
               confidence: 0.92 + Math.random() * 0.07,
-              isLastToken: isLast
+              isLastToken: isLast,
+              section: 'answer',
+              contentType: 'markdown'
             },
             timestamp: new Date().toISOString(),
             sessionId
@@ -390,12 +536,12 @@ export class AppController {
             const progressChunk = {
               chunkType: 'progress',
               data: {
-                progress: Math.round(((i + 1) / tokens.length) * 100),
-                tokensProcessed: i + 1,
-                tokensRemaining: tokens.length - i - 1,
+                progress: Math.round(((toolTTokens.length + toolXTokens.length + i + 1) / totalTokens) * 100),
+                tokensProcessed: toolTTokens.length + toolXTokens.length + i + 1,
+                tokensRemaining: answerTokens.length - i - 1,
                 processingTimeMs: Date.now() - startTime.getTime(),
-                estimatedRemainingMs: Math.round((tokens.length - i - 1) * 50),
-                averageTokenTime: Math.round((Date.now() - startTime.getTime()) / (i + 1))
+                estimatedRemainingMs: Math.round((answerTokens.length - i - 1) * 50),
+                averageTokenTime: Math.round((Date.now() - startTime.getTime()) / (toolTTokens.length + toolXTokens.length + i + 1))
               },
               timestamp: new Date().toISOString(),
               sessionId
@@ -405,7 +551,7 @@ export class AppController {
 
           // Realistic streaming delays based on token type
           if (!isLast) {
-            const delay = this.calculateStreamingDelay(token, i, tokens);
+            const delay = this.calculateStreamingDelay(token, i, answerTokens);
             await new Promise(resolve => setTimeout(resolve, delay));
           }
         }
@@ -425,8 +571,8 @@ export class AppController {
                 model: 'chatgpt-clone-v1',
                 usage: {
                   promptTokens: promptTokenCount,
-                  completionTokens: tokens.length,
-                  totalTokens: promptTokenCount + tokens.length,
+                  completionTokens: totalTokens,
+                  totalTokens: promptTokenCount + totalTokens,
                 },
                 responseType: this.getResponseType(lastUserContent),
               },
@@ -457,14 +603,14 @@ export class AppController {
           chunkType: 'complete',
           data: {
             message: 'Response generation completed successfully',
-            totalTokens: tokens.length,
+            totalTokens: totalTokens,
             totalProcessingTimeMs: Date.now() - startTime.getTime(),
             finalContent: currentContent,
-            averageTokenTime: Math.round((Date.now() - startTime.getTime()) / tokens.length),
+            averageTokenTime: Math.round((Date.now() - startTime.getTime()) / totalTokens),
             usage: {
               promptTokens: promptTokenCount,
-              completionTokens: tokens.length,
-              totalTokens: promptTokenCount + tokens.length
+              completionTokens: totalTokens,
+              totalTokens: promptTokenCount + totalTokens
             },
             quality: {
               confidence: 0.95,
@@ -559,6 +705,22 @@ export class AppController {
     const userContent = lastMessage.content.toLowerCase();
     const conversationContext = messages.slice(-5); // More context for better responses
 
+    // 30% chance to include demo content
+    const shouldIncludeDemo = Math.random() < 0.3;
+    if (shouldIncludeDemo) {
+      const demoType = Math.floor(Math.random() * 4);
+      switch (demoType) {
+        case 0:
+          return this.getDemoTableResponse();
+        case 1:
+          return this.getDemoCitationResponse();
+        case 2:
+          return this.getDemoReportResponse();
+        case 3:
+          return this.getDemoMixedResponse();
+      }
+    }
+
     // Enhanced conversation analysis
     const hasCodeContext = conversationContext.some(m =>
       m.content.includes('```') ||
@@ -617,6 +779,14 @@ export class AppController {
     const parts = text.split(/(\s+|[\n\r]+|[.,!?;:]|```|`|\*\*|\*|##|#|\|)/);
 
     for (const part of parts) {
+      if (!part) continue; // Skip empty parts
+      
+      // Preserve spaces and newlines
+      if (part.match(/^\s+$/) || part.includes('\n') || part.includes('\r')) {
+        tokens.push(part);
+        continue;
+      }
+      
       if (part.trim()) {
         // Handle different token types for more natural streaming
         if (part.startsWith('```')) {
@@ -636,12 +806,6 @@ export class AppController {
         } else {
           tokens.push(part);
         }
-      } else if (part.includes('\n')) {
-        // Preserve line breaks
-        tokens.push(part);
-      } else if (part.trim() === '') {
-        // Preserve spaces
-        tokens.push(part);
       }
     }
 
@@ -941,27 +1105,147 @@ Would you like me to dive deeper into any of these concepts?`;
   }
 
   private getFollowUpResponse(userContent: string, context: ChatMessage[]): string {
-    return `Building on our previous conversation, let me expand on that:
-
-You mentioned something interesting earlier. In the context of what we've been discussing, there are a few additional points worth considering:
-
-**Key Insights:**
-- The approach we discussed can be extended further
-- There are some nuances that might be relevant to your specific use case
-- Best practices often depend on the particular context
-
-**Practical Applications:**
-- This pattern is commonly used in production applications
-- Many developers find success with this approach
-- The scalability aspects are worth considering
-
-**Next Steps:**
-If you'd like to explore this further, I can provide:
-- More detailed examples
-- Alternative approaches
-- Specific implementation guidance
-
-What aspect would you like to focus on next?`;
+    // Extract actual conversation topics and content
+    const previousMessages = context.slice(0, -1); // All except the last one
+    const previousUserMessages = previousMessages.filter(m => m.role === 'user');
+    const previousAssistantMessages = previousMessages.filter(m => m.role === 'assistant');
+    
+    // Extract key topics from conversation history
+    const topics: string[] = [];
+    const codeBlocks: string[] = [];
+    const questions: string[] = [];
+    
+    previousMessages.forEach(msg => {
+      const content = msg.content.toLowerCase();
+      
+      // Extract code-related topics
+      if (content.includes('typescript') || content.includes('javascript')) {
+        topics.push('TypeScript/JavaScript');
+      }
+      if (content.includes('react')) {
+        topics.push('React');
+      }
+      if (content.includes('nestjs')) {
+        topics.push('NestJS');
+      }
+      if (content.includes('stream') || content.includes('chunk')) {
+        topics.push('streaming');
+      }
+      if (content.includes('code') || content.includes('function')) {
+        topics.push('programming');
+      }
+      
+      // Extract code blocks
+      const codeMatch = msg.content.match(/```[\s\S]*?```/g);
+      if (codeMatch) {
+        codeBlocks.push(...codeMatch);
+      }
+      
+      // Extract questions
+      if (msg.role === 'user' && msg.content.includes('?')) {
+        questions.push(msg.content.substring(0, 100));
+      }
+    });
+    
+    const uniqueTopics = [...new Set(topics)];
+    const lastUserMessage = previousUserMessages[previousUserMessages.length - 1];
+    const lastAssistantMessage = previousAssistantMessages[previousAssistantMessages.length - 1];
+    
+    // Build contextual response based on actual conversation
+    let response = '';
+    
+    if (uniqueTopics.length > 0) {
+      response += `Continuing our discussion about ${uniqueTopics.join(', ')}, `;
+    } else {
+      response += `Building on what we've been discussing, `;
+    }
+    
+    // Reference the last user message if available
+    if (lastUserMessage) {
+      const lastUserContent = lastUserMessage.content.substring(0, 150);
+      if (lastUserContent.length > 0) {
+        response += `you mentioned: "${lastUserContent}${lastUserContent.length >= 150 ? '...' : ''}"\n\n`;
+      }
+    }
+    
+    // Reference the last assistant response if available
+    if (lastAssistantMessage) {
+      const lastAssistantContent = lastAssistantMessage.content.substring(0, 200);
+      if (lastAssistantContent.length > 0) {
+        response += `In my previous response, I covered: ${lastAssistantContent.substring(0, 100)}${lastAssistantContent.length >= 100 ? '...' : ''}\n\n`;
+      }
+    }
+    
+    // Analyze current user message for specific follow-up
+    const lowerContent = userContent.toLowerCase();
+    
+    if (lowerContent.includes('more') || lowerContent.includes('expand') || lowerContent.includes('detail')) {
+      response += `Let me provide more details:\n\n`;
+      
+      if (codeBlocks.length > 0) {
+        response += `**Code Examples:**\n`;
+        response += `Here's an enhanced version of the code we discussed:\n\n`;
+        response += `\`\`\`typescript\n`;
+        response += `// Enhanced implementation based on our discussion\n`;
+        response += `// This builds on the previous examples\n`;
+        response += `\`\`\`\n\n`;
+      }
+      
+      if (uniqueTopics.includes('streaming')) {
+        response += `**Streaming Implementation:**\n`;
+        response += `For the streaming functionality we discussed, here are key considerations:\n`;
+        response += `- Token-by-token processing for smooth UX\n`;
+        response += `- Proper error handling and recovery\n`;
+        response += `- State management during streaming\n\n`;
+      }
+    } else if (lowerContent.includes('how') || lowerContent.includes('implement')) {
+      response += `Here's how to implement this:\n\n`;
+      response += `**Step-by-Step Approach:**\n`;
+      response += `1. Start with the core functionality\n`;
+      response += `2. Add error handling and edge cases\n`;
+      response += `3. Optimize for performance\n`;
+      response += `4. Test thoroughly\n\n`;
+    } else if (lowerContent.includes('why') || lowerContent.includes('reason')) {
+      response += `Here's the reasoning behind this approach:\n\n`;
+      response += `**Why This Works:**\n`;
+      response += `- It addresses the specific requirements we discussed\n`;
+      response += `- It follows best practices for maintainability\n`;
+      response += `- It scales well with your use case\n\n`;
+    } else if (lowerContent.includes('example') || lowerContent.includes('show')) {
+      response += `Here's a practical example:\n\n`;
+      
+      if (uniqueTopics.includes('programming') || uniqueTopics.includes('TypeScript/JavaScript')) {
+        response += `\`\`\`typescript\n`;
+        response += `// Example implementation\n`;
+        response += `function example() {\n`;
+        response += `  // Based on our conversation\n`;
+        response += `  return 'implementation';\n`;
+        response += `}\n`;
+        response += `\`\`\`\n\n`;
+      }
+    } else {
+      // Generic but contextual follow-up
+      response += `Let me address your question:\n\n`;
+      
+      if (uniqueTopics.length > 0) {
+        response += `**Regarding ${uniqueTopics[0]}:**\n`;
+        response += `Based on our previous discussion, here are some additional insights:\n\n`;
+      }
+      
+      response += `**Key Points:**\n`;
+      response += `- This relates to what we covered earlier\n`;
+      response += `- There are practical considerations to keep in mind\n`;
+      response += `- The implementation can be tailored to your needs\n\n`;
+    }
+    
+    response += `**Next Steps:**\n`;
+    response += `Would you like me to:\n`;
+    response += `- Provide more specific code examples?\n`;
+    response += `- Explain any particular aspect in more detail?\n`;
+    response += `- Help with implementation?\n\n`;
+    response += `What would be most helpful?`;
+    
+    return response;
   }
 
   private getGeneralResponse(userContent: string): string {
@@ -1205,6 +1489,222 @@ What aspect of the Nx setup interests you most?`,
     ];
 
     return responses[Math.floor(Math.random() * responses.length)] as string;
+  }
+
+  /**
+   * Generate content for tool-t section with tables and citations
+   */
+  private generateToolTSection(): string {
+    const contentTypes = ['table', 'citation', 'table'];
+    const selectedType = contentTypes[Math.floor(Math.random() * contentTypes.length)];
+
+    if (selectedType === 'table') {
+      return `## Tool T Analysis Results
+
+Here's a detailed comparison table from Tool T:
+
+table: Tool T Performance Metrics
+
+| Metric | Value | Target | Status |
+|--------|-------|--------|--------|
+| Response Time | 120ms | <150ms | ✅ Pass |
+| Throughput | 850 req/s | >800 req/s | ✅ Pass |
+| Error Rate | 0.2% | <1% | ✅ Pass |
+| CPU Usage | 45% | <60% | ✅ Pass |
+
+### Key Findings
+
+> "Tool T demonstrates excellent performance characteristics with all metrics meeting or exceeding targets. The response time is particularly impressive given the complexity of operations."
+
+This analysis shows Tool T is performing well across all measured dimensions.`;
+    } else if (selectedType === 'citation') {
+      return `## Tool T Research Summary
+
+> "Tool T leverages advanced algorithms to optimize processing efficiency. The implementation follows industry best practices for scalability and reliability."
+
+### Analysis Details
+
+Based on extensive testing, Tool T shows:
+
+- **Efficiency**: 95% improvement over baseline
+- **Reliability**: 99.8% uptime
+- **Scalability**: Handles 10x load increase
+
+> "The results demonstrate Tool T's capability to handle production workloads effectively while maintaining high quality standards."
+
+These findings support the recommendation to deploy Tool T in production environments.`;
+    }
+
+    return `## Tool T Results
+
+Tool T has completed its analysis. Here are the findings:
+
+table: Tool T Summary
+
+| Category | Count | Status |
+|----------|-------|--------|
+| Processed | 1,234 | Complete |
+| Errors | 2 | Resolved |
+| Warnings | 5 | Reviewed |
+
+> "Tool T successfully processed all items with minimal issues. The error rate is well within acceptable limits."
+
+The analysis is complete and ready for review.`;
+  }
+
+  /**
+   * Generate content for tool-x section with tables and citations
+   */
+  private generateToolXSection(): string {
+    const contentTypes = ['table', 'citation', 'report'];
+    const selectedType = contentTypes[Math.floor(Math.random() * contentTypes.length)];
+
+    if (selectedType === 'table') {
+      return `## Tool X Execution Report
+
+Tool X has generated the following analysis:
+
+table: Tool X Data Analysis
+
+| Dataset | Records | Processed | Quality Score |
+|---------|---------|-----------|---------------|
+| Dataset A | 5,432 | 5,430 | 98.5% |
+| Dataset B | 3,210 | 3,208 | 97.2% |
+| Dataset C | 8,765 | 8,763 | 99.1% |
+
+### Summary
+
+> "Tool X processed all datasets successfully with high quality scores. The processing pipeline demonstrates robust error handling and data validation."
+
+All datasets have been processed and validated.`;
+    } else if (selectedType === 'citation') {
+      return `## Tool X Research Findings
+
+> "Tool X implements a sophisticated data processing pipeline that ensures high accuracy and reliability. The architecture supports concurrent processing of multiple datasets."
+
+### Performance Metrics
+
+- **Processing Speed**: 2.5x faster than previous version
+- **Accuracy**: 99.2% across all test cases
+- **Resource Usage**: 30% reduction in memory consumption
+
+> "These improvements make Tool X suitable for production deployment at scale. The reduced resource usage is particularly beneficial for cost optimization."
+
+Tool X is ready for production use.`;
+    } else {
+      return `## Tool X Analysis Complete
+
+Tool X has completed comprehensive analysis:
+
+table: Tool X Results Summary
+
+| Test Case | Result | Duration | Notes |
+|-----------|--------|----------|-------|
+| Unit Tests | ✅ Pass | 45s | All 234 tests passed |
+| Integration | ✅ Pass | 2m 15s | No issues detected |
+| Performance | ✅ Pass | 5m 30s | Within targets |
+
+> "Tool X demonstrates excellent test coverage and performance characteristics. All test suites passed without issues."
+
+The analysis confirms Tool X meets all quality requirements.`;
+    }
+  }
+
+  /**
+   * Detect content type from token and accumulated content
+   */
+  private detectContentType(token: string, accumulatedContent: string): 'table' | 'citation' | 'report' | 'markdown' {
+    const lowerContent = accumulatedContent.toLowerCase();
+    
+    // Check for table markers
+    if (lowerContent.includes('table:') || lowerContent.includes('|') && lowerContent.includes('---')) {
+      return 'table';
+    }
+    
+    // Check for citation markers (quote blocks)
+    if (lowerContent.includes('>') && lowerContent.split('>').length > 2) {
+      return 'citation';
+    }
+    
+    // Check for report markers
+    if (lowerContent.includes('report:') || lowerContent.includes('"reportid"')) {
+      return 'report';
+    }
+    
+    return 'markdown';
+  }
+
+  private getDemoTableResponse(): string {
+    return `Here's a comparison table showing different approaches:
+
+table: Performance Comparison
+
+| Approach | Speed | Complexity | Maintainability |
+|----------|-------|------------|-----------------|
+| Option A | Fast | Low | High |
+| Option B | Medium | Medium | Medium |
+| Option C | Slow | High | Low |
+
+This table helps visualize the trade-offs between different solutions.`;
+  }
+
+  private getDemoCitationResponse(): string {
+    return `Here's an important citation (ציטוט):
+
+> "The best code is code that you don't have to write. The second best is code that is easy to read and understand."
+
+This principle guides modern software development practices.`;
+  }
+
+  private getDemoReportResponse(): string {
+    return `Here's a detailed report:
+
+report: {
+  "id": "report-demo-001",
+  "title": "System Performance Analysis",
+  "summary": "Comprehensive analysis of system metrics and recommendations",
+  "metadata": {
+    "date": "2024-01-15",
+    "category": "performance",
+    "priority": "high"
+  }
+}
+
+This report contains detailed insights and recommendations.`;
+  }
+
+  private getDemoMixedResponse(): string {
+    return `Let me show you a comprehensive example with multiple content types:
+
+## Analysis Results
+
+Here's a citation (ציטוט) from a recent study:
+
+> "Modern web applications require careful consideration of performance, maintainability, and user experience."
+
+### Data Comparison
+
+table: Feature Comparison
+
+| Feature | Version 1 | Version 2 | Version 3 |
+|---------|----------|-----------|-----------|
+| Speed | 100ms | 80ms | 60ms |
+| Memory | 50MB | 45MB | 40MB |
+| Complexity | Low | Medium | High |
+
+### Summary Report
+
+report: {
+  "id": "mixed-demo-001",
+  "title": "Comprehensive Analysis",
+  "summary": "Combined analysis with citations and tables",
+  "metadata": {
+    "type": "mixed",
+    "sections": ["citation", "table", "report"]
+  }
+}
+
+This demonstrates how different content types work together.`;
   }
 
 }

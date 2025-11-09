@@ -22,6 +22,8 @@ interface MarkdownRendererProps {
   onOpenReport?: (url: string) => void;
   section?: "reasoning" | "tool-t" | "tool-x" | "answer";
   contentType?: "citation" | "table" | "report" | "markdown";
+  sections?: Record<string, ParsedMessageContent>;
+  currentSection?: "reasoning" | "tool-t" | "tool-x" | "answer";
 }
 
 const availableReports = [
@@ -731,6 +733,8 @@ export const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({
   onOpenReport,
   section,
   contentType,
+  sections,
+  currentSection,
 }) => {
   const theme = useTheme();
 
@@ -751,12 +755,32 @@ export const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({
   }, [content]);
 
   const parsedContent = React.useMemo(() => {
+    // If parsed is provided and content hasn't changed, use it
     if (parsed && processedContent === content) {
       return parsed;
     }
 
+    // If we have sections, ensure each section has parsed content
+    if (sections && Object.keys(sections).length > 0) {
+      // Sections should already have parsed content, but rebuild if needed
+      const updatedSections: Record<string, { content: string; parsed: ParsedMessageContent }> = {};
+      Object.entries(sections).forEach(([key, sectionData]) => {
+        if ('parsed' in sectionData && sectionData.parsed) {
+          updatedSections[key] = sectionData;
+        } else if ('content' in sectionData) {
+          // Rebuild parsed content for this section
+          updatedSections[key] = {
+            content: typeof sectionData === 'string' ? sectionData : sectionData.content || '',
+            parsed: buildParsedMessageContent(typeof sectionData === 'string' ? sectionData : sectionData.content || ''),
+          };
+        }
+      });
+      // Note: We can't update sections here, but the sections prop should already have parsed content
+    }
+
+    // Build parsed content from processed content
     return buildParsedMessageContent(processedContent);
-  }, [parsed, processedContent, content]);
+  }, [parsed, processedContent, content, sections]);
 
   const sectionTitles: Record<
     "reasoning" | "tool-t" | "tool-x" | "answer",
@@ -768,6 +792,79 @@ export const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({
     answer: "Answer",
   };
 
+  const renderSectionContent = (sectionData: ParsedMessageContent | { content: string; parsed: ParsedMessageContent }, sectionKey: string) => {
+    // Handle both formats: ParsedMessageContent directly or { content, parsed }
+    let sectionParsed: ParsedMessageContent;
+    let sectionContentStr: string = '';
+    
+    if ('parsed' in sectionData && sectionData.parsed) {
+      // We have parsed content, use it
+      sectionParsed = sectionData.parsed;
+      sectionContentStr = sectionData.content || sectionParsed.plainText || '';
+    } else if ('content' in sectionData && typeof sectionData === 'object') {
+      // We have content string, build parsed from it
+      sectionContentStr = sectionData.content || '';
+      sectionParsed = buildParsedMessageContent(sectionContentStr);
+    } else if (typeof sectionData === 'object' && 'blocks' in sectionData) {
+      // It's already ParsedMessageContent
+      sectionParsed = sectionData as ParsedMessageContent;
+      sectionContentStr = sectionParsed.plainText || '';
+    } else {
+      // Fallback: build from string content
+      sectionContentStr = typeof sectionData === 'string' ? sectionData : '';
+      sectionParsed = buildParsedMessageContent(sectionContentStr);
+    }
+    
+    // If parsed content seems incomplete (no blocks/elements), rebuild from content string
+    if ((!sectionParsed.blocks || sectionParsed.blocks.length === 0) && 
+        (!sectionParsed.elements || sectionParsed.elements.length === 0) &&
+        sectionContentStr) {
+      sectionParsed = buildParsedMessageContent(sectionContentStr);
+    }
+    
+    const sectionType = sectionKey as "reasoning" | "tool-t" | "tool-x" | "answer";
+    return (
+      <Box
+        sx={{
+          display: "flex",
+          flexDirection: "column",
+          gap: 1,
+          color: theme.palette.text.primary,
+        }}
+      >
+        {sectionParsed.blocks.map((block, index) =>
+          renderBlock(block, index, theme, isDarkMode, foundReports, onOpenReport)
+        )}
+        {sectionParsed.elements.map((element, index) =>
+          renderCustomElement(element, index, theme, isDarkMode, onOpenReport)
+        )}
+      </Box>
+    );
+  };
+
+  // Handle multiple sections - prioritize sections over single section rendering
+  if (sections && Object.keys(sections).length > 0) {
+    return (
+      <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
+        {Object.entries(sections).map(([sectionKey, sectionData]) => {
+          const sectionType = sectionKey as "reasoning" | "tool-t" | "tool-x" | "answer";
+          return (
+            <CollapsibleSection
+              key={sectionKey}
+              title={sectionTitles[sectionType]}
+              section={sectionType}
+              isDarkMode={isDarkMode}
+              theme={theme}
+            >
+              {renderSectionContent(sectionData, sectionKey)}
+            </CollapsibleSection>
+          );
+        })}
+      </Box>
+    );
+  }
+
+  // Handle single section (backward compatibility)
   const contentWrapper = (
     <Box
       sx={{
@@ -786,11 +883,13 @@ export const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({
     </Box>
   );
 
-  if (section) {
+  // If there's a single section specified, wrap it in a collapsible
+  if (section || currentSection) {
+    const sectionToUse = section || currentSection;
     return (
       <CollapsibleSection
-        title={sectionTitles[section]}
-        section={section}
+        title={sectionTitles[sectionToUse!]}
+        section={sectionToUse!}
         isDarkMode={isDarkMode}
         theme={theme}
       >

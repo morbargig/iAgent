@@ -1,5 +1,5 @@
 import type { Message, Conversation } from "@iagent/chat-types";
-import { buildParsedMessageContent } from "@iagent/chat-types";
+import { convertMongoMessageToMessage } from "./chunkConverter";
 
 const CHAT_LIST_CACHE_KEY = "chat-list-cache";
 const CHAT_LIST_CACHE_TTL = 5 * 60 * 1000; // 5 minutes
@@ -176,36 +176,7 @@ export const chatCache = {
   },
 };
 
-export const convertMongoMessageToCustomMarkup = (mongoMessage: {
-  id: string;
-  role: "user" | "assistant" | "system";
-  content: string;
-  timestamp: Date | string;
-  metadata?: Record<string, unknown>;
-  filterId?: string | null;
-  filterSnapshot?: {
-    filterId?: string;
-    name?: string;
-    config?: Record<string, unknown>;
-  } | null;
-}): Message => {
-  const parsed = buildParsedMessageContent(mongoMessage.content);
-
-  return {
-    id: mongoMessage.id,
-    role: mongoMessage.role === "system" ? "assistant" : mongoMessage.role,
-    content: mongoMessage.content,
-    timestamp: typeof mongoMessage.timestamp === "string" 
-      ? new Date(mongoMessage.timestamp) 
-      : mongoMessage.timestamp,
-    isStreaming: false,
-    isInterrupted: false,
-    filterId: mongoMessage.filterId || null,
-    filterSnapshot: mongoMessage.filterSnapshot || null,
-    metadata: mongoMessage.metadata,
-    parsed,
-  };
-};
+export const convertMongoMessageToCustomMarkup = convertMongoMessageToMessage;
 
 export const convertMongoChatToConversation = (mongoChat: {
   chatId: string;
@@ -228,7 +199,7 @@ export const convertMongoChatToConversation = (mongoChat: {
     } | null;
   }>;
 }): Conversation => {
-  const messages = (mongoChat.messages || []).map(convertMongoMessageToCustomMarkup);
+  const messages = (mongoChat.messages || []).map(convertMongoMessageToMessage);
 
   return {
     id: mongoChat.chatId,
