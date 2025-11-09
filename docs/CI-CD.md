@@ -235,7 +235,7 @@ The CD workflow (`.github/workflows/cd.yml`) handles automated deployment after 
 
 ##### Production Deployment
 - **Target**: GitHub Pages
-- **URL**: `https://your-username.github.io/iAgent`
+- **URL**: `https://morbargig.github.io/iAgent`
 - **Trigger**: Successful CI on main branch
 - **Features**:
   - Custom domain support
@@ -314,7 +314,7 @@ Update these in the CD workflow:
 
 ```yaml
 env:
-  PRODUCTION_URL: 'https://your-username.github.io/iAgent'
+  PRODUCTION_URL: 'https://morbargig.github.io/iAgent'
 ```
 
 ### Custom Domain Setup

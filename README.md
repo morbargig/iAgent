@@ -49,7 +49,7 @@ iAgent/
 
 ```bash
 # Clone the repository
-git clone https://github.com/your-username/iAgent.git
+git clone https://github.com/morbargig/iAgent.git
 cd iAgent
 
 # Install dependencies

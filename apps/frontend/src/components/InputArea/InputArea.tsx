@@ -514,38 +514,70 @@ export function InputArea({
 
             {/* Main Textarea Container */}
             <Box sx={{ position: "relative" }}>
-              <textarea
-                id="iagent-message-input"
-                className="iagent-textarea-input"
-                ref={inputAreaUI.textareaRef}
-                value={value}
-                onChange={(e) => onChange(e.target.value)}
-                onKeyDown={handleKeyDown}
-                onFocus={() => inputAreaUI.setIsFocused(true)}
-                onBlur={() => inputAreaUI.setIsFocused(false)}
-                placeholder={
-                  inputAreaUI.needsToolConfiguration
-                    ? t("input.disabledDueToConfig")
-                    : inputAreaUI.debugPlaceholder
-                }
-                disabled={disabled || inputAreaUI.needsToolConfiguration}
-                autoComplete="off"
-                data-form-type="other"
-                style={{
-                  ...inputAreaUI.textareaStyle,
-                  opacity: inputAreaUI.needsToolConfiguration ? 0.6 : 1,
-                  cursor: inputAreaUI.needsToolConfiguration
-                    ? "not-allowed"
-                    : "text",
-                  color: inputAreaUI.needsToolConfiguration
-                    ? isDarkMode
-                      ? "#ff9800"
-                      : "#f57c00"
-                    : inputAreaUI.textareaStyle.color,
-                  paddingRight:
-                    showClearButton && value.trim() ? "40px" : "16px",
+              <form
+                name="iagent-chat-form"
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  if (canSend && !disabled) {
+                    handleSubmit();
+                  }
                 }}
-              />
+                data-lpignore="true"
+                data-1p-ignore="true"
+                data-bwignore="true"
+                data-form-type="other"
+                data-noautofill="true"
+                autoComplete="off"
+                style={{ margin: 0, padding: 0 }}
+              >
+                <textarea
+                  id="iagent-message-input"
+                  name="iagent-message-input"
+                  className="iagent-textarea-input"
+                  ref={inputAreaUI.textareaRef}
+                  value={value}
+                  onChange={(e) => onChange(e.target.value)}
+                  onKeyDown={handleKeyDown}
+                  onFocus={() => inputAreaUI.setIsFocused(true)}
+                  onBlur={() => inputAreaUI.setIsFocused(false)}
+                  placeholder={
+                    inputAreaUI.needsToolConfiguration
+                      ? t("input.disabledDueToConfig")
+                      : inputAreaUI.debugPlaceholder
+                  }
+                  disabled={disabled || inputAreaUI.needsToolConfiguration}
+                  autoComplete="off"
+                  autoCapitalize="off"
+                  autoCorrect="off"
+                  spellCheck="false"
+                  data-form-type="other"
+                  data-lpignore="true"
+                  data-1p-ignore="true"
+                  data-bwignore="true"
+                  data-autocomplete="off"
+                  data-noautofill="true"
+                  data-gramm="false"
+                  data-gramm_editor="false"
+                  data-enable-grammarly="false"
+                  role="textbox"
+                  aria-label="Message input"
+                  aria-autocomplete="none"
+                  style={{
+                    ...inputAreaUI.textareaStyle,
+                    opacity: inputAreaUI.needsToolConfiguration ? 0.6 : 1,
+                    cursor: inputAreaUI.needsToolConfiguration
+                      ? "not-allowed"
+                      : "text",
+                    color: inputAreaUI.needsToolConfiguration
+                      ? isDarkMode
+                        ? "#ff9800"
+                        : "#f57c00"
+                      : inputAreaUI.textareaStyle.color,
+                    paddingRight:
+                      showClearButton && value.trim() ? "40px" : "16px",
+                  }}
+                />
+              </form>
 
               {/* Clear Button - Absolutely Positioned */}
               {showClearButton && value.trim() && (

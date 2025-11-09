@@ -106,12 +106,16 @@ temp/
 *.sqlite
 *.db
 
-# NestJS specific
+# Build outputs - all dist folders
+dist/
+**/dist/
 /apps/*/dist/
 /libs/*/dist/
 
 # React specific
 /apps/*/build/
+build/
+**/build/
 
 # TypeScript
 *.tsbuildinfo

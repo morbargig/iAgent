@@ -582,6 +582,21 @@ const App = () => {
         }
       }
 
+      // Save user message immediately to MongoDB
+      if (authToken && userId) {
+        saveMessageMutation.mutate({
+          chatId: updatedConversation.id,
+          message: {
+            id: userMessage.id,
+            role: userMessage.role,
+            content: userMessage.content,
+            timestamp: userMessage.timestamp,
+            metadata: userMessage.metadata || {},
+            filterId: userMessage.filterId,
+            filterSnapshot: userMessage.filterSnapshot,
+          },
+        });
+      }
 
       const chatId = currentConv?.id || `chat_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
       const toolsArray = enabledTools.map((toolId) => ({
