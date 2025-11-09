@@ -529,6 +529,8 @@ export function InputArea({
                     : inputAreaUI.debugPlaceholder
                 }
                 disabled={disabled || inputAreaUI.needsToolConfiguration}
+                autoComplete="off"
+                data-form-type="other"
                 style={{
                   ...inputAreaUI.textareaStyle,
                   opacity: inputAreaUI.needsToolConfiguration ? 0.6 : 1,

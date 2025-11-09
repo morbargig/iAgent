@@ -48,6 +48,16 @@ export interface ChatReportBlock {
   metadata?: Record<string, unknown>;
 }
 
+export interface ChatTableCitationBlock {
+  type: 'table-citation';
+  citationId: string;
+  tableData: {
+    headers: string[];
+    rows: string[][];
+  };
+  caption?: string;
+}
+
 export type ChatContentBlock =
   | ChatHeadingBlock
   | ChatParagraphBlock
@@ -56,7 +66,8 @@ export type ChatContentBlock =
   | ChatQuoteBlock
   | ChatDividerBlock
   | ChatTableBlock
-  | ChatReportBlock;
+  | ChatReportBlock
+  | ChatTableCitationBlock;
 
 export type CustomElementChild = CustomElementNode | string;
 
@@ -176,7 +187,8 @@ const UNORDERED_LIST_REGEX = /^\s*[-*+]\s+(.*)$/;
 const DIVIDER_REGEX = /^\s*(-{3,}|_{3,}|\*{3,})\s*$/;
 const TABLE_DIVIDER_REGEX = /^\s*\|?(?:\s*:?-{3,}:?\s*\|)+\s*$/;
 const TABLE_CAPTION_REGEX = /^(?:table|טבלה)\s*[:\-]\s*(.+)$/i;
-const REPORT_BLOCK_REGEX = /^report\s*[:\-]\s*(\{[\s\S]*\})$/i;
+const TABLE_CITATION_REGEX = /\[table-(\d+)\]/gi;
+const TABLE_CITATION_DEFINITION_REGEX = /^table-citation:\s*(\w+)/i;
 
 const normalizeLineEndings = (markdown: string): string => markdown.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
 
@@ -288,15 +300,64 @@ export const parseMarkdownToBlocks = (markdown: string): ChatContentBlock[] => {
   const normalized = normalizeLineEndings(markdown);
   const lines = normalized.split('\n');
   const blocks: ChatContentBlock[] = [];
+  const tableCitations: Map<string, { headers: string[]; rows: string[][]; caption?: string }> = new Map();
 
   let index = 0;
 
+  // First pass: collect table citation definitions
+  while (index < lines.length) {
+    const line = lines[index];
+    const trimmed = line.trim();
+    
+    const citationDefMatch = TABLE_CITATION_DEFINITION_REGEX.exec(trimmed);
+    if (citationDefMatch) {
+      const citationId = citationDefMatch[1];
+      index++; // Move past definition line
+      
+      // Try to parse table starting from next line
+      const tableCandidate = tryParseTable(lines, index);
+      if (tableCandidate) {
+        let caption: string | undefined;
+        const previousLine = index > 0 ? lines[index - 1] : '';
+        const captionMatch = TABLE_CAPTION_REGEX.exec(previousLine);
+        if (captionMatch) {
+          caption = captionMatch[1].trim();
+        }
+        
+        tableCitations.set(citationId, {
+          headers: tableCandidate.headers,
+          rows: tableCandidate.rows,
+          caption,
+        });
+        index = tableCandidate.nextIndex;
+        continue;
+      }
+    }
+    
+    index++;
+  }
+
+  // Reset index for second pass
+  index = 0;
+
+  // Second pass: parse blocks and handle citation links
   while (index < lines.length) {
     const line = lines[index];
     const trimmed = line.trim();
 
     if (!trimmed) {
       index++;
+      continue;
+    }
+
+    // Skip citation definitions (already processed)
+    if (TABLE_CITATION_DEFINITION_REGEX.test(trimmed)) {
+      index++;
+      // Skip the table that follows
+      const tableCandidate = tryParseTable(lines, index);
+      if (tableCandidate) {
+        index = tableCandidate.nextIndex;
+      }
       continue;
     }
 
@@ -405,6 +466,7 @@ export const parseMarkdownToBlocks = (markdown: string): ChatContentBlock[] => {
     }
 
     const paragraphText = paragraphLines.join(' ');
+    const REPORT_BLOCK_REGEX = /^report\s*[:\-]\s*(\{[\s\S]*\})$/i;
     const reportMatch = REPORT_BLOCK_REGEX.exec(paragraphText);
     if (reportMatch) {
       try {
@@ -424,6 +486,66 @@ export const parseMarkdownToBlocks = (markdown: string): ChatContentBlock[] => {
       } catch (error) {
         // ignore malformed report payloads and treat as paragraph
       }
+    }
+
+    // Check for table citation links in paragraph
+    const citationMatches = Array.from(paragraphText.matchAll(TABLE_CITATION_REGEX));
+    if (citationMatches.length > 0 && tableCitations.size > 0) {
+      // Split paragraph by citations and create blocks
+      let lastIndex = 0;
+      const parts: Array<{ type: 'text' | 'citation'; content: string; citationId?: string }> = [];
+      
+      for (const match of citationMatches) {
+        if (match.index !== undefined) {
+          // Add text before citation
+          if (match.index > lastIndex) {
+            const textBefore = paragraphText.slice(lastIndex, match.index);
+            if (textBefore.trim()) {
+              parts.push({ type: 'text', content: textBefore });
+            }
+          }
+          
+          // Add citation
+          const citationId = match[1];
+          if (tableCitations.has(citationId)) {
+            parts.push({ type: 'citation', content: match[0], citationId });
+          } else {
+            // Citation not found, keep as text
+            parts.push({ type: 'text', content: match[0] });
+          }
+          
+          lastIndex = match.index + match[0].length;
+        }
+      }
+      
+      // Add remaining text
+      if (lastIndex < paragraphText.length) {
+        const textAfter = paragraphText.slice(lastIndex);
+        if (textAfter.trim()) {
+          parts.push({ type: 'text', content: textAfter });
+        }
+      }
+      
+      // Create blocks from parts
+      for (const part of parts) {
+        if (part.type === 'citation' && part.citationId) {
+          const citationData = tableCitations.get(part.citationId);
+          if (citationData) {
+            blocks.push({
+              type: 'table-citation',
+              citationId: part.citationId,
+              tableData: {
+                headers: citationData.headers,
+                rows: citationData.rows,
+              },
+              caption: citationData.caption,
+            });
+          }
+        } else if (part.content.trim()) {
+          blocks.push({ type: 'paragraph', text: part.content });
+        }
+      }
+      continue;
     }
 
     blocks.push({ type: 'paragraph', text: paragraphText });
@@ -454,6 +576,8 @@ const blocksToPlainText = (blocks: ChatContentBlock[]): string => {
             .join('\n')}`;
         case 'report':
           return `${block.title}${block.summary ? ` - ${block.summary}` : ''}`;
+        case 'table-citation':
+          return `[table-${block.citationId}]`;
         default:
           return '';
       }
@@ -518,6 +642,17 @@ const blocksToCustomElements = (blocks: ChatContentBlock[]): CustomElementNode[]
             },
           });
         }
+        break;
+      }
+      case 'table-citation': {
+        acc.push({
+          tag: 'app-table-citation',
+          attributes: {
+            citationId: block.citationId,
+            data: encodeBase64Json(block.tableData),
+            ...(block.caption ? { caption: encodeBase64Text(block.caption) } : {}),
+          },
+        });
         break;
       }
       case 'report': {

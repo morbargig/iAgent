@@ -422,7 +422,12 @@ const App = () => {
                 role: lastMessage.role,
                 content: lastMessage.content,
                 timestamp: lastMessage.timestamp,
-                metadata: lastMessage.metadata,
+                metadata: {
+                  ...lastMessage.metadata,
+                  parsed: lastMessage.parsed,
+                  sections: lastMessage.sections,
+                  currentSection: lastMessage.currentSection,
+                },
                 filterId: lastMessage.filterId,
                 filterSnapshot: lastMessage.filterSnapshot,
               },
@@ -671,7 +676,12 @@ const App = () => {
                     role: lastMessage.role,
                     content: lastMessage.content,
                     timestamp: lastMessage.timestamp,
-                    metadata: lastMessage.metadata,
+                    metadata: {
+                      ...lastMessage.metadata,
+                      parsed: lastMessage.parsed,
+                      sections: lastMessage.sections,
+                      currentSection: lastMessage.currentSection,
+                    },
                     filterId: lastMessage.filterId,
                     filterSnapshot: lastMessage.filterSnapshot,
                   },
@@ -797,7 +807,12 @@ const App = () => {
               role: lastMessage.role,
               content: lastMessage.content,
               timestamp: lastMessage.timestamp,
-              metadata: lastMessage.metadata,
+              metadata: {
+                ...lastMessage.metadata,
+                parsed: lastMessage.parsed,
+                sections: lastMessage.sections,
+                currentSection: lastMessage.currentSection,
+              },
               filterId: lastMessage.filterId,
               filterSnapshot: lastMessage.filterSnapshot,
             },
@@ -851,7 +866,12 @@ const App = () => {
                       role: lastMessage.role,
                       content: lastMessage.content,
                       timestamp: lastMessage.timestamp,
-                      metadata: lastMessage.metadata,
+                      metadata: {
+                        ...lastMessage.metadata,
+                        parsed: lastMessage.parsed,
+                        sections: lastMessage.sections,
+                        currentSection: lastMessage.currentSection,
+                      },
                       filterId: lastMessage.filterId,
                       filterSnapshot: lastMessage.filterSnapshot,
                     },
@@ -902,7 +922,12 @@ const App = () => {
                       role: lastMessage.role,
                       content: lastMessage.content,
                       timestamp: lastMessage.timestamp,
-                      metadata: lastMessage.metadata,
+                      metadata: {
+                        ...lastMessage.metadata,
+                        parsed: lastMessage.parsed,
+                        sections: lastMessage.sections,
+                        currentSection: lastMessage.currentSection,
+                      },
                       filterId: lastMessage.filterId,
                       filterSnapshot: lastMessage.filterSnapshot,
                     },
@@ -948,7 +973,7 @@ const App = () => {
     if (!authToken) return;
 
     // Don't reload if already loaded
-    if (loadedConversations.has(chatId)) {
+    if (loadedConversationsRef.current.has(chatId)) {
       setCurrentConversationId(chatId);
       return;
     }
@@ -997,7 +1022,7 @@ const App = () => {
     } catch (error) {
       console.error(`Failed to load conversation ${chatId}:`, error);
     }
-  }, [authToken, loadedConversations]);
+  }, [authToken]);
 
   const createNewConversation = React.useCallback(async () => {
     const newConversation: Conversation = {
@@ -1146,7 +1171,12 @@ const App = () => {
               role: lastMessage.role,
               content: lastMessage.content,
               timestamp: lastMessage.timestamp,
-              metadata: lastMessage.metadata,
+              metadata: {
+                ...lastMessage.metadata,
+                parsed: lastMessage.parsed,
+                sections: lastMessage.sections,
+                currentSection: lastMessage.currentSection,
+              },
               filterId: lastMessage.filterId,
               filterSnapshot: lastMessage.filterSnapshot,
             },
@@ -1233,7 +1263,12 @@ const App = () => {
                       role: lastMessage.role,
                       content: lastMessage.content,
                       timestamp: lastMessage.timestamp,
-                      metadata: lastMessage.metadata,
+                      metadata: {
+                        ...lastMessage.metadata,
+                        parsed: lastMessage.parsed,
+                        sections: lastMessage.sections,
+                        currentSection: lastMessage.currentSection,
+                      },
                       filterId: lastMessage.filterId,
                       filterSnapshot: lastMessage.filterSnapshot,
                     },
@@ -1324,7 +1359,12 @@ const App = () => {
               role: lastMessage.role,
               content: lastMessage.content,
               timestamp: lastMessage.timestamp,
-              metadata: lastMessage.metadata,
+              metadata: {
+                ...lastMessage.metadata,
+                parsed: lastMessage.parsed,
+                sections: lastMessage.sections,
+                currentSection: lastMessage.currentSection,
+              },
               filterId: lastMessage.filterId,
               filterSnapshot: lastMessage.filterSnapshot,
             },

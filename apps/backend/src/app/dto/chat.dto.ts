@@ -330,4 +330,79 @@ export class HealthCheckDto {
     }
   })
   endpoints!: Record<string, string>;
+}
+
+export class ToolSchemaPageOptionDto {
+  @ApiProperty({
+    description: 'Option value',
+    example: 'news'
+  })
+  value!: string;
+
+  @ApiProperty({
+    description: 'Option label',
+    example: 'News Articles'
+  })
+  label!: string;
+}
+
+export class ToolSchemaConfigurationFieldDto {
+  @ApiPropertyOptional({
+    description: 'Pages configuration field',
+    example: {
+      required: false,
+      options: [
+        { value: 'news', label: 'News Articles' },
+        { value: 'academic', label: 'Academic Papers' }
+      ]
+    }
+  })
+  pages?: {
+    required: boolean;
+    options: ToolSchemaPageOptionDto[];
+  };
+
+  @ApiPropertyOptional({
+    description: 'Required words configuration field',
+    example: {
+      required: false,
+      placeholder: 'Enter keywords that must be present...'
+    }
+  })
+  requiredWords?: {
+    required: boolean;
+    placeholder: string;
+  };
+}
+
+export class ToolSchemaDto {
+  @ApiProperty({
+    description: 'Tool identifier',
+    example: 'tool-x'
+  })
+  id!: string;
+
+  @ApiProperty({
+    description: 'Tool name',
+    example: 'ToolT'
+  })
+  name!: string;
+
+  @ApiProperty({
+    description: 'Tool description',
+    example: 'Web search tool for finding relevant information and sources'
+  })
+  description!: string;
+
+  @ApiProperty({
+    description: 'Whether the tool requires configuration',
+    example: true
+  })
+  requiresConfiguration!: boolean;
+
+  @ApiProperty({
+    description: 'Configuration fields for the tool',
+    type: ToolSchemaConfigurationFieldDto
+  })
+  configurationFields!: ToolSchemaConfigurationFieldDto;
 } 

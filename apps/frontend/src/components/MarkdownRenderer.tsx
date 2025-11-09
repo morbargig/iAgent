@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Box, Typography, useTheme, Collapse, IconButton } from "@mui/material";
+import { Box, Typography, useTheme, Collapse, IconButton, Dialog, DialogTitle, DialogContent, DialogActions, Button } from "@mui/material";
 import type { Theme } from "@mui/material/styles";
 import {
   ParsedMessageContent,
@@ -414,7 +414,8 @@ const renderCustomElement = (
   index: number,
   theme: Theme,
   isDarkMode: boolean,
-  onOpenReport?: (url: string) => void
+  onOpenReport?: (url: string) => void,
+  onOpenTable?: (tableData: { headers: string[]; rows: string[][]; caption?: string }) => void
 ) => {
   const { tag, attributes = {} } = element;
 
@@ -627,6 +628,46 @@ const renderCustomElement = (
       );
     }
 
+    case "app-table-citation": {
+      const citationId = attributes.citationId;
+      const data = decodeBase64Json<{ headers: string[]; rows: string[][] }>(
+        attributes.data
+      );
+      const caption = attributes.caption
+        ? decodeBase64Text(attributes.caption)
+        : undefined;
+
+      return (
+        <Box
+          key={`custom-table-citation-${index}`}
+          component="span"
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            onOpenTable?.({ ...data, caption });
+          }}
+          sx={{
+            display: "inline-block",
+            marginInline: "4px",
+            padding: "2px 8px",
+            borderRadius: "4px",
+            backgroundColor: theme.palette.primary.main,
+            color: theme.palette.primary.contrastText,
+            fontSize: "0.85em",
+            fontWeight: 600,
+            cursor: "pointer",
+            transition: "all 0.15s ease",
+            "&:hover": {
+              backgroundColor: theme.palette.primary.dark,
+              transform: "scale(1.05)",
+            },
+          }}
+        >
+          [table-{citationId}]
+        </Box>
+      );
+    }
+
     case "app-report": {
       const reportData = decodeBase64Json<{
         reportId: string;
@@ -737,6 +778,18 @@ export const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({
   currentSection,
 }) => {
   const theme = useTheme();
+  const [tableDialogOpen, setTableDialogOpen] = React.useState(false);
+  const [selectedTable, setSelectedTable] = React.useState<{ headers: string[]; rows: string[][]; caption?: string } | null>(null);
+
+  const handleOpenTable = (tableData: { headers: string[]; rows: string[][]; caption?: string }) => {
+    setSelectedTable(tableData);
+    setTableDialogOpen(true);
+  };
+
+  const handleCloseTable = () => {
+    setTableDialogOpen(false);
+    setSelectedTable(null);
+  };
 
   const { processedContent, foundReports } = React.useMemo(() => {
     const relevantReports = getRelevantReports(content);
@@ -836,7 +889,7 @@ export const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({
           renderBlock(block, index, theme, isDarkMode, foundReports, onOpenReport)
         )}
         {sectionParsed.elements.map((element, index) =>
-          renderCustomElement(element, index, theme, isDarkMode, onOpenReport)
+          renderCustomElement(element, index, theme, isDarkMode, onOpenReport, handleOpenTable)
         )}
       </Box>
     );
@@ -845,22 +898,110 @@ export const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({
   // Handle multiple sections - prioritize sections over single section rendering
   if (sections && Object.keys(sections).length > 0) {
     return (
-      <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
-        {Object.entries(sections).map(([sectionKey, sectionData]) => {
-          const sectionType = sectionKey as "reasoning" | "tool-t" | "tool-x" | "answer";
-          return (
-            <CollapsibleSection
-              key={sectionKey}
-              title={sectionTitles[sectionType]}
-              section={sectionType}
-              isDarkMode={isDarkMode}
-              theme={theme}
-            >
-              {renderSectionContent(sectionData, sectionKey)}
-            </CollapsibleSection>
-          );
-        })}
-      </Box>
+      <>
+        <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
+          {Object.entries(sections).map(([sectionKey, sectionData]) => {
+            const sectionType = sectionKey as "reasoning" | "tool-t" | "tool-x" | "answer";
+            return (
+              <CollapsibleSection
+                key={sectionKey}
+                title={sectionTitles[sectionType]}
+                section={sectionType}
+                isDarkMode={isDarkMode}
+                theme={theme}
+              >
+                {renderSectionContent(sectionData, sectionKey)}
+              </CollapsibleSection>
+            );
+          })}
+        </Box>
+        <Dialog
+          open={tableDialogOpen}
+          onClose={handleCloseTable}
+          maxWidth="md"
+          fullWidth
+        >
+          <DialogTitle>
+            {selectedTable?.caption || "Table"}
+          </DialogTitle>
+          <DialogContent>
+            {selectedTable && (
+              <Box
+                sx={{
+                  overflowX: "auto",
+                  mt: 2,
+                }}
+              >
+                <Box
+                  component="table"
+                  sx={{
+                    width: "100%",
+                    borderCollapse: "collapse",
+                    border: `1px solid ${theme.palette.divider}`,
+                    borderRadius: "8px",
+                    overflow: "hidden",
+                  }}
+                >
+                  <Box component="thead">
+                    <Box component="tr">
+                      {selectedTable.headers.map((header, headerIndex) => (
+                        <Box
+                          key={`header-${headerIndex}`}
+                          component="th"
+                          sx={{
+                            padding: "12px 16px",
+                            textAlign: "left",
+                            fontWeight: 600,
+                            backgroundColor: isDarkMode
+                              ? "rgba(255, 255, 255, 0.1)"
+                              : "rgba(0, 0, 0, 0.05)",
+                            borderBottom: `1px solid ${theme.palette.divider}`,
+                            color: theme.palette.text.primary,
+                          }}
+                        >
+                          {header}
+                        </Box>
+                      ))}
+                    </Box>
+                  </Box>
+                  <Box component="tbody">
+                    {selectedTable.rows.map((row, rowIndex) => (
+                      <Box
+                        key={`row-${rowIndex}`}
+                        component="tr"
+                        sx={{
+                          "&:hover": {
+                            backgroundColor: isDarkMode
+                              ? "rgba(255, 255, 255, 0.05)"
+                              : "rgba(0, 0, 0, 0.02)",
+                          },
+                        }}
+                      >
+                        {row.map((cell, cellIndex) => (
+                          <Box
+                            key={`cell-${rowIndex}-${cellIndex}`}
+                            component="td"
+                            sx={{
+                              padding: "12px 16px",
+                              borderBottom: `1px solid ${theme.palette.divider}`,
+                              color: theme.palette.text.primary,
+                            }}
+                          >
+                            {cell}
+                          </Box>
+                        ))}
+                      </Box>
+                    ))}
+                  </Box>
+                </Box>
+              </Box>
+            )}
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={handleCloseTable}>Close</Button>
+          </DialogActions>
+        </Dialog>
+      </>
     );
   }
 
@@ -878,7 +1019,7 @@ export const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({
         renderBlock(block, index, theme, isDarkMode, foundReports, onOpenReport)
       )}
       {parsedContent.elements.map((element, index) =>
-        renderCustomElement(element, index, theme, isDarkMode, onOpenReport)
+        renderCustomElement(element, index, theme, isDarkMode, onOpenReport, handleOpenTable)
       )}
     </Box>
   );
@@ -898,5 +1039,95 @@ export const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({
     );
   }
 
-  return contentWrapper;
+  return (
+    <>
+      {contentWrapper}
+      <Dialog
+        open={tableDialogOpen}
+        onClose={handleCloseTable}
+        maxWidth="md"
+        fullWidth
+      >
+        <DialogTitle>
+          {selectedTable?.caption || "Table"}
+        </DialogTitle>
+        <DialogContent>
+          {selectedTable && (
+            <Box
+              sx={{
+                overflowX: "auto",
+                mt: 2,
+              }}
+            >
+              <Box
+                component="table"
+                sx={{
+                  width: "100%",
+                  borderCollapse: "collapse",
+                  border: `1px solid ${theme.palette.divider}`,
+                  borderRadius: "8px",
+                  overflow: "hidden",
+                }}
+              >
+                <Box component="thead">
+                  <Box component="tr">
+                    {selectedTable.headers.map((header, headerIndex) => (
+                      <Box
+                        key={`header-${headerIndex}`}
+                        component="th"
+                        sx={{
+                          padding: "12px 16px",
+                          textAlign: "left",
+                          fontWeight: 600,
+                          backgroundColor: isDarkMode
+                            ? "rgba(255, 255, 255, 0.1)"
+                            : "rgba(0, 0, 0, 0.05)",
+                          borderBottom: `1px solid ${theme.palette.divider}`,
+                          color: theme.palette.text.primary,
+                        }}
+                      >
+                        {header}
+                      </Box>
+                    ))}
+                  </Box>
+                </Box>
+                <Box component="tbody">
+                  {selectedTable.rows.map((row, rowIndex) => (
+                    <Box
+                      key={`row-${rowIndex}`}
+                      component="tr"
+                      sx={{
+                        "&:hover": {
+                          backgroundColor: isDarkMode
+                            ? "rgba(255, 255, 255, 0.05)"
+                            : "rgba(0, 0, 0, 0.02)",
+                        },
+                      }}
+                    >
+                      {row.map((cell, cellIndex) => (
+                        <Box
+                          key={`cell-${rowIndex}-${cellIndex}`}
+                          component="td"
+                          sx={{
+                            padding: "12px 16px",
+                            borderBottom: `1px solid ${theme.palette.divider}`,
+                            color: theme.palette.text.primary,
+                          }}
+                        >
+                          {cell}
+                        </Box>
+                      ))}
+                    </Box>
+                  ))}
+                </Box>
+              </Box>
+            </Box>
+          )}
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleCloseTable}>Close</Button>
+        </DialogActions>
+      </Dialog>
+    </>
+  );
 };

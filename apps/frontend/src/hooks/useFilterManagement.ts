@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { getApiUrl } from "../config/config";
 import { useFilters, useCreateFilter, useUpdateFilter, useDeleteFilter, useSetActiveFilter } from "../features/filters/api";
 
@@ -60,15 +60,18 @@ export const useFilterManagement = ({
     const [selectedFilterForDetails, setSelectedFilterForDetails] =
         useState<ChatFilter | null>(null);
 
-    const synchronizedConfigurations = Object.keys(toolConfigurations).reduce(
-        (synced: { [toolId: string]: any }, toolId) => {
-            synced[toolId] = {
-                ...toolConfigurations[toolId],
-                enabled: enabledTools[toolId] || false,
-            };
-            return synced;
-        },
-        {}
+    const synchronizedConfigurations = useMemo(
+        () => Object.keys(toolConfigurations).reduce(
+            (synced: { [toolId: string]: any }, toolId) => {
+                synced[toolId] = {
+                    ...toolConfigurations[toolId],
+                    enabled: enabledTools[toolId] || false,
+                };
+                return synced;
+            },
+            {}
+        ),
+        [toolConfigurations, enabledTools]
     );
 
     const applyFilterToUI = (filter: ChatFilter) => {

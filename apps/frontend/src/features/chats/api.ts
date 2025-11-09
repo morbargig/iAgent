@@ -3,6 +3,7 @@ import { http } from '../../lib/http';
 import { keys } from '../../lib/keys';
 import type { Conversation } from '@iagent/chat-types';
 import { getBaseApiUrl } from '../../config/config';
+import { convertMongoMessageToMessage } from '../../utils/chunkConverter';
 
 export interface ChatDocument {
   chatId: string;
@@ -44,16 +45,14 @@ const mapChatDocumentToConversation = (chat: ChatDocument, messages: ChatMessage
   return {
     id: chat.chatId,
     title: chat.name,
-    messages: messages.map((msg) => ({
+    messages: messages.map((msg) => convertMongoMessageToMessage({
       id: msg.id,
-      role: msg.role === 'system' ? 'assistant' : msg.role,
+      role: msg.role,
       content: msg.content,
-      timestamp: new Date(msg.timestamp),
-      isStreaming: false,
-      isInterrupted: false,
-      filterId: msg.filterId || null,
-      filterSnapshot: msg.filterSnapshot || null,
+      timestamp: msg.timestamp,
       metadata: msg.metadata,
+      filterId: msg.filterId,
+      filterSnapshot: msg.filterSnapshot,
     })),
     createdAt: new Date(chat.createdAt),
     updatedAt: new Date(chat.lastMessageAt),

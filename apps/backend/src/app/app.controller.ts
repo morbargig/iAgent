@@ -23,7 +23,8 @@ import {
   HealthCheckDto,
   AuthTokenDto,
   ToolSelectionDto,
-  ChatMessageDto
+  ChatMessageDto,
+  ToolSchemaDto
 } from './dto/chat.dto';
 
 interface ChatMessage {
@@ -35,7 +36,7 @@ interface ChatMessage {
 
 
 @ApiTags('Chat API')
-@ApiExtraModels(ChatRequestDto, ChatResponseDto, StreamTokenDto, ErrorResponseDto, HealthCheckDto, AuthTokenDto, ToolSelectionDto)
+@ApiExtraModels(ChatRequestDto, ChatResponseDto, StreamTokenDto, ErrorResponseDto, HealthCheckDto, AuthTokenDto, ToolSelectionDto, ToolSchemaDto)
 @Controller()
 export class AppController {
   constructor(
@@ -65,6 +66,7 @@ export class AppController {
         health: '/api',
         login: '/api/auth/login',
         stream: '/api/chat/stream',
+        toolsSchemas: '/api/tools/schemas',
         docs: '/api/docs'
       }
     };
@@ -105,6 +107,59 @@ export class AppController {
     return await this.authService.login(loginRequest);
   }
 
+  @Get('tools/schemas')
+  @ApiOperation({
+    summary: 'Get available tool schemas',
+    description: 'Returns the list of available tools with their configuration schemas'
+  })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'List of tool schemas',
+    type: [ToolSchemaDto]
+  })
+  getToolSchemas(): ToolSchemaDto[] {
+    return [
+      {
+        id: 'tool-x',
+        name: 'ToolT',
+        description: 'Web search tool for finding relevant information and sources',
+        requiresConfiguration: true,
+        configurationFields: {
+          pages: {
+            required: false,
+            options: [
+              { value: 'news', label: 'News Articles' },
+              { value: 'academic', label: 'Academic Papers' },
+              { value: 'blogs', label: 'Blog Posts' },
+              { value: 'forums', label: 'Discussion Forums' },
+              { value: 'wiki', label: 'Wikipedia' },
+              { value: 'government', label: 'Government Sites' },
+              { value: 'social', label: 'Social Media' },
+              { value: 'commercial', label: 'Commercial Sites' },
+            ],
+          },
+          requiredWords: {
+            required: false,
+            placeholder: 'Enter keywords that must be present...',
+          },
+        },
+      },
+      {
+        id: 'tool-y',
+        name: 'ToolH',
+        description: 'Advanced tool for specialized operations',
+        requiresConfiguration: false,
+        configurationFields: {},
+      },
+      {
+        id: 'tool-z',
+        name: 'ToolF',
+        description: 'Flexible tool for various data processing tasks',
+        requiresConfiguration: false,
+        configurationFields: {},
+      },
+    ];
+  }
 
   @Post('chat/stream')
   // @UseGuards(AuthGuard)
@@ -1492,10 +1547,10 @@ What aspect of the Nx setup interests you most?`,
   }
 
   /**
-   * Generate content for tool-t section with tables and citations
+   * Generate content for tool-t section with tables, citations, and reports
    */
   private generateToolTSection(): string {
-    const contentTypes = ['table', 'citation', 'table'];
+    const contentTypes = ['table', 'citation', 'report', 'table'];
     const selectedType = contentTypes[Math.floor(Math.random() * contentTypes.length)];
 
     if (selectedType === 'table') {
@@ -1533,6 +1588,62 @@ Based on extensive testing, Tool T shows:
 > "The results demonstrate Tool T's capability to handle production workloads effectively while maintaining high quality standards."
 
 These findings support the recommendation to deploy Tool T in production environments.`;
+    } else if (selectedType === 'report') {
+      return `## Tool T Execution Report
+
+Tool T has completed its analysis and generated the following report:
+
+report: {
+  "reportId": "tool-t-analysis-2024-001",
+  "title": "Tool T Performance Analysis Report",
+  "summary": "Comprehensive analysis of Tool T performance metrics, efficiency improvements, and scalability assessment",
+  "metadata": {
+    "date": "2024-01-15",
+    "category": "performance",
+    "priority": "high",
+    "tool": "tool-t",
+    "executionTime": "2.5s"
+  }
+}
+
+### Report Highlights
+
+The report contains detailed insights into Tool T's performance characteristics, including:
+
+- Performance benchmarks
+- Efficiency metrics
+- Scalability analysis
+- Recommendations for optimization
+
+This report provides comprehensive documentation of Tool T's capabilities and performance.`;
+    } else if (selectedType === 'citation') {
+      return `## Tool T Research Summary
+
+Based on the analysis shown in [table-1], Tool T demonstrates excellent performance.
+
+> "Tool T leverages advanced algorithms to optimize processing efficiency. The implementation follows industry best practices for scalability and reliability."
+
+### Analysis Details
+
+The data in [table-1] shows:
+
+- **Efficiency**: 95% improvement over baseline
+- **Reliability**: 99.8% uptime
+- **Scalability**: Handles 10x load increase
+
+table-citation: table-1
+table: Tool T Performance Metrics
+
+| Metric | Value | Target | Status |
+|--------|-------|--------|--------|
+| Response Time | 120ms | <150ms | ✅ Pass |
+| Throughput | 850 req/s | >800 req/s | ✅ Pass |
+| Error Rate | 0.2% | <1% | ✅ Pass |
+| CPU Usage | 45% | <60% | ✅ Pass |
+
+> "The results demonstrate Tool T's capability to handle production workloads effectively while maintaining high quality standards."
+
+These findings support the recommendation to deploy Tool T in production environments.`;
     }
 
     return `## Tool T Results
@@ -1553,7 +1664,7 @@ The analysis is complete and ready for review.`;
   }
 
   /**
-   * Generate content for tool-x section with tables and citations
+   * Generate content for tool-x section with tables, citations, and reports
    */
   private generateToolXSection(): string {
     const contentTypes = ['table', 'citation', 'report'];
@@ -1594,7 +1705,25 @@ Tool X is ready for production use.`;
     } else {
       return `## Tool X Analysis Complete
 
-Tool X has completed comprehensive analysis:
+Tool X has completed comprehensive analysis and generated a detailed report:
+
+report: {
+  "reportId": "tool-x-execution-2024-001",
+  "title": "Tool X Data Processing Report",
+  "summary": "Complete analysis of Tool X data processing capabilities, quality metrics, and performance benchmarks",
+  "metadata": {
+    "date": "2024-01-15",
+    "category": "data-processing",
+    "priority": "medium",
+    "tool": "tool-x",
+    "executionTime": "3.2s",
+    "datasetsProcessed": 3
+  }
+}
+
+### Report Contents
+
+The report includes:
 
 table: Tool X Results Summary
 
@@ -1616,19 +1745,19 @@ The analysis confirms Tool X meets all quality requirements.`;
   private detectContentType(token: string, accumulatedContent: string): 'table' | 'citation' | 'report' | 'markdown' {
     const lowerContent = accumulatedContent.toLowerCase();
     
+    // Check for report markers first (before table/citation)
+    if (lowerContent.includes('report:') || lowerContent.includes('"reportid"')) {
+      return 'report';
+    }
+    
     // Check for table markers
-    if (lowerContent.includes('table:') || lowerContent.includes('|') && lowerContent.includes('---')) {
+    if (lowerContent.includes('table:') || (lowerContent.includes('|') && lowerContent.includes('---'))) {
       return 'table';
     }
     
     // Check for citation markers (quote blocks)
     if (lowerContent.includes('>') && lowerContent.split('>').length > 2) {
       return 'citation';
-    }
-    
-    // Check for report markers
-    if (lowerContent.includes('report:') || lowerContent.includes('"reportid"')) {
-      return 'report';
     }
     
     return 'markdown';

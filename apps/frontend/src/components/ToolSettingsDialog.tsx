@@ -86,6 +86,13 @@ export const ToolSettingsDialog: React.FC<ToolSettingsDialogProps> = ({
   
   // Track if we've initialized to prevent reset during interactions
   const initializedRef = useRef(false);
+  const previousOpenRef = useRef(false);
+  const toolsRef = useRef(tools);
+  const configurationsRef = useRef(configurations);
+  
+  // Update refs when props change
+  toolsRef.current = tools;
+  configurationsRef.current = configurations;
   
   // Local state - only reset when dialog opens
   const [localConfigs, setLocalConfigs] = useState<{ [toolId: string]: ToolConfiguration }>(() => {
@@ -106,11 +113,14 @@ export const ToolSettingsDialog: React.FC<ToolSettingsDialogProps> = ({
 
   // Initialize local configurations ONLY when dialog opens
   useEffect(() => {
-    if (open && !initializedRef.current) {
-      // Create initial configs from props, ensuring all tools have a config
+    const wasOpen = previousOpenRef.current;
+    previousOpenRef.current = open;
+
+    if (open && !wasOpen) {
+      // Dialog just opened - initialize with current tools and configurations
       const initial: { [toolId: string]: ToolConfiguration } = {};
-      tools.forEach(tool => {
-        const existingConfig = configurations[tool.id];
+      toolsRef.current.forEach(tool => {
+        const existingConfig = configurationsRef.current[tool.id];
         if (existingConfig) {
           initial[tool.id] = { ...existingConfig };
         } else {
@@ -123,11 +133,11 @@ export const ToolSettingsDialog: React.FC<ToolSettingsDialogProps> = ({
       });
       setLocalConfigs(initial);
       initializedRef.current = true;
-    } else if (!open) {
-      // Reset when dialog closes
+    } else if (!open && wasOpen) {
+      // Dialog just closed - reset
       initializedRef.current = false;
     }
-  }, [open, tools, configurations]);
+  }, [open]);
 
   // Helper to get or create config for a tool
   const getToolConfig = (toolId: string): ToolConfiguration => {

@@ -54,12 +54,14 @@ export const convertContentToParsedMessage = (
 export const convertMongoMessageToMessage = (
   mongoMessage: MongoMessageInput
 ): Message => {
-  const sectionMetadata = mongoMessage.metadata?.section as
+  const sectionMetadata = (mongoMessage.metadata?.section || mongoMessage.metadata?.currentSection) as
     | SectionType
     | undefined;
   const contentType = mongoMessage.metadata?.contentType as string | undefined;
+  const sections = mongoMessage.metadata?.sections as Record<string, { content: string; parsed: ParsedMessageContent }> | undefined;
+  const parsedFromMetadata = mongoMessage.metadata?.parsed as ParsedMessageContent | undefined;
 
-  const parsed = convertContentToParsedMessage({
+  const parsed = parsedFromMetadata || convertContentToParsedMessage({
     content: mongoMessage.content,
     section: sectionMetadata,
     contentType,
@@ -80,6 +82,7 @@ export const convertMongoMessageToMessage = (
     filterSnapshot: mongoMessage.filterSnapshot || null,
     metadata: mongoMessage.metadata,
     parsed,
+    sections,
     currentSection: sectionMetadata,
   };
 };
