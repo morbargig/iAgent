@@ -95,41 +95,8 @@ export class ToolService {
   }
 }
 
-// Hook to use tool schemas
+// Hook to use tool schemas - DEPRECATED: Use useToolSchemas from features/tools/api instead
 export function useToolSchemas() {
-  const [toolSchemas, setToolSchemas] = useState<ToolSchema[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    const fetchSchemas = async () => {
-      try {
-        setLoading(true);
-        const schemas = await ToolService.fetchToolSchemas();
-        setToolSchemas(schemas);
-        setError(null);
-      } catch (err) {
-        setError(err instanceof Error ? err.message : 'Failed to fetch tool schemas');
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchSchemas();
-  }, []);
-
-  const refetch = async () => {
-    try {
-      setLoading(true);
-      const schemas = await ToolService.fetchToolSchemas();
-      setToolSchemas(schemas);
-      setError(null);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to fetch tool schemas');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  return { toolSchemas, loading, error, refetch };
+  const { useToolSchemas: useToolSchemasHook } = require('../features/tools/api');
+  return useToolSchemasHook();
 } 

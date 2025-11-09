@@ -7,7 +7,7 @@ import { FilterNameDialog } from "../FilterNameDialog";
 import { FilterDetailsDialog } from "../FilterDetailsDialog";
 import { useToolToggles } from "../../hooks/useToolToggles";
 import { ToolSettingsDialog, ToolConfiguration } from "../ToolSettingsDialog";
-import { useToolSchemas } from "../../services/toolService";
+import { useToolSchemas } from "../../features/tools/api";
 import { DocumentManagementDialog } from "../DocumentManagementDialog";
 import { FILE_UPLOAD_CONFIG } from "../../config/fileUpload";
 
@@ -150,7 +150,7 @@ export function InputArea({
   } = useToolToggles();
 
   // Tool schemas and settings dialog
-  const { toolSchemas, loading: toolSchemasLoading } = useToolSchemas();
+  const { data: toolSchemas = [], isLoading: toolSchemasLoading } = useToolSchemas();
   const [toolSettingsOpen, setToolSettingsOpen] = React.useState(false);
   const { isRTL } = useTranslation();
 

@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { getApiUrl } from "../config/config";
+import { useFilters, useCreateFilter, useUpdateFilter, useDeleteFilter, useSetActiveFilter } from "../features/filters/api";
 
 interface ChatFilter {
     filterId: string;
@@ -124,6 +125,9 @@ export const useFilterManagement = ({
         setFilterNameDialogOpen(true);
     };
 
+    const createFilterMutation = useCreateFilter();
+    const setActiveFilterMutation = useSetActiveFilter();
+
     const handleSaveNewFilter = async (name: string, isGlobal: boolean) => {
         if (!currentChatId || !authToken) {
             console.error("Cannot create filter: missing chatId or authToken");
@@ -157,33 +161,14 @@ export const useFilterManagement = ({
         const filterId = `filter_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 
         try {
-            // Create filter via API
-            const response = await fetch(
-                getApiUrl(`/chats/${currentChatId}/filters`),
-                {
-                    method: "POST",
-                    headers: {
-                        Authorization: `Bearer ${authToken}`,
-                        "Content-Type": "application/json",
-                    },
-                    body: JSON.stringify({
-                        filterId: filterId,
-                        name: name,
-                        filterConfig: filterConfig,
-                        isActive: true,
-                    }),
-                }
-            );
+            const savedFilter = await createFilterMutation.mutateAsync({
+                chatId: currentChatId,
+                filterId,
+                name,
+                filterConfig,
+                isActive: true,
+            });
 
-            if (!response.ok) {
-                const errorText = await response.text();
-                throw new Error(`Failed to create filter: ${response.status} ${errorText}`);
-            }
-
-            const savedFilter = await response.json();
-            console.log("✅ Filter created via API:", savedFilter);
-
-            // Convert API response to ChatFilter format
             const newFilter: ChatFilter = {
                 filterId: savedFilter.filterId,
                 name: savedFilter.name,
@@ -192,13 +177,12 @@ export const useFilterManagement = ({
                 createdAt: savedFilter.createdAt || new Date().toISOString(),
             };
 
-            // Reload filters to get updated list
-            await loadAllFilters();
+            await setActiveFilterMutation.mutateAsync({
+                chatId: currentChatId,
+                filterId: newFilter.filterId,
+            });
 
-            // Set as active filter
             await selectFilter(newFilter);
-
-            console.log(`✅ Filter created and activated:`, name);
         } catch (error) {
             console.error("Failed to create filter:", error);
             throw error;
@@ -212,95 +196,41 @@ export const useFilterManagement = ({
         }
 
         try {
-            // Set active filter via API
-            const response = await fetch(
-                getApiUrl(`/chats/${currentChatId}/active-filter`),
-                {
-                    method: "PUT",
-                    headers: {
-                        Authorization: `Bearer ${authToken}`,
-                        "Content-Type": "application/json",
-                    },
-                    body: JSON.stringify({
-                        filterId: filter.filterId,
-                    }),
-                }
-            );
-
-            if (!response.ok) {
-                const errorText = await response.text();
-                throw new Error(`Failed to set active filter: ${response.status} ${errorText}`);
-            }
-
-            // Reload filters to get updated active state
-            await loadAllFilters();
+            await setActiveFilterMutation.mutateAsync({
+                chatId: currentChatId,
+                filterId: filter.filterId,
+            });
 
             setActiveFilter(filter);
             applyFilterToUI(filter);
             setFilterMenuAnchor(null);
-
-            console.log("✅ Filter activated:", filter.name);
         } catch (error) {
             console.error("Failed to set active filter:", error);
             throw error;
         }
     };
 
-    // Load filters from API
+    const { data: filtersData = [] } = useFilters(currentChatId || null);
+    
+    useEffect(() => {
+        const filters: ChatFilter[] = filtersData.map((f) => ({
+            filterId: f.filterId,
+            name: f.name,
+            config: f.filterConfig,
+            isActive: f.isActive || false,
+            createdAt: f.createdAt || new Date().toISOString(),
+        }));
+
+        setChatFilters(filters);
+        const activeFilter = filters.find((f: ChatFilter) => f.isActive);
+        setActiveFilter(activeFilter || null);
+    }, [filtersData]);
+
     const loadAllFilters = useCallback(async () => {
-        if (!currentChatId || !authToken) {
-            setChatFilters([]);
-            setActiveFilter(null);
-            return;
-        }
+        // Filters are now loaded via useFilters hook
+    }, []);
 
-        try {
-            const response = await fetch(
-                getApiUrl(`/chats/${currentChatId}/filters`),
-                {
-                    headers: {
-                        Authorization: `Bearer ${authToken}`,
-                    },
-                }
-            );
-
-            if (!response.ok) {
-                if (response.status === 404) {
-                    // No filters found, which is fine
-                    setChatFilters([]);
-                    setActiveFilter(null);
-                    console.log("✅ No filters found for chat");
-                    return;
-                }
-                throw new Error(`Failed to load filters: ${response.status}`);
-            }
-
-            const apiFilters = await response.json();
-            console.log("✅ API filters loaded:", apiFilters.length);
-
-            // Convert API response to ChatFilter format
-            const filters: ChatFilter[] = apiFilters.map((f: any) => ({
-                filterId: f.filterId,
-                name: f.name,
-                config: f.filterConfig,
-                isActive: f.isActive || false,
-                createdAt: f.createdAt || new Date().toISOString(),
-            }));
-
-            setChatFilters(filters);
-
-            // Find active filter
-            const activeFilter = filters.find((f: ChatFilter) => f.isActive);
-            setActiveFilter(activeFilter || null);
-
-            console.log(`✅ Loaded ${filters.length} filters from API`);
-        } catch (error) {
-            console.error("Failed to load filters from API:", error);
-            // On error, set empty state
-            setChatFilters([]);
-            setActiveFilter(null);
-        }
-    }, [currentChatId, authToken]);
+    const deleteFilterMutation = useDeleteFilter();
 
     const handleDeleteFilter = async (filter: ChatFilter) => {
         if (!authToken) {
@@ -309,35 +239,11 @@ export const useFilterManagement = ({
         }
 
         try {
-            // Delete filter via API
-            const response = await fetch(
-                getApiUrl(`/chats/filters/${filter.filterId}`),
-                {
-                    method: "DELETE",
-                    headers: {
-                        Authorization: `Bearer ${authToken}`,
-                    },
-                }
-            );
+            await deleteFilterMutation.mutateAsync({ filterId: filter.filterId });
 
-            if (!response.ok) {
-                if (response.status === 404) {
-                    console.warn("Filter not found, may have already been deleted");
-                } else {
-                    const errorText = await response.text();
-                    throw new Error(`Failed to delete filter: ${response.status} ${errorText}`);
-                }
-            }
-
-            // If this was the active filter, clear it
             if (activeFilter?.filterId === filter.filterId) {
                 setActiveFilter(null);
             }
-
-            // Reload filters to get updated list
-            await loadAllFilters();
-
-            console.log("✅ Filter deleted:", filter.name);
         } catch (error) {
             console.error("Error deleting filter:", error);
             throw error;
@@ -357,6 +263,8 @@ export const useFilterManagement = ({
         setFilterMenuAnchor(null);
     };
 
+    const updateFilterMutation = useUpdateFilter();
+
     const handleSaveRename = async (newName: string) => {
         if (!renameDialogFilter || !authToken) {
             console.error("Cannot rename filter: missing filter or authToken");
@@ -364,28 +272,10 @@ export const useFilterManagement = ({
         }
 
         try {
-            // Update filter via API
-            const response = await fetch(
-                getApiUrl(`/chats/filters/${renameDialogFilter.filterId}`),
-                {
-                    method: "PUT",
-                    headers: {
-                        Authorization: `Bearer ${authToken}`,
-                        "Content-Type": "application/json",
-                    },
-                    body: JSON.stringify({ name: newName }),
-                }
-            );
-
-            if (!response.ok) {
-                const errorText = await response.text();
-                throw new Error(`Failed to rename filter: ${response.status} ${errorText}`);
-            }
-
-            // Reload filters to get updated list
-            await loadAllFilters();
-
-            console.log("✅ Filter renamed:", newName);
+            await updateFilterMutation.mutateAsync({
+                filterId: renameDialogFilter.filterId,
+                name: newName,
+            });
         } catch (error) {
             console.error("Failed to rename filter:", error);
             throw error;
@@ -411,15 +301,7 @@ export const useFilterManagement = ({
         }
     };
 
-    // Load filters when chat changes
-    useEffect(() => {
-        if (currentChatId) {
-            loadAllFilters();
-        } else {
-            setChatFilters([]);
-            setActiveFilter(null);
-        }
-    }, [currentChatId, loadAllFilters]);
+    // Filters are loaded via useFilters hook, no need for manual loading
 
     // Listen for filter application events from message popovers
     useEffect(() => {

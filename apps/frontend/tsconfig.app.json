@@ -38,10 +38,13 @@
   ],
   "references": [
     {
-      "path": "../../libs/chat-types/tsconfig.lib.json"
+      "path": "../../libs/front/react/tsconfig.lib.json"
     },
     {
-      "path": "../../libs/front/react/tsconfig.lib.json"
+      "path": "../../libs/shared/renderer/tsconfig.lib.json"
+    },
+    {
+      "path": "../../libs/chat-types/tsconfig.lib.json"
     }
   ]
 }

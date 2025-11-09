@@ -6,6 +6,9 @@
       "path": "../../libs/front/react"
     },
     {
+      "path": "../../libs/shared/renderer"
+    },
+    {
       "path": "../../libs/chat-types"
     },
     {

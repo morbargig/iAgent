@@ -26,7 +26,7 @@ import {
 } from "@mui/icons-material";
 
 import { useMockMode } from "../hooks/useMockMode";
-import { getApiUrl } from "../config/config";
+import { useLogin } from "../features/auth/api";
 
 interface LoginFormProps {
   onLogin: (token: string, userId: string, email: string) => void;
@@ -47,13 +47,13 @@ export const LoginForm: React.FC<LoginFormProps> = ({
     email: "",
     password: "",
   });
-  const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showPassword, setShowPassword] = useState(false);
+  const loginMutation = useLogin();
+  const isLoading = loginMutation.isPending;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsLoading(true);
     setError(null);
 
     try {
@@ -71,25 +71,10 @@ export const LoginForm: React.FC<LoginFormProps> = ({
         throw new Error("Email and password are required");
       }
 
-      const response = await fetch(getApiUrl('/auth/login'), {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(credentials),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || "Login failed");
-      }
-
-      const data = await response.json();
+      const data = await loginMutation.mutateAsync(credentials);
       onLogin(data.token, data.userId, data.email);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Login failed");
-    } finally {
-      setIsLoading(false);
     }
   };
 
