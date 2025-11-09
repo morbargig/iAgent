@@ -52,7 +52,7 @@ const translations: Translation = {
     emptyState: 'Your conversations will appear here',
     emptyStateSuggestion1: 'What can you help me with?',
     emptyStateSuggestion2: 'Tell me about yourself',
-    thinking: 'Thinking...',
+    thinking: 'Another response is being generated in a different chat...',
     error: 'Sorry, I encountered an error. Please try again.',
     shareTitle: 'Chat Message',
     copySuccess: 'Message copied to clipboard',

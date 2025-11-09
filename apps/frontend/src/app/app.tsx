@@ -1455,6 +1455,8 @@ const App = () => {
               onLogout={handleLogout}
               userEmail={userEmail}
               onOpenReport={openReportFromUrl}
+              currentChatId={currentConversationId || undefined}
+              streamingConversationId={streamingConversationId || undefined}
             />
 
             {/* Input Area */}

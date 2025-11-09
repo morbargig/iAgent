@@ -40,6 +40,8 @@ import {
   PlayArrow as ApplyIcon,
   Visibility as ViewIcon,
   Delete as DeleteIcon,
+  SwapHoriz as SwapHorizIcon,
+  Sync as SyncIcon,
 } from "@mui/icons-material";
 import { type Message } from "@iagent/chat-types";
 import { MarkdownRenderer } from "./MarkdownRenderer";
@@ -71,6 +73,7 @@ interface ChatAreaProps {
   currentChatId?: string; // Current chat ID for filter management
   authToken?: string; // Auth token for API calls
   onOpenReport?: (url: string) => void; // Handler for opening report links
+  streamingConversationId?: string | null; // ID of conversation currently streaming
 }
 
 // Shared Header Component
@@ -1353,27 +1356,149 @@ const RenameFilterDialog = ({
   </Dialog>
 );
 
-// Loading Indicator - Clean, minimal
+// Loading Indicator - Enhanced with different states
 const TypingIndicator = ({
   isDarkMode,
   theme,
+  isOtherChatStreaming = false,
 }: {
   isDarkMode: boolean;
   theme: any;
+  isOtherChatStreaming?: boolean;
 }) => {
   const { t } = useTranslation();
+  
+  if (isOtherChatStreaming) {
+    return (
+      <Box
+        sx={{
+          display: "flex",
+          alignItems: "center",
+          gap: "12px",
+          py: 2.5,
+          px: 2,
+          borderRadius: "16px",
+          backgroundColor: isDarkMode 
+            ? "rgba(144, 202, 249, 0.08)" 
+            : "rgba(25, 118, 210, 0.06)",
+          border: `1px solid ${isDarkMode 
+            ? "rgba(144, 202, 249, 0.2)" 
+            : "rgba(25, 118, 210, 0.15)"}`,
+          animation: "pulseSubtle 2s ease-in-out infinite",
+          "@keyframes pulseSubtle": {
+            "0%, 100%": {
+              opacity: 1,
+              transform: "scale(1)",
+            },
+            "50%": {
+              opacity: 0.95,
+              transform: "scale(1.002)",
+            },
+          },
+        }}
+      >
+        <Box
+          sx={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            width: "32px",
+            height: "32px",
+            borderRadius: "50%",
+            backgroundColor: isDarkMode 
+              ? "rgba(144, 202, 249, 0.15)" 
+              : "rgba(25, 118, 210, 0.1)",
+            animation: "rotate 2s linear infinite",
+            "@keyframes rotate": {
+              "0%": { transform: "rotate(0deg)" },
+              "100%": { transform: "rotate(360deg)" },
+            },
+          }}
+        >
+          <SwapHorizIcon
+            sx={{
+              fontSize: 18,
+              color: theme.palette.primary.main,
+            }}
+          />
+        </Box>
+        <Box sx={{ flex: 1 }}>
+          <Typography
+            variant="body2"
+            sx={{
+              color: theme.palette.primary.main,
+              fontWeight: 500,
+              fontSize: "14px",
+              lineHeight: 1.5,
+            }}
+          >
+            {t("chat.thinking")}
+          </Typography>
+        </Box>
+        <Box
+          sx={{
+            display: "flex",
+            gap: "4px",
+            alignItems: "center",
+          }}
+        >
+          {[0, 1, 2].map((i) => (
+            <Box
+              key={i}
+              sx={{
+                width: "6px",
+                height: "6px",
+                borderRadius: "50%",
+                backgroundColor: theme.palette.primary.main,
+                opacity: 0.4,
+                animation: `dotPulse 1.4s ease-in-out infinite ${i * 0.2}s`,
+                "@keyframes dotPulse": {
+                  "0%, 80%, 100%": {
+                    opacity: 0.4,
+                    transform: "scale(1)",
+                  },
+                  "40%": {
+                    opacity: 1,
+                    transform: "scale(1.2)",
+                  },
+                },
+              }}
+            />
+          ))}
+        </Box>
+      </Box>
+    );
+  }
+
   return (
     <Box
       sx={{
         display: "flex",
         alignItems: "center",
-        gap: "8px",
+        gap: "12px",
         color: theme.palette.text.secondary,
         py: 2,
       }}
     >
-      <BotIcon sx={{ fontSize: 20 }} />
-      <Typography variant="body2">{t("chat.thinking")}</Typography>
+      <BotIcon 
+        sx={{ 
+          fontSize: 20,
+          color: theme.palette.text.secondary,
+          animation: "gentlePulse 2s ease-in-out infinite",
+          "@keyframes gentlePulse": {
+            "0%, 100%": { opacity: 0.7 },
+            "50%": { opacity: 1 },
+          },
+        }} 
+      />
+      <Typography 
+        variant="body2"
+        sx={{
+          fontSize: "14px",
+        }}
+      >
+        {t("chat.thinking")}
+      </Typography>
     </Box>
   );
 };
@@ -1509,10 +1634,19 @@ export function ChatArea({
   currentChatId,
   authToken,
   onOpenReport,
+  streamingConversationId,
 }: ChatAreaProps) {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const theme = useTheme();
   const { t } = useTranslation();
+
+  // Determine if streaming is happening in another chat
+  const isOtherChatStreaming = Boolean(
+    streamingConversationId && 
+    streamingConversationId !== currentChatId &&
+    isLoading &&
+    !messages.some((m) => m.isStreaming)
+  );
 
   // Shared filter state for all messages
   const [filterInfoAnchor, setFilterInfoAnchor] = useState<HTMLElement | null>(
@@ -1774,7 +1908,11 @@ export function ChatArea({
         {/* Loading Indicator */}
         {isLoading && !messages.some((m) => m.isStreaming) && (
           <Box id="iagent-typing-indicator" className="iagent-loading-state">
-            <TypingIndicator isDarkMode={isDarkMode} theme={theme} />
+            <TypingIndicator 
+              isDarkMode={isDarkMode} 
+              theme={theme}
+              isOtherChatStreaming={isOtherChatStreaming}
+            />
           </Box>
         )}
 
