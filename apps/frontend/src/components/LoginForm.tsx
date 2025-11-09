@@ -234,6 +234,14 @@ export const LoginForm: React.FC<LoginFormProps> = ({
               helperText={isMockMode ? "Optional in mock mode" : ""}
               sx={{ mb: 2 }}
               variant="outlined"
+              slotProps={{
+                input: {
+                  autoComplete: "off",
+                  "data-form-type": "other",
+                  "data-lpignore": "true",
+                  "data-1p-ignore": "true",
+                },
+              }}
             />
 
             <TextField
@@ -247,6 +255,14 @@ export const LoginForm: React.FC<LoginFormProps> = ({
               helperText={isMockMode ? "Optional in mock mode" : ""}
               sx={{ mb: 3 }}
               variant="outlined"
+              slotProps={{
+                input: {
+                  autoComplete: "off",
+                  "data-form-type": "other",
+                  "data-lpignore": "true",
+                  "data-1p-ignore": "true",
+                },
+              }}
               InputProps={{
                 endAdornment: (
                   <InputAdornment position="end">

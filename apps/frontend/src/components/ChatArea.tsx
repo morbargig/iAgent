@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, MouseEvent } from "react";
+import { useEffect, useRef, useState, MouseEvent, useMemo, useCallback } from "react";
 import {
   Box,
   Typography,
@@ -21,7 +21,6 @@ import {
   Button,
 } from "@mui/material";
 import {
-  SmartToy as BotIcon,
   Menu as MenuIcon,
   LightMode as LightModeIcon,
   DarkMode as DarkModeIcon,
@@ -41,7 +40,6 @@ import {
   Visibility as ViewIcon,
   Delete as DeleteIcon,
   SwapHoriz as SwapHorizIcon,
-  Sync as SyncIcon,
 } from "@mui/icons-material";
 import { type Message } from "@iagent/chat-types";
 import { MarkdownRenderer } from "./MarkdownRenderer";
@@ -1366,45 +1364,46 @@ const RenameFilterDialog = ({
   </Dialog>
 );
 
-// Loading Indicator - Enhanced with different states
-const TypingIndicator = ({
+const OtherChatStreamingIndicator = ({
   isDarkMode,
-  theme,
-  isOtherChatStreaming = false,
 }: {
   isDarkMode: boolean;
-  theme: any;
-  isOtherChatStreaming?: boolean;
 }) => {
   const { t } = useTranslation();
   
-  if (isOtherChatStreaming) {
-    return (
+  return (
+    <Box
+      sx={{
+        display: "flex",
+        flexDirection: "column",
+        gap: "8px",
+        py: 2.5,
+        px: 3,
+        borderRadius: "16px",
+        backgroundColor: isDarkMode 
+          ? "rgba(255, 152, 0, 0.08)" 
+          : "rgba(255, 152, 0, 0.06)",
+        border: `1px solid ${isDarkMode 
+          ? "rgba(255, 152, 0, 0.25)" 
+          : "rgba(255, 152, 0, 0.2)"}`,
+        animation: "pulseSubtle 2s ease-in-out infinite",
+        "@keyframes pulseSubtle": {
+          "0%, 100%": {
+            opacity: 1,
+            transform: "scale(1)",
+          },
+          "50%": {
+            opacity: 0.95,
+            transform: "scale(1.002)",
+          },
+        },
+      }}
+    >
       <Box
         sx={{
           display: "flex",
           alignItems: "center",
           gap: "12px",
-          py: 2.5,
-          px: 2,
-          borderRadius: "16px",
-          backgroundColor: isDarkMode 
-            ? "rgba(144, 202, 249, 0.08)" 
-            : "rgba(25, 118, 210, 0.06)",
-          border: `1px solid ${isDarkMode 
-            ? "rgba(144, 202, 249, 0.2)" 
-            : "rgba(25, 118, 210, 0.15)"}`,
-          animation: "pulseSubtle 2s ease-in-out infinite",
-          "@keyframes pulseSubtle": {
-            "0%, 100%": {
-              opacity: 1,
-              transform: "scale(1)",
-            },
-            "50%": {
-              opacity: 0.95,
-              transform: "scale(1.002)",
-            },
-          },
         }}
       >
         <Box
@@ -1412,12 +1411,12 @@ const TypingIndicator = ({
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
-            width: "32px",
-            height: "32px",
+            width: "36px",
+            height: "36px",
             borderRadius: "50%",
             backgroundColor: isDarkMode 
-              ? "rgba(144, 202, 249, 0.15)" 
-              : "rgba(25, 118, 210, 0.1)",
+              ? "rgba(255, 152, 0, 0.15)" 
+              : "rgba(255, 152, 0, 0.12)",
             animation: "rotate 2s linear infinite",
             "@keyframes rotate": {
               "0%": { transform: "rotate(0deg)" },
@@ -1427,8 +1426,8 @@ const TypingIndicator = ({
         >
           <SwapHorizIcon
             sx={{
-              fontSize: 18,
-              color: theme.palette.primary.main,
+              fontSize: 20,
+              color: isDarkMode ? "#ffb74d" : "#f57c00",
             }}
           />
         </Box>
@@ -1436,13 +1435,27 @@ const TypingIndicator = ({
           <Typography
             variant="body2"
             sx={{
-              color: theme.palette.primary.main,
-              fontWeight: 500,
+              color: isDarkMode ? "#ffb74d" : "#f57c00",
+              fontWeight: 600,
               fontSize: "14px",
               lineHeight: 1.5,
             }}
           >
             {t("chat.thinking")}
+          </Typography>
+          <Typography
+            variant="caption"
+            sx={{
+              color: isDarkMode 
+                ? "rgba(255, 255, 255, 0.6)" 
+                : "rgba(0, 0, 0, 0.6)",
+              fontSize: "12px",
+              lineHeight: 1.4,
+              display: "block",
+              mt: 0.5,
+            }}
+          >
+            {t("chat.thinkingSubtext")}
           </Typography>
         </Box>
         <Box
@@ -1459,7 +1472,7 @@ const TypingIndicator = ({
                 width: "6px",
                 height: "6px",
                 borderRadius: "50%",
-                backgroundColor: theme.palette.primary.main,
+                backgroundColor: isDarkMode ? "#ffb74d" : "#f57c00",
                 opacity: 0.4,
                 animation: `dotPulse 1.4s ease-in-out infinite ${i * 0.2}s`,
                 "@keyframes dotPulse": {
@@ -1477,38 +1490,6 @@ const TypingIndicator = ({
           ))}
         </Box>
       </Box>
-    );
-  }
-
-  return (
-    <Box
-      sx={{
-        display: "flex",
-        alignItems: "center",
-        gap: "12px",
-        color: theme.palette.text.secondary,
-        py: 2,
-      }}
-    >
-      <BotIcon 
-        sx={{ 
-          fontSize: 20,
-          color: theme.palette.text.secondary,
-          animation: "gentlePulse 2s ease-in-out infinite",
-          "@keyframes gentlePulse": {
-            "0%, 100%": { opacity: 0.7 },
-            "50%": { opacity: 1 },
-          },
-        }} 
-      />
-      <Typography 
-        variant="body2"
-        sx={{
-          fontSize: "14px",
-        }}
-      >
-        {t("chat.thinking")}
-      </Typography>
     </Box>
   );
 };
@@ -1650,14 +1631,6 @@ export function ChatArea({
   const theme = useTheme();
   const { t } = useTranslation();
 
-  // Determine if streaming is happening in another chat
-  const isOtherChatStreaming = Boolean(
-    streamingConversationId && 
-    streamingConversationId !== currentChatId &&
-    isLoading &&
-    !messages.some((m) => m.isStreaming)
-  );
-
   // Shared filter state for all messages
   const [filterInfoAnchor, setFilterInfoAnchor] = useState<HTMLElement | null>(
     null
@@ -1666,7 +1639,37 @@ export function ChatArea({
   const [renameDialogOpen, setRenameDialogOpen] = useState(false);
   const [newFilterName, setNewFilterName] = useState("");
   const [filterDetailsDialogOpen, setFilterDetailsDialogOpen] = useState(false);
-  const showFilterInfo = Boolean(filterInfoAnchor);
+
+  const uniqueMessages = useMemo(() => {
+    const seen = new Set<string>();
+    return messages.filter((msg) => {
+      if (seen.has(msg.id)) {
+        return false;
+      }
+      seen.add(msg.id);
+      return true;
+    });
+  }, [messages]);
+
+  const isCurrentChatStreaming = useMemo(() => {
+    return messages.some((m) => m.isStreaming) || 
+           (isLoading && streamingConversationId === currentChatId);
+  }, [messages, isLoading, streamingConversationId, currentChatId]);
+
+  const isOtherChatStreaming = useMemo(() => {
+    if (isCurrentChatStreaming) {
+      return false;
+    }
+    return Boolean(
+      streamingConversationId && 
+      streamingConversationId !== currentChatId &&
+      isLoading
+    );
+  }, [isCurrentChatStreaming, streamingConversationId, currentChatId, isLoading]);
+
+  const showFilterInfo = useMemo(() => {
+    return Boolean(filterInfoAnchor);
+  }, [filterInfoAnchor]);
 
   // Shared filter handlers
   const handleFilterInfo = (
@@ -1794,12 +1797,9 @@ export function ChatArea({
     setNewFilterName("");
   };
 
-  const scrollToBottom = () => {
+  const scrollToBottom = useCallback(() => {
     if (messagesEndRef.current) {
-      // Check if we're currently generating text
-      const isGenerating = isLoading || messages.some((m) => m.isStreaming);
-
-      if (isGenerating) {
+      if (isCurrentChatStreaming) {
         // Smoother scrolling during generation with requestAnimationFrame
         requestAnimationFrame(() => {
           if (messagesEndRef.current) {
@@ -1821,11 +1821,11 @@ export function ChatArea({
         });
       }
     }
-  };
+  }, [isCurrentChatStreaming]);
 
   useEffect(() => {
     scrollToBottom();
-  }, [messages]);
+  }, [messages, scrollToBottom]);
 
   if (messages.length === 0) {
     return (
@@ -1882,19 +1882,19 @@ export function ChatArea({
           scrollBehavior: "smooth",
           backgroundColor: "inherit",
           padding: "32px 16px",
-          paddingBottom: `${inputAreaHeight + (isLoading || messages.some((m) => m.isStreaming) ? 100 : 20)}px`, // Dynamic padding - lighter offset when generating
+          paddingBottom: `${inputAreaHeight + (isCurrentChatStreaming ? 100 : 20)}px`,
           "@media (max-width: 600px)": {
             WebkitOverflowScrolling: "touch",
             padding: "16px 8px",
-            paddingBottom: `${inputAreaHeight + (isLoading || messages.some((m) => m.isStreaming) ? 80 : 10)}px`, // Dynamic mobile padding - lighter
+            paddingBottom: `${inputAreaHeight + (isCurrentChatStreaming ? 80 : 10)}px`,
           },
         }}
       >
         {/* Messages List */}
         <Box id="iagent-messages-list" className="iagent-messages-content">
-          {messages.map((message, index) => (
+          {uniqueMessages.map((message, index) => (
             <Box
-              key={message.id}
+              key={`${message.id}-${index}`}
               id={`iagent-message-${message.id}`}
               className={`iagent-message-item iagent-message-${message.role}`}
             >
@@ -1915,14 +1915,10 @@ export function ChatArea({
           ))}
         </Box>
 
-        {/* Loading Indicator */}
-        {isLoading && !messages.some((m) => m.isStreaming) && (
-          <Box id="iagent-typing-indicator" className="iagent-loading-state">
-            <TypingIndicator 
-              isDarkMode={isDarkMode} 
-              theme={theme}
-              isOtherChatStreaming={isOtherChatStreaming}
-            />
+        {/* Other Chat Streaming Indicator */}
+        {isOtherChatStreaming && (
+          <Box id="iagent-other-chat-indicator" className="iagent-loading-state">
+            <OtherChatStreamingIndicator isDarkMode={isDarkMode} />
           </Box>
         )}
 

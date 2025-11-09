@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { getApiUrl } from "../config/config";
 import { useFilters, useCreateFilter, useUpdateFilter, useDeleteFilter, useSetActiveFilter } from "../features/filters/api";
 
@@ -215,19 +215,28 @@ export const useFilterManagement = ({
 
     const { data: filtersData = [] } = useFilters(currentChatId || null);
     
-    useEffect(() => {
-        const filters: ChatFilter[] = filtersData.map((f) => ({
+    const previousFiltersRef = useRef<string>('');
+
+    const transformedFilters = useMemo(() => {
+        return filtersData.map((f) => ({
             filterId: f.filterId,
             name: f.name,
             config: f.filterConfig,
             isActive: f.isActive || false,
             createdAt: f.createdAt || new Date().toISOString(),
         }));
-
-        setChatFilters(filters);
-        const activeFilter = filters.find((f: ChatFilter) => f.isActive);
-        setActiveFilter(activeFilter || null);
     }, [filtersData]);
+
+    useEffect(() => {
+        const currentFiltersKey = JSON.stringify(transformedFilters.map(f => f.filterId));
+        
+        if (currentFiltersKey !== previousFiltersRef.current) {
+            setChatFilters(transformedFilters);
+            const activeFilter = transformedFilters.find((f: ChatFilter) => f.isActive);
+            setActiveFilter(activeFilter || null);
+            previousFiltersRef.current = currentFiltersKey;
+        }
+    }, [transformedFilters]);
 
     const loadAllFilters = useCallback(async () => {
         // Filters are now loaded via useFilters hook

@@ -7,10 +7,11 @@ import App from './app/app';
 import { TranslationProvider } from './contexts/TranslationContext';
 import { queryClient } from './lib/queryClient';
 import { enablePersistence } from './lib/persist';
+import { setupGlobalErrorHandling } from './utils/errorHandling.js';
 import './styles.css';
-import { useAppReadLocalStorage } from './hooks/storage';
 
-// Restore document direction immediately on page load
+setupGlobalErrorHandling();
+
 const restoreDirection = () => {
   const storedDirection = localStorage.getItem('preferred_direction');
   const storedLang = localStorage.getItem('preferred_language');
@@ -21,7 +22,6 @@ const restoreDirection = () => {
   }
 };
 
-// Apply direction before React renders
 restoreDirection();
 
 enablePersistence();

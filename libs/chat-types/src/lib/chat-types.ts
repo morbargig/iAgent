@@ -410,6 +410,7 @@ export class StreamingClient {
                 },
                 sessionId: completionMetadata?.sessionId as string | undefined,
               });
+              this.abortController = null;
               break;
             }
             
@@ -556,6 +557,7 @@ export class StreamingClient {
       } else {
         onError(error instanceof Error ? error : new Error('Unknown API streaming error'));
       }
+      this.abortController = null;
     }
   }
   
@@ -564,6 +566,10 @@ export class StreamingClient {
       this.abortController.abort();
       this.abortController = null;
     }
+  }
+
+  isStreaming(): boolean {
+    return this.abortController !== null && !this.abortController.signal.aborted;
   }
 }
 
