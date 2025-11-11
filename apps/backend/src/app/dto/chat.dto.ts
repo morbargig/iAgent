@@ -405,4 +405,24 @@ export class ToolSchemaDto {
     type: ToolSchemaConfigurationFieldDto
   })
   configurationFields!: ToolSchemaConfigurationFieldDto;
+}
+
+export class CountryDto {
+  @ApiProperty({
+    description: 'Country code (ISO 3166-1 alpha-2)',
+    example: 'PS'
+  })
+  code!: string;
+
+  @ApiProperty({
+    description: 'Country flag emoji',
+    example: '🇵🇸'
+  })
+  flag!: string;
+
+  @ApiProperty({
+    description: 'Translation key for country name',
+    example: 'countries.palestine'
+  })
+  nameKey!: string;
 } 

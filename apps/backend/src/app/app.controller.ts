@@ -23,7 +23,8 @@ import {
   HealthCheckDto,
   AuthTokenDto,
   ToolSelectionDto,
-  ChatMessageDto
+  ChatMessageDto,
+  CountryDto
 } from './dto/chat.dto';
 
 interface ChatMessage {
@@ -35,7 +36,7 @@ interface ChatMessage {
 
 
 @ApiTags('Chat API')
-@ApiExtraModels(ChatRequestDto, ChatResponseDto, StreamTokenDto, ErrorResponseDto, HealthCheckDto, AuthTokenDto, ToolSelectionDto)
+@ApiExtraModels(ChatRequestDto, ChatResponseDto, StreamTokenDto, ErrorResponseDto, HealthCheckDto, AuthTokenDto, ToolSelectionDto, CountryDto)
 @Controller()
 export class AppController {
   constructor(
@@ -134,6 +135,35 @@ export class AppController {
       { value: 'government', label: 'Government Sites' },
       { value: 'social', label: 'Social Media' },
       { value: 'commercial', label: 'Commercial Sites' },
+    ];
+  }
+
+  @Get('countries')
+  @ApiOperation({
+    summary: 'Get available countries',
+    description: 'Returns list of available countries with codes, flags, and translation keys'
+  })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'Countries retrieved successfully',
+    type: [CountryDto],
+    schema: {
+      type: 'array',
+      items: {
+        $ref: getSchemaPath(CountryDto)
+      }
+    }
+  })
+  getCountries(): CountryDto[] {
+    return [
+      { code: 'PS', flag: '🇵🇸', nameKey: 'countries.palestine' },
+      { code: 'LB', flag: '🇱🇧', nameKey: 'countries.lebanon' },
+      { code: 'SA', flag: '🇸🇦', nameKey: 'countries.saudi_arabia' },
+      { code: 'IQ', flag: '🇮🇶', nameKey: 'countries.iraq' },
+      { code: 'SY', flag: '🇸🇾', nameKey: 'countries.syria' },
+      { code: 'JO', flag: '🇯🇴', nameKey: 'countries.jordan' },
+      { code: 'EG', flag: '🇪🇬', nameKey: 'countries.egypt' },
+      { code: 'IL', flag: '🇮🇱', nameKey: 'countries.israel' },
     ];
   }
 
