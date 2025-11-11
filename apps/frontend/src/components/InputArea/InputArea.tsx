@@ -8,6 +8,7 @@ import { FilterDetailsDialog } from "../FilterDetailsDialog";
 import { useToolToggles } from "../../hooks/useToolToggles";
 import { ToolSettingsDialog, ToolConfiguration } from "../ToolSettingsDialog";
 import { useToolSchemas } from "../../features/tools/api";
+import { usePermissions } from "../../features/auth/api";
 import { DocumentManagementDialog } from "../DocumentManagementDialog";
 import { FILE_UPLOAD_CONFIG } from "../../config/fileUpload";
 
@@ -151,8 +152,29 @@ export function InputArea({
 
   // Tool schemas and settings dialog
   const toolSchemas = useToolSchemas();
+  const { data: permissions } = usePermissions();
   const [toolSettingsOpen, setToolSettingsOpen] = React.useState(false);
   const { isRTL } = useTranslation();
+
+  // Filter tools based on permissions
+  const availableToolSchemas = React.useMemo(() => {
+    if (!permissions?.permissions) {
+      return toolSchemas;
+    }
+    return toolSchemas.filter(tool => {
+      // Map tool IDs to permission keys: tool-t -> canUseToolT, tool-h -> canUseToolH, tool-f -> canUseToolF
+      const permissionKeyMap: Record<string, keyof typeof permissions.permissions> = {
+        'tool-t': 'canUseToolT',
+        'tool-h': 'canUseToolH',
+        'tool-f': 'canUseToolF',
+      };
+      const permissionKey = permissionKeyMap[tool.id];
+      if (!permissionKey) {
+        return true; // Allow tools without permission mapping
+      }
+      return permissions.permissions[permissionKey] !== false;
+    });
+  }, [toolSchemas, permissions]);
 
   // Filter management
   const filterManagement = useFilterManagement({
@@ -180,9 +202,9 @@ export function InputArea({
     isDarkMode,
     disabled,
     onHeightChange,
-    toolSchemas,
+    toolSchemas: availableToolSchemas,
     enabledTools,
-    needsToolConfiguration: hasUnconfiguredTools(toolSchemas),
+    needsToolConfiguration: hasUnconfiguredTools(availableToolSchemas),
   });
 
   // Calculate the effective sidebar and report panel widths for positioning
@@ -349,7 +371,7 @@ export function InputArea({
 
     // If enabling a tool that has configuration fields, could show hint ring
     if (!isCurrentlyEnabled) {
-      const toolSchema = toolSchemas.find((schema) => schema.id === toolId);
+      const toolSchema = availableToolSchemas.find((schema) => schema.id === toolId);
       if (
         toolSchema?.requiresConfiguration &&
         toolSchema.configurationFields &&
@@ -358,7 +380,7 @@ export function InputArea({
         // Could add hint ring animation here if needed
       }
     }
-  }, [enabledTools, toggleTool, toolConfigurations, setToolConfiguration, toolSchemas]);
+  }, [enabledTools, toggleTool, toolConfigurations, setToolConfiguration, availableToolSchemas]);
 
   // Tool settings handlers
   const handleToolConfigurationChange = React.useCallback((
@@ -739,7 +761,7 @@ export function InputArea({
       <ToolSettingsDialog
         open={toolSettingsOpen}
         onClose={() => setToolSettingsOpen(false)}
-        tools={toolSchemas}
+        tools={availableToolSchemas}
         configurations={filterManagement.synchronizedConfigurations}
         onConfigurationChange={handleToolConfigurationChange}
         isDarkMode={isDarkMode}
