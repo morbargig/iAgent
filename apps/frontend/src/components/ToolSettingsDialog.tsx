@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Dialog,
   DialogTitle,
@@ -31,7 +31,6 @@ import {
 } from '@mui/icons-material';
 import { useTranslation } from '../contexts/TranslationContext';
 
-// Tool configuration types
 export interface ToolConfiguration {
   toolId: string;
   enabled: boolean;
@@ -41,7 +40,7 @@ export interface ToolConfiguration {
       inclusionType?: 'include' | 'include_only' | 'exclude';
     };
     requiredWords?: string[];
-    [key: string]: any;
+    [key: string]: unknown;
   };
 }
 
@@ -59,7 +58,7 @@ export interface ToolSchema {
       required: boolean;
       placeholder: string;
     };
-    [key: string]: any;
+    [key: string]: unknown;
   };
 }
 
@@ -84,74 +83,41 @@ export const ToolSettingsDialog: React.FC<ToolSettingsDialogProps> = ({
 }) => {
   const { t } = useTranslation();
   
-  // Track if we've initialized to prevent reset during interactions
-  const initializedRef = useRef(false);
-  const previousOpenRef = useRef(false);
-  const toolsRef = useRef(tools);
-  const configurationsRef = useRef(configurations);
-  
-  // Update refs when props change
-  toolsRef.current = tools;
-  configurationsRef.current = configurations;
-  
-  // Local state - only reset when dialog opens
-  const [localConfigs, setLocalConfigs] = useState<{ [toolId: string]: ToolConfiguration }>(() => {
-    // Initialize with default configs for all tools
-    const initial: { [toolId: string]: ToolConfiguration } = {};
-    tools.forEach(tool => {
-      initial[tool.id] = {
-        toolId: tool.id,
-        enabled: false,
-        parameters: {},
-      };
-    });
-    return initial;
-  });
+  const [localConfigs, setLocalConfigs] = useState<{ [toolId: string]: ToolConfiguration }>({});
   
   const [expandedTool, setExpandedTool] = useState<string | null>(null);
   const [newWord, setNewWord] = useState<{ [toolId: string]: string }>({});
 
-  // Initialize local configurations ONLY when dialog opens
   useEffect(() => {
-    const wasOpen = previousOpenRef.current;
-    previousOpenRef.current = open;
-
-    if (open && !wasOpen) {
-      // Dialog just opened - initialize with current tools and configurations
-      const initial: { [toolId: string]: ToolConfiguration } = {};
-      toolsRef.current.forEach(tool => {
-        const existingConfig = configurationsRef.current[tool.id];
+    if (open) {
+      const configs: { [toolId: string]: ToolConfiguration } = {};
+      tools.forEach(tool => {
+        const existingConfig = configurations[tool.id];
         if (existingConfig) {
-          initial[tool.id] = { ...existingConfig };
+          configs[tool.id] = { ...existingConfig };
         } else {
-          initial[tool.id] = {
+          configs[tool.id] = {
             toolId: tool.id,
             enabled: false,
             parameters: {},
           };
         }
       });
-      setLocalConfigs(initial);
-      initializedRef.current = true;
-    } else if (!open && wasOpen) {
-      // Dialog just closed - reset
-      initializedRef.current = false;
+      setLocalConfigs(configs);
+    } else {
+      setLocalConfigs({});
+      setExpandedTool(null);
+      setNewWord({});
     }
-  }, [open]);
+  }, [open, tools, configurations]);
 
-  // Helper to get or create config for a tool
-  const getToolConfig = (toolId: string): ToolConfiguration => {
-    return localConfigs[toolId] || {
-      toolId,
-      enabled: false,
-      parameters: {},
-    };
-  };
-
-  // Update config for a tool
   const updateToolConfig = (toolId: string, updater: (config: ToolConfiguration) => ToolConfiguration) => {
     setLocalConfigs(prev => {
-      const current = getToolConfig(toolId);
+      const current = prev[toolId] || {
+        toolId,
+        enabled: false,
+        parameters: {},
+      };
       const updated = updater(current);
       return { ...prev, [toolId]: updated };
     });
@@ -221,7 +187,6 @@ export const ToolSettingsDialog: React.FC<ToolSettingsDialogProps> = ({
   };
 
   const handleSave = () => {
-    // Save all configurations
     Object.values(localConfigs).forEach(config => {
       onConfigurationChange(config.toolId, config);
     });
@@ -229,21 +194,20 @@ export const ToolSettingsDialog: React.FC<ToolSettingsDialogProps> = ({
   };
 
   const handleCancel = () => {
-    // Reset to initial configurations
-    const initial: { [toolId: string]: ToolConfiguration } = {};
+    const configs: { [toolId: string]: ToolConfiguration } = {};
     tools.forEach(tool => {
       const existingConfig = configurations[tool.id];
       if (existingConfig) {
-        initial[tool.id] = { ...existingConfig };
+        configs[tool.id] = { ...existingConfig };
       } else {
-        initial[tool.id] = {
+        configs[tool.id] = {
           toolId: tool.id,
           enabled: false,
           parameters: {},
         };
       }
     });
-    setLocalConfigs(initial);
+    setLocalConfigs(configs);
     setNewWord({});
     setExpandedTool(null);
     onClose();
@@ -253,12 +217,10 @@ export const ToolSettingsDialog: React.FC<ToolSettingsDialogProps> = ({
     const config = localConfigs[toolId];
     const tool = tools.find(t => t.id === toolId);
     
-    // If tool is disabled or doesn't require configuration, it's considered configured
     if (!config?.enabled || !tool?.requiresConfiguration) {
       return true;
     }
     
-    // Check if required fields are configured
     if (tool.configurationFields.pages?.required && 
         (!config.parameters.pages?.selectedPages?.length)) {
       return false;
@@ -322,7 +284,11 @@ export const ToolSettingsDialog: React.FC<ToolSettingsDialogProps> = ({
 
         <Box sx={{ p: 2 }}>
           {tools.map((tool) => {
-            const config = getToolConfig(tool.id);
+            const config = localConfigs[tool.id] || {
+              toolId: tool.id,
+              enabled: false,
+              parameters: {},
+            };
             const isConfigured = isToolConfigured(tool.id);
             const needsConfig = config.enabled && tool.requiresConfiguration && !isConfigured;
 
@@ -352,7 +318,6 @@ export const ToolSettingsDialog: React.FC<ToolSettingsDialogProps> = ({
                     },
                   }}
                   onClick={(e) => {
-                    // Prevent accordion toggle when clicking on the switch area
                     const target = e.target as HTMLElement;
                     if (target.closest('.MuiFormControlLabel-root') || target.closest('.MuiSwitch-root')) {
                       e.stopPropagation();
@@ -413,7 +378,6 @@ export const ToolSettingsDialog: React.FC<ToolSettingsDialogProps> = ({
                   <AccordionDetails sx={{ pt: 0 }}>
                     <Divider sx={{ mb: 2 }} />
                     
-                    {/* Pages Configuration */}
                     {tool.configurationFields.pages && (
                       <Box sx={{ mb: 3 }}>
                         <Typography variant="subtitle2" sx={{ mb: 1, fontWeight: 500 }}>
@@ -427,7 +391,7 @@ export const ToolSettingsDialog: React.FC<ToolSettingsDialogProps> = ({
                           <InputLabel>{t('tools.settings.pages.inclusionType')}</InputLabel>
                           <Select
                             value={config.parameters.pages?.inclusionType || 'include'}
-                            onChange={(e) => handleInclusionTypeChange(tool.id, e.target.value as any)}
+                            onChange={(e) => handleInclusionTypeChange(tool.id, e.target.value as 'include' | 'include_only' | 'exclude')}
                             label={t('tools.settings.pages.inclusionType')}
                           >
                             <MenuItem value="include">{t('tools.settings.pages.include')}</MenuItem>
@@ -473,7 +437,6 @@ export const ToolSettingsDialog: React.FC<ToolSettingsDialogProps> = ({
                       </Box>
                     )}
 
-                    {/* Required Words Configuration */}
                     {tool.configurationFields.requiredWords && (
                       <Box>
                         <Typography variant="subtitle2" sx={{ mb: 1, fontWeight: 500 }}>
