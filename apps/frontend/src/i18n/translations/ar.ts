@@ -363,6 +363,17 @@ const translations: Translation = {
         empty: 'لم يتم إضافة كلمات مفتاحية مطلوبة بعد',
       },
     },
+    tooltips: {
+      enabled: '{{tool}} مفعّل',
+      disabled: '{{tool}} معطّل',
+      clickToToggle: 'انقر للتبديل',
+      countriesAvailableForTool: 'متاح لـ {{tool}}',
+      countriesRequireTool: 'يتطلب {{tool}}',
+      countriesAvailableForTools: 'متاح للأدوات المفعلة',
+      datesAvailableForTools: 'متاح للأدوات المفعلة',
+      datesRequireTools: 'يتطلب أدوات مفعلة',
+      and: 'و',
+    },
   },
   dateRange: {
     minutes: 'دقائق',

@@ -1,5 +1,5 @@
 import React from "react";
-import { Box, Typography, Popover } from "@mui/material";
+import { Box, Typography, Popover, Tooltip } from "@mui/material";
 import { ExpandMore as ExpandMoreIcon } from "@mui/icons-material";
 import { useTranslation } from "../../contexts/TranslationContext";
 
@@ -15,10 +15,11 @@ interface CountrySelectorProps {
   flagAnchorEl: HTMLElement | null;
   flagOptions: FlagOption[];
   isDarkMode: boolean;
-  t: (key: string) => string;
+  t: (key: string, params?: Record<string, string>) => string;
   onFlagClick: (event: React.MouseEvent<HTMLElement>) => void;
   onFlagToggle: (flagCode: string) => void;
   onClose: () => void;
+  enabledTools?: { [key: string]: boolean };
 }
 
 export const CountrySelector: React.FC<CountrySelectorProps> = ({
@@ -31,36 +32,41 @@ export const CountrySelector: React.FC<CountrySelectorProps> = ({
   onFlagClick,
   onFlagToggle,
   onClose,
+  enabledTools = {},
 }) => {
   const { isRTL } = useTranslation();
+  const hasEnabledTools = Object.values(enabledTools).some(enabled => enabled);
+  const tooltipText = hasEnabledTools
+    ? t("tools.tooltips.countriesAvailableForTools")
+    : t("input.selectCountries");
 
   return (
     <>
       {/* Country Selector Button */}
-      {/* TODO: fix popover position */}
-      <Box
-        id="iagent-country-selector"
-        className="iagent-country-dropdown"
-        onClick={onFlagClick}
-        sx={{
-          display: "flex",
-          position: "relative",
-          alignItems: "center",
-          backgroundColor: isDarkMode ? "#565869" : "#e5e7eb",
-          border: `1px solid ${isDarkMode ? "#6b6d7a" : "#d1d5db"}`,
-          borderRadius: "20px",
-          padding: "6px 12px",
-          cursor: "pointer",
-          transition: "all 0.2s ease",
-          minWidth: "120px",
-          height: "32px",
-          "&:hover": {
-            backgroundColor: isDarkMode ? "#6b6d7a" : "#d1d5db",
-            transform: "translateY(-1px)",
-            boxShadow: "0 2px 8px rgba(0, 0, 0, 0.1)",
-          },
-        }}
-      >
+      <Tooltip title={tooltipText} arrow>
+        <Box
+          id="iagent-country-selector"
+          className="iagent-country-dropdown"
+          onClick={onFlagClick}
+          sx={{
+            display: "flex",
+            position: "relative",
+            alignItems: "center",
+            backgroundColor: isDarkMode ? "#565869" : "#e5e7eb",
+            border: `1px solid ${isDarkMode ? "#6b6d7a" : "#d1d5db"}`,
+            borderRadius: "20px",
+            padding: "6px 12px",
+            cursor: "pointer",
+            transition: "all 0.2s ease",
+            minWidth: "120px",
+            height: "32px",
+            "&:hover": {
+              backgroundColor: isDarkMode ? "#6b6d7a" : "#d1d5db",
+              transform: "translateY(-1px)",
+              boxShadow: "0 2px 8px rgba(0, 0, 0, 0.1)",
+            },
+          }}
+        >
         {/* Selected Flags Display */}
         <Box
           sx={{
@@ -147,8 +153,9 @@ export const CountrySelector: React.FC<CountrySelectorProps> = ({
             transition: "transform 0.2s ease",
             transform: flagPopoverOpen ? "rotate(180deg)" : "rotate(0deg)",
           }}
-        />
-      </Box>
+          />
+        </Box>
+      </Tooltip>
 
       {/* Flag Multi-Select Dropdown */}
       <Popover

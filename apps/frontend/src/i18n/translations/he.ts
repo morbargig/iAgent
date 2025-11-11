@@ -362,6 +362,17 @@ const translations: Translation = {
         empty: 'עדיין לא נוספו מילות מפתח נדרשות',
       },
     },
+    tooltips: {
+      enabled: '{{tool}} מופעל',
+      disabled: '{{tool}} מושבת',
+      clickToToggle: 'לחץ להחלפה',
+      countriesAvailableForTool: 'זמין עבור {{tool}}',
+      countriesRequireTool: 'דורש {{tool}}',
+      countriesAvailableForTools: 'זמין עבור כלים מופעלים',
+      datesAvailableForTools: 'זמין עבור כלים מופעלים',
+      datesRequireTools: 'דורש כלים מופעלים',
+      and: 'ו',
+    },
   },
   dateRange: {
     minutes: 'דקות',

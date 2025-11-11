@@ -364,6 +364,17 @@ const translations: Translation = {
         empty: 'No required keywords added yet',
       },
     },
+    tooltips: {
+      enabled: '{{tool}} is enabled',
+      disabled: '{{tool}} is disabled',
+      clickToToggle: 'Click to toggle',
+      countriesAvailableForTool: 'Available for {{tool}}',
+      countriesRequireTool: 'Requires {{tool}}',
+      countriesAvailableForTools: 'Available for enabled tools',
+      datesAvailableForTools: 'Available for enabled tools',
+      datesRequireTools: 'Requires enabled tools',
+      and: 'and',
+    },
   },
   dateRange: {
     minutes: 'minutes',

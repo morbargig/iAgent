@@ -1,5 +1,5 @@
 import React from "react";
-import { Box, Typography, TextField, Button, Popover } from "@mui/material";
+import { Box, Typography, TextField, Button, Popover, Tooltip } from "@mui/material";
 import {
   CalendarMonth as CalendarIcon,
   ExpandMore as ExpandMoreIcon,
@@ -23,7 +23,7 @@ interface DateRangeSelectorProps {
   dateAnchorEl: HTMLElement | null;
   timeRangeOptions: TimeRangeOption[];
   isDarkMode: boolean;
-  t: (key: string) => string;
+  t: (key: string, params?: Record<string, string>) => string;
   getDateRangeButtonText: () => string;
   onDateClick: (event: React.MouseEvent<HTMLElement>) => void;
   onDateRangeTabChange: (tab: number) => void;
@@ -34,6 +34,7 @@ interface DateRangeSelectorProps {
   onApply: () => void;
   onReset: () => void;
   onClose: () => void;
+  enabledTools?: { [key: string]: boolean };
 }
 
 export const DateRangeSelector: React.FC<DateRangeSelectorProps> = ({
@@ -58,33 +59,39 @@ export const DateRangeSelector: React.FC<DateRangeSelectorProps> = ({
   onApply,
   onReset,
   onClose,
+  enabledTools = {},
 }) => {
   const { isRTL } = useTranslation();
+  const hasEnabledTools = Object.values(enabledTools).some(enabled => enabled);
+  const tooltipText = hasEnabledTools
+    ? t("tools.tooltips.datesAvailableForTools")
+    : t("dateRange.customRange");
 
   return (
     <>
       {/* Date Range Selector Button */}
-      <Box
-        id="iagent-date-selector"
-        className="iagent-date-range-button"
-        onClick={onDateClick}
-        sx={{
-          display: "flex",
-          position: "relative",
-          alignItems: "center",
-          gap: "6px",
-          backgroundColor: isDarkMode ? "#565869" : "#e5e7eb",
-          border: `1px solid ${isDarkMode ? "#6b6d7a" : "#d1d5db"}`,
-          borderRadius: "20px",
-          padding: "6px 12px",
-          cursor: "pointer",
-          transition: "all 0.2s ease",
-          "&:hover": {
-            backgroundColor: isDarkMode ? "#6b6d7a" : "#d1d5db",
-            transform: "translateY(-1px)",
-          },
-        }}
-      >
+      <Tooltip title={tooltipText} arrow>
+        <Box
+          id="iagent-date-selector"
+          className="iagent-date-range-button"
+          onClick={onDateClick}
+          sx={{
+            display: "flex",
+            position: "relative",
+            alignItems: "center",
+            gap: "6px",
+            backgroundColor: isDarkMode ? "#565869" : "#e5e7eb",
+            border: `1px solid ${isDarkMode ? "#6b6d7a" : "#d1d5db"}`,
+            borderRadius: "20px",
+            padding: "6px 12px",
+            cursor: "pointer",
+            transition: "all 0.2s ease",
+            "&:hover": {
+              backgroundColor: isDarkMode ? "#6b6d7a" : "#d1d5db",
+              transform: "translateY(-1px)",
+            },
+          }}
+        >
         <CalendarIcon
           sx={{
             fontSize: "16px",
@@ -105,6 +112,7 @@ export const DateRangeSelector: React.FC<DateRangeSelectorProps> = ({
           {getDateRangeButtonText()}
         </Typography>
       </Box>
+      </Tooltip>
 
       {/* Date Range Popover */}
       <Popover

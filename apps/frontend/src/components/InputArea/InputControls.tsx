@@ -201,6 +201,7 @@ export const InputControls: React.FC<InputControlsProps> = ({
           onFlagClick={onFlagClick}
           onFlagToggle={onFlagToggle}
           onClose={onFlagClose}
+          enabledTools={enabledTools}
         />
 
         {/* Date Range Selector */}
@@ -226,6 +227,7 @@ export const InputControls: React.FC<InputControlsProps> = ({
           onApply={onDateRangeApply}
           onReset={onDateRangeReset}
           onClose={onDateClose}
+          enabledTools={enabledTools}
         />
 
         {/* Settings Button - Only show when tools with config fields are enabled */}
