@@ -24,7 +24,8 @@ import {
   AuthTokenDto,
   ToolSelectionDto,
   ChatMessageDto,
-  CountryDto
+  CountryDto,
+  PermissionsDto
 } from './dto/chat.dto';
 
 interface ChatMessage {
@@ -36,7 +37,7 @@ interface ChatMessage {
 
 
 @ApiTags('Chat API')
-@ApiExtraModels(ChatRequestDto, ChatResponseDto, StreamTokenDto, ErrorResponseDto, HealthCheckDto, AuthTokenDto, ToolSelectionDto, CountryDto)
+@ApiExtraModels(ChatRequestDto, ChatResponseDto, StreamTokenDto, ErrorResponseDto, HealthCheckDto, AuthTokenDto, ToolSelectionDto, CountryDto, PermissionsDto)
 @Controller()
 export class AppController {
   constructor(
@@ -104,6 +105,36 @@ export class AppController {
   })
   async login(@Body() loginRequest: LoginRequest): Promise<LoginResponse> {
     return await this.authService.login(loginRequest);
+  }
+
+  @Get('auth/permissions')
+  @ApiOperation({
+    summary: 'Get user permissions',
+    description: 'Returns permissions for the authenticated user based on their role'
+  })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'Permissions retrieved successfully',
+    type: PermissionsDto,
+    schema: {
+      $ref: getSchemaPath(PermissionsDto)
+    }
+  })
+  @ApiUnauthorizedResponse({
+    description: 'Authentication required'
+  })
+  getPermissions(): PermissionsDto {
+    return {
+      userId: 'default',
+      role: 'user',
+      permissions: {
+        canUseToolT: true,
+        canUseToolH: true,
+        canUseToolF: true,
+        canViewReports: true,
+        canManageFilters: true,
+      },
+    };
   }
 
   @Get('tools/pages')

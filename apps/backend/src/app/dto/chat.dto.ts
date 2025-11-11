@@ -425,4 +425,37 @@ export class CountryDto {
     example: 'countries.palestine'
   })
   nameKey!: string;
+}
+
+export class PermissionsDto {
+  @ApiProperty({
+    description: 'User ID',
+    example: 'user_123456789'
+  })
+  userId!: string;
+
+  @ApiProperty({
+    description: 'User role',
+    example: 'user'
+  })
+  role!: string;
+
+  @ApiProperty({
+    description: 'Permissions object with feature flags',
+    example: {
+      canUseToolT: true,
+      canUseToolH: true,
+      canUseToolF: true,
+      canViewReports: true,
+      canManageFilters: true,
+    }
+  })
+  permissions!: {
+    canUseToolT?: boolean;
+    canUseToolH?: boolean;
+    canUseToolF?: boolean;
+    canViewReports?: boolean;
+    canManageFilters?: boolean;
+    [key: string]: boolean | undefined;
+  };
 } 
