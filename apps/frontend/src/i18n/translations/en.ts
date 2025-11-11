@@ -337,9 +337,9 @@ const translations: Translation = {
     israel: 'Israel',
   },
   tools: {
-    'tool-x': 'ToolT',
-    'tool-y': 'ToolH',
-    'tool-z': 'ToolF',
+    'tool-t': 'ToolT',
+    'tool-h': 'ToolH',
+    'tool-f': 'ToolF',
     settings: {
       title: 'Tool Settings',
       configurationRequired: 'Some enabled tools require configuration before use',

@@ -58,12 +58,12 @@ export interface Message {
     processing_time_ms?: number;
     confidence?: number;
     categories?: string[];
-    section?: 'reasoning' | 'tool-t' | 'tool-x' | 'answer';
+    section?: 'reasoning' | 'tool-t' | 'tool-h' | 'tool-f' | 'answer';
     contentType?: string;
   };
   parsed?: ParsedMessageContent;
   sections?: Record<string, { content: string; parsed: ParsedMessageContent }>;
-  currentSection?: 'reasoning' | 'tool-t' | 'tool-x' | 'answer';
+  currentSection?: 'reasoning' | 'tool-t' | 'tool-h' | 'tool-f' | 'answer';
 }
 
 export interface Conversation {
@@ -376,7 +376,7 @@ export class StreamingClient {
         const markupBuilder = createStreamingMarkupBuilder();
         let latestParsed = markupBuilder.getCurrent();
         let completionMetadata: Record<string, unknown> | undefined;
-        let currentSection: 'reasoning' | 'tool-t' | 'tool-x' | 'answer' | undefined;
+        let currentSection: 'reasoning' | 'tool-t' | 'tool-h' | 'tool-f' | 'answer' | undefined;
         let sections: Record<string, { content: string; parsed: ParsedMessageContent }> = {};
         const sectionBuilders: Record<string, ReturnType<typeof createStreamingMarkupBuilder>> = {};
         
@@ -443,7 +443,7 @@ export class StreamingClient {
                     case 'section':
                       // Handle section start/end events
                       const sectionData = structuredChunk.data;
-                      const sectionName = sectionData.section as 'reasoning' | 'tool-t' | 'tool-x' | 'answer';
+                      const sectionName = sectionData.section as 'reasoning' | 'tool-t' | 'tool-h' | 'tool-f' | 'answer';
                       
                       if (sectionData.action === 'start') {
                         currentSection = sectionName;
@@ -466,7 +466,7 @@ export class StreamingClient {
                       
                     case 'token':
                       // Send token to the UI
-                      const tokenSection = structuredChunk.data.section as 'reasoning' | 'tool-t' | 'tool-x' | 'answer' | undefined;
+                      const tokenSection = structuredChunk.data.section as 'reasoning' | 'tool-t' | 'tool-h' | 'tool-f' | 'answer' | undefined;
                       const tokenContentType = structuredChunk.data.contentType;
                       
                       // Update main builder

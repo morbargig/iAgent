@@ -635,7 +635,7 @@ const App = () => {
                       ),
                       parsed: metadata?.parsed,
                       sections: Object.keys(currentSections).length > 0 ? currentSections : undefined,
-                      currentSection: metadata?.section as 'reasoning' | 'tool-t' | 'tool-x' | 'answer' | undefined,
+                      currentSection: metadata?.section as 'reasoning' | 'tool-t' | 'tool-h' | 'tool-f' | 'answer' | undefined,
                       metadata: {
                         ...lastMessage.metadata,
                         ...metadata,
@@ -649,7 +649,7 @@ const App = () => {
         (result: StreamingCompletionPayload) => {
           const finalContent = result.content || accumulatedStreamContentRef.current || accumulatedContent;
           const sections = result.metadata?.sections as Record<string, { content: string; parsed: ParsedMessageContent }> | undefined;
-          const currentSection = result.metadata?.currentSection as 'reasoning' | 'tool-t' | 'tool-x' | 'answer' | undefined;
+          const currentSection = result.metadata?.currentSection as 'reasoning' | 'tool-t' | 'tool-h' | 'tool-f' | 'answer' | undefined;
           
           // Ensure parsed content is available - rebuild if sections exist but parsed is missing
           let finalParsed = result.parsed;
@@ -1243,7 +1243,7 @@ const App = () => {
           // Mark streaming as complete
           const finalContent = result.content || accumulatedStreamContentRef.current || currentContent;
           const sections = result.metadata?.sections as Record<string, { content: string; parsed: ParsedMessageContent }> | undefined;
-          const currentSection = result.metadata?.currentSection as 'reasoning' | 'tool-t' | 'tool-x' | 'answer' | undefined;
+          const currentSection = result.metadata?.currentSection as 'reasoning' | 'tool-t' | 'tool-h' | 'tool-f' | 'answer' | undefined;
           
           updateLoadedConversation(conversation.id, (conv) => {
             const finalConversation = {

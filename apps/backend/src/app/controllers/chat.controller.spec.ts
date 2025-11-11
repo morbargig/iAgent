@@ -22,7 +22,7 @@ const mockFilter = {
       customRange: { amount: 7, type: 'days' },
     },
     selectedCountries: ['PS', 'LB'],
-    enabledTools: ['tool-x'],
+    enabledTools: ['tool-t'],
   },
   isActive: false,
   createdAt: new Date(),

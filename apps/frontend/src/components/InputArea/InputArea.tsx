@@ -99,9 +99,9 @@ interface InputAreaProps {
 
 // Tools list data
 const toolsList = [
-  { id: "tool-x", nameKey: "tools.tool-x" },
-  { id: "tool-y", nameKey: "tools.tool-y" },
-  { id: "tool-z", nameKey: "tools.tool-z" },
+  { id: "tool-t", nameKey: "tools.tool-t" },
+  { id: "tool-h", nameKey: "tools.tool-h" },
+  { id: "tool-f", nameKey: "tools.tool-f" },
 ];
 
 export function InputArea({
@@ -150,7 +150,7 @@ export function InputArea({
   } = useToolToggles();
 
   // Tool schemas and settings dialog
-  const { data: toolSchemas = [], isLoading: toolSchemasLoading } = useToolSchemas();
+  const toolSchemas = useToolSchemas();
   const [toolSettingsOpen, setToolSettingsOpen] = React.useState(false);
   const { isRTL } = useTranslation();
 
@@ -743,7 +743,6 @@ export function InputArea({
         configurations={filterManagement.synchronizedConfigurations}
         onConfigurationChange={handleToolConfigurationChange}
         isDarkMode={isDarkMode}
-        isLoading={toolSchemasLoading}
       />
 
       {/* Filter Name Dialog for Creating Filters */}

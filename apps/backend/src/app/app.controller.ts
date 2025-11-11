@@ -23,8 +23,7 @@ import {
   HealthCheckDto,
   AuthTokenDto,
   ToolSelectionDto,
-  ChatMessageDto,
-  ToolSchemaDto
+  ChatMessageDto
 } from './dto/chat.dto';
 
 interface ChatMessage {
@@ -36,7 +35,7 @@ interface ChatMessage {
 
 
 @ApiTags('Chat API')
-@ApiExtraModels(ChatRequestDto, ChatResponseDto, StreamTokenDto, ErrorResponseDto, HealthCheckDto, AuthTokenDto, ToolSelectionDto, ToolSchemaDto)
+@ApiExtraModels(ChatRequestDto, ChatResponseDto, StreamTokenDto, ErrorResponseDto, HealthCheckDto, AuthTokenDto, ToolSelectionDto)
 @Controller()
 export class AppController {
   constructor(
@@ -66,7 +65,6 @@ export class AppController {
         health: '/api',
         login: '/api/auth/login',
         stream: '/api/chat/stream',
-        toolsSchemas: '/api/tools/schemas',
         docs: '/api/docs'
       }
     };
@@ -107,57 +105,35 @@ export class AppController {
     return await this.authService.login(loginRequest);
   }
 
-  @Get('tools/schemas')
+  @Get('tools/pages')
   @ApiOperation({
-    summary: 'Get available tool schemas',
-    description: 'Returns the list of available tools with their configuration schemas'
+    summary: 'Get page options for tools',
+    description: 'Returns available page options for tool configuration'
   })
   @ApiResponse({
     status: HttpStatus.OK,
-    description: 'List of tool schemas',
-    type: [ToolSchemaDto]
+    description: 'Page options retrieved successfully',
+    schema: {
+      type: 'array',
+      items: {
+        type: 'object',
+        properties: {
+          value: { type: 'string', example: 'news' },
+          label: { type: 'string', example: 'News Articles' }
+        }
+      }
+    }
   })
-  getToolSchemas(): ToolSchemaDto[] {
+  getPageOptions() {
     return [
-      {
-        id: 'tool-x',
-        name: 'ToolT',
-        description: 'Web search tool for finding relevant information and sources',
-        requiresConfiguration: true,
-        configurationFields: {
-          pages: {
-            required: false,
-            options: [
-              { value: 'news', label: 'News Articles' },
-              { value: 'academic', label: 'Academic Papers' },
-              { value: 'blogs', label: 'Blog Posts' },
-              { value: 'forums', label: 'Discussion Forums' },
-              { value: 'wiki', label: 'Wikipedia' },
-              { value: 'government', label: 'Government Sites' },
-              { value: 'social', label: 'Social Media' },
-              { value: 'commercial', label: 'Commercial Sites' },
-            ],
-          },
-          requiredWords: {
-            required: false,
-            placeholder: 'Enter keywords that must be present...',
-          },
-        },
-      },
-      {
-        id: 'tool-y',
-        name: 'ToolH',
-        description: 'Advanced tool for specialized operations',
-        requiresConfiguration: false,
-        configurationFields: {},
-      },
-      {
-        id: 'tool-z',
-        name: 'ToolF',
-        description: 'Flexible tool for various data processing tasks',
-        requiresConfiguration: false,
-        configurationFields: {},
-      },
+      { value: 'news', label: 'News Articles' },
+      { value: 'academic', label: 'Academic Papers' },
+      { value: 'blogs', label: 'Blog Posts' },
+      { value: 'forums', label: 'Discussion Forums' },
+      { value: 'wiki', label: 'Wikipedia' },
+      { value: 'government', label: 'Government Sites' },
+      { value: 'social', label: 'Social Media' },
+      { value: 'commercial', label: 'Commercial Sites' },
     ];
   }
 
@@ -375,16 +351,18 @@ export class AppController {
 
         // Detect tools from request
         const hasToolT = tools && Array.isArray(tools) && tools.some((t: any) => t?.id === 'tool-t' || t?.name === 'tool-t');
-        const hasToolX = tools && Array.isArray(tools) && tools.some((t: any) => t?.id === 'tool-x' || t?.name === 'tool-x');
+        const hasToolH = tools && Array.isArray(tools) && tools.some((t: any) => t?.id === 'tool-h' || t?.name === 'tool-h');
+        const hasToolF = tools && Array.isArray(tools) && tools.some((t: any) => t?.id === 'tool-f' || t?.name === 'tool-f');
         
         // Determine if we should generate tool sections (30% chance or if tools are explicitly requested)
-        const shouldGenerateToolSections = (hasToolT || hasToolX) || Math.random() < 0.3;
+        const shouldGenerateToolSections = (hasToolT || hasToolH || hasToolF) || Math.random() < 0.3;
 
         const startTime = new Date();
         let totalTokens = 0;
         let currentContent = '';
         let toolTTokens: string[] = [];
-        let toolXTokens: string[] = [];
+        let toolHTokens: string[] = [];
+        let toolFTokens: string[] = [];
 
         // Send metadata chunk with generation info
         const metadataChunk = {
@@ -468,30 +446,30 @@ export class AppController {
             res.write(JSON.stringify(toolTSectionEnd) + '\n');
           }
 
-          // Stream tool-x section if applicable
-          if (hasToolX || Math.random() < 0.5) {
-            const toolXContent = this.generateToolXSection();
-            toolXTokens = this.tokenizeResponse(toolXContent);
-            totalTokens += toolXTokens.length;
+          // Stream tool-h section if applicable
+          if (hasToolH || Math.random() < 0.5) {
+            const toolHContent = this.generateToolHSection();
+            toolHTokens = this.tokenizeResponse(toolHContent);
+            totalTokens += toolHTokens.length;
 
-            // Send tool-x section start
-            const toolXSectionStart = {
+            // Send tool-h section start
+            const toolHSectionStart = {
               chunkType: 'section',
               data: {
-                section: 'tool-x',
+                section: 'tool-h',
                 contentType: 'markdown',
                 action: 'start'
               },
               timestamp: new Date().toISOString(),
               sessionId
             };
-            res.write(JSON.stringify(toolXSectionStart) + '\n');
+            res.write(JSON.stringify(toolHSectionStart) + '\n');
 
-            // Stream tool-x tokens
-            let toolXContentAccumulator = '';
-            for (let i = 0; i < toolXTokens.length; i++) {
-              const token = toolXTokens[i];
-              toolXContentAccumulator += token;
+            // Stream tool-h tokens
+            let toolHContentAccumulator = '';
+            for (let i = 0; i < toolHTokens.length; i++) {
+              const token = toolHTokens[i];
+              toolHContentAccumulator += token;
               currentContent += token;
 
               const tokenChunk = {
@@ -505,32 +483,97 @@ export class AppController {
                   tokenType: this.getTokenType(token),
                   confidence: 0.92 + Math.random() * 0.07,
                   isLastToken: false,
-                  section: 'tool-x',
-                  contentType: this.detectContentType(token, toolXContentAccumulator)
+                  section: 'tool-h',
+                  contentType: this.detectContentType(token, toolHContentAccumulator)
                 },
                 timestamp: new Date().toISOString(),
                 sessionId
               };
               res.write(JSON.stringify(tokenChunk) + '\n');
 
-              if (i < toolXTokens.length - 1) {
-                const delay = this.calculateStreamingDelay(token, i, toolXTokens);
+              if (i < toolHTokens.length - 1) {
+                const delay = this.calculateStreamingDelay(token, i, toolHTokens);
                 await new Promise(resolve => setTimeout(resolve, delay));
               }
             }
 
-            // Send tool-x section end
-            const toolXSectionEnd = {
+            // Send tool-h section end
+            const toolHSectionEnd = {
               chunkType: 'section',
               data: {
-                section: 'tool-x',
+                section: 'tool-h',
                 contentType: 'markdown',
                 action: 'end'
               },
               timestamp: new Date().toISOString(),
               sessionId
             };
-            res.write(JSON.stringify(toolXSectionEnd) + '\n');
+            res.write(JSON.stringify(toolHSectionEnd) + '\n');
+          }
+
+          // Stream tool-f section if applicable
+          if (hasToolF || Math.random() < 0.5) {
+            const toolFContent = this.generateToolFSection();
+            toolFTokens = this.tokenizeResponse(toolFContent);
+            totalTokens += toolFTokens.length;
+
+            // Send tool-f section start
+            const toolFSectionStart = {
+              chunkType: 'section',
+              data: {
+                section: 'tool-f',
+                contentType: 'markdown',
+                action: 'start'
+              },
+              timestamp: new Date().toISOString(),
+              sessionId
+            };
+            res.write(JSON.stringify(toolFSectionStart) + '\n');
+
+            // Stream tool-f tokens
+            let toolFContentAccumulator = '';
+            for (let i = 0; i < toolFTokens.length; i++) {
+              const token = toolFTokens[i];
+              toolFContentAccumulator += token;
+              currentContent += token;
+
+              const tokenChunk = {
+                chunkType: 'token',
+                data: {
+                  token,
+                  index: toolTTokens.length + toolHTokens.length + i + 1,
+                  totalTokens: 0,
+                  progress: 0,
+                  cumulativeContent: currentContent,
+                  tokenType: this.getTokenType(token),
+                  confidence: 0.92 + Math.random() * 0.07,
+                  isLastToken: false,
+                  section: 'tool-f',
+                  contentType: this.detectContentType(token, toolFContentAccumulator)
+                },
+                timestamp: new Date().toISOString(),
+                sessionId
+              };
+              res.write(JSON.stringify(tokenChunk) + '\n');
+
+              if (i < toolFTokens.length - 1) {
+                const delay = this.calculateStreamingDelay(token, i, toolFTokens);
+                await new Promise(resolve => setTimeout(resolve, delay));
+              }
+            }
+
+            // Send tool-f section end
+            const toolFSectionEnd = {
+              chunkType: 'section',
+              data: {
+                section: 'tool-f',
+                contentType: 'markdown',
+                action: 'end'
+              },
+              timestamp: new Date().toISOString(),
+              sessionId
+            };
+            res.write(JSON.stringify(toolFSectionEnd) + '\n');
           }
         }
 
@@ -569,9 +612,9 @@ export class AppController {
             chunkType: 'token',
             data: {
               token,
-              index: toolTTokens.length + toolXTokens.length + i + 1,
+              index: toolTTokens.length + toolHTokens.length + toolFTokens.length + i + 1,
               totalTokens: totalTokens,
-              progress: Math.round(((toolTTokens.length + toolXTokens.length + i + 1) / totalTokens) * 100),
+              progress: Math.round(((toolTTokens.length + toolHTokens.length + toolFTokens.length + i + 1) / totalTokens) * 100),
               cumulativeContent: currentContent,
               tokenType: this.getTokenType(token),
               confidence: 0.92 + Math.random() * 0.07,
@@ -591,12 +634,12 @@ export class AppController {
             const progressChunk = {
               chunkType: 'progress',
               data: {
-                progress: Math.round(((toolTTokens.length + toolXTokens.length + i + 1) / totalTokens) * 100),
-                tokensProcessed: toolTTokens.length + toolXTokens.length + i + 1,
+                progress: Math.round(((toolTTokens.length + toolHTokens.length + toolFTokens.length + i + 1) / totalTokens) * 100),
+                tokensProcessed: toolTTokens.length + toolHTokens.length + toolFTokens.length + i + 1,
                 tokensRemaining: answerTokens.length - i - 1,
                 processingTimeMs: Date.now() - startTime.getTime(),
                 estimatedRemainingMs: Math.round((answerTokens.length - i - 1) * 50),
-                averageTokenTime: Math.round((Date.now() - startTime.getTime()) / (toolTTokens.length + toolXTokens.length + i + 1))
+                averageTokenTime: Math.round((Date.now() - startTime.getTime()) / (toolTTokens.length + toolHTokens.length + toolFTokens.length + i + 1))
               },
               timestamp: new Date().toISOString(),
               sessionId
@@ -1664,18 +1707,18 @@ The analysis is complete and ready for review.`;
   }
 
   /**
-   * Generate content for tool-x section with tables, citations, and reports
+   * Generate content for tool-h section with tables, citations, and reports
    */
-  private generateToolXSection(): string {
+  private generateToolHSection(): string {
     const contentTypes = ['table', 'citation', 'report'];
     const selectedType = contentTypes[Math.floor(Math.random() * contentTypes.length)];
 
     if (selectedType === 'table') {
-      return `## Tool X Execution Report
+      return `## Tool H Execution Report
 
-Tool X has generated the following analysis:
+Tool H has generated the following analysis:
 
-table: Tool X Data Analysis
+table: Tool H Data Analysis
 
 | Dataset | Records | Processed | Quality Score |
 |---------|---------|-----------|---------------|
@@ -1685,13 +1728,13 @@ table: Tool X Data Analysis
 
 ### Summary
 
-> "Tool X processed all datasets successfully with high quality scores. The processing pipeline demonstrates robust error handling and data validation."
+> "Tool H processed all datasets successfully with high quality scores. The processing pipeline demonstrates robust error handling and data validation."
 
 All datasets have been processed and validated.`;
     } else if (selectedType === 'citation') {
-      return `## Tool X Research Findings
+      return `## Tool H Research Findings
 
-> "Tool X implements a sophisticated data processing pipeline that ensures high accuracy and reliability. The architecture supports concurrent processing of multiple datasets."
+> "Tool H implements a sophisticated data processing pipeline that ensures high accuracy and reliability. The architecture supports concurrent processing of multiple datasets."
 
 ### Performance Metrics
 
@@ -1699,23 +1742,23 @@ All datasets have been processed and validated.`;
 - **Accuracy**: 99.2% across all test cases
 - **Resource Usage**: 30% reduction in memory consumption
 
-> "These improvements make Tool X suitable for production deployment at scale. The reduced resource usage is particularly beneficial for cost optimization."
+> "These improvements make Tool H suitable for production deployment at scale. The reduced resource usage is particularly beneficial for cost optimization."
 
-Tool X is ready for production use.`;
+Tool H is ready for production use.`;
     } else {
-      return `## Tool X Analysis Complete
+      return `## Tool H Analysis Complete
 
-Tool X has completed comprehensive analysis and generated a detailed report:
+Tool H has completed comprehensive analysis and generated a detailed report:
 
 report: {
-  "reportId": "tool-x-execution-2024-001",
-  "title": "Tool X Data Processing Report",
-  "summary": "Complete analysis of Tool X data processing capabilities, quality metrics, and performance benchmarks",
+  "reportId": "tool-h-execution-2024-001",
+  "title": "Tool H Data Processing Report",
+  "summary": "Complete analysis of Tool H data processing capabilities, quality metrics, and performance benchmarks",
   "metadata": {
     "date": "2024-01-15",
     "category": "data-processing",
     "priority": "medium",
-    "tool": "tool-x",
+    "tool": "tool-h",
     "executionTime": "3.2s",
     "datasetsProcessed": 3
   }
@@ -1725,7 +1768,7 @@ report: {
 
 The report includes:
 
-table: Tool X Results Summary
+table: Tool H Results Summary
 
 | Test Case | Result | Duration | Notes |
 |-----------|--------|----------|-------|
@@ -1733,9 +1776,85 @@ table: Tool X Results Summary
 | Integration | ✅ Pass | 2m 15s | No issues detected |
 | Performance | ✅ Pass | 5m 30s | Within targets |
 
-> "Tool X demonstrates excellent test coverage and performance characteristics. All test suites passed without issues."
+> "Tool H demonstrates excellent test coverage and performance characteristics. All test suites passed without issues."
 
-The analysis confirms Tool X meets all quality requirements.`;
+The analysis confirms Tool H meets all quality requirements.`;
+    }
+  }
+
+  /**
+   * Generate content for tool-f section with tables, citations, and reports
+   */
+  private generateToolFSection(): string {
+    const contentTypes = ['table', 'citation', 'report'];
+    const selectedType = contentTypes[Math.floor(Math.random() * contentTypes.length)];
+
+    if (selectedType === 'table') {
+      return `## Tool F Execution Report
+
+Tool F has generated the following analysis:
+
+table: Tool F Data Analysis
+
+| Dataset | Records | Processed | Quality Score |
+|---------|---------|-----------|---------------|
+| Dataset A | 5,432 | 5,430 | 98.5% |
+| Dataset B | 3,210 | 3,208 | 97.2% |
+| Dataset C | 8,765 | 8,763 | 99.1% |
+
+### Summary
+
+> "Tool F processed all datasets successfully with high quality scores. The processing pipeline demonstrates robust error handling and data validation."
+
+All datasets have been processed and validated.`;
+    } else if (selectedType === 'citation') {
+      return `## Tool F Research Findings
+
+> "Tool F implements a sophisticated data processing pipeline that ensures high accuracy and reliability. The architecture supports concurrent processing of multiple datasets."
+
+### Performance Metrics
+
+- **Processing Speed**: 2.5x faster than previous version
+- **Accuracy**: 99.2% across all test cases
+- **Resource Usage**: 30% reduction in memory consumption
+
+> "These improvements make Tool F suitable for production deployment at scale. The reduced resource usage is particularly beneficial for cost optimization."
+
+Tool F is ready for production use.`;
+    } else {
+      return `## Tool F Analysis Complete
+
+Tool F has completed comprehensive analysis and generated a detailed report:
+
+report: {
+  "reportId": "tool-f-execution-2024-001",
+  "title": "Tool F Data Processing Report",
+  "summary": "Complete analysis of Tool F data processing capabilities, quality metrics, and performance benchmarks",
+  "metadata": {
+    "date": "2024-01-15",
+    "category": "data-processing",
+    "priority": "medium",
+    "tool": "tool-f",
+    "executionTime": "3.2s",
+    "datasetsProcessed": 3
+  }
+}
+
+### Report Contents
+
+The report includes:
+
+table: Tool F Results Summary
+
+| Test Case | Result | Duration | Notes |
+|-----------|--------|----------|-------|
+| Unit Tests | ✅ Pass | 45s | All 234 tests passed |
+| Integration | ✅ Pass | 2m 15s | No issues detected |
+| Performance | ✅ Pass | 5m 30s | Within targets |
+
+> "Tool F demonstrates excellent test coverage and performance characteristics. All test suites passed without issues."
+
+The analysis confirms Tool F meets all quality requirements.`;
     }
   }
 

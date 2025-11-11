@@ -20,10 +20,10 @@ interface MarkdownRendererProps {
   parsed?: ParsedMessageContent;
   isDarkMode?: boolean;
   onOpenReport?: (url: string) => void;
-  section?: "reasoning" | "tool-t" | "tool-x" | "answer";
+  section?: "reasoning" | "tool-t" | "tool-h" | "tool-f" | "answer";
   contentType?: "citation" | "table" | "report" | "markdown";
   sections?: Record<string, ParsedMessageContent>;
-  currentSection?: "reasoning" | "tool-t" | "tool-x" | "answer";
+  currentSection?: "reasoning" | "tool-t" | "tool-h" | "tool-f" | "answer";
 }
 
 const availableReports = [
@@ -719,7 +719,7 @@ const renderCustomElement = (
 
 const CollapsibleSection: React.FC<{
   title: string;
-  section: "reasoning" | "tool-t" | "tool-x" | "answer";
+  section: "reasoning" | "tool-t" | "tool-h" | "tool-f" | "answer";
   isDarkMode: boolean;
   theme: Theme;
   children: React.ReactNode;
@@ -836,12 +836,13 @@ export const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({
   }, [parsed, processedContent, content, sections]);
 
   const sectionTitles: Record<
-    "reasoning" | "tool-t" | "tool-x" | "answer",
+    "reasoning" | "tool-t" | "tool-h" | "tool-f" | "answer",
     string
   > = {
     reasoning: "Reasoning",
     "tool-t": "Tool T",
-    "tool-x": "Tool X",
+    "tool-h": "Tool H",
+    "tool-f": "Tool F",
     answer: "Answer",
   };
 
@@ -875,7 +876,7 @@ export const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({
       sectionParsed = buildParsedMessageContent(sectionContentStr);
     }
     
-    const sectionType = sectionKey as "reasoning" | "tool-t" | "tool-x" | "answer";
+    const sectionType = sectionKey as "reasoning" | "tool-t" | "tool-h" | "tool-f" | "answer";
     return (
       <Box
         sx={{
@@ -901,7 +902,7 @@ export const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({
       <>
         <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
           {Object.entries(sections).map(([sectionKey, sectionData]) => {
-            const sectionType = sectionKey as "reasoning" | "tool-t" | "tool-x" | "answer";
+            const sectionType = sectionKey as "reasoning" | "tool-t" | "tool-h" | "tool-f" | "answer";
             return (
               <CollapsibleSection
                 key={sectionKey}

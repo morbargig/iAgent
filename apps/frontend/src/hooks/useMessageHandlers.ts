@@ -116,7 +116,7 @@ export const useMessageHandlers = ({
         (result: StreamingCompletionPayload) => {
           const finalContent = result.content || accumulatedStreamContentRef.current || currentContent;
           const sections = result.metadata?.sections as Record<string, { content: string; parsed: ParsedMessageContent }> | undefined;
-          const currentSection = result.metadata?.currentSection as 'reasoning' | 'tool-t' | 'tool-x' | 'answer' | undefined;
+          const currentSection = result.metadata?.currentSection as 'reasoning' | 'tool-t' | 'tool-h' | 'tool-f' | 'answer' | undefined;
           
           updateLoadedConversation(conversation.id, (conv) => {
             const finalConversation = {

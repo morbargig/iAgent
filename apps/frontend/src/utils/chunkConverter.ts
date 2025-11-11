@@ -1,7 +1,7 @@
 import type { Message, ParsedMessageContent } from '@iagent/chat-types';
 import { buildParsedMessageContent } from '@iagent/chat-types';
 
-export type SectionType = 'reasoning' | 'tool-t' | 'tool-x' | 'answer';
+export type SectionType = 'reasoning' | 'tool-t' | 'tool-h' | 'tool-f' | 'answer';
 
 export interface SectionMetadata {
   section: SectionType;

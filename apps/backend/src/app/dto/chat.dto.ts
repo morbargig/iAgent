@@ -241,11 +241,11 @@ export class StreamTokenDto {
 
 export class StreamSectionDto {
   @ApiProperty({
-    description: 'Section type (reasoning, tool-t, tool-x, answer)',
-    enum: ['reasoning', 'tool-t', 'tool-x', 'answer'],
+    description: 'Section type (reasoning, tool-t, tool-h, tool-f, answer)',
+    enum: ['reasoning', 'tool-t', 'tool-h', 'tool-f', 'answer'],
     example: 'answer'
   })
-  section!: 'reasoning' | 'tool-t' | 'tool-x' | 'answer';
+  section!: 'reasoning' | 'tool-t' | 'tool-h' | 'tool-f' | 'answer';
 
   @ApiProperty({
     description: 'Content type within the section',
@@ -263,7 +263,7 @@ export class StreamSectionDto {
   @ApiPropertyOptional({
     description: 'Additional metadata for the section',
     example: {
-      toolId: 'tool-x',
+      toolId: 'tool-t',
       executionTime: 1500
     }
   })
@@ -378,7 +378,7 @@ export class ToolSchemaConfigurationFieldDto {
 export class ToolSchemaDto {
   @ApiProperty({
     description: 'Tool identifier',
-    example: 'tool-x'
+    example: 'tool-t'
   })
   id!: string;
 

@@ -28,7 +28,7 @@ export const keys = {
   },
   tools: {
     all: ['tools'] as const,
-    schemas: () => ['tools', 'schemas'] as const,
+    pages: () => ['tools', 'pages'] as const,
   },
 };
 

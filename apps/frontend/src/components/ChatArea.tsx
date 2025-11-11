@@ -525,7 +525,7 @@ const MessageBubble = ({
             onOpenReport={onOpenReport}
             sections={message.sections}
             currentSection={message.currentSection}
-            section={message.metadata?.section as "reasoning" | "tool-t" | "tool-x" | "answer" | undefined}
+            section={message.metadata?.section as "reasoning" | "tool-t" | "tool-h" | "tool-f" | "answer" | undefined}
             contentType={message.metadata?.contentType as "citation" | "table" | "report" | "markdown" | undefined}
           />
 

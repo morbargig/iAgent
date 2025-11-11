@@ -303,7 +303,7 @@ export class ChatController {
               customRange: { amount: 7, type: 'days' }
             },
             selectedCountries: ['PS', 'LB'],
-            enabledTools: ['tool-x', 'tool-y'],
+            enabledTools: ['tool-t', 'tool-h'],
             filterText: 'work related',
             selectedMode: 'flow'
           }
