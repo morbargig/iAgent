@@ -3,7 +3,12 @@ import { http } from '../../lib/http';
 import { keys } from '../../lib/keys';
 import type { ToolSchema } from '../../components/ToolSettingsDialog';
 
-const mockToolSchemas: ToolSchema[] = [
+export interface PageOption {
+  value: string;
+  label: string;
+}
+
+const staticToolSchemas: ToolSchema[] = [
   {
     id: 'tool-x',
     name: 'ToolT',
@@ -13,14 +18,7 @@ const mockToolSchemas: ToolSchema[] = [
       pages: {
         required: false,
         options: [
-          { value: 'news', label: 'News Articles' },
-          { value: 'academic', label: 'Academic Papers' },
-          { value: 'blogs', label: 'Blog Posts' },
-          { value: 'forums', label: 'Discussion Forums' },
-          { value: 'wiki', label: 'Wikipedia' },
-          { value: 'government', label: 'Government Sites' },
-          { value: 'social', label: 'Social Media' },
-          { value: 'commercial', label: 'Commercial Sites' },
+
         ],
       },
       requiredWords: {
@@ -46,15 +44,42 @@ const mockToolSchemas: ToolSchema[] = [
 ];
 
 export const useToolSchemas = () => {
+  const { data: pages = [] } = usePages();
+  
   return useQuery({
-    queryKey: keys.tools.schemas(),
+    queryKey: [...keys.tools.all, pages],
     queryFn: async (): Promise<ToolSchema[]> => {
+      const schemas = [...staticToolSchemas];
+      
+      if (schemas[0] && schemas[0].configurationFields?.pages) {
+        schemas[0] = {
+          ...schemas[0],
+          configurationFields: {
+            ...schemas[0].configurationFields,
+            pages: {
+              ...schemas[0].configurationFields.pages,
+              options: pages.length > 0 ? pages : schemas[0].configurationFields.pages.options || [],
+            },
+          },
+        };
+      }
+      
+      return schemas;
+    },
+    staleTime: Infinity,
+    enabled: true,
+  });
+};
+
+export const usePages = () => {
+  return useQuery({
+    queryKey: keys.tools.pages(),
+    queryFn: async (): Promise<PageOption[]> => {
       try {
-        const response = await http.get<ToolSchema[]>('/tools/schemas');
+        const response = await http.get<PageOption[]>('/tools/pages');
         return response.data;
-      } catch (error) {
-        await new Promise((resolve) => setTimeout(resolve, 500));
-        return mockToolSchemas;
+      } catch {
+        return [];
       }
     },
     staleTime: 5 * 60 * 1000,
