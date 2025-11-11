@@ -1,18 +1,9 @@
 import { useAppLocalStorage } from './storage';
 import { useState } from 'react';
-
-const flagOptions = [
-  { code: 'PS', flag: '🇵🇸', nameKey: 'countries.palestine' },
-  { code: 'LB', flag: '🇱🇧', nameKey: 'countries.lebanon' },
-  { code: 'SA', flag: '🇸🇦', nameKey: 'countries.saudi_arabia' },
-  { code: 'IQ', flag: '🇮🇶', nameKey: 'countries.iraq' },
-  { code: 'SY', flag: '🇸🇾', nameKey: 'countries.syria' },
-  { code: 'JO', flag: '🇯🇴', nameKey: 'countries.jordan' },
-  { code: 'EG', flag: '🇪🇬', nameKey: 'countries.egypt' },
-  { code: 'IL', flag: '🇮🇱', nameKey: 'countries.israel' },
-];
+import { useCountries } from '../features/countries/api';
 
 export const useCountrySelection = () => {
+  const { data: countries = [] } = useCountries();
   const [selectedFlags, setSelectedFlags] = useAppLocalStorage('selected-countries');
   const [flagAnchorEl, setFlagAnchorEl] = useState<HTMLElement | null>(null);
   const flagPopoverOpen = Boolean(flagAnchorEl);
@@ -43,7 +34,7 @@ export const useCountrySelection = () => {
     flagAnchorEl,
     setFlagAnchorEl,
     flagPopoverOpen,
-    flagOptions,
+    flagOptions: countries,
     handleFlagClick,
     handleFlagToggle,
     closeFlagPopover,
