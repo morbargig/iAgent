@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { useMemo } from 'react';
 import { http } from '../../lib/http';
-import { keys } from '../../lib/keys';
+import { apiKeys } from '../../lib/keys';
 import type { ToolSchema } from '../../components/ToolSettingsDialog';
 
 export interface PageOption {
@@ -11,27 +11,13 @@ export interface PageOption {
 
 export const usePages = () => {
   return useQuery({
-    queryKey: keys.tools.pages(),
+    queryKey: apiKeys.tools.pages(),
     queryFn: async (): Promise<PageOption[]> => {
-      try {
-        const response = await http.get<PageOption[]>('/tools/pages');
-        console.log('Pages API response:', response.data);
-        if (!response.data || !Array.isArray(response.data)) {
-          console.warn('Invalid pages response:', response.data);
-          return [];
-        }
-        return response.data;
-      } catch (error: unknown) {
-        console.error('Failed to fetch pages:', error);
-        const errorDetails = error as { message?: string; response?: { data?: unknown; status?: number }; config?: { url?: string } };
-        console.error('Error details:', {
-          message: errorDetails?.message,
-          response: errorDetails?.response?.data,
-          status: errorDetails?.response?.status,
-          url: errorDetails?.config?.url,
-        });
+      const response = await http.get<PageOption[]>('/tools/pages');
+      if (!response.data || !Array.isArray(response.data)) {
         return [];
       }
+      return response.data;
     },
     staleTime: 5 * 60 * 1000,
     retry: 2,
@@ -76,4 +62,5 @@ export const useToolSchemas = () => {
     ];
   }, [pages]);
 };
+
 

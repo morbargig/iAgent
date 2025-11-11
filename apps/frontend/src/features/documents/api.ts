@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient, keepPreviousData } from '@tanstack/react-query';
 import { http } from '../../lib/http';
-import { keys } from '../../lib/keys';
+import { apiKeys } from '../../lib/keys';
 import type {
   DocumentFile,
   DocumentListResponse,
@@ -59,7 +59,7 @@ export const useDocuments = (
   filters?: DocumentSearchFilters
 ) => {
   return useQuery({
-    queryKey: keys.documents.list(page, limit, {
+    queryKey: apiKeys.documents.list(page, limit, {
       query: filters?.query,
       type: filters?.type,
       status: filters?.status,
@@ -102,7 +102,7 @@ export const useDocuments = (
 
 export const useDocument = (id: string | number) => {
   return useQuery({
-    queryKey: keys.documents.detail(id),
+    queryKey: apiKeys.documents.detail(id),
     queryFn: async (): Promise<DocumentFile | null> => {
       if (getMockMode()) {
         return mockDocumentStore.getDocumentById(String(id)) || null;
@@ -118,7 +118,7 @@ export const useDocument = (id: string | number) => {
 
 export const useDocumentCount = (filters?: { query?: string }) => {
   return useQuery({
-    queryKey: keys.documents.count(filters),
+    queryKey: apiKeys.documents.count(filters),
     queryFn: async (): Promise<number> => {
       if (getMockMode()) {
         const allResults = filters?.query
@@ -141,7 +141,7 @@ export const useDocumentCount = (filters?: { query?: string }) => {
 
 export const useDocumentStats = () => {
   return useQuery({
-    queryKey: keys.documents.stats(),
+    queryKey: apiKeys.documents.stats(),
     queryFn: async () => {
       if (getMockMode()) {
         return mockDocumentStore.getDocumentStats();
@@ -299,9 +299,9 @@ export const useUploadDocument = () => {
       });
     },
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: keys.documents.lists() });
-      qc.invalidateQueries({ queryKey: keys.documents.count() });
-      qc.invalidateQueries({ queryKey: keys.documents.stats() });
+      qc.invalidateQueries({ queryKey: apiKeys.documents.lists() });
+      qc.invalidateQueries({ queryKey: apiKeys.documents.count() });
+      qc.invalidateQueries({ queryKey: apiKeys.documents.stats() });
     },
   });
 };
@@ -319,14 +319,14 @@ export const useDeleteDocument = () => {
       return true;
     },
     onMutate: async (id) => {
-      await qc.cancelQueries({ queryKey: keys.documents.detail(id) });
+      await qc.cancelQueries({ queryKey: apiKeys.documents.detail(id) });
 
-      const prevDetail = qc.getQueryData<DocumentFile | null>(keys.documents.detail(id));
-      const prevLists = qc.getQueriesData({ queryKey: keys.documents.lists() });
+      const prevDetail = qc.getQueryData<DocumentFile | null>(apiKeys.documents.detail(id));
+      const prevLists = qc.getQueriesData({ queryKey: apiKeys.documents.lists() });
 
-      qc.setQueryData(keys.documents.detail(id), null);
+      qc.setQueryData(apiKeys.documents.detail(id), null);
 
-      qc.setQueriesData({ queryKey: keys.documents.lists() }, (old: DocumentListResponse | undefined) => {
+      qc.setQueriesData({ queryKey: apiKeys.documents.lists() }, (old: DocumentListResponse | undefined) => {
         if (!old) return old;
         return {
           ...old,
@@ -339,7 +339,7 @@ export const useDeleteDocument = () => {
     },
     onError: (_error, id, context) => {
       if (context?.prevDetail) {
-        qc.setQueryData(keys.documents.detail(id), context.prevDetail);
+        qc.setQueryData(apiKeys.documents.detail(id), context.prevDetail);
       }
       if (context?.prevLists) {
         context.prevLists.forEach(([queryKey, data]) => {
@@ -348,9 +348,9 @@ export const useDeleteDocument = () => {
       }
     },
     onSettled: () => {
-      qc.invalidateQueries({ queryKey: keys.documents.lists() });
-      qc.invalidateQueries({ queryKey: keys.documents.count() });
-      qc.invalidateQueries({ queryKey: keys.documents.stats() });
+      qc.invalidateQueries({ queryKey: apiKeys.documents.lists() });
+      qc.invalidateQueries({ queryKey: apiKeys.documents.count() });
+      qc.invalidateQueries({ queryKey: apiKeys.documents.stats() });
     },
   });
 };

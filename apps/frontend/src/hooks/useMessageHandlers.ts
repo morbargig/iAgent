@@ -4,6 +4,8 @@ import { generateUniqueId } from "../utils/id-generator";
 import { useSaveMessage, useDeleteMessage } from "../features/chats/api";
 import { StreamingClient } from "@iagent/chat-types";
 import { getBaseApiUrl } from "../config/config";
+import { queryClient } from "../lib/queryClient";
+import { apiKeys } from "../lib/keys";
 
 interface UseMessageHandlersProps {
   currentConversationId: string | null;
@@ -253,9 +255,7 @@ export const useMessageHandlers = ({
       console.error("Failed to delete message from MongoDB:", error);
       if (currentConvId && authToken) {
         try {
-          const { queryClient } = await import('../lib/queryClient');
-          const { keys } = await import('../lib/keys');
-          await queryClient.invalidateQueries({ queryKey: keys.chats.detail(currentConvId) });
+          await queryClient.invalidateQueries({ queryKey: apiKeys.chats.detail(currentConvId) });
         } catch (reloadError) {
           console.error("Failed to reload conversation after delete error:", reloadError);
         }

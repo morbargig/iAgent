@@ -1,7 +1,8 @@
-export const keys = {
+export const apiKeys = {
   auth: {
     all: ['auth'] as const,
     login: () => ['auth', 'login'] as const,
+    permissions: () => ['auth', 'permissions'] as const,
   },
   documents: {
     all: ['documents'] as const,
@@ -29,6 +30,9 @@ export const keys = {
   tools: {
     all: ['tools'] as const,
     pages: () => ['tools', 'pages'] as const,
+  },
+  countries: {
+    all: () => ['countries', 'all'] as const,
   },
 };
 

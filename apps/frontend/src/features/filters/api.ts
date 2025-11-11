@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { http } from '../../lib/http';
-import { keys } from '../../lib/keys';
+import { apiKeys } from '../../lib/keys';
 import { getApiUrl } from '../../config/config';
 
 export interface ChatFilter {
@@ -18,7 +18,7 @@ const getAuthToken = (): string | null => {
 
 export const useFilters = (chatId: string | number | null) => {
   return useQuery({
-    queryKey: keys.filters.list(chatId || ''),
+    queryKey: apiKeys.filters.list(chatId || ''),
     queryFn: async (): Promise<ChatFilter[]> => {
       if (!chatId) return [];
 
@@ -86,8 +86,8 @@ export const useCreateFilter = () => {
       return response.data;
     },
     onSuccess: (_data, { chatId }) => {
-      qc.invalidateQueries({ queryKey: keys.filters.list(chatId) });
-      qc.invalidateQueries({ queryKey: keys.filters.active(chatId) });
+      qc.invalidateQueries({ queryKey: apiKeys.filters.list(chatId) });
+      qc.invalidateQueries({ queryKey: apiKeys.filters.active(chatId) });
     },
   });
 };
@@ -118,12 +118,12 @@ export const useUpdateFilter = () => {
       return response.data;
     },
     onMutate: async ({ filterId, name }) => {
-      await qc.cancelQueries({ queryKey: keys.filters.detail(filterId) });
+      await qc.cancelQueries({ queryKey: apiKeys.filters.detail(filterId) });
 
-      const prevFilter = qc.getQueryData<ChatFilter>(keys.filters.detail(filterId));
+      const prevFilter = qc.getQueryData<ChatFilter>(apiKeys.filters.detail(filterId));
 
       if (prevFilter) {
-        qc.setQueryData(keys.filters.detail(filterId), {
+        qc.setQueryData(apiKeys.filters.detail(filterId), {
           ...prevFilter,
           name,
         });
@@ -133,12 +133,12 @@ export const useUpdateFilter = () => {
     },
     onError: (_error, { filterId }, context) => {
       if (context?.prevFilter) {
-        qc.setQueryData(keys.filters.detail(filterId), context.prevFilter);
+        qc.setQueryData(apiKeys.filters.detail(filterId), context.prevFilter);
       }
     },
     onSuccess: (_data, { filterId }) => {
-      qc.invalidateQueries({ queryKey: keys.filters.detail(filterId) });
-      qc.invalidateQueries({ queryKey: keys.filters.lists() });
+      qc.invalidateQueries({ queryKey: apiKeys.filters.detail(filterId) });
+      qc.invalidateQueries({ queryKey: apiKeys.filters.lists() });
     },
   });
 };
@@ -158,21 +158,21 @@ export const useDeleteFilter = () => {
       });
     },
     onMutate: async ({ filterId }) => {
-      await qc.cancelQueries({ queryKey: keys.filters.detail(filterId) });
+      await qc.cancelQueries({ queryKey: apiKeys.filters.detail(filterId) });
 
-      const prevFilter = qc.getQueryData<ChatFilter>(keys.filters.detail(filterId));
+      const prevFilter = qc.getQueryData<ChatFilter>(apiKeys.filters.detail(filterId));
 
-      qc.setQueryData(keys.filters.detail(filterId), undefined);
+      qc.setQueryData(apiKeys.filters.detail(filterId), undefined);
 
       return { prevFilter };
     },
     onError: (_error, { filterId }, context) => {
       if (context?.prevFilter) {
-        qc.setQueryData(keys.filters.detail(filterId), context.prevFilter);
+        qc.setQueryData(apiKeys.filters.detail(filterId), context.prevFilter);
       }
     },
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: keys.filters.lists() });
+      qc.invalidateQueries({ queryKey: apiKeys.filters.lists() });
     },
   });
 };
@@ -202,15 +202,15 @@ export const useSetActiveFilter = () => {
       );
     },
     onMutate: async ({ chatId, filterId }) => {
-      await qc.cancelQueries({ queryKey: keys.filters.active(chatId) });
-      await qc.cancelQueries({ queryKey: keys.filters.list(chatId) });
+      await qc.cancelQueries({ queryKey: apiKeys.filters.active(chatId) });
+      await qc.cancelQueries({ queryKey: apiKeys.filters.list(chatId) });
 
-      const prevActive = qc.getQueryData<ChatFilter | null>(keys.filters.active(chatId));
-      const prevList = qc.getQueryData<ChatFilter[]>(keys.filters.list(chatId));
+      const prevActive = qc.getQueryData<ChatFilter | null>(apiKeys.filters.active(chatId));
+      const prevList = qc.getQueryData<ChatFilter[]>(apiKeys.filters.list(chatId));
 
       if (prevList) {
         qc.setQueryData(
-          keys.filters.list(chatId),
+          apiKeys.filters.list(chatId),
           prevList.map((f) => ({
             ...f,
             isActive: f.filterId === filterId,
@@ -221,7 +221,7 @@ export const useSetActiveFilter = () => {
       if (prevList) {
         const newActive = prevList.find((f) => f.filterId === filterId);
         if (newActive) {
-          qc.setQueryData(keys.filters.active(chatId), { ...newActive, isActive: true });
+          qc.setQueryData(apiKeys.filters.active(chatId), { ...newActive, isActive: true });
         }
       }
 
@@ -229,15 +229,15 @@ export const useSetActiveFilter = () => {
     },
     onError: (_error, { chatId }, context) => {
       if (context?.prevActive) {
-        qc.setQueryData(keys.filters.active(chatId), context.prevActive);
+        qc.setQueryData(apiKeys.filters.active(chatId), context.prevActive);
       }
       if (context?.prevList) {
-        qc.setQueryData(keys.filters.list(chatId), context.prevList);
+        qc.setQueryData(apiKeys.filters.list(chatId), context.prevList);
       }
     },
     onSuccess: (_data, { chatId }) => {
-      qc.invalidateQueries({ queryKey: keys.filters.active(chatId) });
-      qc.invalidateQueries({ queryKey: keys.filters.list(chatId) });
+      qc.invalidateQueries({ queryKey: apiKeys.filters.active(chatId) });
+      qc.invalidateQueries({ queryKey: apiKeys.filters.list(chatId) });
     },
   });
 };

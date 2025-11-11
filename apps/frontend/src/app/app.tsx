@@ -35,6 +35,8 @@ import { getBaseApiUrl } from "../config/config";
 import { generateUniqueId } from "../utils/id-generator";
 import { useChats, useChat, useSaveMessage, useCreateChat, useDeleteChat, useUpdateChatName, useDeleteMessage } from "../features/chats/api";
 import { setAuthTokenGetter } from "../lib/http";
+import { queryClient } from "../lib/queryClient";
+import { apiKeys } from "../lib/keys";
 
 // Debug: Log environment info
 // console.log('🔍 Environment Check:', {
@@ -1420,9 +1422,7 @@ const App = () => {
       console.error("Failed to delete message from MongoDB:", error);
       if (currentConvId && authToken) {
         try {
-          const { queryClient } = await import('../lib/queryClient');
-          const { keys } = await import('../lib/keys');
-          await queryClient.invalidateQueries({ queryKey: keys.chats.detail(currentConvId) });
+          await queryClient.invalidateQueries({ queryKey: apiKeys.chats.detail(currentConvId) });
         } catch (reloadError) {
           console.error("Failed to reload conversation after delete error:", reloadError);
         }
