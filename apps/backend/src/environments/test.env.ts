@@ -1,6 +1,7 @@
 // Test environment configuration
 import type { Environment } from './environment.type';
-import { baseEnvironment, requireEnv, getPort, getHost } from './environment.base';
+import { baseEnvironment } from './environment.base';
+import { requireEnv, getPort, getHost } from './environment.helper';
 
 const port = getPort();
 const host = getHost();

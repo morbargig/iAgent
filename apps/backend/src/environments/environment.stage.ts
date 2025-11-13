@@ -1,6 +1,7 @@
 // Staging environment configuration
 import type { Environment } from './environment.type';
-import { baseEnvironment, getPort, getHost } from './environment.base';
+import { baseEnvironment } from './environment.base';
+import { getPort, getHost, getCorsOrigins } from './environment.helper';
 
 const port = getPort();
 const host = getHost();
@@ -22,13 +23,7 @@ export const environment: Environment = {
 
   cors: {
     ...baseEnvironment.cors,
-    origins: process.env.CORS_ORIGINS ? process.env.CORS_ORIGINS.split(',') : [
-      'https://morbargig.github.io',
-      'https://bargigsoftwar.github.io',
-      'https://iagent-stage.onrender.com',
-      'http://localhost:3000',
-      `http://localhost:${port}`
-    ],
+    origins: getCorsOrigins(),
   },
 
   swagger: {

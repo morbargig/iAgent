@@ -28,7 +28,7 @@ export interface Environment {
   };
   
   cors: {
-    origins: string[];
+    origins: (string | RegExp)[];
     methods: string[];
     allowedHeaders: string[];
     credentials: boolean;

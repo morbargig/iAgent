@@ -16,6 +16,12 @@
         "assets": ["apps/backend/src/assets"]
       },
       "configurations": {
+        "local": {
+          "optimization": false,
+          "extractLicenses": false,
+          "sourceMap": true,
+          "watch": true
+        },
         "development": {
           "optimization": false,
           "extractLicenses": false,
@@ -68,13 +74,18 @@
     },
     "serve": {
       "executor": "@nx/js:node",
-      "defaultConfiguration": "development",
+      "defaultConfiguration": "local",
       "options": {
-        "buildTarget": "@iagent/backend:build:development",
+        "buildTarget": "@iagent/backend:build:local",
         "watch": true,
         "runBuildTargetDependencies": true
       },
       "configurations": {
+        "local": {
+          "buildTarget": "@iagent/backend:build:local",
+          "watch": true,
+          "runBuildTargetDependencies": true
+        },
         "development": {
           "buildTarget": "@iagent/backend:build:development",
           "watch": true,

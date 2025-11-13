@@ -1,21 +1,5 @@
 import type { Environment } from './environment.type';
-
-export const requireEnv = (varName: string, context?: string): string => {
-  const value = process.env[varName];
-  if (!value) {
-    const contextMsg = context ? ` in your ${context}` : '';
-    throw new Error(`${varName} environment variable is required. Please set it${contextMsg}.`);
-  }
-  return value;
-};
-
-export const getPort = (): number => {
-  return parseInt(process.env.PORT || '3030', 10);
-};
-
-export const getHost = (): string => {
-  return process.env.HOST || (process.env.NODE_ENV === 'production' ? '0.0.0.0' : 'localhost');
-};
+import { requireEnv, getPort, getCorsOrigins } from './environment.helper';
 
 export const baseEnvironment: Omit<Environment, 'production' | 'port' | 'host' | 'apiUrl' | 'frontendUrl'> = {
   mongodb: {
@@ -36,9 +20,7 @@ export const baseEnvironment: Omit<Environment, 'production' | 'port' | 'host' |
   },
 
   cors: {
-    origins: [
-      `http://localhost:${getPort()}`
-    ],
+    origins: getCorsOrigins(),
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization', 'Cache-Control', 'x-user-id'],
     credentials: true

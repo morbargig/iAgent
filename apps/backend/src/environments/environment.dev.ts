@@ -1,6 +1,7 @@
 // Development environment configuration
 import type { Environment } from './environment.type';
-import { baseEnvironment, getPort, getHost } from './environment.base';
+import { baseEnvironment } from './environment.base';
+import { getPort, getHost, getCorsOrigins } from './environment.helper';
 
 const port = getPort();
 const host = getHost();
@@ -17,14 +18,7 @@ export const environment: Environment = {
 
   cors: {
     ...baseEnvironment.cors,
-    origins: [
-      'http://localhost:3000',
-      'http://localhost:3001',
-      `http://localhost:${port}`,
-      'https://morbargig.github.io',
-      'https://bargigsoftwar.github.io',
-      'https://iagent-1-jzyj.onrender.com',
-    ],
+    origins: getCorsOrigins(),
   },
 
   swagger: {
@@ -34,3 +28,4 @@ export const environment: Environment = {
     serverUrl: `http://localhost:${port}`
   },
 };
+

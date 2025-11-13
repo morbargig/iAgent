@@ -1,7 +1,8 @@
 // This file will be replaced by file replacement in project.json
-// Local environment configuration
+// Local environment configuration (default)
 import type { Environment } from './environment.type';
-import { baseEnvironment, getPort, getHost } from './environment.base';
+import { baseEnvironment } from './environment.base';
+import { getPort, getHost } from './environment.helper';
 
 const port = getPort();
 const host = getHost();

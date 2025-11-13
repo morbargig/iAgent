@@ -24,6 +24,9 @@ The backend application uses **file replacement** in `project.json` to switch be
 # Local (default - uses environment.ts)
 npx nx serve backend
 
+# Local (explicit)
+npx nx serve backend --configuration=local
+
 # Development
 npx nx serve backend --configuration=development
 
@@ -40,8 +43,8 @@ npx nx serve backend --configuration=production
 ### Building for Different Environments:
 
 ```bash
-# Local (default)
-npx nx build backend
+# Local (default for serve, but build defaults to production)
+npx nx build backend --configuration=local
 
 # Development
 npx nx build backend --configuration=development
@@ -52,8 +55,8 @@ npx nx build backend --configuration=stage
 # Test
 npx nx build backend --configuration=test
 
-# Production
-npx nx build backend --configuration=production
+# Production (default for build)
+npx nx build backend
 ```
 
 ## How File Replacement Works
@@ -253,7 +256,8 @@ Files are stored in MongoDB GridFS with the following metadata:
 ```
 apps/backend/src/environments/
 ├── environment.base.ts    # Shared base configuration
-├── environment.ts          # Local environment (gets replaced at build time)
+├── environment.helper.ts  # Helper functions for environment configuration
+├── environment.ts          # Local environment (default, gets replaced at build time)
 ├── environment.dev.ts      # Development environment
 ├── environment.stage.ts    # Staging environment
 ├── environment.prod.ts     # Production environment
