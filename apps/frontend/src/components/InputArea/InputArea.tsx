@@ -394,7 +394,7 @@ export function InputArea({
               : "0",
           zIndex: 10,
           background: isDarkMode
-            ? "linear-gradient(180deg, rgba(52, 53, 65, 0) 0%, rgba(52, 53, 65, 0.8) 50%, #343541 100%)"
+            ? "linear-gradient(180deg, rgba(10, 10, 10, 0) 0%, rgba(10, 10, 10, 0.6) 50%, rgba(10, 10, 10, 0.95) 100%)"
             : "linear-gradient(180deg, rgba(255, 255, 255, 0) 0%, rgba(255, 255, 255, 0.8) 50%, #ffffff 100%)",
           paddingTop: "20px",
           paddingBottom: "20px",
