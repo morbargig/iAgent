@@ -2529,12 +2529,20 @@ export function ChatArea({
 
   const uniqueMessages = useMemo(() => {
     const seen = new Set<string>();
-    return messages.filter((msg) => {
+    const filtered = messages.filter((msg) => {
       if (seen.has(msg.id)) {
         return false;
       }
       seen.add(msg.id);
       return true;
+    });
+    return filtered.sort((a, b) => {
+      const timeA = a.timestamp instanceof Date ? a.timestamp.getTime() : new Date(a.timestamp).getTime();
+      const timeB = b.timestamp instanceof Date ? b.timestamp.getTime() : new Date(b.timestamp).getTime();
+      if (timeA !== timeB) {
+        return timeA - timeB;
+      }
+      return a.id.localeCompare(b.id);
     });
   }, [messages]);
 

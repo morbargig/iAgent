@@ -91,6 +91,19 @@ export const Sidebar = React.forwardRef<HTMLDivElement, SidebarProps>(
       isRTL,
     });
 
+    const isNewChatEmpty = React.useMemo(() => {
+      if (conversations.length === 0) {
+        return false;
+      }
+      if (currentConversationId === null) {
+        return true;
+      }
+      const currentConversation = conversations.find(
+        (conv) => conv.id === currentConversationId
+      );
+      return currentConversation ? currentConversation.messages.length === 0 : false;
+    }, [currentConversationId, conversations]);
+
     const {
       editingId,
       editingTitle,
@@ -166,6 +179,7 @@ export const Sidebar = React.forwardRef<HTMLDivElement, SidebarProps>(
             id="iagent-new-chat-button"
             className="iagent-new-conversation-button"
             onClick={onNewConversation}
+            disabled={isNewChatEmpty}
             variant="outlined"
             fullWidth
             sx={{
@@ -181,7 +195,7 @@ export const Sidebar = React.forwardRef<HTMLDivElement, SidebarProps>(
               textTransform: "none",
               transition: "all 150ms cubic-bezier(0.4, 0, 0.2, 1)",
               boxShadow: "none",
-              "&:hover": {
+              "&:hover:not(:disabled)": {
                 backgroundColor: isDarkMode
                   ? "rgba(255, 255, 255, 0.05)"
                   : "rgba(0, 0, 0, 0.03)",
@@ -189,6 +203,10 @@ export const Sidebar = React.forwardRef<HTMLDivElement, SidebarProps>(
                   ? "rgba(255, 255, 255, 0.15)"
                   : theme.palette.text.secondary,
                 boxShadow: "none",
+              },
+              "&:disabled": {
+                opacity: 0.5,
+                cursor: "not-allowed",
               },
             }}
           >
@@ -689,6 +707,7 @@ export const Sidebar = React.forwardRef<HTMLDivElement, SidebarProps>(
               {/* New Chat Button */}
               <Button
                 onClick={onNewConversation}
+                disabled={isNewChatEmpty}
                 variant="outlined"
                 fullWidth
                 sx={{
@@ -703,10 +722,14 @@ export const Sidebar = React.forwardRef<HTMLDivElement, SidebarProps>(
                   transition: "all 150ms cubic-bezier(0.4, 0, 0.2, 1)",
                   boxShadow: "none",
                   marginTop: "8px",
-                  "&:hover": {
+                  "&:hover:not(:disabled)": {
                     backgroundColor: theme.palette.action.hover,
                     borderColor: theme.palette.text.secondary,
                     boxShadow: "none",
+                  },
+                  "&:disabled": {
+                    opacity: 0.5,
+                    cursor: "not-allowed",
                   },
                 }}
               >

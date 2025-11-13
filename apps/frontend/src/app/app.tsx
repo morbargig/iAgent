@@ -619,6 +619,11 @@ const App = () => {
             messageFilterSnapshot.filterId,
             messageFilterSnapshot
           );
+          
+          const lastMessageTimestamp = messagesForStreaming.length > 0 
+            ? messagesForStreaming[messagesForStreaming.length - 1].timestamp.getTime()
+            : Date.now();
+          assistantMessage.timestamp = new Date(lastMessageTimestamp + 1);
 
           const updatedConversation: Conversation = {
             ...currentConv,
@@ -895,6 +900,7 @@ const App = () => {
       if (attachments && attachments.length > 0) {
         (userMessage as any).attachments = attachments;
       }
+      
       const assistantMessage = createMessage(
         "assistant",
         "",
@@ -902,6 +908,8 @@ const App = () => {
         messageFilterSnapshot.filterId,
         messageFilterSnapshot
       );
+      
+      assistantMessage.timestamp = new Date(userMessage.timestamp.getTime() + 1);
 
       const shouldGenerateTitle =
         currentConv &&

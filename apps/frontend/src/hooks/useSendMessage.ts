@@ -106,6 +106,7 @@ export const useSendMessage = ({
       if (attachments && attachments.length > 0) {
         (userMessage as any).attachments = attachments;
       }
+      
       const assistantMessage = createMessage(
         "assistant",
         "",
@@ -113,6 +114,8 @@ export const useSendMessage = ({
         messageFilterSnapshot.filterId,
         messageFilterSnapshot
       );
+      
+      assistantMessage.timestamp = new Date(userMessage.timestamp.getTime() + 1);
 
       const shouldGenerateTitle =
         currentConv &&
