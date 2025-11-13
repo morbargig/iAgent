@@ -40,6 +40,11 @@ export interface Environment {
     description: string;
     version: string;
     serverUrl?: string;
+    contact?: {
+      name: string;
+      url?: string;
+      email?: string;
+    };
   };
   
   logging: {

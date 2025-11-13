@@ -11,8 +11,6 @@ import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { AppModule } from './app/app.module.js';
 import { environment } from './environments/environment';
 
-
-
 async function bootstrap() {
   try {
     const app = await NestFactory.create<NestExpressApplication>(AppModule);
@@ -20,8 +18,9 @@ async function bootstrap() {
     // Enable CORS for frontend communication
     if (environment.features.enableCors) {
       const isOriginAllowed = (origin: string | undefined, allowedOrigins: (string | RegExp)[]): boolean => {
+        // Allow undefined origin (same-origin requests, e.g., Swagger UI)
         if (!origin) {
-          return false;
+          return true;
         }
         return allowedOrigins.some((allowedOrigin) => {
           if (typeof allowedOrigin === 'string') {
@@ -38,7 +37,7 @@ async function bootstrap() {
           if (isOriginAllowed(requestOrigin || undefined, environment.cors.origins)) {
             callback(null, true);
           } else {
-            callback(new Error('Not allowed by CORS'));
+            callback(new Error(`Not allowed by CORS: ${requestOrigin}`));
           }
         },
         methods: environment.cors.methods,
@@ -49,8 +48,7 @@ async function bootstrap() {
 
     const globalPrefix = 'api';
     app.setGlobalPrefix(globalPrefix);
-
-    // Swagger configuration
+    // Swagger configuration (before global prefix to avoid routing conflicts)
     if (environment.features.enableSwagger) {
       // Use serverUrl from environment configuration
       let baseUrl = environment.swagger.serverUrl;
@@ -72,14 +70,19 @@ async function bootstrap() {
       // Log the Swagger base URL for debugging
       Logger.log(`📚 Swagger API Base URL: ${baseUrl}`);
 
-      const config = new DocumentBuilder()
+      const configBuilder = new DocumentBuilder()
         .setTitle(environment.swagger.title)
-        .setVersion(environment.swagger.version)
-        .setContact(
-          'iAgent',
-          'https://morbargig.github.io/iAgent/', // Website URL
-          'morbargig@gmail.com'
-        )
+        .setVersion(environment.swagger.version);
+      
+      if (environment.swagger.contact) {
+        configBuilder.setContact(
+          environment.swagger.contact.name,
+          environment.swagger.contact.url || '',
+          environment.swagger.contact.email || ''
+        );
+      }
+      
+      const config = configBuilder
         .addTag('Chat', 'Chat and messaging endpoints')
         .addTag('Authentication', 'Authentication endpoints')
         .addTag('Chat Management', 'Chat CRUD operations')
@@ -95,7 +98,7 @@ async function bootstrap() {
             description: 'Enter JWT token',
             in: 'header',
           },
-          'JWT-auth', // This name here is important for matching up with @ApiBearerAuth() in your controller!
+          'JWT-auth',
         )
         .build();
 
@@ -107,11 +110,8 @@ async function bootstrap() {
         .swagger-ui .info .title { color: #10a37f }
       `,
         swaggerOptions: {
-          // Preserve the selected server in the UI
           persistAuthorization: true,
-          // Show the base server URL properly
           displayRequestDuration: true,
-          // Enable deep linking
           deepLinking: true,
         },
       });

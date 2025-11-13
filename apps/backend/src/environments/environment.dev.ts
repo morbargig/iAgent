@@ -18,7 +18,10 @@ export const environment: Environment = {
 
   cors: {
     ...baseEnvironment.cors,
-    origins: getCorsOrigins(),
+    origins: [
+      `http://localhost:${port}`,
+      `http://localhost:3000`,
+      ...getCorsOrigins()],
   },
 
   swagger: {

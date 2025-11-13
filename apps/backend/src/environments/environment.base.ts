@@ -31,7 +31,12 @@ export const baseEnvironment: Omit<Environment, 'production' | 'port' | 'host' |
     title: 'iAgent API',
     description: 'iAgent API documentation',
     version: '1.0.0',
-    serverUrl: `http://localhost:${getPort()}`
+    serverUrl: `http://localhost:${getPort()}`,
+    contact: {
+      name: process.env.SWAGGER_CONTACT_NAME || 'iAgent',
+      url: process.env.SWAGGER_CONTACT_URL || 'https://morbargig.github.io/iAgent/',
+      email: process.env.SWAGGER_CONTACT_EMAIL || 'morbargig@gmail.com'
+    }
   },
 
   logging: {

@@ -67,7 +67,7 @@ export class AppController {
         health: '/api',
         login: '/api/auth/login',
         stream: '/api/chat/stream',
-        docs: '/api/docs'
+        docs: '/docs'
       }
     };
   }

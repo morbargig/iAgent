@@ -2,7 +2,7 @@
 // Local environment configuration (default)
 import type { Environment } from './environment.type';
 import { baseEnvironment } from './environment.base';
-import { getPort, getHost } from './environment.helper';
+import { getPort, getHost, getCorsOrigins } from './environment.helper';
 
 const port = getPort();
 const host = getHost();
@@ -16,6 +16,14 @@ export const environment: Environment = {
 
   // Base configuration with local-specific overrides
   ...baseEnvironment,
+
+  cors: {
+    ...baseEnvironment.cors,
+    origins: [
+      `http://localhost:${port}`,
+      `http://localhost:3000`,
+      ...getCorsOrigins()],
+  },
 
   swagger: {
     ...baseEnvironment.swagger,

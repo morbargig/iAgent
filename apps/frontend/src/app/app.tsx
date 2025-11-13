@@ -954,14 +954,6 @@ const App = () => {
     };
   }, []);
 
-    useEffect(() => {
-    if (!isSidebarOpen && window.innerWidth >= 768) {
-      const isMobile = window.innerWidth < 768;
-      setIsSidebarOpen(!isMobile);
-    }
-  }, []);
-
-
   const toggleTheme = React.useCallback(() => {
     setIsDarkMode((prev) => !prev);
   }, []);
