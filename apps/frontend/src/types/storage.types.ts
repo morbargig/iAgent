@@ -68,6 +68,7 @@ export interface LocalStorageValues {
     mockMode: boolean;
     [key: string]: unknown;
   };
+  'header-buttons-order': string[];
 }
 
 export type LocalStorageKeys = keyof LocalStorageValues;
@@ -125,6 +126,7 @@ export const localStorageDefaults: LocalStorageValues = {
   'app-settings': {
     mockMode: true,
   },
+  'header-buttons-order': ['language', 'mockMode', 'theme', 'info', 'contact'],
 };
 
 export const sessionStorageDefaults: SessionStorageValues = {

@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, MouseEvent, useMemo, useCallback } from "react";
+import { useEffect, useRef, useState, MouseEvent, useMemo, useCallback, ReactNode } from "react";
 import {
   Box,
   Typography,
@@ -56,6 +56,7 @@ import { LanguageSwitcher } from "./LanguageSwitcher";
 import { FilterDetailsDialog } from "./FilterDetailsDialog";
 import { getApiUrl, getBaseApiUrl } from "../config/config";
 import { environment } from "../environments/environment";
+import { useAppLocalStorage } from "../hooks/storage";
 
 interface ChatAreaProps {
   messages: Message[];
@@ -79,6 +80,84 @@ interface ChatAreaProps {
   onOpenAppDetails?: () => void; // Handler for opening app details dialog
 }
 
+interface DraggableButtonProps {
+  id: string;
+  children: ReactNode;
+  isDarkMode: boolean;
+  theme: any;
+  onDragStart: (id: string) => void;
+  onDragOver: (e: React.DragEvent) => void;
+  onDrop: (id: string) => void;
+  isDragging: boolean;
+}
+
+const DraggableButton: React.FC<DraggableButtonProps> = ({
+  id,
+  children,
+  isDarkMode,
+  theme,
+  onDragStart,
+  onDragOver,
+  onDrop,
+  isDragging,
+}) => {
+  const [hasDragged, setHasDragged] = useState(false);
+  const dragStartPosRef = useRef<{ x: number; y: number } | null>(null);
+
+  return (
+    <Box
+      draggable
+      onMouseDown={(e) => {
+        dragStartPosRef.current = { x: e.clientX, y: e.clientY };
+        setHasDragged(false);
+      }}
+      onDragStart={(e) => {
+        onDragStart(id);
+        e.dataTransfer.effectAllowed = 'move';
+        setHasDragged(true);
+      }}
+      onDragEnd={() => {
+        setTimeout(() => {
+          setHasDragged(false);
+          dragStartPosRef.current = null;
+        }, 0);
+      }}
+      onDragOver={(e) => {
+        e.preventDefault();
+        e.dataTransfer.dropEffect = 'move';
+        onDragOver(e);
+      }}
+      onDrop={(e) => {
+        e.preventDefault();
+        onDrop(id);
+        setHasDragged(false);
+        dragStartPosRef.current = null;
+      }}
+      onClick={(e) => {
+        if (hasDragged && dragStartPosRef.current) {
+          const currentPos = { x: e.clientX, y: e.clientY };
+          const distance = Math.sqrt(
+            Math.pow(currentPos.x - dragStartPosRef.current.x, 2) +
+            Math.pow(currentPos.y - dragStartPosRef.current.y, 2)
+          );
+          if (distance > 5) {
+            e.preventDefault();
+            e.stopPropagation();
+          }
+        }
+      }}
+      sx={{
+        cursor: isDragging ? 'grabbing' : 'grab',
+        opacity: isDragging ? 0.5 : 1,
+        transition: 'opacity 150ms',
+        userSelect: 'none',
+      }}
+    >
+      {children}
+    </Box>
+  );
+};
+
 // Shared Header Component
 const ChatHeader = ({
   onToggleSidebar,
@@ -101,6 +180,8 @@ const ChatHeader = ({
 }) => {
   const theme = useTheme();
   const { t } = useTranslation();
+  const [buttonOrder, setButtonOrder] = useAppLocalStorage('header-buttons-order');
+  const [draggedButtonId, setDraggedButtonId] = useState<string | null>(null);
   const [userMenuAnchor, setUserMenuAnchor] = useState<HTMLElement | null>(
     null
   );
@@ -146,6 +227,248 @@ const ChatHeader = ({
     handleInfoMenuClose();
     if (onOpenAppDetails) {
       onOpenAppDetails();
+    }
+  };
+
+  const handleDragStart = (id: string) => {
+    setDraggedButtonId(id);
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+  };
+
+  const handleDrop = (targetId: string) => {
+    if (!draggedButtonId || draggedButtonId === targetId) {
+      setDraggedButtonId(null);
+      return;
+    }
+
+    const currentOrder = [...buttonOrder];
+    const draggedIndex = currentOrder.indexOf(draggedButtonId);
+    const targetIndex = currentOrder.indexOf(targetId);
+
+    if (draggedIndex === -1 || targetIndex === -1) {
+      setDraggedButtonId(null);
+      return;
+    }
+
+    currentOrder.splice(draggedIndex, 1);
+    currentOrder.splice(targetIndex, 0, draggedButtonId);
+    setButtonOrder(currentOrder);
+    setDraggedButtonId(null);
+  };
+
+  const availableButtons = ['language', 'mockMode', 'theme', 'info', 'contact'];
+  const orderedButtons = buttonOrder.filter(id => availableButtons.includes(id));
+  const missingButtons = availableButtons.filter(id => !buttonOrder.includes(id));
+  const finalOrder = [...orderedButtons, ...missingButtons];
+
+  const renderButton = (buttonId: string) => {
+    switch (buttonId) {
+      case 'language':
+        return (
+          <DraggableButton
+            key={buttonId}
+            id={buttonId}
+            isDarkMode={isDarkMode}
+            theme={theme}
+            onDragStart={handleDragStart}
+            onDragOver={handleDragOver}
+            onDrop={handleDrop}
+            isDragging={draggedButtonId === buttonId}
+          >
+            <LanguageSwitcher isDarkMode={isDarkMode} />
+          </DraggableButton>
+        );
+      case 'mockMode':
+        return (
+          <DraggableButton
+            key={buttonId}
+            id={buttonId}
+            isDarkMode={isDarkMode}
+            theme={theme}
+            onDragStart={handleDragStart}
+            onDragOver={handleDragOver}
+            onDrop={handleDrop}
+            isDragging={draggedButtonId === buttonId}
+          >
+            <Tooltip
+              title={
+                useMockMode ? t("common.disableMockApi") : t("common.enableMockApi")
+              }
+            >
+              <IconButton
+                onClick={onToggleMockMode}
+                className="no-rtl-transform"
+                aria-label={
+                  useMockMode ? t("common.disableMockApi") : t("common.enableMockApi")
+                }
+                sx={{
+                  marginInlineEnd: "8px",
+                  width: "36px",
+                  height: "36px",
+                  borderRadius: "8px",
+                  border: `1px solid ${theme.palette.divider}`,
+                  backgroundColor: useMockMode
+                    ? isDarkMode
+                      ? "rgba(52, 53, 65, 1)"
+                      : "rgba(0, 0, 0, 0.05)"
+                    : "transparent",
+                  color: useMockMode
+                    ? theme.palette.primary.main
+                    : theme.palette.text.secondary,
+                  transition: "all 150ms cubic-bezier(0.4, 0, 0.2, 1)",
+                  "&:hover": {
+                    backgroundColor: useMockMode
+                      ? isDarkMode
+                        ? "rgba(52, 53, 65, 0.8)"
+                        : "rgba(0, 0, 0, 0.08)"
+                      : theme.palette.action.hover,
+                    borderColor: useMockMode
+                      ? theme.palette.primary.main
+                      : theme.palette.text.secondary,
+                  },
+                  "&:active": {
+                    transform: "scale(0.95)",
+                  },
+                }}
+              >
+                {useMockMode ? (
+                  <MockIcon sx={{ fontSize: "18px" }} />
+                ) : (
+                  <ApiIcon sx={{ fontSize: "18px" }} />
+                )}
+              </IconButton>
+            </Tooltip>
+          </DraggableButton>
+        );
+      case 'theme':
+        return (
+          <DraggableButton
+            key={buttonId}
+            id={buttonId}
+            isDarkMode={isDarkMode}
+            theme={theme}
+            onDragStart={handleDragStart}
+            onDragOver={handleDragOver}
+            onDrop={handleDrop}
+            isDragging={draggedButtonId === buttonId}
+          >
+            <IconButton
+              onClick={onToggleTheme}
+              className="no-rtl-transform"
+              aria-label={isDarkMode ? t("theme.light") : t("theme.dark")}
+              sx={{
+                width: "36px",
+                height: "36px",
+                borderRadius: "8px",
+                border: `1px solid ${theme.palette.divider}`,
+                backgroundColor: "transparent",
+                color: theme.palette.text.secondary,
+                transition: "all 150ms cubic-bezier(0.4, 0, 0.2, 1)",
+                "&:hover": {
+                  backgroundColor: theme.palette.action.hover,
+                  borderColor: theme.palette.text.secondary,
+                },
+                "&:active": {
+                  transform: "scale(0.95)",
+                },
+              }}
+            >
+              {isDarkMode ? (
+                <LightModeIcon sx={{ fontSize: "18px" }} />
+              ) : (
+                <DarkModeIcon sx={{ fontSize: "18px" }} />
+              )}
+            </IconButton>
+          </DraggableButton>
+        );
+      case 'info':
+        if (!onOpenAppDetails) return null;
+        return (
+          <DraggableButton
+            key={buttonId}
+            id={buttonId}
+            isDarkMode={isDarkMode}
+            theme={theme}
+            onDragStart={handleDragStart}
+            onDragOver={handleDragOver}
+            onDrop={handleDrop}
+            isDragging={draggedButtonId === buttonId}
+          >
+            <Tooltip title={t("appDetails.title")}>
+              <IconButton
+                onClick={handleInfoMenuOpen}
+                className="no-rtl-transform"
+                aria-label={t("appDetails.title")}
+                sx={{
+                  width: "36px",
+                  height: "36px",
+                  borderRadius: "8px",
+                  border: `1px solid ${theme.palette.divider}`,
+                  backgroundColor: infoMenuAnchor
+                    ? theme.palette.action.selected
+                    : "transparent",
+                  color: theme.palette.text.secondary,
+                  transition: "all 150ms cubic-bezier(0.4, 0, 0.2, 1)",
+                  "&:hover": {
+                    backgroundColor: theme.palette.action.hover,
+                    borderColor: theme.palette.text.secondary,
+                  },
+                  "&:active": {
+                    transform: "scale(0.95)",
+                  },
+                }}
+              >
+                <InfoIcon sx={{ fontSize: "18px" }} />
+              </IconButton>
+            </Tooltip>
+          </DraggableButton>
+        );
+      case 'contact':
+        return (
+          <DraggableButton
+            key={buttonId}
+            id={buttonId}
+            isDarkMode={isDarkMode}
+            theme={theme}
+            onDragStart={handleDragStart}
+            onDragOver={handleDragOver}
+            onDrop={handleDrop}
+            isDragging={draggedButtonId === buttonId}
+          >
+            <Tooltip title={t("appDetails.contact")}>
+              <IconButton
+                onClick={handleContactMenuOpen}
+                className="no-rtl-transform"
+                aria-label={t("appDetails.contact")}
+                sx={{
+                  width: "36px",
+                  height: "36px",
+                  borderRadius: "8px",
+                  border: `1px solid ${theme.palette.divider}`,
+                  backgroundColor: contactMenuAnchor
+                    ? theme.palette.action.selected
+                    : "transparent",
+                  color: theme.palette.text.secondary,
+                  transition: "all 150ms cubic-bezier(0.4, 0, 0.2, 1)",
+                  "&:hover": {
+                    backgroundColor: theme.palette.action.hover,
+                    borderColor: theme.palette.text.secondary,
+                  },
+                  "&:active": {
+                    transform: "scale(0.95)",
+                  },
+                }}
+              >
+                <ContactMailIcon sx={{ fontSize: "18px" }} />
+              </IconButton>
+            </Tooltip>
+          </DraggableButton>
+        );
+      default:
+        return null;
     }
   };
 
@@ -218,226 +541,72 @@ const ChatHeader = ({
 
       <Box sx={{ flex: 1 }} />
 
-      {/* Language Switcher */}
-      <Box sx={{ marginInlineEnd: "8px" }}>
-        <LanguageSwitcher isDarkMode={isDarkMode} />
+      {/* Draggable Buttons */}
+      <Box sx={{ display: "flex", alignItems: "center", gap: "4px" }}>
+        {finalOrder.map((buttonId) => renderButton(buttonId))}
       </Box>
 
-      {/* Mock Mode Toggle - ChatGPT Style */}
-      <Tooltip
-        title={
-          useMockMode ? t("common.disableMockApi") : t("common.enableMockApi")
-        }
-      >
-        <IconButton
-          onClick={onToggleMockMode}
-          className="no-rtl-transform"
-          aria-label={
-            useMockMode ? t("common.disableMockApi") : t("common.enableMockApi")
-          }
+      {/* Info Menu Popover */}
+      {onOpenAppDetails && (
+        <Popover
+          open={Boolean(infoMenuAnchor)}
+          anchorEl={infoMenuAnchor}
+          onClose={handleInfoMenuClose}
+          anchorOrigin={{
+            vertical: "bottom",
+            horizontal: "right",
+          }}
+          transformOrigin={{
+            vertical: "top",
+            horizontal: "right",
+          }}
           sx={{
-            marginInlineEnd: "8px",
-            width: "36px",
-            height: "36px",
-            borderRadius: "8px",
-            border: `1px solid ${theme.palette.divider}`,
-            backgroundColor: useMockMode
-              ? isDarkMode
-                ? "rgba(52, 53, 65, 1)"
-                : "rgba(0, 0, 0, 0.05)"
-              : "transparent",
-            color: useMockMode
-              ? theme.palette.primary.main
-              : theme.palette.text.secondary,
-            transition: "all 150ms cubic-bezier(0.4, 0, 0.2, 1)",
-            "&:hover": {
-              backgroundColor: useMockMode
-                ? isDarkMode
-                  ? "rgba(52, 53, 65, 0.8)"
-                  : "rgba(0, 0, 0, 0.08)"
-                : theme.palette.action.hover,
-              borderColor: useMockMode
-                ? theme.palette.primary.main
-                : theme.palette.text.secondary,
-            },
-            "&:active": {
-              transform: "scale(0.95)",
+            "& .MuiPaper-root": {
+              mt: 1,
+              minWidth: 200,
+              borderRadius: "12px",
+              border: `1px solid ${theme.palette.divider}`,
+              boxShadow: isDarkMode
+                ? "0 8px 32px rgba(0, 0, 0, 0.4)"
+                : "0 8px 32px rgba(0, 0, 0, 0.12)",
+              backgroundColor: theme.palette.background.paper,
             },
           }}
         >
-          {useMockMode ? (
-            <MockIcon sx={{ fontSize: "18px" }} />
-          ) : (
-            <ApiIcon sx={{ fontSize: "18px" }} />
-          )}
-        </IconButton>
-      </Tooltip>
-
-      <IconButton
-        onClick={onToggleTheme}
-        className="no-rtl-transform"
-        aria-label={isDarkMode ? t("theme.light") : t("theme.dark")}
-        sx={{
-          width: "36px",
-          height: "36px",
-          borderRadius: "8px",
-          border: `1px solid ${theme.palette.divider}`,
-          backgroundColor: "transparent",
-          color: theme.palette.text.secondary,
-          transition: "all 150ms cubic-bezier(0.4, 0, 0.2, 1)",
-          "&:hover": {
-            backgroundColor: theme.palette.action.hover,
-            borderColor: theme.palette.text.secondary,
-          },
-          "&:active": {
-            transform: "scale(0.95)",
-          },
-        }}
-      >
-        {isDarkMode ? (
-          <LightModeIcon sx={{ fontSize: "18px" }} />
-        ) : (
-          <DarkModeIcon sx={{ fontSize: "18px" }} />
-        )}
-      </IconButton>
-
-      {/* Info Button */}
-      {onOpenAppDetails && (
-        <>
-          <Box
-            sx={{
-              width: "1px",
-              height: "16px",
-              backgroundColor: theme.palette.divider,
-              marginInline: "8px",
-            }}
-          />
-          <Tooltip title={t("appDetails.title")}>
-            <IconButton
-              onClick={handleInfoMenuOpen}
-              className="no-rtl-transform"
-              aria-label={t("appDetails.title")}
-              sx={{
-                width: "36px",
-                height: "36px",
-                borderRadius: "8px",
-                border: `1px solid ${theme.palette.divider}`,
-                backgroundColor: infoMenuAnchor
-                  ? theme.palette.action.selected
-                  : "transparent",
-                color: theme.palette.text.secondary,
-                transition: "all 150ms cubic-bezier(0.4, 0, 0.2, 1)",
-                "&:hover": {
-                  backgroundColor: theme.palette.action.hover,
-                  borderColor: theme.palette.text.secondary,
-                },
-                "&:active": {
-                  transform: "scale(0.95)",
-                },
-              }}
-            >
-              <InfoIcon sx={{ fontSize: "18px" }} />
-            </IconButton>
-          </Tooltip>
-
-          {/* Info Menu Popover */}
-          <Popover
-            open={Boolean(infoMenuAnchor)}
-            anchorEl={infoMenuAnchor}
-            onClose={handleInfoMenuClose}
-            anchorOrigin={{
-              vertical: "bottom",
-              horizontal: "right",
-            }}
-            transformOrigin={{
-              vertical: "top",
-              horizontal: "right",
-            }}
-            sx={{
-              "& .MuiPaper-root": {
-                mt: 1,
-                minWidth: 200,
-                borderRadius: "12px",
-                border: `1px solid ${theme.palette.divider}`,
-                boxShadow: isDarkMode
-                  ? "0 8px 32px rgba(0, 0, 0, 0.4)"
-                  : "0 8px 32px rgba(0, 0, 0, 0.12)",
-                backgroundColor: theme.palette.background.paper,
-              },
-            }}
-          >
-            <List sx={{ padding: "8px" }}>
-              <ListItem disablePadding>
-                <ListItemButton
-                  onClick={handleOpenAppDetails}
-                  sx={{
-                    borderRadius: "8px",
-                    margin: "0 4px",
-                    padding: "8px 12px",
-                    transition: "all 150ms cubic-bezier(0.4, 0, 0.2, 1)",
-                    "&:hover": {
-                      backgroundColor: theme.palette.action.hover,
-                    },
-                  }}
-                >
-                  <ListItemIcon sx={{ minWidth: "36px" }}>
-                    <InfoIcon
-                      sx={{
-                        fontSize: "18px",
-                        color: theme.palette.primary.main,
-                      }}
-                    />
-                  </ListItemIcon>
-                  <ListItemText
-                    primary={t("appDetails.title")}
-                    primaryTypographyProps={{
-                      variant: "body2",
-                      fontWeight: 500,
+          <List sx={{ padding: "8px" }}>
+            <ListItem disablePadding>
+              <ListItemButton
+                onClick={handleOpenAppDetails}
+                sx={{
+                  borderRadius: "8px",
+                  margin: "0 4px",
+                  padding: "8px 12px",
+                  transition: "all 150ms cubic-bezier(0.4, 0, 0.2, 1)",
+                  "&:hover": {
+                    backgroundColor: theme.palette.action.hover,
+                  },
+                }}
+              >
+                <ListItemIcon sx={{ minWidth: "36px" }}>
+                  <InfoIcon
+                    sx={{
+                      fontSize: "18px",
+                      color: theme.palette.primary.main,
                     }}
                   />
-                </ListItemButton>
-              </ListItem>
-            </List>
-          </Popover>
-        </>
+                </ListItemIcon>
+                <ListItemText
+                  primary={t("appDetails.title")}
+                  primaryTypographyProps={{
+                    variant: "body2",
+                    fontWeight: 500,
+                  }}
+                />
+              </ListItemButton>
+            </ListItem>
+          </List>
+        </Popover>
       )}
-
-      {/* Contact Button */}
-      <Box
-        sx={{
-          width: "1px",
-          height: "16px",
-          backgroundColor: theme.palette.divider,
-          marginInline: "8px",
-        }}
-      />
-      <Tooltip title={t("appDetails.contact")}>
-        <IconButton
-          onClick={handleContactMenuOpen}
-          className="no-rtl-transform"
-          aria-label={t("appDetails.contact")}
-          sx={{
-            width: "36px",
-            height: "36px",
-            borderRadius: "8px",
-            border: `1px solid ${theme.palette.divider}`,
-            backgroundColor: contactMenuAnchor
-              ? theme.palette.action.selected
-              : "transparent",
-            color: theme.palette.text.secondary,
-            transition: "all 150ms cubic-bezier(0.4, 0, 0.2, 1)",
-            "&:hover": {
-              backgroundColor: theme.palette.action.hover,
-              borderColor: theme.palette.text.secondary,
-            },
-            "&:active": {
-              transform: "scale(0.95)",
-            },
-          }}
-        >
-          <ContactMailIcon sx={{ fontSize: "18px" }} />
-        </IconButton>
-      </Tooltip>
 
       {/* Contact Menu Popover */}
       <Popover
@@ -540,15 +709,16 @@ const ChatHeader = ({
         </List>
       </Popover>
 
-      {/* User Menu */}
+      {/* User Menu - Separated from other buttons */}
       {userEmail && (
         <>
           <Box
             sx={{
-              width: "1px",
-              height: "16px",
+              width: "2px",
+              height: "24px",
               backgroundColor: theme.palette.divider,
-              marginInline: "8px",
+              marginInline: "12px",
+              borderRadius: "1px",
             }}
           />
           <Tooltip title={t("user.menu")}>

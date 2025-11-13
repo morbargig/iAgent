@@ -100,6 +100,8 @@ export const isAppSettings = isType({
   mockMode: isBoolean,
 });
 
+export const isHeaderButtonsOrder = isArray(isString);
+
 export const localStorageGuards: {
   [K in LocalStorageKeys]: (value: unknown) => value is LocalStorageValues[K];
 } = {
@@ -116,6 +118,7 @@ export const localStorageGuards: {
   'date-range-settings': isDateRangeSettings,
   'user-preferences': isUserPreferences,
   'app-settings': isAppSettings,
+  'header-buttons-order': isHeaderButtonsOrder,
 };
 
 export const isSessionToken = isString;
