@@ -1,52 +1,39 @@
+// Test environment configuration
 import type { Environment } from './environment.type';
+import { baseEnvironment, requireEnv, getPort, getHost } from './environment.base';
+
+const port = getPort();
+const host = getHost();
 
 export const environment: Environment = {
   production: false,
-  apiUrl: 'http://localhost:3030/api',
+  port,
+  host,
+  apiUrl: `http://localhost:${port}/api`,
   frontendUrl: 'https://morbargig.github.io/iAgent/',
 
-  mongodb: {
-    // MongoDB connection URI - REQUIRED: Set MONGODB_URI environment variable
-    uri: process.env.MONGODB_URI || (() => {
-      throw new Error('MONGODB_URI environment variable is required. Please set it in your test environment.');
-    })(),
-    dbName: process.env.DB_NAME || 'filesdb'
-  },
+  // Base configuration with test-specific overrides
+  ...baseEnvironment,
 
-  // File upload limits - Environment configurable with defaults
-  fileUpload: {
-    maxFileSize: parseInt(process.env.MAX_FILE_SIZE || '5242880'), // Default: 5MB (5 * 1024 * 1024)
-    maxTotalSize: parseInt(process.env.MAX_TOTAL_SIZE || '52428800'), // Default: 50MB (50 * 1024 * 1024)
-    maxFileCount: parseInt(process.env.MAX_FILE_COUNT || '8'), // Default: 8 files
-    acceptedTypes: process.env.ACCEPTED_FILE_TYPES?.split(',') || [] // Empty = all types
+  mongodb: {
+    ...baseEnvironment.mongodb,
+    uri: requireEnv('MONGODB_URI', 'test environment'),
   },
 
   jwt: {
     secret: 'test-jwt-secret-key',
     expiresIn: '1h'
   },
+
   cors: {
-    origins: ['http://localhost:3000', 'http://localhost:3030'],
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'Cache-Control', 'x-user-id'],
-    credentials: true
+    ...baseEnvironment.cors,
+    origins: ['http://localhost:3000', `http://localhost:${port}`],
   },
+
   swagger: {
-    enabled: true,
+    ...baseEnvironment.swagger,
     title: 'iAgent API - Test',
     description: 'Test environment API documentation',
-    version: '1.0.0',
-    serverUrl: 'http://localhost:3030'
+    serverUrl: `http://localhost:${port}`
   },
-  logging: {
-    level: 'debug',
-    enableConsole: true,
-    enableFile: false
-  },
-  features: {
-    enableSwagger: true,
-    enableCors: true,
-    enableRateLimit: false,
-    enableHelmet: false
-  }
 };

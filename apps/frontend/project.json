@@ -13,12 +13,24 @@
         "outputPath": "dist/apps/frontend"
       },
       "configurations": {
+        "local": {
+          "mode": "local"
+        },
         "development": {
           "mode": "development",
           "fileReplacements": [
             {
               "replace": "apps/frontend/src/environments/environment.ts",
               "with": "apps/frontend/src/environments/environment.dev.ts"
+            }
+          ]
+        },
+        "stage": {
+          "mode": "stage",
+          "fileReplacements": [
+            {
+              "replace": "apps/frontend/src/environments/environment.ts",
+              "with": "apps/frontend/src/environments/environment.stage.ts"
             }
           ]
         },
@@ -40,6 +52,14 @@
         "buildTarget": "@iagent/frontend:build"
       },
       "configurations": {
+        "local": {
+          "buildTarget": "@iagent/frontend:build:local",
+          "hmr": true
+        },
+        "stage": {
+          "buildTarget": "@iagent/frontend:build:stage",
+          "hmr": true
+        },
         "development": {
           "buildTarget": "@iagent/frontend:build:development",
           "hmr": true
@@ -89,7 +109,9 @@
     },
     "typecheck": {
       "executor": "@nx/vite:build",
-      "outputs": ["{options.outputPath}"],
+      "outputs": [
+        "{options.outputPath}"
+      ],
       "options": {
         "outputPath": "dist/apps/frontend",
         "mode": "development"

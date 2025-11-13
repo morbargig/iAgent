@@ -20,8 +20,8 @@ export default defineConfig(({ mode }) => {
     cacheDir: '../../node_modules/.vite/apps/frontend',
 
     server: {
-      port: 3000,
-      host: '0.0.0.0',
+      port: parseInt(process.env.VITE_PORT || '3000', 10),
+      host: process.env.VITE_HOST || (process.env.NODE_ENV === 'production' ? '0.0.0.0' : 'localhost'),
       allowedHosts: ['host.docker.internal'],
       watch: {
         // Prevent watching files that could cause infinite rebuilds
@@ -43,8 +43,8 @@ export default defineConfig(({ mode }) => {
     },
 
     preview: {
-      port: 4300,
-      host: '0.0.0.0',
+      port: parseInt(process.env.VITE_PREVIEW_PORT || '4300', 10),
+      host: process.env.VITE_PREVIEW_HOST || process.env.VITE_HOST || '0.0.0.0',
     },
 
     plugins: [

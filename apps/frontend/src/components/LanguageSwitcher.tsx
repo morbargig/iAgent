@@ -11,12 +11,18 @@ import {
 import { Language as LanguageIcon } from '@mui/icons-material';
 import { useTranslation } from '../contexts/TranslationContext';
 import { SUPPORTED_LANGUAGES } from '../i18n/types';
+import { useFeatureFlag } from '../hooks/useFeatureFlag';
 
 export const LanguageSwitcher: React.FC<{ isDarkMode: boolean }> = ({ isDarkMode }) => {
+  const enableLanguageSwitcher = useFeatureFlag('enableLanguageSwitcher');
   const { currentLang, changeLanguage, t } = useTranslation();
   const theme = useTheme();
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const open = Boolean(anchorEl);
+  
+  if (!enableLanguageSwitcher) {
+    return null;
+  }
 
   const handleClick = (event: React.MouseEvent<HTMLElement>) => {
     setAnchorEl(event.currentTarget);

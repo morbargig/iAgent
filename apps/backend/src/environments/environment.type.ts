@@ -5,6 +5,8 @@
 
 export interface Environment {
   production: boolean;
+  port: number;
+  host: string;
   apiUrl: string;
   frontendUrl: string;
   

@@ -1,4 +1,4 @@
-// Development environment configuration
+// Staging environment configuration
 import type { Environment } from './environment.type';
 import { baseEnvironment } from './environment.base';
 
@@ -18,7 +18,7 @@ export const environment: Environment = {
     uploadTimeout: 120000,
   },
   
-  // Base configuration with dev-specific overrides
+  // Base configuration with stage-specific overrides
   ...baseEnvironment,
   
   features: {

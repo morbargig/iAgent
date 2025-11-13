@@ -32,6 +32,7 @@ import {
 import { convertMongoMessageToMessage } from "../utils/chunkConverter";
 import { useMockMode } from "../hooks/useMockMode";
 import { useAppLocalStorage } from "../hooks/storage";
+import { useFeatureFlag } from "../hooks/useFeatureFlag";
 import { getBaseApiUrl } from "../config/config";
 // import { environment } from "../environments/environment";
 
@@ -368,6 +369,7 @@ const App = () => {
   const [isAppDetailsOpen, setIsAppDetailsOpen] = useState(false);
 
   const { useMockMode: isMockMode, toggleMockMode } = useMockMode();
+  const enableAppDetails = useFeatureFlag('enableAppDetails');
   const { t: translation } = useTranslation();
 
   const loadedConversationsRef = useRef<Map<string, Conversation>>(new Map());
@@ -1507,7 +1509,7 @@ const App = () => {
             onToggleTheme={toggleTheme}
             streamingConversationId={streamingConversationId}
             onWidthChange={handleSidebarWidthChange}
-            onOpenAppDetails={() => setIsAppDetailsOpen(true)}
+            onOpenAppDetails={enableAppDetails ? () => setIsAppDetailsOpen(true) : undefined}
           />
           <Box
             id="iagent-conversation-container"
@@ -1537,7 +1539,7 @@ const App = () => {
               onOpenReport={openReportFromUrl}
               currentChatId={currentConversationId || undefined}
               streamingConversationId={streamingConversationId || undefined}
-              onOpenAppDetails={() => setIsAppDetailsOpen(true)}
+              onOpenAppDetails={enableAppDetails ? () => setIsAppDetailsOpen(true) : undefined}
             />
 
             {/* Input Area */}
@@ -1576,11 +1578,13 @@ const App = () => {
             width={reportPanelWidth}
             onWidthChange={handleReportPanelWidthChange}
           />
-          <AppDetailsDialog
-            open={isAppDetailsOpen}
-            onClose={() => setIsAppDetailsOpen(false)}
-            isDarkMode={isDarkMode}
-          />
+          {enableAppDetails && (
+            <AppDetailsDialog
+              open={isAppDetailsOpen}
+              onClose={() => setIsAppDetailsOpen(false)}
+              isDarkMode={isDarkMode}
+            />
+          )}
         </Box>
       </Box>
     </ThemeProvider>

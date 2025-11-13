@@ -17,6 +17,7 @@ import {
 } from "@mui/icons-material";
 import { useTranslation } from "../contexts/TranslationContext";
 import { environment } from "../environments/environment";
+import { useFeatureFlag } from "../hooks/useFeatureFlag";
 
 interface AppDetailsDialogProps {
   open: boolean;
@@ -30,6 +31,7 @@ export const AppDetailsDialog: React.FC<AppDetailsDialogProps> = ({
   isDarkMode,
 }) => {
   const { t, currentLang } = useTranslation();
+  const enableContactUs = useFeatureFlag('enableContactUs');
 
   const baseVersion = typeof __APP_VERSION__ !== 'undefined' 
     ? __APP_VERSION__ 
@@ -131,46 +133,50 @@ export const AppDetailsDialog: React.FC<AppDetailsDialogProps> = ({
           </Alert>
 
           {/* Contact Information */}
-          <Box sx={{ mb: 3 }}>
-            <Typography
-              variant="subtitle2"
-              sx={{
-                mb: 1.5,
-                fontWeight: 600,
-                color: isDarkMode ? '#ffffff' : '#000000',
-              }}
-            >
-              {t('appDetails.contact')}
-            </Typography>
-            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                <Typography variant="body2" sx={{ minWidth: 80, color: isDarkMode ? '#a3a3a3' : '#6b7280' }}>
-                  {t('appDetails.teamName')}:
+          {enableContactUs && (
+            <>
+              <Box sx={{ mb: 3 }}>
+                <Typography
+                  variant="subtitle2"
+                  sx={{
+                    mb: 1.5,
+                    fontWeight: 600,
+                    color: isDarkMode ? '#ffffff' : '#000000',
+                  }}
+                >
+                  {t('appDetails.contact')}
                 </Typography>
-                <Typography variant="body2" sx={{ color: isDarkMode ? '#fafafa' : '#111827' }}>
-                  {environment.contact.teamName}
-                </Typography>
+                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                    <Typography variant="body2" sx={{ minWidth: 80, color: isDarkMode ? '#a3a3a3' : '#6b7280' }}>
+                      {t('appDetails.teamName')}:
+                    </Typography>
+                    <Typography variant="body2" sx={{ color: isDarkMode ? '#fafafa' : '#111827' }}>
+                      {environment.contact.teamName}
+                    </Typography>
+                  </Box>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                    <Typography variant="body2" sx={{ minWidth: 80, color: isDarkMode ? '#a3a3a3' : '#6b7280' }}>
+                      {t('appDetails.email')}:
+                    </Typography>
+                    <Typography variant="body2" sx={{ color: isDarkMode ? '#fafafa' : '#111827' }}>
+                      {environment.contact.email}
+                    </Typography>
+                  </Box>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                    <Typography variant="body2" sx={{ minWidth: 80, color: isDarkMode ? '#a3a3a3' : '#6b7280' }}>
+                      {t('appDetails.phone')}:
+                    </Typography>
+                    <Typography variant="body2" sx={{ color: isDarkMode ? '#fafafa' : '#111827' }}>
+                      {environment.contact.phone}
+                    </Typography>
+                  </Box>
+                </Box>
               </Box>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                <Typography variant="body2" sx={{ minWidth: 80, color: isDarkMode ? '#a3a3a3' : '#6b7280' }}>
-                  {t('appDetails.email')}:
-                </Typography>
-                <Typography variant="body2" sx={{ color: isDarkMode ? '#fafafa' : '#111827' }}>
-                  {environment.contact.email}
-                </Typography>
-              </Box>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                <Typography variant="body2" sx={{ minWidth: 80, color: isDarkMode ? '#a3a3a3' : '#6b7280' }}>
-                  {t('appDetails.phone')}:
-                </Typography>
-                <Typography variant="body2" sx={{ color: isDarkMode ? '#fafafa' : '#111827' }}>
-                  {environment.contact.phone}
-                </Typography>
-              </Box>
-            </Box>
-          </Box>
 
-          <Divider sx={{ my: 3 }} />
+              <Divider sx={{ my: 3 }} />
+            </>
+          )}
 
           {/* Version & Build Info */}
           <Box sx={{ mb: 2 }}>

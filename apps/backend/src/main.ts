@@ -34,11 +34,10 @@ async function bootstrap() {
     
     // Fallback if serverUrl is not set
     if (!baseUrl) {
-      const port = process.env.PORT || 3030;
       if (environment.production) {
         baseUrl = process.env.RENDER_EXTERNAL_URL || process.env.API_URL || `https://iagent-1-jzyj.onrender.com`;
       } else {
-        baseUrl = `http://localhost:${port}`;
+        baseUrl = `http://localhost:${environment.port}`;
       }
     }
     
@@ -103,18 +102,19 @@ async function bootstrap() {
     });
   }
 
-  const port = process.env.PORT || 3030;
-  await app.listen(port);
+  await app.listen(environment.port, environment.host);
 
+  const displayHost = environment.host === '0.0.0.0' ? '0.0.0.0 (all interfaces)' : environment.host;
   Logger.log(
-    `🚀 Application is running on: http://localhost:${port}/${globalPrefix}`
+    `🚀 Application is running on: http://${environment.host}:${environment.port}/${globalPrefix}`
   );
   Logger.log(
-    `🌍 Environment: ${environment.production ? 'Production' : 'Development'}`
+    `🌍 Environment: ${environment.production ? 'Production' : 'Development'} | Host: ${displayHost}`
   );
   if (environment.features.enableSwagger) {
+    const swaggerHost = environment.host === '0.0.0.0' ? 'localhost' : environment.host;
     Logger.log(
-      `📚 API Documentation available at: http://localhost:${port}/docs`
+      `📚 API Documentation available at: http://${swaggerHost}:${environment.port}/docs`
     );
   }
   Logger.log(

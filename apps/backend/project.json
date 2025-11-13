@@ -24,7 +24,19 @@
           "fileReplacements": [
             {
               "replace": "apps/backend/src/environments/environment.ts",
-              "with": "apps/backend/src/environments/env.dev.ts"
+              "with": "apps/backend/src/environments/environment.dev.ts"
+            }
+          ]
+        },
+        "stage": {
+          "optimization": true,
+          "extractLicenses": true,
+          "sourceMap": true,
+          "watch": false,
+          "fileReplacements": [
+            {
+              "replace": "apps/backend/src/environments/environment.ts",
+              "with": "apps/backend/src/environments/environment.stage.ts"
             }
           ]
         },
@@ -48,7 +60,7 @@
           "fileReplacements": [
             {
               "replace": "apps/backend/src/environments/environment.ts",
-              "with": "apps/backend/src/environments/env.prod.ts"
+              "with": "apps/backend/src/environments/environment.prod.ts"
             }
           ]
         }
@@ -66,6 +78,11 @@
         "development": {
           "buildTarget": "@iagent/backend:build:development",
           "watch": true,
+          "runBuildTargetDependencies": true
+        },
+        "stage": {
+          "buildTarget": "@iagent/backend:build:stage",
+          "watch": false,
           "runBuildTargetDependencies": true
         },
         "test": {

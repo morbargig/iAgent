@@ -65,6 +65,7 @@ import { FilterDetailsDialog } from "./FilterDetailsDialog";
 import { getApiUrl, getBaseApiUrl } from "../config/config";
 import { environment } from "../environments/environment";
 import { useAppLocalStorage } from "../hooks/storage";
+import { useFeatureFlag } from "../hooks/useFeatureFlag";
 import type { HeaderButtonId } from "../types/storage.types";
 
 interface ChatAreaProps {
@@ -235,6 +236,9 @@ const ChatHeader = ({
 }) => {
   const theme = useTheme();
   const { t, currentLang } = useTranslation();
+  const enableLanguageSwitcher = useFeatureFlag('enableLanguageSwitcher');
+  const enableContactUs = useFeatureFlag('enableContactUs');
+  const enableAppDetails = useFeatureFlag('enableAppDetails');
   const [buttonOrder, setButtonOrder] = useAppLocalStorage(
     "header-buttons-order"
   );
@@ -409,6 +413,7 @@ const ChatHeader = ({
 
     switch (buttonId) {
       case "language":
+        if (!enableLanguageSwitcher) return null;
         return (
           <DraggableButton
             key={buttonId}
@@ -541,7 +546,7 @@ const ChatHeader = ({
           </DraggableButton>
         );
       case "info":
-        if (!onOpenAppDetails) return null;
+        if (!onOpenAppDetails || !enableAppDetails) return null;
         return (
           <DraggableButton
             key={buttonId}
@@ -586,6 +591,7 @@ const ChatHeader = ({
           </DraggableButton>
         );
       case "contact":
+        if (!enableContactUs) return null;
         return (
           <DraggableButton
             key={buttonId}
@@ -791,10 +797,11 @@ const ChatHeader = ({
       )}
 
       {/* Contact Menu Popover */}
-      <Popover
-        open={Boolean(contactMenuAnchor)}
-        anchorEl={contactMenuAnchor}
-        onClose={handleContactMenuClose}
+      {enableContactUs && (
+        <Popover
+          open={Boolean(contactMenuAnchor)}
+          anchorEl={contactMenuAnchor}
+          onClose={handleContactMenuClose}
         anchorOrigin={{
           vertical: "bottom",
           horizontal: "right",
@@ -890,6 +897,7 @@ const ChatHeader = ({
           </ListItem>
         </List>
       </Popover>
+      )}
 
       {/* User Menu - Separated from other buttons */}
       {userEmail && (

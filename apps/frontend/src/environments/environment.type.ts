@@ -24,6 +24,10 @@ export interface Environment {
     enableMockMode: boolean;
     enableFileUpload: boolean;
     enableDocumentManagement: boolean;
+    enableLanguageSwitcher: boolean;
+    enableDarkMode: boolean;
+    enableAppDetails: boolean;
+    enableContactUs: boolean;
   };
   
   logging: {

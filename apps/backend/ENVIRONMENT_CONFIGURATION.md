@@ -6,11 +6,14 @@ The backend application uses **file replacement** in `project.json` to switch be
 ## Environment Files
 
 ### Available Environments:
-- **Development** (`env.dev.ts`) - Local development environment
-- **Test** (`env.test.ts`) - Testing environment
-- **Production** (`env.prod.ts`) - Production environment
+- **Local** (`environment.ts`) - Local development environment (default)
+- **Development** (`environment.dev.ts`) - Development environment
+- **Staging** (`environment.stage.ts`) - Staging environment
+- **Test** (`test.env.ts`) - Testing environment
+- **Production** (`environment.prod.ts`) - Production environment
 
 ### Base Environment File:
+- **`environment.base.ts`** - Shared base configuration that all environments extend
 - **`environment.ts`** - This file gets replaced at build time based on the configuration
 
 ## How to Use
@@ -18,10 +21,14 @@ The backend application uses **file replacement** in `project.json` to switch be
 ### Running with Different Environments:
 
 ```bash
-# Development (default)
+# Local (default - uses environment.ts)
 npx nx serve backend
-# or explicitly:
+
+# Development
 npx nx serve backend --configuration=development
+
+# Staging
+npx nx serve backend --configuration=stage
 
 # Test
 npx nx serve backend --configuration=test
@@ -33,8 +40,14 @@ npx nx serve backend --configuration=production
 ### Building for Different Environments:
 
 ```bash
+# Local (default)
+npx nx build backend
+
 # Development
 npx nx build backend --configuration=development
+
+# Staging
+npx nx build backend --configuration=stage
 
 # Test
 npx nx build backend --configuration=test
@@ -55,7 +68,7 @@ Example from `project.json`:
   "fileReplacements": [
     {
       "replace": "apps/backend/src/environments/environment.ts",
-      "with": "apps/backend/src/environments/env.prod.ts"
+      "with": "apps/backend/src/environments/environment.prod.ts"
     }
   ]
 }
@@ -239,10 +252,12 @@ Files are stored in MongoDB GridFS with the following metadata:
 
 ```
 apps/backend/src/environments/
-├── environment.ts      # Base file (gets replaced at build time)
-├── env.dev.ts         # Development environment
-├── env.test.ts        # Test environment
-└── env.prod.ts        # Production environment
+├── environment.base.ts    # Shared base configuration
+├── environment.ts          # Local environment (gets replaced at build time)
+├── environment.dev.ts      # Development environment
+├── environment.stage.ts    # Staging environment
+├── environment.prod.ts     # Production environment
+└── test.env.ts            # Test environment
 ```
 
 ## Best Practices

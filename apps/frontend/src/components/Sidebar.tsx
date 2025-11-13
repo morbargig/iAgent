@@ -32,6 +32,7 @@ import { useTranslation } from "../contexts/TranslationContext";
 import { useAppLocalStorage } from "../hooks/storage";
 import { useResizable } from "../hooks/useResizable";
 import { useConversationEditing } from "../hooks/useConversationEditing";
+import { useFeatureFlag } from "../hooks/useFeatureFlag";
 
 interface SidebarProps {
   conversations: Conversation[];
@@ -70,6 +71,8 @@ export const Sidebar = React.forwardRef<HTMLDivElement, SidebarProps>(
     },
     ref
   ) => {
+    const enableDarkMode = useFeatureFlag('enableDarkMode');
+    const enableAppDetails = useFeatureFlag('enableAppDetails');
     const theme = useTheme();
     const isMobile = useMediaQuery(theme.breakpoints.down("md"));
     const { t, isRTL } = useTranslation();
@@ -514,39 +517,41 @@ export const Sidebar = React.forwardRef<HTMLDivElement, SidebarProps>(
           }}
         >
           {/* Theme Toggle Button */}
-          <Button
-            id="iagent-theme-toggle"
-            className="iagent-theme-switch-button"
-            onClick={onToggleTheme}
-            variant="text"
-            fullWidth
-            sx={{
-              justifyContent: "flex-start",
-              padding: "8px 12px",
-              borderRadius: "8px",
-              color: theme.palette.text.secondary,
-              fontSize: "14px",
-              fontWeight: 400,
-              textTransform: "none",
-              transition:
-                "background-color 300ms cubic-bezier(0.4, 0, 0.2, 1), color 300ms cubic-bezier(0.4, 0, 0.2, 1)",
-              "&:hover": {
-                backgroundColor: theme.palette.action.hover,
-                color: theme.palette.text.primary,
-              },
-              mb: 1,
-            }}
-          >
-            {isDarkMode ? (
-              <LightModeIcon sx={{ fontSize: 16, marginInlineEnd: "12px" }} />
-            ) : (
-              <DarkModeIcon sx={{ fontSize: 16, marginInlineEnd: "12px" }} />
-            )}
-            {isDarkMode ? t("theme.light") : t("theme.dark")}
-          </Button>
+          {enableDarkMode && (
+            <Button
+              id="iagent-theme-toggle"
+              className="iagent-theme-switch-button"
+              onClick={onToggleTheme}
+              variant="text"
+              fullWidth
+              sx={{
+                justifyContent: "flex-start",
+                padding: "8px 12px",
+                borderRadius: "8px",
+                color: theme.palette.text.secondary,
+                fontSize: "14px",
+                fontWeight: 400,
+                textTransform: "none",
+                transition:
+                  "background-color 300ms cubic-bezier(0.4, 0, 0.2, 1), color 300ms cubic-bezier(0.4, 0, 0.2, 1)",
+                "&:hover": {
+                  backgroundColor: theme.palette.action.hover,
+                  color: theme.palette.text.primary,
+                },
+                mb: 1,
+              }}
+            >
+              {isDarkMode ? (
+                <LightModeIcon sx={{ fontSize: 16, marginInlineEnd: "12px" }} />
+              ) : (
+                <DarkModeIcon sx={{ fontSize: 16, marginInlineEnd: "12px" }} />
+              )}
+              {isDarkMode ? t("theme.light") : t("theme.dark")}
+            </Button>
+          )}
 
           {/* App Details Button */}
-          {onOpenAppDetails && (
+          {onOpenAppDetails && enableAppDetails && (
             <Button
               id="iagent-app-details"
               className="iagent-app-details-button"
@@ -835,38 +840,40 @@ export const Sidebar = React.forwardRef<HTMLDivElement, SidebarProps>(
                 paddingBottom: "max(16px, env(safe-area-inset-bottom))",
               }}
             >
-              <Button
-                onClick={onToggleTheme}
-                variant="text"
-                fullWidth
-                sx={{
-                  justifyContent: "flex-start",
-                  padding: "12px",
-                  borderRadius: "8px",
-                  color: theme.palette.text.secondary,
-                  fontSize: "14px",
-                  fontWeight: 400,
-                  textTransform: "none",
-                  transition: "all 150ms cubic-bezier(0.4, 0, 0.2, 1)",
-                  "&:hover": {
-                    backgroundColor: theme.palette.action.hover,
-                    color: theme.palette.text.primary,
-                  },
-                  mb: 1,
-                }}
-              >
-                {isDarkMode ? (
-                  <LightModeIcon
-                    sx={{ fontSize: 16, marginInlineEnd: "12px" }}
-                  />
-                ) : (
-                  <DarkModeIcon
-                    sx={{ fontSize: 16, marginInlineEnd: "12px" }}
-                  />
-                )}
-                {isDarkMode ? t("theme.light") : t("theme.dark")}
-              </Button>
-              {onOpenAppDetails && (
+              {enableDarkMode && (
+                <Button
+                  onClick={onToggleTheme}
+                  variant="text"
+                  fullWidth
+                  sx={{
+                    justifyContent: "flex-start",
+                    padding: "12px",
+                    borderRadius: "8px",
+                    color: theme.palette.text.secondary,
+                    fontSize: "14px",
+                    fontWeight: 400,
+                    textTransform: "none",
+                    transition: "all 150ms cubic-bezier(0.4, 0, 0.2, 1)",
+                    "&:hover": {
+                      backgroundColor: theme.palette.action.hover,
+                      color: theme.palette.text.primary,
+                    },
+                    mb: 1,
+                  }}
+                >
+                  {isDarkMode ? (
+                    <LightModeIcon
+                      sx={{ fontSize: 16, marginInlineEnd: "12px" }}
+                    />
+                  ) : (
+                    <DarkModeIcon
+                      sx={{ fontSize: 16, marginInlineEnd: "12px" }}
+                    />
+                  )}
+                  {isDarkMode ? t("theme.light") : t("theme.dark")}
+                </Button>
+              )}
+              {onOpenAppDetails && enableAppDetails && (
                 <Button
                   onClick={onOpenAppDetails}
                   variant="text"
