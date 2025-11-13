@@ -10,12 +10,19 @@ export const environment: Environment = {
   env: 'prod',
   apiUrl: apiBaseUrl,
   baseUrl: getEnvString('VITE_BASE_URL', '/'),
-  
+
+
+
   api: {
     baseUrl: apiBaseUrl,
     timeout: getEnvNumber('VITE_API_TIMEOUT', 30000),
     uploadTimeout: getEnvNumber('VITE_API_UPLOAD_TIMEOUT', 120000),
   },
-  
+
   ...baseEnvironment,
+
+  features: {
+    ...baseEnvironment.features,
+    enableMockMode: getEnvBoolean('VITE_ENABLE_MOCK_MODE', true),
+  },
 };
