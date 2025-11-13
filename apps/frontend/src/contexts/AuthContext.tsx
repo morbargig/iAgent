@@ -1,5 +1,7 @@
 import React, { createContext, useContext } from "react";
 import { useAppSessionStorage } from "../hooks/storage";
+import { queryClient } from "../lib/queryClient";
+import { apiKeys } from "../lib/keys";
 
 interface AuthContextType {
   authToken: string | null;
@@ -31,6 +33,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     setAuthToken('');
     setUserId(null);
     setUserEmail(null);
+    queryClient.removeQueries({ queryKey: apiKeys.auth.all, exact: false });
+    queryClient.removeQueries({ queryKey: apiKeys.chats.all, exact: false });
+    queryClient.removeQueries({ queryKey: apiKeys.documents.all, exact: false });
+    queryClient.removeQueries({ queryKey: apiKeys.filters.all, exact: false });
+    queryClient.removeQueries({ queryKey: apiKeys.tools.all, exact: false });
+    queryClient.removeQueries({ queryKey: apiKeys.countries.all(), exact: false });
   }, [setAuthToken, setUserId, setUserEmail]);
 
   return (

@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useRef, useEffect } from "react";
+import React, { useEffect } from "react";
 import {
   Box,
   Typography,
@@ -29,6 +29,8 @@ import {
 import { type Conversation } from "@iagent/chat-types";
 import { useTranslation } from "../contexts/TranslationContext";
 import { useAppLocalStorage } from "../hooks/storage";
+import { useResizable } from "../hooks/useResizable";
+import { useConversationEditing } from "../hooks/useConversationEditing";
 
 interface SidebarProps {
   conversations: Conversation[];
@@ -69,90 +71,33 @@ export const Sidebar = React.forwardRef<HTMLDivElement, SidebarProps>(
     const isMobile = useMediaQuery(theme.breakpoints.down("md"));
     const { t } = useTranslation();
 
-    // State for editing conversation names
-    const [editingId, setEditingId] = useState<string | null>(null);
-    const [editingTitle, setEditingTitle] = useState<string>("");
+    const [storedWidth, setStoredWidth] = useAppLocalStorage('sidebar-width');
+    const defaultWidth = storedWidth || 250;
 
-    // State for resizable width
-    const [sidebarWidth, setSidebarWidth] = useAppLocalStorage('sidebar-width');
-    const [isResizing, setIsResizing] = useState(false);
-    const resizeRef = useRef<HTMLDivElement>(null);
-
-    const handleStartEdit = (conversation: Conversation) => {
-      setEditingId(conversation.id);
-      setEditingTitle(
-        conversation.titleKey ? t(conversation.titleKey) : conversation.title
-      );
-    };
-
-    const handleSaveEdit = () => {
-      if (editingId && editingTitle.trim()) {
-        onRenameConversation(editingId, editingTitle.trim());
-      }
-      setEditingId(null);
-      setEditingTitle("");
-    };
-
-    const handleCancelEdit = () => {
-      setEditingId(null);
-      setEditingTitle("");
-    };
-
-    const handleKeyPress = (e: React.KeyboardEvent) => {
-      if (e.key === "Enter") {
-        handleSaveEdit();
-      } else if (e.key === "Escape") {
-        handleCancelEdit();
-      }
-    };
-
-    // Resize functionality
-    const handleMouseDown = useCallback((e: React.MouseEvent) => {
-      e.preventDefault();
-      setIsResizing(true);
-    }, []);
-
-    const handleMouseMove = useCallback(
-      (e: MouseEvent) => {
-        if (!isResizing) return;
-
-        const newWidth = e.clientX;
-        const minWidth = 200;
-        const maxWidth = 400;
-
-        if (newWidth >= minWidth && newWidth <= maxWidth) {
-          setSidebarWidth(newWidth);
-          if (onWidthChange) {
-            onWidthChange(newWidth);
-          }
-        }
+    const { width: sidebarWidth, isResizing, handleMouseDown } = useResizable({
+      initialWidth: defaultWidth,
+      minWidth: 200,
+      maxWidth: 400,
+      onWidthChange: (newWidth) => {
+        setStoredWidth(newWidth);
+        onWidthChange?.(newWidth);
       },
-      [isResizing, onWidthChange]
-    );
+    });
 
-    const handleMouseUp = useCallback(() => {
-      setIsResizing(false);
-    }, []);
+    const {
+      editingId,
+      editingTitle,
+      setEditingTitle,
+      startEdit,
+      saveEdit,
+      cancelEdit,
+      handleKeyPress,
+    } = useConversationEditing({
+      onRename: onRenameConversation,
+      getTitle: (conversation) =>
+        conversation.titleKey ? t(conversation.titleKey) : conversation.title,
+    });
 
-    // Add global mouse event listeners for resize
-    useEffect(() => {
-      if (isResizing) {
-        document.addEventListener("mousemove", handleMouseMove);
-        document.addEventListener("mouseup", handleMouseUp);
-        document.body.style.cursor = "col-resize";
-        document.body.style.userSelect = "none";
-
-        return () => {
-          document.removeEventListener("mousemove", handleMouseMove);
-          document.removeEventListener("mouseup", handleMouseUp);
-          document.body.style.cursor = "";
-          document.body.style.userSelect = "";
-        };
-      }
-      return undefined;
-    }, [isResizing, handleMouseMove, handleMouseUp]);
-
-    // Notify parent of width changes
     useEffect(() => {
       if (onWidthChange && open) {
         onWidthChange(sidebarWidth);
@@ -315,8 +260,7 @@ export const Sidebar = React.forwardRef<HTMLDivElement, SidebarProps>(
                   }}
                 >
                   {editingId === conversation.id ? (
-                    // Edit Mode
-                    <ClickAwayListener onClickAway={handleCancelEdit}>
+                    <ClickAwayListener onClickAway={cancelEdit}>
                       <Box
                         sx={{
                           display: "flex",
@@ -335,7 +279,6 @@ export const Sidebar = React.forwardRef<HTMLDivElement, SidebarProps>(
                             flexShrink: 0,
                           }}
                         />
-
                         <TextField
                           value={editingTitle}
                           onChange={(e) => setEditingTitle(e.target.value)}
@@ -353,10 +296,8 @@ export const Sidebar = React.forwardRef<HTMLDivElement, SidebarProps>(
                             },
                           }}
                         />
-
-                        {/* Save Button */}
                         <IconButton
-                          onClick={handleSaveEdit}
+                          onClick={saveEdit}
                           size="small"
                           sx={{
                             width: 24,
@@ -369,10 +310,8 @@ export const Sidebar = React.forwardRef<HTMLDivElement, SidebarProps>(
                         >
                           <CheckIcon sx={{ fontSize: 14 }} />
                         </IconButton>
-
-                        {/* Cancel Button */}
                         <IconButton
-                          onClick={handleCancelEdit}
+                          onClick={cancelEdit}
                           size="small"
                           sx={{
                             width: 24,
@@ -497,11 +436,10 @@ export const Sidebar = React.forwardRef<HTMLDivElement, SidebarProps>(
                           gap: "4px",
                         }}
                       >
-                        {/* Edit Button */}
                         <IconButton
                           onClick={(e) => {
                             e.stopPropagation();
-                            handleStartEdit(conversation);
+                            startEdit(conversation);
                           }}
                           size="small"
                           sx={{
@@ -589,10 +527,8 @@ export const Sidebar = React.forwardRef<HTMLDivElement, SidebarProps>(
           </Button>
         </Box>
 
-        {/* Resize Handle */}
         {!isMobile && (
           <Box
-            ref={resizeRef}
             onMouseDown={handleMouseDown}
             sx={{
               position: "absolute",
