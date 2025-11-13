@@ -57,6 +57,7 @@ import { FilterDetailsDialog } from "./FilterDetailsDialog";
 import { getApiUrl, getBaseApiUrl } from "../config/config";
 import { environment } from "../environments/environment";
 import { useAppLocalStorage } from "../hooks/storage";
+import type { HeaderButtonId } from "../types/storage.types";
 
 interface ChatAreaProps {
   messages: Message[];
@@ -333,8 +334,8 @@ const ChatHeader = ({
     }
 
     const currentOrder = [...buttonOrder];
-    const draggedIndex = currentOrder.indexOf(draggedButtonId);
-    const targetIndex = currentOrder.indexOf(targetId);
+    const draggedIndex = currentOrder.indexOf(draggedButtonId as HeaderButtonId);
+    const targetIndex = currentOrder.indexOf(targetId as HeaderButtonId);
 
     if (draggedIndex === -1 || targetIndex === -1) {
       setDraggedButtonId(null);
@@ -350,15 +351,15 @@ const ChatHeader = ({
       ? targetIndex 
       : targetIndex + (draggedIndex < targetIndex ? 0 : 1);
     
-    currentOrder.splice(newTargetIndex, 0, draggedButtonId);
+    currentOrder.splice(newTargetIndex, 0, draggedButtonId as HeaderButtonId);
     setButtonOrder(currentOrder);
     setDraggedButtonId(null);
     setDragOverButtonId(null);
     setDragOverPosition(null);
   };
 
-  const availableButtons = ['language', 'mockMode', 'theme', 'info', 'contact'];
-  const orderedButtons = buttonOrder.filter(id => availableButtons.includes(id));
+  const availableButtons: HeaderButtonId[] = ['theme', 'language', 'mockMode', 'contact', 'info'];
+  const orderedButtons = buttonOrder.filter((id): id is HeaderButtonId => availableButtons.includes(id as HeaderButtonId));
   const missingButtons = availableButtons.filter(id => !buttonOrder.includes(id));
   const finalOrder = [...orderedButtons, ...missingButtons];
 
@@ -654,7 +655,7 @@ const ChatHeader = ({
         >
           <Box
             component="img"
-            src="/logo.png"
+            src={`${import.meta.env.BASE_URL}logo.png`}
             alt="iAgent Logo"
             sx={{
               width: "32px",

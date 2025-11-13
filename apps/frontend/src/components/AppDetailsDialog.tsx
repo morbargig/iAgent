@@ -106,7 +106,7 @@ export const AppDetailsDialog: React.FC<AppDetailsDialogProps> = ({
           >
             <Box
               component="img"
-              src="/logo.png"
+              src={`${import.meta.env.BASE_URL}logo.png`}
               alt="iAgent Logo"
               sx={{
                 maxWidth: '120px',
