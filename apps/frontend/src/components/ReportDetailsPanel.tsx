@@ -356,57 +356,34 @@ export const ReportDetailsPanel = React.forwardRef<
         sx={{
           width: "100%",
           height: "100vh",
-          backgroundColor: isDarkMode ? "#171717" : "#f9fafb",
-          borderInlineEnd: `1px solid ${theme.palette.divider}`,
+          backgroundColor: isDarkMode ? "#0d0d0d" : "#fafafa",
+          borderInlineEnd: isDarkMode
+            ? `1px solid rgba(255, 255, 255, 0.05)`
+            : `1px solid ${theme.palette.divider}`,
           display: "flex",
           flexDirection: "column",
           overflow: "hidden",
           position: "relative",
         }}
       >
-        {/* Header - same style as sidebar */}
+        {/* Header - same style as ChatHeader */}
         <Box
           sx={{
-            padding: "16px",
+            display: "flex",
+            height: "64px",
+            alignItems: "center",
+            padding: "0 16px",
             flexShrink: 0,
             borderBottom: `1px solid ${theme.palette.divider}`,
             position: "relative",
           }}
         >
-          {/* Close button - same style as sidebar */}
-          <IconButton
-            onClick={onClose}
-            sx={{
-              position: "absolute",
-              insetInlineEnd: 12,
-              top: 12,
-              color: theme.palette.text.secondary,
-              backgroundColor: theme.palette.background.paper,
-              borderRadius: "8px",
-              width: 36,
-              height: 36,
-              zIndex: 10,
-              boxShadow: "0 2px 8px rgba(0, 0, 0, 0.1)",
-              transition: "all 150ms cubic-bezier(0.4, 0, 0.2, 1)",
-              "&:hover": {
-                backgroundColor: theme.palette.action.hover,
-                color: theme.palette.text.primary,
-                transform: "scale(1.05)",
-              },
-              "&:active": {
-                transform: "scale(0.95)",
-              },
-            }}
-          >
-            <CloseIcon fontSize="small" />
-          </IconButton>
-
           {/* Report icon and title */}
           <Box
             sx={{
               display: "flex",
               alignItems: "center",
-              paddingInlineEnd: "48px",
+              flex: 1,
             }}
           >
             <ReportIcon
@@ -427,6 +404,24 @@ export const ReportDetailsPanel = React.forwardRef<
               Report Details
             </Typography>
           </Box>
+
+          {/* Close button */}
+          <IconButton
+            onClick={onClose}
+            sx={{
+              color: theme.palette.text.secondary,
+              borderRadius: "6px",
+              minWidth: "44px",
+              minHeight: "44px",
+              transition: "all 150ms cubic-bezier(0.4, 0, 0.2, 1)",
+              "&:hover": {
+                backgroundColor: theme.palette.action.hover,
+                color: theme.palette.text.primary,
+              },
+            }}
+          >
+            <CloseIcon fontSize="small" />
+          </IconButton>
         </Box>
 
         {/* Content Area - same scrolling style as sidebar */}
