@@ -34,5 +34,17 @@ export const environment: Environment = {
   logging: {
     level: import.meta.env.VITE_LOG_LEVEL || 'error',
     enableConsole: false,
-  }
+  },
+  
+  // Contact Information
+  contact: {
+    phone: '+1-234-567-8900',
+    email: 'support@iagent.com',
+    teamName: 'iAgent Team',
+  },
+  
+  // Build Information
+  buildDate: typeof __BUILD_DATE__ !== 'undefined' 
+    ? __BUILD_DATE__ 
+    : new Date().toISOString(),
 };

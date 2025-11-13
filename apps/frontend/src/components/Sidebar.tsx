@@ -25,6 +25,7 @@ import {
   Check as CheckIcon,
   Close as CancelIcon,
   Psychology as GeneratingIcon,
+  Info as InfoIcon,
 } from "@mui/icons-material";
 import { type Conversation } from "@iagent/chat-types";
 import { useTranslation } from "../contexts/TranslationContext";
@@ -45,6 +46,7 @@ interface SidebarProps {
   onToggleTheme: () => void;
   streamingConversationId?: string | null;
   onWidthChange?: (width: number) => void;
+  onOpenAppDetails?: () => void;
 }
 
 // iagent-inspired Sidebar - Clean, minimal navigation
@@ -64,6 +66,7 @@ export const Sidebar = React.forwardRef<HTMLDivElement, SidebarProps>(
       onToggleTheme,
       streamingConversationId,
       onWidthChange,
+      onOpenAppDetails,
     },
     ref
   ) => {
@@ -531,6 +534,7 @@ export const Sidebar = React.forwardRef<HTMLDivElement, SidebarProps>(
                 backgroundColor: theme.palette.action.hover,
                 color: theme.palette.text.primary,
               },
+              mb: 1,
             }}
           >
             {isDarkMode ? (
@@ -540,6 +544,35 @@ export const Sidebar = React.forwardRef<HTMLDivElement, SidebarProps>(
             )}
             {isDarkMode ? t("theme.light") : t("theme.dark")}
           </Button>
+
+          {/* App Details Button */}
+          {onOpenAppDetails && (
+            <Button
+              id="iagent-app-details"
+              className="iagent-app-details-button"
+              onClick={onOpenAppDetails}
+              variant="text"
+              fullWidth
+              sx={{
+                justifyContent: "flex-start",
+                padding: "8px 12px",
+                borderRadius: "8px",
+                color: theme.palette.text.secondary,
+                fontSize: "14px",
+                fontWeight: 400,
+                textTransform: "none",
+                transition:
+                  "background-color 300ms cubic-bezier(0.4, 0, 0.2, 1), color 300ms cubic-bezier(0.4, 0, 0.2, 1)",
+                "&:hover": {
+                  backgroundColor: theme.palette.action.hover,
+                  color: theme.palette.text.primary,
+                },
+              }}
+            >
+              <InfoIcon sx={{ fontSize: 16, marginInlineEnd: "12px" }} />
+              {t("appDetails.title")}
+            </Button>
+          )}
         </Box>
 
         {!isMobile && (
@@ -819,6 +852,7 @@ export const Sidebar = React.forwardRef<HTMLDivElement, SidebarProps>(
                     backgroundColor: theme.palette.action.hover,
                     color: theme.palette.text.primary,
                   },
+                  mb: 1,
                 }}
               >
                 {isDarkMode ? (
@@ -832,6 +866,30 @@ export const Sidebar = React.forwardRef<HTMLDivElement, SidebarProps>(
                 )}
                 {isDarkMode ? t("theme.light") : t("theme.dark")}
               </Button>
+              {onOpenAppDetails && (
+                <Button
+                  onClick={onOpenAppDetails}
+                  variant="text"
+                  fullWidth
+                  sx={{
+                    justifyContent: "flex-start",
+                    padding: "12px",
+                    borderRadius: "8px",
+                    color: theme.palette.text.secondary,
+                    fontSize: "14px",
+                    fontWeight: 400,
+                    textTransform: "none",
+                    transition: "all 150ms cubic-bezier(0.4, 0, 0.2, 1)",
+                    "&:hover": {
+                      backgroundColor: theme.palette.action.hover,
+                      color: theme.palette.text.primary,
+                    },
+                  }}
+                >
+                  <InfoIcon sx={{ fontSize: 16, marginInlineEnd: "12px" }} />
+                  {t("appDetails.title")}
+                </Button>
+              )}
             </Box>
           </Box>
         </Drawer>

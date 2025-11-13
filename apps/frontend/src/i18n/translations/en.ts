@@ -553,6 +553,17 @@ I'd be happy to dive deeper into any specific aspect of this topic that interest
 
 Just let me know which direction you'd like to take this conversation, and I'll tailor my response accordingly!`,
   },
+  appDetails: {
+    title: 'App Details',
+    contact: 'Contact Information',
+    version: 'Version',
+    buildDate: 'Build Date',
+    environment: 'Environment',
+    pilotWarning: 'This application is currently in pilot phase. Features may change and some functionality may be limited.',
+    phone: 'Phone',
+    email: 'Email',
+    teamName: 'Team',
+  },
 };
 
 export default translations; 

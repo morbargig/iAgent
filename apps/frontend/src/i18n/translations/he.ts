@@ -557,6 +557,17 @@ const translations: Translation = {
 
 פשוט תן לי לדעת לאיזה כיוון תרצה לקחת את השיחה הזו, ואני אתאים את התשובה שלי בהתאם!`,
   },
+  appDetails: {
+    title: 'פרטי האפליקציה',
+    contact: 'פרטי יצירת קשר',
+    version: 'גרסה',
+    buildDate: 'תאריך בנייה',
+    environment: 'סביבה',
+    pilotWarning: 'אפליקציה זו נמצאת כעת בשלב פיילוט. תכונות עשויות להשתנות וחלק מהפונקציונליות עשויה להיות מוגבלת.',
+    phone: 'טלפון',
+    email: 'אימייל',
+    teamName: 'צוות',
+  },
 };
 
 export default translations; 

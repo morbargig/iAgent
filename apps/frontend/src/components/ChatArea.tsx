@@ -40,6 +40,9 @@ import {
   Visibility as ViewIcon,
   Delete as DeleteIcon,
   SwapHoriz as SwapHorizIcon,
+  ContactMail as ContactMailIcon,
+  Phone as PhoneIcon,
+  Email as EmailIcon,
 } from "@mui/icons-material";
 import { type Message } from "@iagent/chat-types";
 import { MarkdownRenderer } from "./MarkdownRenderer";
@@ -52,6 +55,7 @@ import { useTranslation } from "../contexts/TranslationContext";
 import { LanguageSwitcher } from "./LanguageSwitcher";
 import { FilterDetailsDialog } from "./FilterDetailsDialog";
 import { getApiUrl, getBaseApiUrl } from "../config/config";
+import { environment } from "../environments/environment";
 
 interface ChatAreaProps {
   messages: Message[];
@@ -72,6 +76,7 @@ interface ChatAreaProps {
   authToken?: string; // Auth token for API calls
   onOpenReport?: (url: string) => void; // Handler for opening report links
   streamingConversationId?: string | null; // ID of conversation currently streaming
+  onOpenAppDetails?: () => void; // Handler for opening app details dialog
 }
 
 // Shared Header Component
@@ -83,6 +88,7 @@ const ChatHeader = ({
   onToggleMockMode,
   onLogout,
   userEmail,
+  onOpenAppDetails,
 }: {
   onToggleSidebar: () => void;
   isDarkMode: boolean;
@@ -91,10 +97,17 @@ const ChatHeader = ({
   onToggleMockMode: () => void;
   onLogout?: () => void;
   userEmail?: string | null;
+  onOpenAppDetails?: () => void;
 }) => {
   const theme = useTheme();
   const { t } = useTranslation();
   const [userMenuAnchor, setUserMenuAnchor] = useState<HTMLElement | null>(
+    null
+  );
+  const [infoMenuAnchor, setInfoMenuAnchor] = useState<HTMLElement | null>(
+    null
+  );
+  const [contactMenuAnchor, setContactMenuAnchor] = useState<HTMLElement | null>(
     null
   );
 
@@ -106,10 +119,33 @@ const ChatHeader = ({
     setUserMenuAnchor(null);
   };
 
+  const handleInfoMenuOpen = (event: MouseEvent<HTMLElement>) => {
+    setInfoMenuAnchor(event.currentTarget);
+  };
+
+  const handleInfoMenuClose = () => {
+    setInfoMenuAnchor(null);
+  };
+
+  const handleContactMenuOpen = (event: MouseEvent<HTMLElement>) => {
+    setContactMenuAnchor(event.currentTarget);
+  };
+
+  const handleContactMenuClose = () => {
+    setContactMenuAnchor(null);
+  };
+
   const handleLogout = () => {
     handleUserMenuClose();
     if (onLogout) {
       onLogout();
+    }
+  };
+
+  const handleOpenAppDetails = () => {
+    handleInfoMenuClose();
+    if (onOpenAppDetails) {
+      onOpenAppDetails();
     }
   };
 
@@ -152,6 +188,19 @@ const ChatHeader = ({
           width: "1px",
           height: "16px",
           backgroundColor: theme.palette.divider,
+          marginInlineEnd: "8px",
+        }}
+      />
+
+      {/* Logo */}
+      <Box
+        component="img"
+        src="/logo.png"
+        alt="iAgent Logo"
+        sx={{
+          width: "32px",
+          height: "32px",
+          objectFit: "contain",
           marginInlineEnd: "8px",
         }}
       />
@@ -251,6 +300,245 @@ const ChatHeader = ({
           <DarkModeIcon sx={{ fontSize: "18px" }} />
         )}
       </IconButton>
+
+      {/* Info Button */}
+      {onOpenAppDetails && (
+        <>
+          <Box
+            sx={{
+              width: "1px",
+              height: "16px",
+              backgroundColor: theme.palette.divider,
+              marginInline: "8px",
+            }}
+          />
+          <Tooltip title={t("appDetails.title")}>
+            <IconButton
+              onClick={handleInfoMenuOpen}
+              className="no-rtl-transform"
+              aria-label={t("appDetails.title")}
+              sx={{
+                width: "36px",
+                height: "36px",
+                borderRadius: "8px",
+                border: `1px solid ${theme.palette.divider}`,
+                backgroundColor: infoMenuAnchor
+                  ? theme.palette.action.selected
+                  : "transparent",
+                color: theme.palette.text.secondary,
+                transition: "all 150ms cubic-bezier(0.4, 0, 0.2, 1)",
+                "&:hover": {
+                  backgroundColor: theme.palette.action.hover,
+                  borderColor: theme.palette.text.secondary,
+                },
+                "&:active": {
+                  transform: "scale(0.95)",
+                },
+              }}
+            >
+              <InfoIcon sx={{ fontSize: "18px" }} />
+            </IconButton>
+          </Tooltip>
+
+          {/* Info Menu Popover */}
+          <Popover
+            open={Boolean(infoMenuAnchor)}
+            anchorEl={infoMenuAnchor}
+            onClose={handleInfoMenuClose}
+            anchorOrigin={{
+              vertical: "bottom",
+              horizontal: "right",
+            }}
+            transformOrigin={{
+              vertical: "top",
+              horizontal: "right",
+            }}
+            sx={{
+              "& .MuiPaper-root": {
+                mt: 1,
+                minWidth: 200,
+                borderRadius: "12px",
+                border: `1px solid ${theme.palette.divider}`,
+                boxShadow: isDarkMode
+                  ? "0 8px 32px rgba(0, 0, 0, 0.4)"
+                  : "0 8px 32px rgba(0, 0, 0, 0.12)",
+                backgroundColor: theme.palette.background.paper,
+              },
+            }}
+          >
+            <List sx={{ padding: "8px" }}>
+              <ListItem disablePadding>
+                <ListItemButton
+                  onClick={handleOpenAppDetails}
+                  sx={{
+                    borderRadius: "8px",
+                    margin: "0 4px",
+                    padding: "8px 12px",
+                    transition: "all 150ms cubic-bezier(0.4, 0, 0.2, 1)",
+                    "&:hover": {
+                      backgroundColor: theme.palette.action.hover,
+                    },
+                  }}
+                >
+                  <ListItemIcon sx={{ minWidth: "36px" }}>
+                    <InfoIcon
+                      sx={{
+                        fontSize: "18px",
+                        color: theme.palette.primary.main,
+                      }}
+                    />
+                  </ListItemIcon>
+                  <ListItemText
+                    primary={t("appDetails.title")}
+                    primaryTypographyProps={{
+                      variant: "body2",
+                      fontWeight: 500,
+                    }}
+                  />
+                </ListItemButton>
+              </ListItem>
+            </List>
+          </Popover>
+        </>
+      )}
+
+      {/* Contact Button */}
+      <Box
+        sx={{
+          width: "1px",
+          height: "16px",
+          backgroundColor: theme.palette.divider,
+          marginInline: "8px",
+        }}
+      />
+      <Tooltip title={t("appDetails.contact")}>
+        <IconButton
+          onClick={handleContactMenuOpen}
+          className="no-rtl-transform"
+          aria-label={t("appDetails.contact")}
+          sx={{
+            width: "36px",
+            height: "36px",
+            borderRadius: "8px",
+            border: `1px solid ${theme.palette.divider}`,
+            backgroundColor: contactMenuAnchor
+              ? theme.palette.action.selected
+              : "transparent",
+            color: theme.palette.text.secondary,
+            transition: "all 150ms cubic-bezier(0.4, 0, 0.2, 1)",
+            "&:hover": {
+              backgroundColor: theme.palette.action.hover,
+              borderColor: theme.palette.text.secondary,
+            },
+            "&:active": {
+              transform: "scale(0.95)",
+            },
+          }}
+        >
+          <ContactMailIcon sx={{ fontSize: "18px" }} />
+        </IconButton>
+      </Tooltip>
+
+      {/* Contact Menu Popover */}
+      <Popover
+        open={Boolean(contactMenuAnchor)}
+        anchorEl={contactMenuAnchor}
+        onClose={handleContactMenuClose}
+        anchorOrigin={{
+          vertical: "bottom",
+          horizontal: "right",
+        }}
+        transformOrigin={{
+          vertical: "top",
+          horizontal: "right",
+        }}
+        sx={{
+          "& .MuiPaper-root": {
+            mt: 1,
+            minWidth: 240,
+            borderRadius: "12px",
+            border: `1px solid ${theme.palette.divider}`,
+            boxShadow: isDarkMode
+              ? "0 8px 32px rgba(0, 0, 0, 0.4)"
+              : "0 8px 32px rgba(0, 0, 0, 0.12)",
+            backgroundColor: theme.palette.background.paper,
+          },
+        }}
+      >
+        <List sx={{ padding: "8px" }}>
+          <ListItem sx={{ padding: "12px 16px" }}>
+            <ListItemText
+              primary={environment.contact.teamName}
+              primaryTypographyProps={{
+                variant: "body2",
+                fontWeight: 600,
+                color: theme.palette.text.primary,
+              }}
+            />
+          </ListItem>
+          <Divider sx={{ margin: "4px 8px" }} />
+          <ListItem disablePadding>
+            <ListItemButton
+              href={`mailto:${environment.contact.email}`}
+              sx={{
+                borderRadius: "8px",
+                margin: "0 4px",
+                padding: "8px 12px",
+                transition: "all 150ms cubic-bezier(0.4, 0, 0.2, 1)",
+                "&:hover": {
+                  backgroundColor: theme.palette.action.hover,
+                },
+              }}
+            >
+              <ListItemIcon sx={{ minWidth: "36px" }}>
+                <EmailIcon
+                  sx={{
+                    fontSize: "18px",
+                    color: theme.palette.primary.main,
+                  }}
+                />
+              </ListItemIcon>
+              <ListItemText
+                primary={environment.contact.email}
+                primaryTypographyProps={{
+                  variant: "body2",
+                  fontWeight: 500,
+                }}
+              />
+            </ListItemButton>
+          </ListItem>
+          <ListItem disablePadding>
+            <ListItemButton
+              href={`tel:${environment.contact.phone}`}
+              sx={{
+                borderRadius: "8px",
+                margin: "0 4px",
+                padding: "8px 12px",
+                transition: "all 150ms cubic-bezier(0.4, 0, 0.2, 1)",
+                "&:hover": {
+                  backgroundColor: theme.palette.action.hover,
+                },
+              }}
+            >
+              <ListItemIcon sx={{ minWidth: "36px" }}>
+                <PhoneIcon
+                  sx={{
+                    fontSize: "18px",
+                    color: theme.palette.primary.main,
+                  }}
+                />
+              </ListItemIcon>
+              <ListItemText
+                primary={environment.contact.phone}
+                primaryTypographyProps={{
+                  variant: "body2",
+                  fontWeight: 500,
+                }}
+              />
+            </ListItemButton>
+          </ListItem>
+        </List>
+      </Popover>
 
       {/* User Menu */}
       {userEmail && (
@@ -1504,6 +1792,7 @@ const WelcomeScreen = ({
   onToggleMockMode,
   onLogout,
   userEmail,
+  onOpenAppDetails,
 }: {
   isDarkMode: boolean;
   theme: any;
@@ -1513,6 +1802,7 @@ const WelcomeScreen = ({
   onToggleMockMode: () => void;
   onLogout?: () => void;
   userEmail?: string | null;
+  onOpenAppDetails?: () => void;
 }) => {
   const { t } = useTranslation();
   return (
@@ -1539,6 +1829,7 @@ const WelcomeScreen = ({
           onToggleMockMode={onToggleMockMode}
           onLogout={onLogout}
           userEmail={userEmail}
+          onOpenAppDetails={onOpenAppDetails}
         />
       </Box>
 
@@ -1626,6 +1917,7 @@ export function ChatArea({
   authToken,
   onOpenReport,
   streamingConversationId,
+  onOpenAppDetails,
 }: ChatAreaProps) {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const theme = useTheme();
@@ -1838,6 +2130,7 @@ export function ChatArea({
         onToggleMockMode={onToggleMockMode}
         onLogout={onLogout}
         userEmail={userEmail}
+        onOpenAppDetails={onOpenAppDetails}
       />
     );
   }
@@ -1866,6 +2159,7 @@ export function ChatArea({
           onToggleMockMode={onToggleMockMode}
           onLogout={onLogout}
           userEmail={userEmail}
+          onOpenAppDetails={onOpenAppDetails}
         />
       </Box>
 

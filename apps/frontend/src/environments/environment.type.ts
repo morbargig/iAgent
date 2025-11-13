@@ -30,5 +30,13 @@ export interface Environment {
     level: string;
     enableConsole: boolean;
   };
+  
+  contact: {
+    phone: string;
+    email: string;
+    teamName: string;
+  };
+  
+  buildDate?: string;
 }
 

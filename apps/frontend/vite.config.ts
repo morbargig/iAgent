@@ -3,11 +3,17 @@ import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import { nxViteTsPaths } from '@nx/vite/plugins/nx-tsconfig-paths.plugin';
 import path from 'path';
+import { readFileSync } from 'fs';
 
 export default defineConfig(({ mode }) => {
   // Determine base URL based on environment
   const isProduction = mode === 'production';
   const base = isProduction ? '/iAgent/' : '/';
+
+  // Read version from package.json
+  const packageJson = JSON.parse(readFileSync(path.resolve(__dirname, 'package.json'), 'utf-8'));
+  const version = packageJson.version;
+  const buildDate = new Date().toISOString();
 
   return {
     root: __dirname,
@@ -45,6 +51,11 @@ export default defineConfig(({ mode }) => {
       react(),
       nxViteTsPaths(),
     ],
+
+    define: {
+      __BUILD_DATE__: JSON.stringify(buildDate),
+      __APP_VERSION__: JSON.stringify(version),
+    },
 
     resolve: {
       conditions: ['@iagent/workspace', 'import', 'module', 'default'],

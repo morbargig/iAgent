@@ -15,6 +15,8 @@ import {
   type ReportData,
   fetchReportDetails,
 } from "../components/ReportDetailsPanel";
+import { AppDetailsDialog } from "../components/AppDetailsDialog";
+import { AppFooter } from "../components/AppFooter";
 import { parseReportId } from "../utils/reportLinks";
 
 import {
@@ -363,6 +365,7 @@ const App = () => {
   const [reportData, setReportData] = useState<ReportData | null>(null);
   const [reportPanelWidth, setReportPanelWidth] = useState(350);
   const [isReportLoading, setIsReportLoading] = useState(false);
+  const [isAppDetailsOpen, setIsAppDetailsOpen] = useState(false);
 
   const { useMockMode: isMockMode, toggleMockMode } = useMockMode();
   const { t: translation } = useTranslation();
@@ -1504,6 +1507,7 @@ const App = () => {
             onToggleTheme={toggleTheme}
             streamingConversationId={streamingConversationId}
             onWidthChange={handleSidebarWidthChange}
+            onOpenAppDetails={() => setIsAppDetailsOpen(true)}
           />
           <Box
             id="iagent-conversation-container"
@@ -1533,6 +1537,7 @@ const App = () => {
               onOpenReport={openReportFromUrl}
               currentChatId={currentConversationId || undefined}
               streamingConversationId={streamingConversationId || undefined}
+              onOpenAppDetails={() => setIsAppDetailsOpen(true)}
             />
 
             {/* Input Area */}
@@ -1560,6 +1565,7 @@ const App = () => {
               currentChatId={currentConversationId || undefined}
               authToken={authToken || undefined}
             />
+            <AppFooter isDarkMode={isDarkMode} />
           </Box>
           <ReportDetailsPanel
             open={isReportPanelOpen}
@@ -1569,6 +1575,11 @@ const App = () => {
             isLoading={isReportLoading}
             width={reportPanelWidth}
             onWidthChange={handleReportPanelWidthChange}
+          />
+          <AppDetailsDialog
+            open={isAppDetailsOpen}
+            onClose={() => setIsAppDetailsOpen(false)}
+            isDarkMode={isDarkMode}
           />
         </Box>
       </Box>

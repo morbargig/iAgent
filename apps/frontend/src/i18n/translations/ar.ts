@@ -551,6 +551,17 @@ const translations: Translation = {
 
 فقط أخبرني أي اتجاه تريد أن نأخذ هذه المحادثة إليه، وسأوائم استجابتي وفقاً لذلك!`,
   },
+  appDetails: {
+    title: 'تفاصيل التطبيق',
+    contact: 'معلومات الاتصال',
+    version: 'الإصدار',
+    buildDate: 'تاريخ البناء',
+    environment: 'البيئة',
+    pilotWarning: 'هذا التطبيق حاليًا في مرحلة تجريبية. قد تتغير الميزات وقد تكون بعض الوظائف محدودة.',
+    phone: 'الهاتف',
+    email: 'البريد الإلكتروني',
+    teamName: 'الفريق',
+  },
 };
 
 export default translations; 
