@@ -373,7 +373,6 @@ export const InputControls: React.FC<InputControlsProps> = ({
 
         {/* Action Buttons */}
         <ActionButtons
-          value={value}
           showVoiceButton={showVoiceButton}
           showAttachmentButton={showAttachmentButton}
           canSend={canSend}

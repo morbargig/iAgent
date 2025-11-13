@@ -21,7 +21,6 @@ import { FILE_UPLOAD_CONFIG } from "../../config/fileUpload";
 import { UploadingFile, AttachedFile } from "../../hooks/useFileHandling";
 
 interface ActionButtonsProps {
-  value: string;
   showVoiceButton: boolean;
   showAttachmentButton: boolean;
   canSend: boolean;
@@ -42,7 +41,6 @@ interface ActionButtonsProps {
 }
 
 export const ActionButtons: React.FC<ActionButtonsProps> = ({
-  value,
   showVoiceButton,
   showAttachmentButton,
   canSend,
@@ -61,6 +59,34 @@ export const ActionButtons: React.FC<ActionButtonsProps> = ({
   onQuickUpload,
   onOpenDocumentManager,
 }) => {
+  const totalFiles = uploadingFiles.length + attachedFiles.length;
+  const maxFilesReached = totalFiles >= FILE_UPLOAD_CONFIG.MAX_FILE_COUNT;
+  const isSendDisabled = !canSend && !showStopButton;
+
+  const getSendButtonStyles = () => {
+    if (showStopButton) {
+      return {
+        backgroundColor: isDarkMode ? "#565869" : "#f3f4f6",
+        color: isDarkMode ? "#ffffff" : "#374151",
+        hoverBackgroundColor: isDarkMode ? "#6b7280" : "#e5e7eb",
+      };
+    }
+    if (canSend) {
+      return {
+        backgroundColor: "#000000",
+        color: "#ffffff",
+        hoverBackgroundColor: "#333333",
+      };
+    }
+    return {
+      backgroundColor: isDarkMode ? "#40414f" : "#f7f7f8",
+      color: isDarkMode ? "#6b7280" : "#9ca3af",
+      hoverBackgroundColor: isDarkMode ? "#4a4b57" : "#eeeeee",
+    };
+  };
+
+  const sendButtonStyles = getSendButtonStyles();
+
   return (
     <Box
       id="iagent-action-buttons"
@@ -71,49 +97,47 @@ export const ActionButtons: React.FC<ActionButtonsProps> = ({
         alignItems: "center",
       }}
     >
-      {/* Voice Button */}
       {showVoiceButton && (
-        <IconButton
-          onClick={onVoiceInput}
-          disabled={disabled}
-          sx={{
-            width: "32px",
-            height: "32px",
-            backgroundColor: "transparent",
-            color: isDarkMode ? "#8e8ea0" : "#6b7280",
-            borderRadius: "16px",
-            transition: "all 0.2s ease",
-            "&:hover": {
-              backgroundColor: isDarkMode
-                ? "rgba(255, 255, 255, 0.1)"
-                : "rgba(0, 0, 0, 0.05)",
-              color: isDarkMode ? "#ffffff" : "#374151",
-            },
-          }}
-          title={t("input.voiceTooltip")}
-        >
-          <MicIcon sx={{ fontSize: 16 }} />
-        </IconButton>
+        <Tooltip title={t("input.voiceTooltip")} arrow>
+          <IconButton
+            onClick={onVoiceInput}
+            disabled={disabled}
+            sx={{
+              width: "32px",
+              height: "32px",
+              backgroundColor: "transparent",
+              color: isDarkMode ? "#8e8ea0" : "#6b7280",
+              borderRadius: "16px",
+              transition: "all 0.2s ease",
+              "&:hover": {
+                backgroundColor: isDarkMode
+                  ? "rgba(255, 255, 255, 0.1)"
+                  : "rgba(0, 0, 0, 0.05)",
+                color: isDarkMode ? "#ffffff" : "#374151",
+              },
+            }}
+          >
+            <MicIcon sx={{ fontSize: 16 }} />
+          </IconButton>
+        </Tooltip>
       )}
 
-      {/* File Upload Dropdown Menu */}
       {showAttachmentButton && (
         <>
-          {/* File Upload Button with Badge */}
           <Tooltip
             title={
-              uploadingFiles.length + attachedFiles.length >=
-              FILE_UPLOAD_CONFIG.MAX_FILE_COUNT
+              maxFilesReached
                 ? t("files.maxFilesReached", {
                     count: FILE_UPLOAD_CONFIG.MAX_FILE_COUNT,
                   })
                 : t("input.attachFilesTooltip")
             }
+            arrow
           >
             <Badge
-              badgeContent={uploadingFiles.length + attachedFiles.length}
+              badgeContent={totalFiles}
               color="primary"
-              invisible={uploadingFiles.length + attachedFiles.length === 0}
+              invisible={totalFiles === 0}
               sx={{
                 "& .MuiBadge-badge": {
                   fontSize: "0.625rem",
@@ -125,11 +149,7 @@ export const ActionButtons: React.FC<ActionButtonsProps> = ({
             >
               <IconButton
                 onClick={onFileMenuClick}
-                disabled={
-                  disabled ||
-                  uploadingFiles.length + attachedFiles.length >=
-                    FILE_UPLOAD_CONFIG.MAX_FILE_COUNT
-                }
+                disabled={disabled || maxFilesReached}
                 sx={{
                   width: "32px",
                   height: "32px",
@@ -137,11 +157,7 @@ export const ActionButtons: React.FC<ActionButtonsProps> = ({
                   color: isDarkMode ? "#8e8ea0" : "#6b7280",
                   borderRadius: "16px",
                   transition: "all 0.2s ease",
-                  opacity:
-                    uploadingFiles.length + attachedFiles.length >=
-                    FILE_UPLOAD_CONFIG.MAX_FILE_COUNT
-                      ? 0.5
-                      : 1,
+                  opacity: maxFilesReached ? 0.5 : 1,
                   "&:hover": {
                     backgroundColor: isDarkMode
                       ? "rgba(255, 255, 255, 0.1)"
@@ -158,7 +174,6 @@ export const ActionButtons: React.FC<ActionButtonsProps> = ({
             </Badge>
           </Tooltip>
 
-          {/* File Upload Dropdown Menu */}
           <Menu
             anchorEl={fileMenuAnchor}
             open={fileMenuOpen}
@@ -222,33 +237,16 @@ export const ActionButtons: React.FC<ActionButtonsProps> = ({
         </>
       )}
 
-      {/* Send/Stop Button */}
       <IconButton
         id="iagent-send-button"
         className={`iagent-submit-button ${showStopButton ? "iagent-stop-mode" : "iagent-send-mode"}`}
         onClick={onSubmit}
-        disabled={!canSend && !showStopButton}
+        disabled={isSendDisabled}
         sx={{
           width: "32px",
           height: "32px",
-          backgroundColor: showStopButton
-            ? isDarkMode
-              ? "#565869"
-              : "#f3f4f6"
-            : canSend
-              ? "#000000"
-              : isDarkMode
-                ? "#40414f"
-                : "#f7f7f8",
-          color: showStopButton
-            ? isDarkMode
-              ? "#ffffff"
-              : "#374151"
-            : canSend
-              ? "#ffffff"
-              : isDarkMode
-                ? "#6b7280"
-                : "#9ca3af",
+          backgroundColor: sendButtonStyles.backgroundColor,
+          color: sendButtonStyles.color,
           borderRadius: "50%",
           border: "none",
           boxShadow: "none",
@@ -256,15 +254,7 @@ export const ActionButtons: React.FC<ActionButtonsProps> = ({
           padding: 0,
           transition: "all 0.2s ease",
           "&:hover": {
-            backgroundColor: showStopButton
-              ? isDarkMode
-                ? "#6b7280"
-                : "#e5e7eb"
-              : canSend
-                ? "#333333"
-                : isDarkMode
-                  ? "#4a4b57"
-                  : "#eeeeee",
+            backgroundColor: sendButtonStyles.hoverBackgroundColor,
             transform: canSend || showStopButton ? "scale(1.1)" : "none",
             boxShadow:
               canSend || showStopButton
