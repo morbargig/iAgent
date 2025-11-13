@@ -369,6 +369,66 @@ export class ChatService {
     ).exec();
   }
 
+  async editMessage(
+    chatId: string,
+    userId: string,
+    messageId: string,
+    content: string,
+    filterSnapshot?: {
+      filterId?: string;
+      name?: string;
+      config?: Record<string, unknown>;
+    } | null
+  ): Promise<ChatMessageDocument> {
+    const chat = await this.chatModel.findOne({ chatId, userId }).exec();
+    if (!chat) {
+      throw new NotFoundException(`Chat with ID ${chatId} not found`);
+    }
+
+    const targetMessage = await this.messageModel
+      .findOne({ chatId, userId, id: messageId })
+      .exec();
+
+    if (!targetMessage) {
+      throw new NotFoundException(`Message with ID ${messageId} not found`);
+    }
+
+    if (targetMessage.role !== 'user') {
+      throw new BadRequestException('Only user messages can be edited');
+    }
+
+    await this.messageModel
+      .deleteMany({ chatId, userId, timestamp: { $gt: targetMessage.timestamp } })
+      .exec();
+
+    const updatedMessage = await this.messageModel.findOneAndUpdate(
+      { chatId, userId, id: messageId },
+      {
+        content,
+        filterId: filterSnapshot?.filterId || null,
+        filterSnapshot: filterSnapshot || null,
+        timestamp: new Date(),
+      },
+      { new: true }
+    ).exec();
+
+    if (!updatedMessage) {
+      throw new NotFoundException(`Failed to update message ${messageId}`);
+    }
+
+    const remainingCount = await this.messageModel.countDocuments({ chatId, userId }).exec();
+
+    await this.chatModel.findOneAndUpdate(
+      { chatId, userId },
+      {
+        lastMessageAt: updatedMessage.timestamp,
+        messageCount: remainingCount,
+      }
+    ).exec();
+
+    return updatedMessage;
+  }
+
   private createInitialChatName(content: string | undefined): string | undefined {
     if (!content) {
       return undefined;

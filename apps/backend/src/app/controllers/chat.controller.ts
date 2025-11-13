@@ -216,6 +216,56 @@ export class ChatController {
     }
   }
 
+  @Put(':chatId/messages/:messageId')
+  @ApiOperation({ summary: 'Edit a message and delete all messages after it' })
+  @ApiParam({ name: 'chatId', description: 'Chat ID' })
+  @ApiParam({ name: 'messageId', description: 'Message ID to edit' })
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        content: { type: 'string', example: 'Updated message content' },
+        filterSnapshot: {
+          type: 'object',
+          nullable: true,
+          properties: {
+            filterId: { type: 'string' },
+            name: { type: 'string' },
+            config: { type: 'object' },
+          },
+        },
+      },
+      required: ['content'],
+    },
+  })
+  @ApiResponse({ status: HttpStatus.OK, description: 'Message edited successfully' })
+  async editMessage(
+    @Param('chatId') chatId: string,
+    @Param('messageId') messageId: string,
+    @UserId() userId: string,
+    @Body() body: {
+      content: string;
+      filterSnapshot?: {
+        filterId?: string;
+        name?: string;
+        config?: Record<string, unknown>;
+      } | null;
+    }
+  ) {
+    try {
+      return await this.chatService.editMessage(
+        chatId,
+        userId,
+        messageId,
+        body.content,
+        body.filterSnapshot
+      );
+    } catch (error) {
+      this.logger.error(`Failed to edit message ${messageId} in chat ${chatId}:`, error);
+      throw error;
+    }
+  }
+
 
   // ==================== FILTER ENDPOINTS ====================
   // Note: More specific routes (filters/:filterId) must come before parameterized routes (:chatId/filters)

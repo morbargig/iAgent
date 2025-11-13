@@ -443,3 +443,51 @@ export const useDeleteMessage = () => {
   });
 };
 
+export const useEditMessage = () => {
+  const qc = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({
+      chatId,
+      messageId,
+      content,
+      dateFilter,
+      selectedCountries,
+      enabledTools,
+      filterSnapshot,
+    }: {
+      chatId: string;
+      messageId: string;
+      content: string;
+      dateFilter?: unknown;
+      selectedCountries?: string[];
+      enabledTools?: string[];
+      filterSnapshot?: unknown;
+    }): Promise<void> => {
+      const token = getAuthToken();
+      if (!token) throw new Error('Not authenticated');
+
+      const baseUrl = getBaseApiUrl();
+      await http.put(
+        `${baseUrl}/api/chats/${chatId}/messages/${messageId}`,
+        {
+          content,
+          dateFilter,
+          selectedCountries,
+          enabledTools,
+          filterSnapshot,
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+    },
+    onSuccess: (_data, { chatId }) => {
+      qc.invalidateQueries({ queryKey: apiKeys.chats.messages(chatId) });
+      qc.invalidateQueries({ queryKey: apiKeys.chats.detail(chatId) });
+    },
+  });
+};
+

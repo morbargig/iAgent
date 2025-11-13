@@ -37,7 +37,7 @@ import { useVersionMigration } from "../hooks/useVersionMigration";
 import { getBaseApiUrl } from "../config/config";
 
 import { generateUniqueId } from "../utils/id-generator";
-import { useChats, useChat, useSaveMessage, useCreateChat, useDeleteChat, useUpdateChatName, useDeleteMessage } from "../features/chats/api";
+import { useChats, useChat, useSaveMessage, useCreateChat, useDeleteChat, useUpdateChatName, useDeleteMessage, useEditMessage, useChatMessages } from "../features/chats/api";
 import { setAuthTokenGetter } from "../lib/http";
 import { queryClient } from "../lib/queryClient";
 import { apiKeys } from "../lib/keys";
@@ -319,9 +319,11 @@ const App = () => {
   const [currentConversationId, setCurrentConversationId] = useAppLocalStorage('chatbot-current-conversation-id');
   
   const [loadedConversations, setLoadedConversations] = useState<Map<string, Conversation>>(new Map());
+  const [streamingConversations, setStreamingConversations] = useState<Map<string, Conversation>>(new Map());
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [streamingConversationId, setStreamingConversationId] = useAppSessionStorage('streaming-conversation-id');
+  const [editingMessageId, setEditingMessageId] = useState<string | null>(null);
   
   const accumulatedStreamContentRef = useRef<string>("");
   const streamingClientRef = useRef<StreamingClient | null>(null);
@@ -356,6 +358,8 @@ const App = () => {
   const deleteChatMutation = useDeleteChat();
   const updateChatNameMutation = useUpdateChatName();
   const deleteMessageMutation = useDeleteMessage();
+  const editMessageMutation = useEditMessage();
+  const { refetch: refetchChatMessages } = useChatMessages(currentConversationId);
 
   const [isReportPanelOpen, setIsReportPanelOpen] = useState(false);
   const [reportData, setReportData] = useState<ReportData | null>(null);
@@ -388,71 +392,110 @@ const App = () => {
     if (!streamingConversationId || !authToken || !userId) return;
 
     const currentContent = accumulatedStreamContentRef.current;
-    if (!currentContent) return;
+    if (!currentContent || currentContent.trim().length === 0) return;
 
-    updateLoadedConversation(streamingConversationId, (conv) => {
-      const lastMessage = conv.messages[conv.messages.length - 1];
-      if (lastMessage && lastMessage.isStreaming) {
-        const updatedConv = {
-          ...conv,
-          messages: [
-            ...conv.messages.slice(0, -1),
-            updateMessageContent(
-              lastMessage,
-              currentContent,
-              false,
-              true
-            ),
-          ],
-          lastUpdated: new Date(),
-        };
+    const streamingConv = streamingConversations.get(streamingConversationId);
+    const loadedConv = loadedConversations.get(streamingConversationId);
+    const conv = streamingConv || loadedConv;
+    
+    if (!conv) return;
 
-        if (updatedConv.messages.length > 0) {
-          const lastMessage = updatedConv.messages[updatedConv.messages.length - 1];
-          if (!lastMessage.isStreaming) {
-            saveMessageMutation.mutate({
-              chatId: updatedConv.id,
-              message: {
-                id: lastMessage.id,
-                role: lastMessage.role,
-                content: lastMessage.content,
-                timestamp: lastMessage.timestamp,
-                metadata: {
-                  ...lastMessage.metadata,
-                  parsed: lastMessage.parsed,
-                  sections: lastMessage.sections,
-                  currentSection: lastMessage.currentSection,
-                },
-                filterId: lastMessage.filterId,
-                filterSnapshot: lastMessage.filterSnapshot,
-              },
-            });
-          }
-        }
+    const lastMessage = conv.messages[conv.messages.length - 1];
+    if (!lastMessage || !lastMessage.isStreaming) return;
 
-        return updatedConv;
-      }
-      return conv;
+    const updatedMessage = updateMessageContent(
+      lastMessage,
+      currentContent,
+      false,
+      true
+    );
+
+    const updatedConv = {
+      ...conv,
+      messages: [
+        ...conv.messages.slice(0, -1),
+        updatedMessage,
+      ],
+      lastUpdated: new Date(),
+    };
+
+    if (streamingConv) {
+      setStreamingConversations((prev) => {
+        const updated = new Map(prev);
+        updated.set(streamingConversationId, updatedConv);
+        return updated;
+      });
+    } else {
+      updateLoadedConversation(streamingConversationId, () => updatedConv);
+    }
+
+    if (authToken && userId) {
+      saveMessageMutation.mutate({
+        chatId: updatedConv.id,
+        message: {
+          id: updatedMessage.id,
+          role: updatedMessage.role,
+          content: updatedMessage.content,
+          timestamp: updatedMessage.timestamp,
+          metadata: {
+            ...updatedMessage.metadata,
+            parsed: updatedMessage.parsed,
+            sections: updatedMessage.sections,
+            currentSection: updatedMessage.currentSection,
+          },
+          filterId: updatedMessage.filterId,
+          filterSnapshot: updatedMessage.filterSnapshot,
+        },
+      });
+    }
+
+    setLoadedConversations((prev) => {
+      const updated = new Map(prev);
+      updated.set(streamingConversationId, updatedConv);
+      return updated;
     });
-  }, [streamingConversationId, authToken, userId, updateLoadedConversation]);
+  }, [streamingConversationId, authToken, userId, streamingConversations, loadedConversations, updateLoadedConversation, saveMessageMutation]);
 
-  const stopGeneration = React.useCallback(() => {
+  const stopGeneration = React.useCallback(async () => {
     if (streamingClientRef.current) {
       streamingClientRef.current.abort();
 
-      // Save current stream content to MongoDB
-      saveCurrentStreamContent();
+      // Save current stream content to MongoDB before clearing
+      await saveCurrentStreamContent();
 
       setIsLoading(false);
+      const currentStreamingId = streamingConversationId;
       setStreamingConversationId(null);
-      accumulatedStreamContentRef.current = ""; // Clear ref
+      
+      // Move streaming conversation to loaded conversations
+      if (currentStreamingId) {
+        setStreamingConversations((prev) => {
+          const streamingConv = prev.get(currentStreamingId);
+          if (streamingConv) {
+            setLoadedConversations((loadedPrev) => {
+              const updated = new Map(loadedPrev);
+              updated.set(currentStreamingId, streamingConv);
+              return updated;
+            });
+          }
+          const updated = new Map(prev);
+          updated.delete(currentStreamingId);
+          return updated;
+        });
+      }
+      
+      accumulatedStreamContentRef.current = ""; // Clear ref after saving
     }
-  }, [saveCurrentStreamContent]);
+  }, [saveCurrentStreamContent, streamingConversationId, setStreamingConversationId, setStreamingConversations, setLoadedConversations]);
 
   const currentConversation = useMemo(() => {
     if (!currentConversationId) return null;
+    const streamingConv = streamingConversations.get(currentConversationId);
+    if (streamingConv) {
+      return streamingConv;
+    }
     return loadedConversations.get(currentConversationId) || null;
-  }, [loadedConversations, currentConversationId]);
+  }, [loadedConversations, streamingConversations, currentConversationId]);
 
   const conversations = useMemo(() => {
     return chatList.map((chat) => {
@@ -484,7 +527,343 @@ const App = () => {
     if (!content.trim() || isLoading) return;
 
     const currentConvId = currentConversationIdRef.current;
-    const currentConv = loadedConversationsRef.current.get(currentConvId || '') || null;
+    const streamingConv = streamingConversations.get(currentConvId || '');
+    const loadedConv = loadedConversationsRef.current.get(currentConvId || '');
+    const currentConv = streamingConv || loadedConv || null;
+
+    if (editingMessageId && currentConvId && currentConv && authToken && userId) {
+      const messageIndex = currentConv.messages.findIndex((m) => m.id === editingMessageId);
+      if (messageIndex !== -1) {
+        setIsLoading(true);
+        setInput("");
+        
+        try {
+          const messageFilterSnapshot = filterSnapshot || {
+            filterId: `filter_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+            name: `Filter ${new Date().toLocaleString()}`,
+            config: {
+              dateFilter,
+              selectedCountries,
+              enabledTools,
+              toolConfigurations: {},
+            },
+          };
+
+          const messagesBeforeEdit = currentConv.messages.slice(0, messageIndex + 1);
+          const editedMessage = {
+            ...currentConv.messages[messageIndex],
+            content,
+            filterId: messageFilterSnapshot.filterId,
+            filterSnapshot: messageFilterSnapshot,
+          };
+
+          const updatedMessages = [...messagesBeforeEdit.slice(0, -1), editedMessage];
+
+          setStreamingConversations((prev) => {
+            const updated = new Map(prev);
+            updated.delete(currentConvId);
+            return updated;
+          });
+
+          updateLoadedConversation(currentConvId, (conv) => ({
+            ...conv,
+            messages: updatedMessages,
+            lastUpdated: new Date(),
+          }));
+
+          await editMessageMutation.mutateAsync({
+            chatId: currentConvId,
+            messageId: editingMessageId,
+            content,
+            dateFilter,
+            selectedCountries,
+            enabledTools,
+            filterSnapshot: messageFilterSnapshot,
+          });
+
+          setEditingMessageId(null);
+          
+          const refetchedMessages = await refetchChatMessages();
+          
+          let messagesForStreaming = updatedMessages;
+          if (refetchedMessages.data) {
+            const convertedMessages = refetchedMessages.data.map((msg) => convertMongoMessageToMessage({
+              id: msg.id,
+              role: msg.role,
+              content: msg.content,
+              timestamp: msg.timestamp,
+              metadata: msg.metadata,
+              filterId: msg.filterId,
+              filterSnapshot: msg.filterSnapshot,
+            }));
+
+            messagesForStreaming = convertedMessages;
+
+            updateLoadedConversation(currentConvId, (conv) => ({
+              ...conv,
+              messages: convertedMessages,
+              lastUpdated: new Date(),
+            }));
+          }
+
+          const toolsArray = enabledTools.map((toolId) => ({
+            id: toolId,
+            enabled: true,
+            settings: {},
+          }));
+
+          const assistantMessage = createMessage(
+            "assistant",
+            "",
+            true,
+            messageFilterSnapshot.filterId,
+            messageFilterSnapshot
+          );
+
+          const updatedConversation: Conversation = {
+            ...currentConv,
+            messages: [...messagesForStreaming, assistantMessage],
+            lastUpdated: new Date(),
+          };
+
+          setStreamingConversations((prev) => {
+            const updated = new Map(prev);
+            updated.set(updatedConversation.id, updatedConversation);
+            return updated;
+          });
+
+          setStreamingConversationId(updatedConversation.id);
+          setIsLoading(true);
+
+          let accumulatedContent = "";
+          accumulatedStreamContentRef.current = "";
+          let currentSections: Record<string, { content: string; parsed: ParsedMessageContent }> = {};
+
+          if (!streamingClientRef.current) return;
+          await streamingClientRef.current.streamChat(
+            updatedConversation.messages,
+            (token: string, metadata?: Record<string, any>) => {
+              accumulatedContent += token;
+              accumulatedStreamContentRef.current = accumulatedContent;
+              
+              if (metadata?.sections) {
+                currentSections = metadata.sections as Record<string, { content: string; parsed: ParsedMessageContent }>;
+              }
+              
+              setStreamingConversations((prev) => {
+                const conv = prev.get(updatedConversation.id);
+                if (!conv) return prev;
+                const updated = new Map(prev);
+                const lastMessage = conv.messages[conv.messages.length - 1];
+                if (!lastMessage) return prev;
+                updated.set(updatedConversation.id, {
+                  ...conv,
+                  messages: [
+                    ...conv.messages.slice(0, -1),
+                    {
+                      ...updateMessageContent(
+                        lastMessage,
+                        accumulatedContent,
+                        true
+                      ),
+                      parsed: metadata?.parsed,
+                      sections: Object.keys(currentSections).length > 0 ? currentSections : undefined,
+                      currentSection: metadata?.section as 'reasoning' | 'tool-t' | 'tool-h' | 'tool-f' | 'answer' | undefined,
+                      metadata: {
+                        ...(lastMessage.metadata || {}),
+                        ...(metadata || {}),
+                      },
+                    },
+                  ],
+                  lastUpdated: new Date(),
+                });
+                return updated;
+              });
+            },
+            (result: StreamingCompletionPayload) => {
+              const finalContent = result.content || accumulatedStreamContentRef.current || accumulatedContent;
+              const sections = result.metadata?.sections as Record<string, { content: string; parsed: ParsedMessageContent }> | undefined;
+              const currentSection = result.metadata?.currentSection as 'reasoning' | 'tool-t' | 'tool-h' | 'tool-f' | 'answer' | undefined;
+              
+              let finalParsed = result.parsed;
+              if (!finalParsed && finalContent) {
+                finalParsed = buildParsedMessageContent(finalContent);
+              }
+              
+              setStreamingConversations((prev) => {
+                const conv = prev.get(updatedConversation.id);
+                if (!conv) return prev;
+                const updated = new Map(prev);
+                const lastMessage = conv.messages[conv.messages.length - 1];
+                if (!lastMessage) return prev;
+                const finalConv = {
+                  ...conv,
+                  messages: [
+                    ...conv.messages.slice(0, -1),
+                    {
+                      ...updateMessageContent(
+                        lastMessage,
+                        finalContent,
+                        false
+                      ),
+                      parsed: finalParsed,
+                      sections: sections,
+                      currentSection: currentSection,
+                      metadata: {
+                        ...(lastMessage.metadata || {}),
+                        ...(result.metadata || {}),
+                      },
+                    },
+                  ],
+                  lastUpdated: new Date(),
+                };
+
+                if (authToken && userId && finalConv.messages.length > 0) {
+                  const lastMsg = finalConv.messages[finalConv.messages.length - 1];
+                  if (!lastMsg.isStreaming) {
+                    saveMessageMutation.mutate({
+                      chatId: finalConv.id,
+                      message: {
+                        id: lastMsg.id,
+                        role: lastMsg.role,
+                        content: lastMsg.content,
+                        timestamp: lastMsg.timestamp,
+                        metadata: {
+                          ...lastMsg.metadata,
+                          parsed: lastMsg.parsed,
+                          sections: lastMsg.sections,
+                          currentSection: lastMsg.currentSection,
+                        },
+                        filterId: lastMsg.filterId,
+                        filterSnapshot: lastMsg.filterSnapshot,
+                      },
+                    });
+                  }
+                }
+
+                updated.set(updatedConversation.id, finalConv);
+                return updated;
+              });
+
+              setLoadedConversations((prev) => {
+                const conv = prev.get(updatedConversation.id);
+                if (!conv) return prev;
+                const updated = new Map(prev);
+                const lastMessage = conv.messages[conv.messages.length - 1];
+                if (!lastMessage) return prev;
+                const finalConv = {
+                  ...conv,
+                  messages: [
+                    ...conv.messages.slice(0, -1),
+                    {
+                      ...updateMessageContent(
+                        lastMessage,
+                        finalContent,
+                        false
+                      ),
+                      parsed: finalParsed,
+                      sections: sections,
+                      currentSection: currentSection,
+                      metadata: {
+                        ...(lastMessage.metadata || {}),
+                        ...(result.metadata || {}),
+                      },
+                    },
+                  ],
+                  lastUpdated: new Date(),
+                };
+                updated.set(updatedConversation.id, finalConv);
+                return updated;
+              });
+
+              setStreamingConversations((prev) => {
+                const updated = new Map(prev);
+                updated.delete(updatedConversation.id);
+                return updated;
+              });
+
+              setIsLoading(false);
+              setStreamingConversationId(null);
+              accumulatedStreamContentRef.current = "";
+            },
+            async (error: Error) => {
+              console.error("Streaming error:", error);
+              
+              const currentContent = accumulatedStreamContentRef.current;
+              const hasContent = currentContent && currentContent.trim().length > 0;
+              
+              setStreamingConversations((prev) => {
+                const conv = prev.get(updatedConversation.id);
+                if (!conv) return prev;
+                const updated = new Map(prev);
+                const lastMessage = conv.messages[conv.messages.length - 1];
+                
+                const finalMessage = hasContent
+                  ? updateMessageContent(lastMessage, currentContent, false, true)
+                  : updateMessageContent(
+                      lastMessage,
+                      translation("errors.streaming", { error: error.message }),
+                      false
+                    );
+                
+                const updatedConv = {
+                  ...conv,
+                  messages: [
+                    ...conv.messages.slice(0, -1),
+                    finalMessage,
+                  ],
+                  lastUpdated: new Date(),
+                };
+                
+                updated.set(updatedConversation.id, updatedConv);
+                
+                if (hasContent && authToken && userId) {
+                  saveMessageMutation.mutate({
+                    chatId: updatedConv.id,
+                    message: {
+                      id: finalMessage.id,
+                      role: finalMessage.role,
+                      content: finalMessage.content,
+                      timestamp: finalMessage.timestamp,
+                      metadata: {
+                        ...finalMessage.metadata,
+                        parsed: finalMessage.parsed,
+                        sections: finalMessage.sections,
+                        currentSection: finalMessage.currentSection,
+                      },
+                      filterId: finalMessage.filterId,
+                      filterSnapshot: finalMessage.filterSnapshot,
+                    },
+                  });
+                }
+                
+                setLoadedConversations((loadedPrev) => {
+                  const loadedUpdated = new Map(loadedPrev);
+                  loadedUpdated.set(updatedConversation.id, updatedConv);
+                  return loadedUpdated;
+                });
+                
+                return updated;
+              });
+              
+              setIsLoading(false);
+              setStreamingConversationId(null);
+              accumulatedStreamContentRef.current = "";
+            },
+            getBaseApiUrl(),
+            authToken || undefined,
+            updatedConversation.id,
+            toolsArray,
+            dateFilter,
+            selectedCountries
+          );
+        } catch (error) {
+          console.error("Failed to edit message:", error);
+          setIsLoading(false);
+        }
+        return;
+      }
+    }
 
     setIsLoading(true);
     if (currentConv?.id) {
@@ -555,8 +934,7 @@ const App = () => {
           };
 
       if (currentConv) {
-        // Update existing conversation
-        setLoadedConversations((prev) => {
+        setStreamingConversations((prev) => {
           const updated = new Map(prev);
           updated.set(updatedConversation.id, updatedConversation);
           return updated;
@@ -618,29 +996,33 @@ const App = () => {
             currentSections = metadata.sections as Record<string, { content: string; parsed: ParsedMessageContent }>;
           }
           
-          updateLoadedConversation(updatedConversation.id, (conv) => {
-                const lastMessage = conv.messages[conv.messages.length - 1];
-                return {
-                  ...conv,
-                  messages: [
-                    ...conv.messages.slice(0, -1),
-                    {
-                      ...updateMessageContent(
-                        lastMessage,
-                        accumulatedContent,
-                        true
-                      ),
-                      parsed: metadata?.parsed,
-                      sections: Object.keys(currentSections).length > 0 ? currentSections : undefined,
-                      currentSection: metadata?.section as 'reasoning' | 'tool-t' | 'tool-h' | 'tool-f' | 'answer' | undefined,
-                      metadata: {
-                        ...lastMessage.metadata,
-                        ...metadata,
-                      },
-                    },
-                  ],
-                  lastUpdated: new Date(),
-                };
+          setStreamingConversations((prev) => {
+            const conv = prev.get(updatedConversation.id);
+            if (!conv) return prev;
+            const updated = new Map(prev);
+            const lastMessage = conv.messages[conv.messages.length - 1];
+            updated.set(updatedConversation.id, {
+              ...conv,
+              messages: [
+                ...conv.messages.slice(0, -1),
+                {
+                  ...updateMessageContent(
+                    lastMessage,
+                    accumulatedContent,
+                    true
+                  ),
+                  parsed: metadata?.parsed,
+                  sections: Object.keys(currentSections).length > 0 ? currentSections : undefined,
+                  currentSection: metadata?.section as 'reasoning' | 'tool-t' | 'tool-h' | 'tool-f' | 'answer' | undefined,
+                  metadata: {
+                    ...lastMessage.metadata,
+                    ...metadata,
+                  },
+                },
+              ],
+              lastUpdated: new Date(),
+            });
+            return updated;
           });
         },
         (result: StreamingCompletionPayload) => {
@@ -654,9 +1036,12 @@ const App = () => {
             finalParsed = buildParsedMessageContent(finalContent);
           }
           
-          updateLoadedConversation(updatedConversation.id, (conv) => {
+          setStreamingConversations((prev) => {
+            const conv = prev.get(updatedConversation.id);
+            if (!conv) return prev;
+            const updated = new Map(prev);
             const lastMessage = conv.messages[conv.messages.length - 1];
-            const finalConversation = {
+            const finalConv = {
               ...conv,
               messages: [
                 ...conv.messages.slice(0, -1),
@@ -678,54 +1063,137 @@ const App = () => {
               lastUpdated: new Date(),
             };
 
-            if (authToken && userId && finalConversation.messages.length > 0) {
-              const lastMessage = finalConversation.messages[finalConversation.messages.length - 1];
-              if (!lastMessage.isStreaming) {
+            if (authToken && userId && finalConv.messages.length > 0) {
+              const lastMsg = finalConv.messages[finalConv.messages.length - 1];
+              if (!lastMsg.isStreaming) {
                 saveMessageMutation.mutate({
-                  chatId: finalConversation.id,
+                  chatId: finalConv.id,
                   message: {
-                    id: lastMessage.id,
-                    role: lastMessage.role,
-                    content: lastMessage.content,
-                    timestamp: lastMessage.timestamp,
+                    id: lastMsg.id,
+                    role: lastMsg.role,
+                    content: lastMsg.content,
+                    timestamp: lastMsg.timestamp,
                     metadata: {
-                      ...lastMessage.metadata,
-                      parsed: lastMessage.parsed,
-                      sections: lastMessage.sections,
-                      currentSection: lastMessage.currentSection,
+                      ...lastMsg.metadata,
+                      parsed: lastMsg.parsed,
+                      sections: lastMsg.sections,
+                      currentSection: lastMsg.currentSection,
                     },
-                    filterId: lastMessage.filterId,
-                    filterSnapshot: lastMessage.filterSnapshot,
+                    filterId: lastMsg.filterId,
+                    filterSnapshot: lastMsg.filterSnapshot,
                   },
                 });
               }
             }
 
-            return finalConversation;
+            updated.set(updatedConversation.id, finalConv);
+            return updated;
           });
+
+          setLoadedConversations((prev) => {
+            const conv = prev.get(updatedConversation.id);
+            if (!conv) return prev;
+            const updated = new Map(prev);
+            const lastMessage = conv.messages[conv.messages.length - 1];
+            if (!lastMessage) return prev;
+            const finalConv = {
+              ...conv,
+              messages: [
+                ...conv.messages.slice(0, -1),
+                {
+                  ...updateMessageContent(
+                    lastMessage,
+                    finalContent,
+                    false
+                  ),
+                  parsed: finalParsed,
+                  sections: sections,
+                  currentSection: currentSection,
+                  metadata: {
+                    ...(lastMessage.metadata || {}),
+                    ...(result.metadata || {}),
+                  },
+                },
+              ],
+              lastUpdated: new Date(),
+            };
+            updated.set(updatedConversation.id, finalConv);
+            return updated;
+          });
+
+          setStreamingConversations((prev) => {
+            const updated = new Map(prev);
+            updated.delete(updatedConversation.id);
+            return updated;
+          });
+
           setIsLoading(false);
           setStreamingConversationId(null);
           accumulatedStreamContentRef.current = "";
         },
-        (error: Error) => {
+        async (error: Error) => {
           console.error("Streaming error:", error);
-          updateLoadedConversation(updatedConversation.id, (conv) => {
+          
+          const currentContent = accumulatedStreamContentRef.current;
+          const hasContent = currentContent && currentContent.trim().length > 0;
+          
+          setStreamingConversations((prev) => {
+            const conv = prev.get(updatedConversation.id);
+            if (!conv) return prev;
+            const updated = new Map(prev);
             const lastMessage = conv.messages[conv.messages.length - 1];
-            return {
-              ...conv,
-              messages: [
-                ...conv.messages.slice(0, -1),
-                updateMessageContent(
+            
+            const finalMessage = hasContent
+              ? updateMessageContent(lastMessage, currentContent, false, true)
+              : updateMessageContent(
                   lastMessage,
                   translation("errors.streaming", { error: error.message }),
                   false
-                ),
+                );
+            
+            const updatedConv = {
+              ...conv,
+              messages: [
+                ...conv.messages.slice(0, -1),
+                finalMessage,
               ],
               lastUpdated: new Date(),
             };
+            
+            updated.set(updatedConversation.id, updatedConv);
+            
+            if (hasContent && authToken && userId) {
+              saveMessageMutation.mutate({
+                chatId: updatedConv.id,
+                message: {
+                  id: finalMessage.id,
+                  role: finalMessage.role,
+                  content: finalMessage.content,
+                  timestamp: finalMessage.timestamp,
+                  metadata: {
+                    ...finalMessage.metadata,
+                    parsed: finalMessage.parsed,
+                    sections: finalMessage.sections,
+                    currentSection: finalMessage.currentSection,
+                  },
+                  filterId: finalMessage.filterId,
+                  filterSnapshot: finalMessage.filterSnapshot,
+                },
+              });
+            }
+            
+            setLoadedConversations((loadedPrev) => {
+              const loadedUpdated = new Map(loadedPrev);
+              loadedUpdated.set(updatedConversation.id, updatedConv);
+              return loadedUpdated;
+            });
+            
+            return updated;
           });
+          
           setIsLoading(false);
           setStreamingConversationId(null);
+          accumulatedStreamContentRef.current = "";
         },
         getBaseApiUrl(),
         authToken || undefined,
@@ -738,7 +1206,7 @@ const App = () => {
       console.error("Failed to send message:", error);
       setIsLoading(false);
     }
-  }, [isLoading, authToken, userId, translation, updateLoadedConversation, streamingClientRef]);
+  }, [isLoading, authToken, userId, translation, updateLoadedConversation, streamingClientRef, editingMessageId, editMessageMutation, refetchChatMessages, saveMessageMutation, createChatMutation, setStreamingConversationId, setEditingMessageId]);
 
   const handleMockModeToggle = React.useCallback(() => {
     toggleMockMode?.();
@@ -1314,7 +1782,7 @@ const App = () => {
     }
   }, [isLoading, authToken, userId, updateLoadedConversation, streamingClientRef]);
 
-  const editMessage = React.useCallback((messageId: string) => {
+  const editMessage = React.useCallback(async (messageId: string) => {
     const currentConvId = currentConversationIdRef.current;
     if (!currentConvId) return;
     
@@ -1330,21 +1798,42 @@ const App = () => {
     )
       return;
 
-    // Abort any active stream for this conversation
+    // Abort any active stream for this conversation and save partial content
     if (streamingConversationId === conversation.id && streamingClientRef.current?.isStreaming()) {
       streamingClientRef.current.abort();
+      
+      // Save current stream content before clearing
+      await saveCurrentStreamContent();
+      
       setIsLoading(false);
       setStreamingConversationId(null);
+      
+      // Move streaming conversation to loaded conversations
+      setStreamingConversations((prev) => {
+        const streamingConv = prev.get(conversation.id);
+        if (streamingConv) {
+          setLoadedConversations((loadedPrev) => {
+            const updated = new Map(loadedPrev);
+            updated.set(conversation.id, streamingConv);
+            return updated;
+          });
+        }
+        const updated = new Map(prev);
+        updated.delete(conversation.id);
+        return updated;
+      });
+      
       accumulatedStreamContentRef.current = "";
     }
 
     const messageToEdit = conversation.messages[messageIndex];
 
     setInput(messageToEdit.content);
+    setEditingMessageId(messageId);
     
     // Remove all messages after the edited message, filtering out any streaming/preview messages
     const messagesToKeep = conversation.messages
-      .slice(0, messageIndex)
+      .slice(0, messageIndex + 1)
       .filter((msg) => !msg.isStreaming);
 
     updateLoadedConversation(conversation.id, (conv) => ({
@@ -1353,38 +1842,7 @@ const App = () => {
       lastUpdated: new Date(),
     }));
 
-    // Save to MongoDB if authenticated
-    if (authToken && userId) {
-      const updatedConv = {
-        ...conversation,
-        messages: messagesToKeep,
-        lastUpdated: new Date(),
-      };
-      if (updatedConv.messages.length > 0) {
-        const lastMessage = updatedConv.messages[updatedConv.messages.length - 1];
-        if (!lastMessage.isStreaming) {
-          saveMessageMutation.mutate({
-            chatId: updatedConv.id,
-            message: {
-              id: lastMessage.id,
-              role: lastMessage.role,
-              content: lastMessage.content,
-              timestamp: lastMessage.timestamp,
-              metadata: {
-                ...lastMessage.metadata,
-                parsed: lastMessage.parsed,
-                sections: lastMessage.sections,
-                currentSection: lastMessage.currentSection,
-              },
-              filterId: lastMessage.filterId,
-              filterSnapshot: lastMessage.filterSnapshot,
-            },
-          });
-        }
-      }
-    }
-
-  }, [authToken, userId, updateLoadedConversation, streamingConversationId, streamingClientRef, setIsLoading, setStreamingConversationId, accumulatedStreamContentRef, saveMessageMutation]);
+  }, [updateLoadedConversation, streamingConversationId, streamingClientRef, setIsLoading, setStreamingConversationId, accumulatedStreamContentRef, setEditingMessageId, saveCurrentStreamContent]);
 
   const deleteMessage = React.useCallback(async (messageId: string) => {
     const currentConvId = currentConversationIdRef.current;
