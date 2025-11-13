@@ -40,6 +40,7 @@ export interface DateRangeSettings {
 }
 
 export interface LocalStorageValues {
+  'app-version': string;
   'chatbot-sidebar-open': boolean;
   'chatbot-theme-mode': boolean;
   'chatbot-conversations': Array<{
@@ -71,6 +72,15 @@ export interface LocalStorageValues {
     [key: string]: unknown;
   };
   'header-buttons-order': HeaderButtonId[];
+  'feature-flags': {
+    enableMockMode: boolean;
+    enableFileUpload: boolean;
+    enableDocumentManagement: boolean;
+    enableLanguageSwitcher: boolean;
+    enableDarkMode: boolean;
+    enableAppDetails: boolean;
+    enableContactUs: boolean;
+  };
 }
 
 export type LocalStorageKeys = keyof LocalStorageValues;
@@ -91,6 +101,7 @@ export interface SessionStorageValues {
 export type SessionStorageKeys = keyof SessionStorageValues;
 
 export const localStorageDefaults: LocalStorageValues = {
+  'app-version': '',
   'chatbot-sidebar-open': false,
   'chatbot-theme-mode': true,
   'chatbot-conversations': [],
@@ -129,6 +140,15 @@ export const localStorageDefaults: LocalStorageValues = {
     mockMode: true,
   },
   'header-buttons-order': ['theme', 'language', 'mockMode', 'contact', 'info', 'swagger'],
+  'feature-flags': {
+    enableMockMode: true,
+    enableFileUpload: false,
+    enableDocumentManagement: false,
+    enableLanguageSwitcher: false,
+    enableDarkMode: false,
+    enableAppDetails: false,
+    enableContactUs: false,
+  },
 };
 
 export const sessionStorageDefaults: SessionStorageValues = {
