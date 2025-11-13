@@ -46,13 +46,17 @@ export default defineConfig(({ mode }) => {
     },
 
     plugins: [
-      react(),
+      react({
+        jsxRuntime: 'automatic',
+      }),
       nxViteTsPaths(),
     ],
 
     define: {
       __BUILD_DATE__: JSON.stringify(buildDate),
       __APP_VERSION__: JSON.stringify(version),
+      // Ensure React DevTools can detect development mode
+      'process.env.NODE_ENV': JSON.stringify(mode === 'production' ? 'production' : 'development'),
     },
 
     resolve: {
@@ -78,8 +82,10 @@ export default defineConfig(({ mode }) => {
       commonjsOptions: {
         transformMixedEsModules: true,
       },
-      // Generate source maps for debugging
+      // Generate source maps for debugging (required for React DevTools)
       sourcemap: true,
+      // Ensure development build for React DevTools in dev mode
+      minify: mode === 'production',
       // Optimize for GitHub Pages
       rollupOptions: {
         output: {

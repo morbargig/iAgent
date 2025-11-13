@@ -42,7 +42,11 @@ root.render(
           </BrowserRouter>
         </AuthProvider>
       </TranslationProvider>
-      {import.meta.env.MODE !== 'production' && <ReactQueryDevtools initialIsOpen={false} />}
+      {import.meta.env.MODE !== 'production' && (
+        <ReactQueryDevtools 
+          initialIsOpen={false}
+        />
+      )}
     </QueryClientProvider>
   </StrictMode>
 );
