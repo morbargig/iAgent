@@ -16,7 +16,7 @@
 - [x] Merged FileController endpoints:
   - Standalone file operations (upload, list, count, download, info, delete)
   - Chat-attached file operations (upload to chat, get chat files)
-- [x] Updated AppModule with MongoDB connection using `activeUri` and DEMO_MODE
+- [x] Updated AppModule with MongoDB connection using `activeUri`
 
 ### Phase 2: Frontend Configuration ✅
 - [x] Created `apps/frontend/src/config/fileUpload.ts` with FILE_UPLOAD_CONFIG
@@ -60,7 +60,6 @@
 - [x] Updated `apps/backend/ENVIRONMENT_CONFIGURATION.md` with:
   - MongoDB setup instructions (Docker & Remote)
   - File upload limits configuration
-  - DEMO_MODE explanation
 
 ## 🎯 Key Features Implemented
 
@@ -76,9 +75,9 @@
    - ACCEPTED_FILE_TYPES (default: all)
 
 3. **Flexible MongoDB Configuration**
-   - Docker MongoDB for local development (DEMO_MODE=true)
-   - Remote MongoDB for production (DEMO_MODE=false)
-   - Automatic URI selection based on DEMO_MODE
+   - Docker MongoDB for local development
+   - Remote MongoDB for production
+   - Configure via MONGODB_URI environment variable
    - Graceful fallback to in-memory storage
 
 4. **Enhanced File Deduplication**
@@ -98,8 +97,8 @@
 docker-compose up -d
 
 # Set environment variables
-export DEMO_MODE=true
-export MONGODB_URI_LOCAL=mongodb://localhost:27017
+export MONGODB_URI=mongodb://localhost:27017
+export DB_NAME=filesdb
 
 # Start backend
 npx nx serve backend
@@ -107,8 +106,8 @@ npx nx serve backend
 
 ### Use Remote MongoDB (Production)
 ```bash
-export DEMO_MODE=false
 export MONGODB_URI="mongodb+srv://user:password@cluster.mongodb.net/"
+export DB_NAME=filesdb
 
 # Start backend
 npx nx serve backend --configuration=production
@@ -144,7 +143,7 @@ npx nx serve backend --configuration=production
 - [ ] Test file deduplication (same file twice)
 - [ ] Test file deduplication with renamed file (should keep both)
 - [ ] Test file size validation
-- [ ] Switch to remote MongoDB (DEMO_MODE=false) and test
+- [ ] Switch to remote MongoDB and test
 
 ### Frontend
 - [ ] Click attachment button → dropdown appears
@@ -203,7 +202,6 @@ npx nx serve backend --configuration=production
 - ✅ File validation enforces all limits
 - ✅ Docker MongoDB works locally
 - ✅ Remote MongoDB configuration ready
-- ✅ DEMO_MODE toggling works
 - ✅ File deduplication with filename check
 - ✅ All translations added
 - ✅ Comprehensive documentation created
