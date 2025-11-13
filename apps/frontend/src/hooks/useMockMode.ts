@@ -1,10 +1,13 @@
 import { useAppLocalStorage } from './storage';
+import { useFeatureFlag } from './useFeatureFlag';
 
 export const useMockMode = () => {
+  const enableMockMode = useFeatureFlag('enableMockMode');
   const [appSettings, setAppSettings] = useAppLocalStorage('app-settings');
-  const useMockMode = appSettings.mockMode;
+  const useMockMode = enableMockMode && appSettings.mockMode;
 
   const toggleMockMode = () => {
+    if (!enableMockMode) return;
     setAppSettings((prev) => ({
       ...prev,
       mockMode: !prev.mockMode,
@@ -12,6 +15,7 @@ export const useMockMode = () => {
   };
 
   const setMockMode = (enabled: boolean) => {
+    if (!enableMockMode) return;
     setAppSettings((prev) => ({
       ...prev,
       mockMode: enabled,
@@ -20,6 +24,7 @@ export const useMockMode = () => {
 
   return {
     useMockMode,
+    enableMockMode,
     toggleMockMode,
     setMockMode,
   };
