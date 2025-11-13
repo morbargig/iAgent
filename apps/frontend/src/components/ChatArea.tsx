@@ -66,7 +66,7 @@ import { LanguageSwitcher } from "./LanguageSwitcher";
 import { FilterDetailsDialog } from "./FilterDetailsDialog";
 import { getApiUrl, getBaseApiUrl } from "../config/config";
 import { environment } from "../environments/environment";
-import { useAppLocalStorage } from "../hooks/storage";
+import { useAppLocalStorage, useAppSessionStorage } from "../hooks/storage";
 import { useFeatureFlag } from "../hooks/useFeatureFlag";
 import type { HeaderButtonId } from "../types/storage.types";
 
@@ -88,8 +88,8 @@ interface ChatAreaProps {
   currentChatId?: string; // Current chat ID for filter management
   authToken?: string; // Auth token for API calls
   onOpenReport?: (url: string) => void; // Handler for opening report links
-  streamingConversationId?: string | null; // ID of conversation currently streaming
   onOpenAppDetails?: () => void; // Handler for opening app details dialog
+  onSelectConversation?: (chatId: string) => void; // Handler for selecting/switching conversations
 }
 
 interface DraggableButtonProps {
@@ -2176,13 +2176,25 @@ const RenameFilterDialog = ({
 
 const OtherChatStreamingIndicator = ({
   isDarkMode,
+  streamingConversationId,
+  onSelectConversation,
 }: {
   isDarkMode: boolean;
+  streamingConversationId?: string | null;
+  onSelectConversation?: (chatId: string) => void;
 }) => {
   const { t } = useTranslation();
+  const theme = useTheme();
+
+  const handleClick = () => {
+    if (streamingConversationId && onSelectConversation) {
+      onSelectConversation(streamingConversationId);
+    }
+  };
 
   return (
     <Box
+      onClick={handleClick}
       sx={{
         display: "flex",
         flexDirection: "column",
@@ -2191,12 +2203,23 @@ const OtherChatStreamingIndicator = ({
         px: 3,
         borderRadius: "16px",
         backgroundColor: isDarkMode
-          ? "rgba(255, 152, 0, 0.08)"
-          : "rgba(255, 152, 0, 0.06)",
+          ? "rgba(33, 150, 243, 0.08)"
+          : "rgba(33, 150, 243, 0.06)",
         border: `1px solid ${
-          isDarkMode ? "rgba(255, 152, 0, 0.25)" : "rgba(255, 152, 0, 0.2)"
+          isDarkMode ? "rgba(33, 150, 243, 0.25)" : "rgba(33, 150, 243, 0.2)"
         }`,
         animation: "pulseSubtle 2s ease-in-out infinite",
+        cursor: streamingConversationId && onSelectConversation ? "pointer" : "default",
+        transition: "all 150ms cubic-bezier(0.4, 0, 0.2, 1)",
+        "&:hover": streamingConversationId && onSelectConversation ? {
+          backgroundColor: isDarkMode
+            ? "rgba(33, 150, 243, 0.12)"
+            : "rgba(33, 150, 243, 0.09)",
+          borderColor: isDarkMode
+            ? "rgba(33, 150, 243, 0.35)"
+            : "rgba(33, 150, 243, 0.3)",
+          transform: "translateY(-1px)",
+        } : {},
         "@keyframes pulseSubtle": {
           "0%, 100%": {
             opacity: 1,
@@ -2225,8 +2248,8 @@ const OtherChatStreamingIndicator = ({
             height: "36px",
             borderRadius: "50%",
             backgroundColor: isDarkMode
-              ? "rgba(255, 152, 0, 0.15)"
-              : "rgba(255, 152, 0, 0.12)",
+              ? "rgba(33, 150, 243, 0.15)"
+              : "rgba(33, 150, 243, 0.12)",
             animation: "rotate 2s linear infinite",
             "@keyframes rotate": {
               "0%": { transform: "rotate(0deg)" },
@@ -2237,7 +2260,7 @@ const OtherChatStreamingIndicator = ({
           <SwapHorizIcon
             sx={{
               fontSize: 20,
-              color: isDarkMode ? "#ffb74d" : "#f57c00",
+              color: isDarkMode ? "#64b5f6" : "#1976d2",
             }}
           />
         </Box>
@@ -2245,7 +2268,7 @@ const OtherChatStreamingIndicator = ({
           <Typography
             variant="body2"
             sx={{
-              color: isDarkMode ? "#ffb74d" : "#f57c00",
+              color: isDarkMode ? "#64b5f6" : "#1976d2",
               fontWeight: 600,
               fontSize: "14px",
               lineHeight: 1.5,
@@ -2267,6 +2290,25 @@ const OtherChatStreamingIndicator = ({
           >
             {t("chat.thinkingSubtext")}
           </Typography>
+          {streamingConversationId && onSelectConversation && (
+            <Typography
+              variant="caption"
+              sx={{
+                color: theme.palette.primary.main,
+                fontSize: "12px",
+                fontWeight: 500,
+                textDecoration: "underline",
+                cursor: "pointer",
+                display: "block",
+                mt: 1,
+                "&:hover": {
+                  color: theme.palette.primary.dark,
+                },
+              }}
+            >
+              {t("chat.goToStreamingChat")}
+            </Typography>
+          )}
         </Box>
         <Box
           sx={{
@@ -2282,7 +2324,7 @@ const OtherChatStreamingIndicator = ({
                 width: "6px",
                 height: "6px",
                 borderRadius: "50%",
-                backgroundColor: isDarkMode ? "#ffb74d" : "#f57c00",
+                backgroundColor: isDarkMode ? "#64b5f6" : "#1976d2",
                 opacity: 0.4,
                 animation: `dotPulse 1.4s ease-in-out infinite ${i * 0.2}s`,
                 "@keyframes dotPulse": {
@@ -2315,6 +2357,8 @@ const WelcomeScreen = ({
   onLogout,
   userEmail,
   onOpenAppDetails,
+  streamingConversationId,
+  onSelectConversation,
 }: {
   isDarkMode: boolean;
   theme: any;
@@ -2325,8 +2369,17 @@ const WelcomeScreen = ({
   onLogout?: () => void;
   userEmail?: string | null;
   onOpenAppDetails?: () => void;
+  streamingConversationId?: string | null;
+  onSelectConversation?: (chatId: string) => void;
 }) => {
   const { t } = useTranslation();
+  
+  const showStreamingIndicator = Boolean(
+    streamingConversationId && 
+    typeof streamingConversationId === 'string' && 
+    streamingConversationId.trim() !== '' &&
+    onSelectConversation
+  );
   return (
     <Box
       id="iagent-welcome-screen"
@@ -2415,6 +2468,23 @@ const WelcomeScreen = ({
             {t("chat.welcome.description")}
           </Typography>
         </Box>
+        
+        {/* Streaming Indicator for Other Chat */}
+        {showStreamingIndicator && (
+          <Box
+            sx={{
+              mt: 2,
+              width: "100%",
+              maxWidth: "500px",
+            }}
+          >
+            <OtherChatStreamingIndicator
+              isDarkMode={isDarkMode}
+              streamingConversationId={streamingConversationId}
+              onSelectConversation={onSelectConversation}
+            />
+          </Box>
+        )}
       </Box>
     </Box>
   );
@@ -2438,12 +2508,15 @@ export function ChatArea({
   currentChatId,
   authToken,
   onOpenReport,
-  streamingConversationId,
   onOpenAppDetails,
+  onSelectConversation,
 }: ChatAreaProps) {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const theme = useTheme();
   const { t } = useTranslation();
+  
+  // Read streaming conversation ID from session storage (using write hook to ensure reactivity)
+  const [streamingConversationId] = useAppSessionStorage('streaming-conversation-id');
 
   // Shared filter state for all messages
   const [filterInfoAnchor, setFilterInfoAnchor] = useState<HTMLElement | null>(
@@ -2473,20 +2546,23 @@ export function ChatArea({
   }, [messages, isLoading, streamingConversationId, currentChatId]);
 
   const isOtherChatStreaming = useMemo(() => {
+    // Don't show if current chat is streaming
     if (isCurrentChatStreaming) {
       return false;
     }
-    return Boolean(
-      streamingConversationId &&
-        streamingConversationId !== currentChatId &&
-        isLoading
-    );
-  }, [
-    isCurrentChatStreaming,
-    streamingConversationId,
-    currentChatId,
-    isLoading,
-  ]);
+    
+    // Must have a valid streaming conversation ID (not null, not undefined, not empty string)
+    if (!streamingConversationId || typeof streamingConversationId !== 'string' || streamingConversationId.trim() === '') {
+      return false;
+    }
+    
+    // Show if:
+    // - No current chat ID (blank new chat page: undefined, null, or empty string), OR
+    // - Streaming is in a different chat
+    const hasNoCurrentChat = !currentChatId || (typeof currentChatId === 'string' && currentChatId.trim() === '');
+    const isDifferentChat = streamingConversationId !== currentChatId;
+    return hasNoCurrentChat || isDifferentChat;
+  }, [isCurrentChatStreaming, streamingConversationId, currentChatId]);
 
   const showFilterInfo = useMemo(() => {
     return Boolean(filterInfoAnchor);
@@ -2563,11 +2639,6 @@ export function ChatArea({
 
   const handleApplyFilterFromMessage = () => {
     if (activeMessage?.filterSnapshot && currentChatId) {
-      console.log(
-        "Applying filter from message:",
-        activeMessage.filterSnapshot.name
-      );
-
       const event = new CustomEvent("applyFilterFromMessage", {
         detail: {
           filter: activeMessage.filterSnapshot,
@@ -2660,6 +2731,8 @@ export function ChatArea({
         onLogout={onLogout}
         userEmail={userEmail}
         onOpenAppDetails={onOpenAppDetails}
+        streamingConversationId={streamingConversationId}
+        onSelectConversation={onSelectConversation}
       />
     );
   }
@@ -2744,7 +2817,11 @@ export function ChatArea({
             id="iagent-other-chat-indicator"
             className="iagent-loading-state"
           >
-            <OtherChatStreamingIndicator isDarkMode={isDarkMode} />
+            <OtherChatStreamingIndicator
+              isDarkMode={isDarkMode}
+              streamingConversationId={streamingConversationId}
+              onSelectConversation={onSelectConversation}
+            />
           </Box>
         )}
 

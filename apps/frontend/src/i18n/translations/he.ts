@@ -55,6 +55,7 @@ const translations: Translation = {
     emptyStateSuggestion2: 'ספר לי על עצמך',
     thinking: 'תגובה נוספת נוצרת בצ\'אט אחר...',
     thinkingSubtext: 'אנא המתן או עבור לצ\'אט ההוא להמשך',
+    goToStreamingChat: 'עבור לצ\'אט עם הזרמה פעילה',
     error: 'מצטער, נתקלתי בשגיאה. אנא נסה שוב.',
     shareTitle: 'הודעת צ\'אט',
     copySuccess: 'ההודעה הועתקה ללוח',

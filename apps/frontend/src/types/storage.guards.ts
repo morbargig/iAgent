@@ -161,12 +161,15 @@ export const isUserId = isUnion(isString, isLiteral(null));
 
 export const isUserEmail = isUnion(isString, isLiteral(null));
 
+export const isStreamingConversationId = isUnion(isString, isLiteral(null));
+
 export const sessionStorageGuards: {
   [K in SessionStorageKeys]: (value: unknown) => value is SessionStorageValues[K];
 } = {
   'session-token': isSessionToken,
   'user-id': isUserId,
   'user-email': isUserEmail,
+  'streaming-conversation-id': isStreamingConversationId,
   'temp-data': isTempData,
   'form-state': isFormState,
   'cart-items': isCartItems,

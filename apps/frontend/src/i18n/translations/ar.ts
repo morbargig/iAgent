@@ -55,6 +55,7 @@ const translations: Translation = {
     emptyStateSuggestion2: 'أخبرني عن نفسك',
     thinking: 'يتم إنشاء رد آخر في محادثة مختلفة...',
     thinkingSubtext: 'يرجى الانتظار أو التبديل إلى تلك المحادثة للمتابعة',
+    goToStreamingChat: 'انتقل إلى المحادثة مع البث النشط',
     error: 'عذراً، واجهت خطأ. الرجاء المحاولة مرة أخرى.',
     shareTitle: 'رسالة المحادثة',
     copySuccess: 'تم نسخ الرسالة إلى الحافظة',

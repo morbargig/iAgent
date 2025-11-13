@@ -31,26 +31,16 @@ import {
 } from "@iagent/chat-types";
 import { convertMongoMessageToMessage } from "../utils/chunkConverter";
 import { useMockMode } from "../hooks/useMockMode";
-import { useAppLocalStorage } from "../hooks/storage";
+import { useAppLocalStorage, useAppSessionStorage } from "../hooks/storage";
 import { useFeatureFlag } from "../hooks/useFeatureFlag";
 import { useVersionMigration } from "../hooks/useVersionMigration";
 import { getBaseApiUrl } from "../config/config";
-// import { environment } from "../environments/environment";
 
 import { generateUniqueId } from "../utils/id-generator";
 import { useChats, useChat, useSaveMessage, useCreateChat, useDeleteChat, useUpdateChatName, useDeleteMessage } from "../features/chats/api";
 import { setAuthTokenGetter } from "../lib/http";
 import { queryClient } from "../lib/queryClient";
 import { apiKeys } from "../lib/keys";
-
-// Debug: Log environment info
-// console.log('🔍 Environment Check:', {
-//   env: environment.env,
-//   production: environment.production,
-//   apiUrl: environment.apiUrl,
-//   apiBaseUrl: environment.api?.baseUrl,
-//   getBaseApiUrl: getBaseApiUrl()
-// });
 
 // iagent-inspired Design System
 // Philosophy: Clean, minimal, muted aesthetic with subtle interactions
@@ -331,14 +321,16 @@ const App = () => {
   const [loadedConversations, setLoadedConversations] = useState<Map<string, Conversation>>(new Map());
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  const [streamingConversationId, setStreamingConversationId] = useState<
-    string | null
-  >(null);
+  const [streamingConversationId, setStreamingConversationId] = useAppSessionStorage('streaming-conversation-id');
   
   const accumulatedStreamContentRef = useRef<string>("");
   const streamingClientRef = useRef<StreamingClient | null>(null);
+  const streamingConversationIdRef = useRef<string | null>(null);
   const sidebarRef = useRef<HTMLDivElement>(null);
   const [inputAreaHeight, setInputAreaHeight] = useState(80); // Track input area height
+  
+  // Keep ref in sync with session storage for cleanup handlers
+  streamingConversationIdRef.current = streamingConversationId;
   const [sidebarWidth, setSidebarWidth] = useState(250); // Track sidebar width
   const { authToken, userId, userEmail, isAuthenticated, logout } = useAuth();
 
@@ -495,7 +487,9 @@ const App = () => {
     const currentConv = loadedConversationsRef.current.get(currentConvId || '') || null;
 
     setIsLoading(true);
-    setStreamingConversationId(currentConv?.id || null);
+    if (currentConv?.id) {
+      setStreamingConversationId(currentConv.id);
+    }
     setInput("");
 
     try {
@@ -772,15 +766,12 @@ const App = () => {
     }
   }, [currentChatData]);
 
-  const streamingConversationIdRef = useRef<string | null>(null);
-  streamingConversationIdRef.current = streamingConversationId;
-
   useEffect(() => {
     if (!streamingConversationId || !authToken || !userId) return;
 
     // Save streaming conversation every 5 seconds
     const interval = setInterval(() => {
-      const currentStreamingId = streamingConversationIdRef.current;
+      const currentStreamingId = streamingConversationId;
       if (!currentStreamingId) return;
 
       const currentContent = accumulatedStreamContentRef.current;
@@ -1339,15 +1330,27 @@ const App = () => {
     )
       return;
 
+    // Abort any active stream for this conversation
+    if (streamingConversationId === conversation.id && streamingClientRef.current?.isStreaming()) {
+      streamingClientRef.current.abort();
+      setIsLoading(false);
+      setStreamingConversationId(null);
+      accumulatedStreamContentRef.current = "";
+    }
+
     const messageToEdit = conversation.messages[messageIndex];
 
     setInput(messageToEdit.content);
-    const messagesToKeep = conversation.messages.slice(0, messageIndex);
+    
+    // Remove all messages after the edited message, filtering out any streaming/preview messages
+    const messagesToKeep = conversation.messages
+      .slice(0, messageIndex)
+      .filter((msg) => !msg.isStreaming);
 
     updateLoadedConversation(conversation.id, (conv) => ({
       ...conv,
-              messages: messagesToKeep,
-              lastUpdated: new Date(),
+      messages: messagesToKeep,
+      lastUpdated: new Date(),
     }));
 
     // Save to MongoDB if authenticated
@@ -1381,7 +1384,7 @@ const App = () => {
       }
     }
 
-  }, [authToken, userId, updateLoadedConversation]);
+  }, [authToken, userId, updateLoadedConversation, streamingConversationId, streamingClientRef, setIsLoading, setStreamingConversationId, accumulatedStreamContentRef, saveMessageMutation]);
 
   const deleteMessage = React.useCallback(async (messageId: string) => {
     const currentConvId = currentConversationIdRef.current;
@@ -1541,8 +1544,8 @@ const App = () => {
               userEmail={userEmail}
               onOpenReport={openReportFromUrl}
               currentChatId={currentConversationId || undefined}
-              streamingConversationId={streamingConversationId || undefined}
               onOpenAppDetails={enableAppDetails ? () => setIsAppDetailsOpen(true) : undefined}
+              onSelectConversation={loadConversation}
             />
 
             {/* Input Area */}

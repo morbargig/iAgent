@@ -55,6 +55,7 @@ const translations: Translation = {
     emptyStateSuggestion2: 'Tell me about yourself',
     thinking: 'Another response is being generated in a different chat...',
     thinkingSubtext: 'Please wait or switch to that chat to continue',
+    goToStreamingChat: 'Go to streaming chat',
     error: 'Sorry, I encountered an error. Please try again.',
     shareTitle: 'Chat Message',
     copySuccess: 'Message copied to clipboard',

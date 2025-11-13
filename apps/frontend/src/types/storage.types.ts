@@ -89,6 +89,7 @@ export interface SessionStorageValues {
   'session-token': string;
   'user-id': string | null;
   'user-email': string | null;
+  'streaming-conversation-id': string | null;
   'temp-data': Record<string, unknown>;
   'form-state': Record<string, unknown>;
   'cart-items': Array<{
@@ -155,6 +156,7 @@ export const sessionStorageDefaults: SessionStorageValues = {
   'session-token': '',
   'user-id': null,
   'user-email': null,
+  'streaming-conversation-id': null,
   'temp-data': {},
   'form-state': {},
   'cart-items': [],
