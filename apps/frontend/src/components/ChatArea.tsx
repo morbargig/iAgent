@@ -486,7 +486,7 @@ const MessageBubble = ({
           sx={{
             gridColumn: "2",
             gridRow: "1",
-            backgroundColor: isDarkMode ? "#404040" : "#f3f4f6",
+            backgroundColor: "transparent",
             color: theme.palette.text.primary,
             borderRadius: "24px",
             padding: "10px 20px",

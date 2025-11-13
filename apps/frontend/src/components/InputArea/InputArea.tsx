@@ -423,7 +423,7 @@ export function InputArea({
             paddingInlineEnd: "20px",
             width: "100%",
             boxSizing: "border-box",
-            transition: "all 300ms cubic-bezier(0.4, 0, 0.2, 1)",
+            transition: "all 360ms cubic-bezier(0.34, 0, 0.16, 1)",
             position: "relative",
             "@media (max-width: 600px)": {
               paddingInlineStart: "10px",
@@ -464,17 +464,20 @@ export function InputArea({
               display: "flex",
               flexDirection: "column",
               borderRadius: "24px",
-              backgroundColor: isDarkMode ? "#40414f" : "#f7f7f8",
+              backgroundColor: isDarkMode ? "#0d0d0d" : "#fafafa",
               border: inputAreaUI.isFocused
-                ? `1px solid ${isDarkMode ? "#565869" : "#d1d5db"}`
+                ? `1px solid ${isDarkMode ? "#60a5fa" : "#3b82f6"}`
                 : `1px solid ${isDarkMode ? "#565869" : "#d1d5db"}`,
               boxShadow: inputAreaUI.isFocused
-                ? `0 0 0 2px ${isDarkMode ? "rgba(255, 255, 255, 0.1)" : "rgba(0, 0, 0, 0.05)"}`
+                ? `0 0 0 4px ${isDarkMode ? "rgba(96, 165, 250, 0.2)" : "rgba(59, 130, 246, 0.15)"}, 0 8px 24px ${isDarkMode ? "rgba(96, 165, 250, 0.15)" : "rgba(59, 130, 246, 0.12)"}, 0 4px 12px ${isDarkMode ? "rgba(0, 0, 0, 0.2)" : "rgba(0, 0, 0, 0.1)"}`
                 : "0 2px 6px rgba(0, 0, 0, 0.05)",
               direction: inputAreaUI.textDirection,
               minHeight: "80px",
+              transition: "all 0.2s cubic-bezier(0.4, 0, 0.2, 1)",
               "&:hover": {
-                boxShadow: "0 2px 12px rgba(0, 0, 0, 0.1)",
+                boxShadow: inputAreaUI.isFocused
+                  ? `0 0 0 4px ${isDarkMode ? "rgba(96, 165, 250, 0.2)" : "rgba(59, 130, 246, 0.15)"}, 0 8px 24px ${isDarkMode ? "rgba(96, 165, 250, 0.15)" : "rgba(59, 130, 246, 0.12)"}, 0 4px 12px ${isDarkMode ? "rgba(0, 0, 0, 0.2)" : "rgba(0, 0, 0, 0.1)"}`
+                  : "0 2px 12px rgba(0, 0, 0, 0.1)",
               },
             }}
           >
@@ -540,8 +543,8 @@ export function InputArea({
                   aria-autocomplete="none"
                   style={{
                     ...inputAreaUI.textareaStyle,
-                    opacity: inputAreaUI.needsToolConfiguration ? 0.6 : 1,
-                    cursor: inputAreaUI.needsToolConfiguration
+                    opacity: disabled || inputAreaUI.needsToolConfiguration ? 0.6 : 1,
+                    cursor: disabled || inputAreaUI.needsToolConfiguration
                       ? "not-allowed"
                       : "text",
                     color: inputAreaUI.needsToolConfiguration
