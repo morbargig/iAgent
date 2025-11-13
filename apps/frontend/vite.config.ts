@@ -2,17 +2,15 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import { nxViteTsPaths } from '@nx/vite/plugins/nx-tsconfig-paths.plugin';
-import path from 'path';
-import { readFileSync } from 'fs';
+import { resolve } from 'path';
+import { version } from './package.json';
 
 export default defineConfig(({ mode }) => {
   // Determine base URL based on environment
   const isProduction = mode === 'production';
   const base = isProduction ? '/iAgent/' : '/';
 
-  // Read version from package.json
-  const packageJson = JSON.parse(readFileSync(path.resolve(__dirname, 'package.json'), 'utf-8'));
-  const version = packageJson.version;
+  // Import version from package.json (tree-shakeable)
   const buildDate = new Date().toISOString();
 
   return {
@@ -60,8 +58,8 @@ export default defineConfig(({ mode }) => {
     resolve: {
       conditions: ['@iagent/workspace', 'import', 'module', 'default'],
       alias: {
-        '@iagent/chat-types': path.resolve(__dirname, '../../libs/chat-types/src/index.ts'),
-        '@iagent/front-react': path.resolve(__dirname, '../../libs/front/react/src/index.ts'),
+        '@iagent/chat-types': resolve(__dirname, '../../libs/chat-types/src/index.ts'),
+        '@iagent/front-react': resolve(__dirname, '../../libs/front/react/src/index.ts'),
       },
     },
 
