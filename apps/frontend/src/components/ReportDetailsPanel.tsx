@@ -774,7 +774,7 @@ export const ReportDetailsPanel = React.forwardRef<
           )}
         </Box>
 
-        {/* Resize Handle - positioned on the left edge */}
+        {/* Resize Handle - positioned on the start edge (left in LTR, right in RTL) */}
         {!isMobile && (
           <Box
             ref={resizeRef}
