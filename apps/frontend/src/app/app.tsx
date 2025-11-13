@@ -33,6 +33,7 @@ import { convertMongoMessageToMessage } from "../utils/chunkConverter";
 import { useMockMode } from "../hooks/useMockMode";
 import { useAppLocalStorage } from "../hooks/storage";
 import { useFeatureFlag } from "../hooks/useFeatureFlag";
+import { useVersionMigration } from "../hooks/useVersionMigration";
 import { getBaseApiUrl } from "../config/config";
 // import { environment } from "../environments/environment";
 
@@ -321,6 +322,8 @@ const lightTheme = createTheme({
 });
 
 const App = () => {
+  useVersionMigration();
+  
   const [isDarkMode, setIsDarkMode] = useAppLocalStorage('chatbot-theme-mode');
   const [isSidebarOpen, setIsSidebarOpen] = useAppLocalStorage('chatbot-sidebar-open');
   const [currentConversationId, setCurrentConversationId] = useAppLocalStorage('chatbot-current-conversation-id');
@@ -370,6 +373,7 @@ const App = () => {
 
   const { useMockMode: isMockMode, toggleMockMode } = useMockMode();
   const enableAppDetails = useFeatureFlag('enableAppDetails');
+  const enableDarkMode = useFeatureFlag('enableDarkMode');
   const { t: translation } = useTranslation();
 
   const loadedConversationsRef = useRef<Map<string, Conversation>>(new Map());
@@ -955,8 +959,15 @@ const App = () => {
   }, []);
 
   const toggleTheme = React.useCallback(() => {
+    if (!enableDarkMode) return;
     setIsDarkMode((prev) => !prev);
-  }, []);
+  }, [enableDarkMode]);
+
+  React.useEffect(() => {
+    if (!enableDarkMode && isDarkMode) {
+      setIsDarkMode(false);
+    }
+  }, [enableDarkMode, isDarkMode]);
 
   const toggleSidebar = React.useCallback(() => {
     setIsSidebarOpen((prev) => !prev);
