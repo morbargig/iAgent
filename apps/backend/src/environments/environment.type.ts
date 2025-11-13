@@ -10,6 +10,11 @@ export interface Environment {
   apiUrl: string;
   frontendUrl: string;
   
+  app: {
+    name: string;
+    version: string;
+  };
+  
   mongodb: {
     uri: string;
     dbName: string;

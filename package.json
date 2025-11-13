@@ -21,7 +21,13 @@
     "upgrade": "npx nx migrate latest && npm install && npx nx migrate --run-migrations",
     "clean": "npx nx reset && rm -rf node_modules && npm install",
     "graph": "npx nx graph",
-    "affected": "npx nx affected"
+    "affected": "npx nx affected",
+    "release": "standard-version",
+    "release:minor": "standard-version --release-as minor",
+    "release:major": "standard-version --release-as major",
+    "release:patch": "standard-version --release-as patch",
+    "release:alpha": "standard-version --prerelease alpha",
+    "release:beta": "standard-version --prerelease beta"
   },
   "private": true,
   "dependencies": {
@@ -118,6 +124,7 @@
     "postcss": "^8.5.6",
     "prettier": "^3.6.2",
     "rollup": "^4.14.0",
+    "standard-version": "^9.5.0",
     "tailwindcss": "^3.4.18",
     "ts-jest": "29.4.5",
     "ts-node": "^10.9.2",

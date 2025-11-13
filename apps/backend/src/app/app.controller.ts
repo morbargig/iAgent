@@ -15,6 +15,7 @@ import {
 import { ChatService } from './services/chat.service';
 import { AuthService } from './auth/auth.service';
 import type { LoginRequest, LoginResponse } from './auth/auth.service';
+import { environment } from '../environments/environment';
 import {
   ChatRequestDto,
   ChatResponseDto,
@@ -25,7 +26,8 @@ import {
   ToolSelectionDto,
   ChatMessageDto,
   CountryDto,
-  PermissionsDto
+  PermissionsDto,
+  VersionDto
 } from './dto/chat.dto';
 
 interface ChatMessage {
@@ -37,7 +39,7 @@ interface ChatMessage {
 
 
 @ApiTags('Chat API')
-@ApiExtraModels(ChatRequestDto, ChatResponseDto, StreamTokenDto, ErrorResponseDto, HealthCheckDto, AuthTokenDto, ToolSelectionDto, CountryDto, PermissionsDto)
+@ApiExtraModels(ChatRequestDto, ChatResponseDto, StreamTokenDto, ErrorResponseDto, HealthCheckDto, AuthTokenDto, ToolSelectionDto, CountryDto, PermissionsDto, VersionDto)
 @Controller()
 export class AppController {
   constructor(
@@ -61,14 +63,36 @@ export class AppController {
   getData(): HealthCheckDto {
     return {
       status: 'ok',
-      version: '1.0.0',
+      version: environment.app.version,
       uptime: Math.floor(process.uptime()),
       endpoints: {
         health: '/api',
         login: '/api/auth/login',
         stream: '/api/chat/stream',
-        docs: '/docs'
+        docs: '/docs',
+        version: '/api/version'
       }
+    };
+  }
+
+  @Get('version')
+  @ApiOperation({
+    summary: 'Get application version',
+    description: 'Returns the current application version information'
+  })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'Version information retrieved successfully',
+    type: VersionDto,
+    schema: {
+      $ref: getSchemaPath(VersionDto)
+    }
+  })
+  getVersion(): VersionDto {
+    return {
+      name: environment.app.name,
+      version: environment.app.version,
+      buildDate: process.env.BUILD_DATE || new Date().toISOString()
     };
   }
 

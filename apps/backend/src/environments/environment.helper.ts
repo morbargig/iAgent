@@ -41,3 +41,17 @@ export const getCorsOrigins = (): (string | RegExp)[] => {
   });
 };
 
+declare const __APP_VERSION__: string;
+
+export const getAppVersion = (): string => {
+  if (process.env.APP_VERSION) {
+    return process.env.APP_VERSION;
+  }
+  
+  if (typeof __APP_VERSION__ !== 'undefined') {
+    return __APP_VERSION__;
+  }
+  
+  return '1.0.0';
+};
+

@@ -1,10 +1,10 @@
 import type { Environment } from './environment.type';
-import { getEnvBoolean, getEnvString } from './environment.helper';
+import { getEnvBoolean, getEnvString, getAppVersion } from './environment.helper';
 
 export const baseEnvironment: Omit<Environment, 'env' | 'production' | 'apiUrl' | 'baseUrl' | 'api'> = {
   app: {
     name: 'iAgent',
-    version: '1.0.0',
+    version: getAppVersion(),
   },
   
   features: {

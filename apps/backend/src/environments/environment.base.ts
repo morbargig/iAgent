@@ -1,7 +1,12 @@
 import type { Environment } from './environment.type';
-import { requireEnv, getPort, getCorsOrigins } from './environment.helper';
+import { requireEnv, getPort, getCorsOrigins, getAppVersion } from './environment.helper';
 
 export const baseEnvironment: Omit<Environment, 'production' | 'port' | 'host' | 'apiUrl' | 'frontendUrl'> = {
+  app: {
+    name: 'iAgent BFF',
+    version: getAppVersion(),
+  },
+  
   mongodb: {
     uri: requireEnv('MONGODB_URI', '.env file'),
     dbName: requireEnv('DB_NAME', '.env file'),
@@ -30,7 +35,7 @@ export const baseEnvironment: Omit<Environment, 'production' | 'port' | 'host' |
     enabled: true,
     title: 'iAgent API',
     description: 'iAgent API documentation',
-    version: '1.0.0',
+    version: getAppVersion(),
     serverUrl: `http://localhost:${getPort()}`,
     contact: {
       name: process.env.SWAGGER_CONTACT_NAME || 'iAgent',

@@ -332,6 +332,26 @@ export class HealthCheckDto {
   endpoints!: Record<string, string>;
 }
 
+export class VersionDto {
+  @ApiProperty({
+    description: 'Application name',
+    example: 'iAgent'
+  })
+  name!: string;
+
+  @ApiProperty({
+    description: 'Application version',
+    example: '1.0.0'
+  })
+  version!: string;
+
+  @ApiProperty({
+    description: 'Build timestamp',
+    example: '2024-01-01T12:00:00.000Z'
+  })
+  buildDate?: string;
+}
+
 export class ToolSchemaPageOptionDto {
   @ApiProperty({
     description: 'Option value',

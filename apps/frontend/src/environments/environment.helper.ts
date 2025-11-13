@@ -13,3 +13,15 @@ export const getEnvNumber = (key: string, defaultValue: number): number => {
   return value !== undefined ? Number(value) : defaultValue;
 };
 
+export const getAppVersion = (): string => {
+  if (import.meta.env.VITE_APP_VERSION) {
+    return import.meta.env.VITE_APP_VERSION;
+  }
+  
+  if (typeof __APP_VERSION__ !== 'undefined') {
+    return __APP_VERSION__;
+  }
+  
+  return '1.0.0';
+};
+
