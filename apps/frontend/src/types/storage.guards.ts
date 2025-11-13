@@ -100,6 +100,16 @@ export const isAppSettings = isType({
   mockMode: isBoolean,
 });
 
+export const isFeatureFlags = isType({
+  enableMockMode: isBoolean,
+  enableFileUpload: isBoolean,
+  enableDocumentManagement: isBoolean,
+  enableLanguageSwitcher: isBoolean,
+  enableDarkMode: isBoolean,
+  enableAppDetails: isBoolean,
+  enableContactUs: isBoolean,
+});
+
 const isHeaderButtonId = isUnion(
   isLiteral('theme'),
   isLiteral('language'),
@@ -111,9 +121,12 @@ const isHeaderButtonId = isUnion(
 
 export const isHeaderButtonsOrder = isArray(isHeaderButtonId);
 
+export const isAppVersion = isString;
+
 export const localStorageGuards: {
   [K in LocalStorageKeys]: (value: unknown) => value is LocalStorageValues[K];
 } = {
+  'app-version': isAppVersion,
   'chatbot-sidebar-open': isChatbotSidebarOpen,
   'chatbot-theme-mode': isChatbotThemeMode,
   'chatbot-conversations': isChatbotConversations,
@@ -128,6 +141,7 @@ export const localStorageGuards: {
   'user-preferences': isUserPreferences,
   'app-settings': isAppSettings,
   'header-buttons-order': isHeaderButtonsOrder,
+  'feature-flags': isFeatureFlags,
 };
 
 export const isSessionToken = isString;
