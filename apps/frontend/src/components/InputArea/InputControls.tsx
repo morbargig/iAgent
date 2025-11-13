@@ -7,7 +7,7 @@ import {
 import { CountrySelector } from "./CountrySelector";
 import { DateRangeSelector } from "./DateRangeSelector";
 import { ToolSelector } from "./ToolSelector";
-import { ActionButtons } from "./ActionButtons";
+import { AttachmentButton, SubmitButton } from "./ActionButtons";
 import { UploadingFile, AttachedFile } from "../../hooks/useFileHandling";
 
 interface Tool {
@@ -179,58 +179,38 @@ export const InputControls: React.FC<InputControlsProps> = ({
         gap: "12px",
       }}
     >
-      {/* Left Control Buttons */}
+      {/* Start Flow - Tools List */}
       <Box
-        id="iagent-left-controls"
-        className="iagent-left-control-group"
+        id="iagent-start-controls"
+        className="iagent-start-control-group"
         sx={{
           display: "flex",
           alignItems: "center",
-          gap: "12px",
+          gap: "8px",
           flexShrink: 0,
         }}
       >
-        {/* Country Selector */}
-        <CountrySelector
-          selectedFlags={selectedFlags}
-          flagPopoverOpen={flagPopoverOpen}
-          flagAnchorEl={flagAnchorEl}
-          flagOptions={flagOptions}
+        <ToolSelector
+          toolsList={toolsList}
+          enabledTools={enabledTools}
           isDarkMode={isDarkMode}
           t={t}
-          onFlagClick={onFlagClick}
-          onFlagToggle={onFlagToggle}
-          onClose={onFlagClose}
-          enabledTools={enabledTools}
+          onToolToggle={onToolToggle}
         />
+      </Box>
 
-        {/* Date Range Selector */}
-        <DateRangeSelector
-          dateRangeTab={dateRangeTab}
-          rangeAmount={rangeAmount}
-          rangeType={rangeType}
-          rangeTypeOpen={rangeTypeOpen}
-          dateRange={dateRange}
-          tempDateRange={tempDateRange}
-          datePopoverOpen={datePopoverOpen}
-          dateAnchorEl={dateAnchorEl}
-          timeRangeOptions={timeRangeOptions}
-          isDarkMode={isDarkMode}
-          t={t}
-          getDateRangeButtonText={getDateRangeButtonText}
-          onDateClick={onDateClick}
-          onDateRangeTabChange={onDateRangeTabChange}
-          onRangeAmountChange={onRangeAmountChange}
-          onRangeTypeChange={onRangeTypeChange}
-          onRangeTypeToggle={onRangeTypeToggle}
-          onTempDateRangeChange={onTempDateRangeChange}
-          onApply={onDateRangeApply}
-          onReset={onDateRangeReset}
-          onClose={onDateClose}
-          enabledTools={enabledTools}
-        />
-
-        {/* Settings Button - Only show when tools with config fields are enabled */}
+      {/* End Flow - Settings, Filters, Date, Countries, Docs, Submit */}
+      <Box
+        id="iagent-end-controls"
+        className="iagent-end-control-group"
+        sx={{
+          display: "flex",
+          alignItems: "center",
+          gap: "8px",
+          flexShrink: 0,
+        }}
+      >
+        {/* Settings Button */}
         {shouldShowSettingsIcon && (
           <IconButton
             id="iagent-settings-button"
@@ -284,7 +264,7 @@ export const InputControls: React.FC<InputControlsProps> = ({
           </IconButton>
         )}
 
-        {/* Filter Button - Show saved filters for current chat */}
+        {/* Filter Button */}
         <Tooltip
           title={
             activeFilter
@@ -349,34 +329,50 @@ export const InputControls: React.FC<InputControlsProps> = ({
             </IconButton>
           </Badge>
         </Tooltip>
-      </Box>
 
-      {/* Right Control Group */}
-      <Box
-        id="iagent-right-controls"
-        className="iagent-right-control-group"
-        sx={{
-          display: "flex",
-          alignItems: "center",
-          gap: "8px",
-          flexShrink: 0,
-        }}
-      >
-        {/* AI Tools Selector */}
-        <ToolSelector
-          toolsList={toolsList}
-          enabledTools={enabledTools}
+        {/* Date Range Selector */}
+        <DateRangeSelector
+          dateRangeTab={dateRangeTab}
+          rangeAmount={rangeAmount}
+          rangeType={rangeType}
+          rangeTypeOpen={rangeTypeOpen}
+          dateRange={dateRange}
+          tempDateRange={tempDateRange}
+          datePopoverOpen={datePopoverOpen}
+          dateAnchorEl={dateAnchorEl}
+          timeRangeOptions={timeRangeOptions}
           isDarkMode={isDarkMode}
           t={t}
-          onToolToggle={onToolToggle}
+          getDateRangeButtonText={getDateRangeButtonText}
+          onDateClick={onDateClick}
+          onDateRangeTabChange={onDateRangeTabChange}
+          onRangeAmountChange={onRangeAmountChange}
+          onRangeTypeChange={onRangeTypeChange}
+          onRangeTypeToggle={onRangeTypeToggle}
+          onTempDateRangeChange={onTempDateRangeChange}
+          onApply={onDateRangeApply}
+          onReset={onDateRangeReset}
+          onClose={onDateClose}
+          enabledTools={enabledTools}
         />
 
-        {/* Action Buttons */}
-        <ActionButtons
-          showVoiceButton={showVoiceButton}
+        {/* Country Selector */}
+        <CountrySelector
+          selectedFlags={selectedFlags}
+          flagPopoverOpen={flagPopoverOpen}
+          flagAnchorEl={flagAnchorEl}
+          flagOptions={flagOptions}
+          isDarkMode={isDarkMode}
+          t={t}
+          onFlagClick={onFlagClick}
+          onFlagToggle={onFlagToggle}
+          onClose={onFlagClose}
+          enabledTools={enabledTools}
+        />
+
+        {/* Docs Button (Attachment) */}
+        <AttachmentButton
           showAttachmentButton={showAttachmentButton}
-          canSend={canSend}
-          showStopButton={showStopButton}
           disabled={disabled}
           isDarkMode={isDarkMode}
           uploadingFiles={uploadingFiles}
@@ -384,12 +380,19 @@ export const InputControls: React.FC<InputControlsProps> = ({
           fileMenuOpen={fileMenuOpen}
           fileMenuAnchor={fileMenuAnchor}
           t={t}
-          onVoiceInput={onVoiceInput}
-          onSubmit={onSubmit}
           onFileMenuClick={onFileMenuClick}
           onFileMenuClose={onFileMenuClose}
           onQuickUpload={onQuickUpload}
           onOpenDocumentManager={onOpenDocumentManager}
+        />
+
+        {/* Submit Button */}
+        <SubmitButton
+          canSend={canSend}
+          showStopButton={showStopButton}
+          disabled={disabled}
+          isDarkMode={isDarkMode}
+          onSubmit={onSubmit}
         />
       </Box>
     </Box>
