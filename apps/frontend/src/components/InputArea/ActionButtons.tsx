@@ -29,8 +29,8 @@ interface AttachmentButtonProps {
   t: (key: string, params?: Record<string, unknown>) => string;
   onFileMenuClick: (event: React.MouseEvent<HTMLElement>) => void;
   onFileMenuClose: () => void;
-  onQuickUpload: () => void;
-  onOpenDocumentManager: () => void;
+  onQuickUpload?: () => void;
+  onOpenDocumentManager?: () => void;
 }
 
 export const AttachmentButton: React.FC<AttachmentButtonProps> = ({
@@ -129,6 +129,7 @@ export const AttachmentButton: React.FC<AttachmentButtonProps> = ({
           },
         }}
       >
+        {onQuickUpload && (
         <MenuItem
           onClick={onQuickUpload}
           sx={{
@@ -146,6 +147,8 @@ export const AttachmentButton: React.FC<AttachmentButtonProps> = ({
           </ListItemIcon>
           <ListItemText>{t("files.quickUpload")}</ListItemText>
         </MenuItem>
+        )}
+        {onOpenDocumentManager && (
         <MenuItem
           onClick={onOpenDocumentManager}
           sx={{
@@ -163,6 +166,7 @@ export const AttachmentButton: React.FC<AttachmentButtonProps> = ({
           </ListItemIcon>
           <ListItemText>{t("files.documentManager")}</ListItemText>
         </MenuItem>
+        )}
       </Menu>
     </>
   );

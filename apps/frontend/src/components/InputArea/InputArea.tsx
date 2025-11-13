@@ -11,6 +11,7 @@ import { useToolSchemas } from "../../features/tools/api";
 import { usePermissions } from "../../features/auth/api";
 import { DocumentManagementDialog } from "../DocumentManagementDialog";
 import { FILE_UPLOAD_CONFIG } from "../../config/fileUpload";
+import { useFeatureFlag } from "../../hooks/useFeatureFlag";
 
 // Import custom hooks
 import { useFileHandling } from "../../hooks/useFileHandling";
@@ -131,6 +132,10 @@ export function InputArea({
 }: InputAreaProps) {
   const { t } = useTranslation();
 
+  // Feature flags
+  const enableFileUpload = useFeatureFlag('enableFileUpload');
+  const enableDocumentManagement = useFeatureFlag('enableDocumentManagement');
+
   // Initialize all hooks
   const fileHandling = useFileHandling({ t });
   const countrySelection = useCountrySelection();
@@ -209,7 +214,7 @@ export function InputArea({
     if (isLoading && onStop) {
       onStop();
     } else if (
-      (value.trim() || fileHandling.attachedFiles.length > 0) &&
+      (value.trim() || (enableFileUpload && fileHandling.attachedFiles.length > 0)) &&
       !disabled
     ) {
       // Check if there are unconfigured tools before submitting
@@ -218,6 +223,8 @@ export function InputArea({
         return;
       }
 
+      // Check file upload status if file upload is enabled
+      if (enableFileUpload) {
       // Check if any files are still uploading
       if (fileHandling.uploadingFiles.length > 0) {
         fileHandling.setFileError(t("files.waitForUploads"));
@@ -233,6 +240,7 @@ export function InputArea({
         fileHandling.setFileError(t("files.uploadErrors"));
         fileHandling.setShowFileError(true);
         return;
+        }
       }
 
       // Collect all attached file references
@@ -270,7 +278,7 @@ export function InputArea({
         selectedCountries: countrySelection.selectedFlags,
         enabledTools,
         filterSnapshot,
-        attachments,
+        attachments: enableFileUpload ? attachments : undefined,
       });
 
       onSend(sendData);
@@ -278,7 +286,7 @@ export function InputArea({
       // Clear all files after successful send
       fileHandling.clearAllFiles();
     }
-  }, [isLoading, onStop, value, fileHandling.attachedFiles.length, fileHandling.uploadingFiles.length, disabled, inputAreaUI.needsToolConfiguration, setToolSettingsOpen, dateRange.committedTab, dateRange.rangeAmount, dateRange.rangeType, dateRange.dateRange, countrySelection.selectedFlags, enabledTools, filterManagement.activeFilter, filterManagement.synchronizedConfigurations, onSend, t, fileHandling.setFileError, fileHandling.setShowFileError, fileHandling.clearAllFiles]);
+  }, [isLoading, onStop, value, enableFileUpload, fileHandling, disabled, inputAreaUI.needsToolConfiguration, setToolSettingsOpen, dateRange.committedTab, dateRange.rangeAmount, dateRange.rangeType, dateRange.dateRange, countrySelection.selectedFlags, enabledTools, filterManagement.activeFilter, filterManagement.synchronizedConfigurations, onSend, t]);
 
   // Update ref when handleSubmit changes
   React.useEffect(() => {
@@ -297,14 +305,14 @@ export function InputArea({
       }
 
       if (
-        (value.trim() || attachedFilesCount > 0) &&
+        (value.trim() || (enableFileUpload && attachedFilesCount > 0)) &&
         !disabled &&
         !isLoading
       ) {
         handleSubmitRef.current?.();
       }
     }
-  }, [needsToolConfig, value, attachedFilesCount, disabled, isLoading, setToolSettingsOpen]);
+  }, [needsToolConfig, value, enableFileUpload, attachedFilesCount, disabled, isLoading, setToolSettingsOpen]);
 
   // Tool toggle handler with hint ring
   const handleToolToggle = React.useCallback((toolId: string) => {
@@ -366,7 +374,7 @@ export function InputArea({
   }, [dateRange.dateRangeTab, dateRange.rangeAmount, dateRange.rangeType, dateRange.dateRange, countrySelection.selectedFlags, enabledTools, t]);
 
   // Disable send button if files are uploading
-  const isUploading = React.useMemo(() => fileHandling.uploadingFiles.length > 0, [fileHandling.uploadingFiles.length]);
+  const isUploading = React.useMemo(() => enableFileUpload && fileHandling.uploadingFiles.length > 0, [enableFileUpload, fileHandling.uploadingFiles.length]);
   const canSend = React.useMemo(() =>
     Boolean(value.trim()) &&
     !disabled &&
@@ -412,10 +420,10 @@ export function InputArea({
         <Box
           id="iagent-input-content"
           className="iagent-input-content-wrapper"
-          onDragEnter={fileHandling.handleDragEnter}
-          onDragLeave={fileHandling.handleDragLeave}
-          onDragOver={fileHandling.handleDragOver}
-          onDrop={fileHandling.handleDropFiles}
+          onDragEnter={enableFileUpload ? fileHandling.handleDragEnter : undefined}
+          onDragLeave={enableFileUpload ? fileHandling.handleDragLeave : undefined}
+          onDragOver={enableFileUpload ? fileHandling.handleDragOver : undefined}
+          onDrop={enableFileUpload ? fileHandling.handleDropFiles : undefined}
           sx={{
             maxWidth: "768px",
             margin: "0 auto",
@@ -432,7 +440,7 @@ export function InputArea({
           }}
         >
           {/* Drag Overlay */}
-          {fileHandling.isDragging && (
+          {enableFileUpload && fileHandling.isDragging && (
             <Box
               sx={{
                 position: "absolute",
@@ -480,8 +488,13 @@ export function InputArea({
                   : "0 2px 12px rgba(0, 0, 0, 0.1)",
               },
             }}
+            onDragEnter={enableFileUpload ? fileHandling.handleDragEnter : undefined}
+            onDragLeave={enableFileUpload ? fileHandling.handleDragLeave : undefined}
+            onDragOver={enableFileUpload ? fileHandling.handleDragOver : undefined}
+            onDrop={enableFileUpload ? fileHandling.handleDropFiles : undefined}
           >
             {/* File Attachments */}
+            {enableFileUpload && (
             <FileAttachments
               uploadingFiles={fileHandling.uploadingFiles}
               attachedFiles={fileHandling.attachedFiles}
@@ -490,6 +503,7 @@ export function InputArea({
               onRemoveUploading={fileHandling.removeUploadingFile}
               onRemoveAttached={fileHandling.removeAttachedFile}
             />
+            )}
 
             {/* Main Textarea Container */}
             <Box sx={{ position: "relative" }}>
@@ -663,7 +677,9 @@ export function InputArea({
                   );
                 }
               }}
-              onOpenDocumentManager={documentDialog.handleOpenDocumentManager}
+              onOpenDocumentManager={enableDocumentManagement ? documentDialog.handleOpenDocumentManager : undefined}
+              enableFileUpload={enableFileUpload}
+              enableDocumentManagement={enableDocumentManagement}
               // Styling
               isDarkMode={isDarkMode}
               t={t}
@@ -688,6 +704,7 @@ export function InputArea({
       </Box>
 
       {/* Hidden file input for quick upload */}
+      {enableFileUpload && (
       <input
         ref={inputAreaUI.fileInputRef}
         type="file"
@@ -696,6 +713,7 @@ export function InputArea({
         style={{ display: "none" }}
         disabled={disabled}
       />
+      )}
 
       {/* Filter Management Menu */}
       <FilterMenu
@@ -757,6 +775,7 @@ export function InputArea({
       />
 
       {/* Documents Management Dialog */}
+      {enableDocumentManagement && (
       <DocumentManagementDialog
         open={documentDialog.docsDialogOpen}
         onClose={documentDialog.handleCloseDocsDialog}
@@ -768,6 +787,7 @@ export function InputArea({
         title={t("files.documentManagement")}
         attachedFiles={fileHandling.attachedFiles}
       />
+      )}
 
       {/* File Limit Warning Snackbar */}
       <Snackbar

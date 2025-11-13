@@ -42,7 +42,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({
   isDarkMode,
 }) => {
   const { login } = useAuth();
-  const { useMockMode: isMockMode, toggleMockMode } = useMockMode();
+  const { useMockMode: isMockMode, enableMockMode, toggleMockMode } = useMockMode();
   const [credentials, setCredentials] = useState<LoginCredentials>({
     email: "",
     password: "",
@@ -114,62 +114,66 @@ export const LoginForm: React.FC<LoginFormProps> = ({
       >
         <CardContent sx={{ p: 4 }}>
           {/* Mock Mode Toggle */}
-          <Box sx={{ display: "flex", justifyContent: "center", mb: 2 }}>
-            <Tooltip
-              title={isMockMode ? "Switch to Live Mode" : "Switch to Mock Mode"}
-            >
-              <FormControlLabel
-                control={
-                  <Switch
-                    checked={isMockMode}
-                    onChange={toggleMockMode}
-                    sx={{
-                      "& .MuiSwitch-switchBase.Mui-checked": {
-                        color: "#ff6b35",
-                      },
-                      "& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track":
-                        {
-                          backgroundColor: "#ff6b35",
-                        },
-                    }}
+          {enableMockMode && (
+            <>
+              <Box sx={{ display: "flex", justifyContent: "center", mb: 2 }}>
+                <Tooltip
+                  title={isMockMode ? "Switch to Live Mode" : "Switch to Mock Mode"}
+                >
+                  <FormControlLabel
+                    control={
+                      <Switch
+                        checked={isMockMode}
+                        onChange={toggleMockMode}
+                        sx={{
+                          "& .MuiSwitch-switchBase.Mui-checked": {
+                            color: "#ff6b35",
+                          },
+                          "& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track":
+                            {
+                              backgroundColor: "#ff6b35",
+                            },
+                        }}
+                      />
+                    }
+                    label={
+                      <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                        {isMockMode ? (
+                          <MockIcon sx={{ color: "#ff6b35" }} />
+                        ) : (
+                          <LiveIcon sx={{ color: "#667eea" }} />
+                        )}
+                        <Typography
+                          variant="body2"
+                          sx={{ color: isDarkMode ? "#cccccc" : "#666666" }}
+                        >
+                          {isMockMode ? "Mock Mode" : "Live Mode"}
+                        </Typography>
+                      </Box>
+                    }
+                    sx={{ margin: 0 }}
                   />
-                }
-                label={
-                  <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                    {isMockMode ? (
-                      <MockIcon sx={{ color: "#ff6b35" }} />
-                    ) : (
-                      <LiveIcon sx={{ color: "#667eea" }} />
-                    )}
-                    <Typography
-                      variant="body2"
-                      sx={{ color: isDarkMode ? "#cccccc" : "#666666" }}
-                    >
-                      {isMockMode ? "Mock Mode" : "Live Mode"}
-                    </Typography>
-                  </Box>
-                }
-                sx={{ margin: 0 }}
-              />
-            </Tooltip>
-          </Box>
+                </Tooltip>
+              </Box>
 
-          {/* Mode Indicator Chip */}
-          <Box sx={{ display: "flex", justifyContent: "center", mb: 3 }}>
-            <Chip
-              icon={isMockMode ? <MockIcon /> : <LiveIcon />}
-              label={isMockMode ? "Using Mock Backend" : "Using Live Backend"}
-              variant="outlined"
-              size="small"
-              sx={{
-                borderColor: isMockMode ? "#ff6b35" : "#667eea",
-                color: isMockMode ? "#ff6b35" : "#667eea",
-                "& .MuiChip-icon": {
-                  color: isMockMode ? "#ff6b35" : "#667eea",
-                },
-              }}
-            />
-          </Box>
+              {/* Mode Indicator Chip */}
+              <Box sx={{ display: "flex", justifyContent: "center", mb: 3 }}>
+                <Chip
+                  icon={isMockMode ? <MockIcon /> : <LiveIcon />}
+                  label={isMockMode ? "Using Mock Backend" : "Using Live Backend"}
+                  variant="outlined"
+                  size="small"
+                  sx={{
+                    borderColor: isMockMode ? "#ff6b35" : "#667eea",
+                    color: isMockMode ? "#ff6b35" : "#667eea",
+                    "& .MuiChip-icon": {
+                      color: isMockMode ? "#ff6b35" : "#667eea",
+                    },
+                  }}
+                />
+              </Box>
+            </>
+          )}
 
           {/* Header */}
           <Box sx={{ textAlign: "center", mb: 4 }}>

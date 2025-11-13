@@ -90,7 +90,9 @@ interface InputControlsProps {
   onFileMenuClick: (event: React.MouseEvent<HTMLElement>) => void;
   onFileMenuClose: () => void;
   onQuickUpload: () => void;
-  onOpenDocumentManager: () => void;
+  onOpenDocumentManager?: () => void;
+  enableFileUpload: boolean;
+  enableDocumentManagement: boolean;
 
   // Styling
   isDarkMode: boolean;
@@ -162,6 +164,8 @@ export const InputControls: React.FC<InputControlsProps> = ({
   onFileMenuClose,
   onQuickUpload,
   onOpenDocumentManager,
+  enableFileUpload,
+  enableDocumentManagement,
 
   // Styling
   isDarkMode,
@@ -371,8 +375,9 @@ export const InputControls: React.FC<InputControlsProps> = ({
         />
 
         {/* Docs Button (Attachment) */}
+        {(enableFileUpload || enableDocumentManagement) && (
         <AttachmentButton
-          showAttachmentButton={showAttachmentButton}
+            showAttachmentButton={showAttachmentButton && (enableFileUpload || enableDocumentManagement)}
           disabled={disabled}
           isDarkMode={isDarkMode}
           uploadingFiles={uploadingFiles}
@@ -382,9 +387,10 @@ export const InputControls: React.FC<InputControlsProps> = ({
           t={t}
           onFileMenuClick={onFileMenuClick}
           onFileMenuClose={onFileMenuClose}
-          onQuickUpload={onQuickUpload}
-          onOpenDocumentManager={onOpenDocumentManager}
+            onQuickUpload={enableFileUpload ? onQuickUpload : undefined}
+            onOpenDocumentManager={enableDocumentManagement ? onOpenDocumentManager : undefined}
         />
+        )}
 
         {/* Submit Button */}
         <SubmitButton

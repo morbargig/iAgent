@@ -241,6 +241,7 @@ const ChatHeader = ({
   const enableLanguageSwitcher = useFeatureFlag("enableLanguageSwitcher");
   const enableContactUs = useFeatureFlag("enableContactUs");
   const enableAppDetails = useFeatureFlag("enableAppDetails");
+  const enableDarkMode = useFeatureFlag("enableDarkMode");
   const [buttonOrder, setButtonOrder] = useAppLocalStorage(
     "header-buttons-order"
   );
@@ -523,6 +524,7 @@ const ChatHeader = ({
           </DraggableButton>
         );
       case "theme":
+        if (!enableDarkMode) return null;
         return (
           <DraggableButton
             key={buttonId}
