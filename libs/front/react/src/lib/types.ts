@@ -8,7 +8,8 @@ export type UseStorageReturn<T> = [
 
 export type UseLocalStorageReturn<T> = [
   T,
-  (value: T | ((prev: T) => T)) => void
+  (value: T | ((prev: T) => T)) => void,
+  () => void
 ];
 
 export interface StorageConfig<

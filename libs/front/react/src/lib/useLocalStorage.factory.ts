@@ -31,7 +31,7 @@ export const createUseLocalStorage = <
     key: K
   ) => {
     const defaultValue = config.defaults[key];
-    const [value, setValue] = useLocalStorage<LocalStorageValues[K]>(key, defaultValue);
+    const [value, setValue, removeValue] = useLocalStorage<LocalStorageValues[K]>(key, defaultValue);
     const deepMemoValue = useDeepMemo(value);
     const typeGuard = getGuard(key);
 
@@ -42,12 +42,19 @@ export const createUseLocalStorage = <
       return defaultValue;
     }, [defaultValue, typeGuard, deepMemoValue]);
 
-    return [guardedValue, setValue];
+    const remove = useMemo(() => {
+      return () => {
+        removeValue();
+        setValue(defaultValue);
+      };
+    }, [removeValue, setValue, defaultValue]);
+
+    return [guardedValue, setValue, remove];
   };
 
   const useAppReadLocalStorage: <K extends LocalStorageKeys>(
     key: K
-  ) => LocalStorageValues[K] = <K extends LocalStorageKeys>(
+  ) => LocalStorageValues[K] | null = <K extends LocalStorageKeys>(
     key: K
   ) => {
     const value = useReadLocalStorage<LocalStorageValues[K]>(key);
