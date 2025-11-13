@@ -25,6 +25,14 @@ import { FileAttachments } from "./FileAttachments";
 import { InputControls } from "./InputControls";
 import { FilterMenu } from "./FilterMenu";
 
+// Import utilities
+import { TOOLS_LIST, filterToolsByPermissions } from "../../utils/toolUtils";
+import {
+  createDateFilter,
+  createFilterSnapshot,
+  createSendMessageData,
+} from "../../utils/messageUtils";
+
 // Interfaces
 export interface DateFilter {
   type: "custom" | "picker";
@@ -98,13 +106,6 @@ interface InputAreaProps {
   authToken?: string;
 }
 
-// Tools list data
-const toolsList = [
-  { id: "tool-t", nameKey: "tools.tool-t" },
-  { id: "tool-h", nameKey: "tools.tool-h" },
-  { id: "tool-f", nameKey: "tools.tool-f" },
-];
-
 export function InputArea({
   value,
   onChange,
@@ -157,24 +158,10 @@ export function InputArea({
   const { isRTL } = useTranslation();
 
   // Filter tools based on permissions
-  const availableToolSchemas = React.useMemo(() => {
-    if (!permissions?.permissions) {
-      return toolSchemas;
-    }
-    return toolSchemas.filter(tool => {
-      // Map tool IDs to permission keys: tool-t -> canUseToolT, tool-h -> canUseToolH, tool-f -> canUseToolF
-      const permissionKeyMap: Record<string, keyof typeof permissions.permissions> = {
-        'tool-t': 'canUseToolT',
-        'tool-h': 'canUseToolH',
-        'tool-f': 'canUseToolF',
-      };
-      const permissionKey = permissionKeyMap[tool.id];
-      if (!permissionKey) {
-        return true; // Allow tools without permission mapping
-      }
-      return permissions.permissions[permissionKey] !== false;
-    });
-  }, [toolSchemas, permissions]);
+  const availableToolSchemas = React.useMemo(
+    () => filterToolsByPermissions(toolSchemas, permissions),
+    [toolSchemas, permissions]
+  );
 
   // Filter management
   const filterManagement = useFilterManagement({
@@ -257,67 +244,34 @@ export function InputArea({
         uploadDate: f.uploadDate,
       }));
 
-      // Prepare date filter data with proper serialization
-      const dateFilter: DateFilter = {
-        type: dateRange.committedTab === 1 ? "picker" : "custom",
-        customRange:
-          dateRange.committedTab === 0
-            ? {
-                amount: dateRange.rangeAmount,
-                type: dateRange.rangeType,
-              }
-            : undefined,
-        dateRange:
-          dateRange.committedTab === 1 ? dateRange.dateRange : undefined,
-      };
+      const dateFilter = createDateFilter({
+        committedTab: dateRange.committedTab,
+        rangeAmount: dateRange.rangeAmount,
+        rangeType: dateRange.rangeType,
+        dateRange: dateRange.dateRange,
+      });
 
-      // Create properly serialized date filter for the snapshot
-      const snapshotDateFilter =
-        dateRange.committedTab === 1
-          ? {
-              type: "picker" as const,
-              dateRange: {
-                start: dateRange.dateRange[0]?.toISOString(),
-                end: dateRange.dateRange[1]?.toISOString(),
-              },
-            }
-          : {
-              type: "custom" as const,
-              customRange: {
-                amount: dateRange.rangeAmount,
-                type: dateRange.rangeType,
-              },
-            };
-
-      // Create filter snapshot for the message
-      const filterSnapshot = {
+      const filterSnapshot = createFilterSnapshot({
         filterId: filterManagement.activeFilter?.filterId,
-        name:
-          filterManagement.activeFilter?.name ||
-          `Filter ${new Date().toLocaleDateString()}`,
-        config: {
-          dateFilter: snapshotDateFilter,
-          selectedCountries: countrySelection.selectedFlags,
-          enabledTools: Object.keys(enabledTools).filter(
-            (toolId) => enabledTools[toolId]
-          ),
-          toolConfigurations: filterManagement.synchronizedConfigurations,
-        },
+        name: filterManagement.activeFilter?.name,
+        committedTab: dateRange.committedTab,
+        rangeAmount: dateRange.rangeAmount,
+        rangeType: dateRange.rangeType,
+        dateRange: dateRange.dateRange,
+        selectedCountries: countrySelection.selectedFlags,
+        enabledTools,
+        toolConfigurations: filterManagement.synchronizedConfigurations,
         isActive: !!filterManagement.activeFilter,
-        createdAt: new Date().toISOString(),
-      };
+      });
 
-      // Prepare send data with attachments
-      const sendData: SendMessageData = {
+      const sendData = createSendMessageData({
         content: value,
         dateFilter,
         selectedCountries: countrySelection.selectedFlags,
-        enabledTools: Object.keys(enabledTools).filter(
-          (toolId) => enabledTools[toolId]
-        ),
+        enabledTools,
         filterSnapshot,
         attachments,
-      };
+      });
 
       onSend(sendData);
 
@@ -676,7 +630,7 @@ export function InputArea({
               activeFilter={filterManagement.activeFilter}
               onFilterMenuOpen={filterManagement.handleFilterMenuOpen}
               // Tools
-              toolsList={toolsList}
+              toolsList={TOOLS_LIST}
               enabledTools={enabledTools}
               onToolToggle={handleToolToggle}
               // Action Buttons
