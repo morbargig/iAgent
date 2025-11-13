@@ -69,7 +69,7 @@ export const Sidebar = React.forwardRef<HTMLDivElement, SidebarProps>(
   ) => {
     const theme = useTheme();
     const isMobile = useMediaQuery(theme.breakpoints.down("md"));
-    const { t } = useTranslation();
+    const { t, isRTL } = useTranslation();
 
     const [storedWidth, setStoredWidth] = useAppLocalStorage('sidebar-width');
     const defaultWidth = storedWidth || 250;
@@ -82,6 +82,7 @@ export const Sidebar = React.forwardRef<HTMLDivElement, SidebarProps>(
         setStoredWidth(newWidth);
         onWidthChange?.(newWidth);
       },
+      isRTL,
     });
 
     const {

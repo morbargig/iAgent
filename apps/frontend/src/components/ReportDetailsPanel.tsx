@@ -18,6 +18,7 @@ import {
   Visibility as ViewIcon,
 } from "@mui/icons-material";
 import { useAppLocalStorage } from "../hooks/storage";
+import { useTranslation } from "../contexts/TranslationContext";
 
 export interface ReportData {
   id: string;
@@ -281,13 +282,14 @@ export const ReportDetailsPanel = React.forwardRef<
   ) => {
     const theme = useTheme();
     const isMobile = useMediaQuery(theme.breakpoints.down("md"));
+    const { isRTL } = useTranslation();
 
     // State for resizable width
     const [panelWidth, setPanelWidth] = useAppLocalStorage('report-panel-width');
     const [isResizing, setIsResizing] = useState(false);
     const resizeRef = useRef<HTMLDivElement>(null);
 
-    // Resize functionality - similar to sidebar but resizing from left edge
+    // Resize functionality - similar to sidebar but resizing from start edge
     const handleMouseDown = useCallback((e: React.MouseEvent) => {
       e.preventDefault();
       setIsResizing(true);
@@ -297,8 +299,11 @@ export const ReportDetailsPanel = React.forwardRef<
       (e: MouseEvent) => {
         if (!isResizing) return;
 
-        // Calculate new width based on distance from right edge of screen
-        const newWidth = window.innerWidth - e.clientX;
+        // For RTL: panel is on the left, calculate width from left edge
+        // For LTR: panel is on the right, calculate width from right edge
+        const newWidth = isRTL 
+          ? e.clientX 
+          : window.innerWidth - e.clientX;
         const minWidth = 300;
         const maxWidth = 700;
 
@@ -309,7 +314,7 @@ export const ReportDetailsPanel = React.forwardRef<
           }
         }
       },
-      [isResizing, onWidthChange]
+      [isResizing, onWidthChange, isRTL, setPanelWidth]
     );
 
     const handleMouseUp = useCallback(() => {

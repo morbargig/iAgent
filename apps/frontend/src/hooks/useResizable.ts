@@ -5,6 +5,7 @@ interface UseResizableOptions {
   minWidth?: number;
   maxWidth?: number;
   onWidthChange?: (width: number) => void;
+  isRTL?: boolean;
 }
 
 const DEFAULT_MIN_WIDTH = 200;
@@ -15,6 +16,7 @@ export const useResizable = ({
   minWidth = DEFAULT_MIN_WIDTH,
   maxWidth = DEFAULT_MAX_WIDTH,
   onWidthChange,
+  isRTL = false,
 }: UseResizableOptions) => {
   const [width, setWidth] = useState(initialWidth);
   const [isResizing, setIsResizing] = useState(false);
@@ -28,13 +30,18 @@ export const useResizable = ({
     (e: MouseEvent) => {
       if (!isResizing) return;
 
-      const newWidth = e.clientX;
+      // For RTL: sidebar is on the right, calculate width from right edge
+      // For LTR: sidebar is on the left, calculate width from left edge
+      const newWidth = isRTL 
+        ? window.innerWidth - e.clientX 
+        : e.clientX;
+      
       if (newWidth >= minWidth && newWidth <= maxWidth) {
         setWidth(newWidth);
         onWidthChange?.(newWidth);
       }
     },
-    [isResizing, minWidth, maxWidth, onWidthChange]
+    [isResizing, minWidth, maxWidth, onWidthChange, isRTL]
   );
 
   const handleMouseUp = useCallback(() => {
