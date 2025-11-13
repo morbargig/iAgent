@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect, useMemo } from "react";
 import { ThemeProvider, createTheme } from "@mui/material/styles";
 import { CssBaseline, Box } from "@mui/material";
 import { useTranslation } from "../contexts/TranslationContext";
+import { useAuth } from "../contexts/AuthContext";
 import { Sidebar } from "../components/Sidebar";
 import { ChatArea } from "../components/ChatArea";
 import {
@@ -28,7 +29,7 @@ import {
 } from "@iagent/chat-types";
 import { convertMongoMessageToMessage } from "../utils/chunkConverter";
 import { useMockMode } from "../hooks/useMockMode";
-import { useAppLocalStorage, useAppSessionStorage, useMemoStorage } from "../hooks/storage";
+import { useAppLocalStorage } from "../hooks/storage";
 import { getBaseApiUrl } from "../config/config";
 // import { environment } from "../environments/environment";
 
@@ -333,14 +334,7 @@ const App = () => {
   const sidebarRef = useRef<HTMLDivElement>(null);
   const [inputAreaHeight, setInputAreaHeight] = useState(80); // Track input area height
   const [sidebarWidth, setSidebarWidth] = useState(250); // Track sidebar width
-
-  const [authToken, setAuthToken] = useAppSessionStorage('session-token');
-  const [userId, setUserId] = useAppSessionStorage('user-id');
-  const [userEmail, setUserEmail] = useAppSessionStorage('user-email');
-  const isAuthenticated = useMemoStorage(
-    () => Boolean(authToken && userId && userEmail),
-    [authToken, userId, userEmail]
-  );
+  const { authToken, userId, userEmail, isAuthenticated, logout } = useAuth();
 
   React.useEffect(() => {
     setAuthTokenGetter(() => authToken || null);
@@ -369,8 +363,6 @@ const App = () => {
   const [reportData, setReportData] = useState<ReportData | null>(null);
   const [reportPanelWidth, setReportPanelWidth] = useState(350);
   const [isReportLoading, setIsReportLoading] = useState(false);
-  const [isFileManagerOpen, setIsFileManagerOpen] = useState(false);
-  const [attachedFiles, setAttachedFiles] = useState<any[]>([]);
 
   const { useMockMode: isMockMode, toggleMockMode } = useMockMode();
   const { t: translation } = useTranslation();
@@ -755,20 +747,11 @@ const App = () => {
 
   const currentTheme = isDarkMode ? darkTheme : lightTheme;
 
-  // Authentication handlers
-  const handleLogin = (token: string, userId: string, email: string) => {
-    setAuthToken(token);
-    setUserId(userId);
-    setUserEmail(email);
-  };
-
-  const handleLogout = () => {
-    setAuthToken('');
-    setUserId(null);
-    setUserEmail(null);
+  const handleLogout = React.useCallback(() => {
+    logout();
     setLoadedConversations(new Map());
     setCurrentConversationId(null);
-  };
+  }, [logout]);
 
   React.useEffect(() => {
     if (currentChatData && !loadedConversationsRef.current.has(currentChatData.id)) {
@@ -1442,18 +1425,6 @@ const App = () => {
     setInput("");
   }, []);
 
-  const handleAttachment = React.useCallback(() => {
-    setIsFileManagerOpen(true);
-  }, []);
-
-  const handleFileUploaded = React.useCallback((file: any) => {
-    setAttachedFiles((prev) => [...prev, file]);
-  }, []);
-
-  const handleRemoveAttachedFile = React.useCallback((fileId: string) => {
-    setAttachedFiles((prev) => prev.filter((f) => f.id !== fileId));
-  }, []);
-
   const closeReportPanel = React.useCallback(() => {
     setIsReportPanelOpen(false);
     setReportData(null);
@@ -1489,7 +1460,7 @@ const App = () => {
     return (
       <ThemeProvider theme={currentTheme}>
         <CssBaseline />
-        <LoginForm onLogin={handleLogin} isDarkMode={isDarkMode} />
+        <LoginForm isDarkMode={isDarkMode} />
       </ThemeProvider>
     );
   }
@@ -1582,8 +1553,6 @@ const App = () => {
               // Control buttons
               onVoiceInput={handleVoiceInput}
               onClear={handleClearInput}
-              onAttachment={handleAttachment}
-              onFileUploaded={handleFileUploaded}
               showVoiceButton={false} // Enable when voice functionality is ready
               showClearButton={true} // Always show clear button
               showAttachmentButton={true} // Enable document attachment functionality

@@ -27,9 +27,9 @@ import {
 
 import { useMockMode } from "../hooks/useMockMode";
 import { useLogin } from "../features/auth/api";
+import { useAuth } from "../contexts/AuthContext";
 
 interface LoginFormProps {
-  onLogin: (token: string, userId: string, email: string) => void;
   isDarkMode: boolean;
 }
 
@@ -39,9 +39,9 @@ interface LoginCredentials {
 }
 
 export const LoginForm: React.FC<LoginFormProps> = ({
-  onLogin,
   isDarkMode,
 }) => {
+  const { login } = useAuth();
   const { useMockMode: isMockMode, toggleMockMode } = useMockMode();
   const [credentials, setCredentials] = useState<LoginCredentials>({
     email: "",
@@ -63,7 +63,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({
         const token = `mock-token-${Date.now()}`;
         
         await new Promise((resolve) => setTimeout(resolve, 500));
-        onLogin(token, userId, email);
+        login(token, userId, email);
         return;
       }
 
@@ -72,7 +72,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({
       }
 
       const data = await loginMutation.mutateAsync(credentials);
-      onLogin(data.token, data.userId, data.email);
+      login(data.token, data.userId, data.email);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Login failed");
     }
