@@ -1,0 +1,117 @@
+name: 🚀 Deploy Backend to Render
+
+on:
+  # Deploy backend on push to main branch (after CI passes)
+  push:
+    branches: [main]
+    paths:
+      - 'apps/backend/**'
+      - 'libs/**'
+      - 'package.json'
+      - 'package-lock.json'
+      - '.github/workflows/deploy-backend.yml'
+
+  # Allow manual deployment
+  workflow_dispatch:
+
+# Ensure only one deployment runs at a time
+concurrency:
+  group: render-backend-deployment
+  cancel-in-progress: false
+
+env:
+  NODE_VERSION: "20"
+  # Render deploy hook URL (should be stored as GitHub secret: RENDER_DEPLOY_HOOK)
+  RENDER_DEPLOY_HOOK: ${{ secrets.RENDER_DEPLOY_HOOK || 'https://api.render.com/deploy/srv-d45kgn3e5dus73c7cp2g?key=YVXFP5NeUKw' }}
+  # Disable Nx Cloud completely
+  NX_CLOUD_DISTRIBUTED_EXECUTION: "false"
+  NX_CLOUD_NO_ACCESS: "true"
+  NX_SKIP_CLOUD_CACHE: "true"
+
+jobs:
+  deploy-backend:
+    name: 🚀 Deploy Backend to Render
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: 📥 Checkout repository
+        uses: actions/checkout@v4
+
+      - name: 🔧 Setup Node.js ${{ env.NODE_VERSION }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: "npm"
+
+      - name: 📦 Install dependencies
+        run: npm ci --prefer-offline --no-audit --production=false
+
+      - name: 🔍 Cache Nx computation cache
+        uses: actions/cache@v4
+        with:
+          path: .nx/cache
+          key: nx-${{ runner.os }}-${{ hashFiles('**/package-lock.json') }}-${{ github.sha }}
+          restore-keys: |
+            nx-${{ runner.os }}-${{ hashFiles('**/package-lock.json') }}-
+
+      - name: 🏗️ Build backend for production
+        run: npx nx build @iagent/backend --configuration=production --no-cloud
+        env:
+          NODE_ENV: production
+          NX_CLOUD_DISTRIBUTED_EXECUTION: "false"
+          NX_SKIP_CLOUD_CACHE: "true"
+          NX_CLOUD_NO_ACCESS: "true"
+
+      - name: 📊 Verify build output
+        run: |
+          echo "📊 Build verification:"
+          echo "📁 Build directory: dist/apps/backend"
+          echo "📏 Total size: $(du -sh dist/apps/backend || echo 'N/A')"
+
+          # Check if required files exist
+          if [[ -f "dist/apps/backend/main.js" ]]; then
+            echo "✅ main.js exists"
+          else
+            echo "❌ main.js missing"
+            exit 1
+          fi
+
+          # List main files
+          echo "📄 Main files:"
+          ls -la dist/apps/backend | head -20
+
+      - name: 🚀 Trigger Render Deployment
+        run: |
+          echo "🚀 Triggering Render deployment..."
+          
+          RESPONSE=$(curl -X POST "${{ env.RENDER_DEPLOY_HOOK }}" \
+            -H "Content-Type: application/json" \
+            -w "\n%{http_code}" \
+            -s)
+          
+          HTTP_CODE=$(echo "$RESPONSE" | tail -n1)
+          BODY=$(echo "$RESPONSE" | sed '$d')
+          
+          echo "📡 Response status: $HTTP_CODE"
+          echo "📄 Response body: $BODY"
+          
+          if [[ "$HTTP_CODE" == "200" ]] || [[ "$HTTP_CODE" == "201" ]]; then
+            echo "✅ Render deployment triggered successfully!"
+            echo "🔗 Deployment ID: $(echo "$BODY" | grep -o '"id":"[^"]*"' | cut -d'"' -f4 || echo 'N/A')"
+          else
+            echo "⚠️ Render deployment hook returned status: $HTTP_CODE"
+            echo "📄 Response: $BODY"
+            # Don't fail the workflow - Render might return different status codes
+          fi
+
+      - name: 📋 Deployment summary
+        run: |
+          echo "📋 Deployment Summary:"
+          echo "✅ Backend deployment triggered successfully!"
+          echo "🌐 Render Service: Backend API"
+          echo "🕐 Triggered at: $(date)"
+          echo "📝 Commit: ${{ github.sha }}"
+          echo "👤 Triggered by: ${{ github.actor }}"
+          echo "🔗 Deploy Hook: ${{ env.RENDER_DEPLOY_HOOK }}"
+

@@ -3,7 +3,7 @@ import type { Environment } from './environment.type';
 import { baseEnvironment } from './environment.base';
 import { getEnvString, getEnvNumber, getEnvBoolean } from './environment.helper';
 
-const apiBaseUrl = getEnvString('VITE_API_BASE_URL', 'https://iagent-1-jzyj.onrender.com/api');
+const apiBaseUrl = getEnvString('VITE_API_BASE_URL', 'https://iagent-1-6tin.onrender.com/api');
 
 export const environment: Environment = {
   production: true,

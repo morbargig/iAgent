@@ -22,11 +22,11 @@ const getBaseUrl = (): string => {
   
   // Default to production API for safety
   // console.log('⚠️ No API URL configured, defaulting to production API');
-  return 'https://iagent-1-jzyj.onrender.com/api';
+  return 'https://iagent-1-6tin.onrender.com/api';
 };
 
 // Base URL for API requests (without /api suffix)
-export const API_BASE_URL = environment.api?.baseUrl.replace('/api', '') || 'https://iagent-1-jzyj.onrender.com';
+export const API_BASE_URL = environment.api?.baseUrl.replace('/api', '') || 'https://iagent-1-6tin.onrender.com';
 
 export const API_CONFIG = {
   // Base URL for API requests

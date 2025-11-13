@@ -23,6 +23,12 @@ These secrets **MUST** be configured for the application to work in GitHub Actio
 | `FRONTEND_URL` | Frontend URL | `https://iagent.com` | `http://localhost:3000` |
 | `DB_NAME` | MongoDB database name | `filesdb` | `filesdb` |
 
+### 🚀 Deployment Secrets (Required for CI/CD)
+
+| Secret Name | Description | Example | Where to Set |
+|------------|-------------|---------|--------------|
+| `RENDER_DEPLOY_HOOK` | Render deploy hook URL for triggering backend deployments | `https://api.render.com/deploy/srv-xxx?key=xxx` | GitHub Secrets |
+
 ### 🔧 Optional Secrets
 
 | Secret Name | Description | Example | Default |
@@ -83,7 +89,19 @@ env:
   API_URL: ${{ secrets.API_URL }}
   FRONTEND_URL: ${{ secrets.FRONTEND_URL }}
   ENABLE_SWAGGER: ${{ secrets.ENABLE_SWAGGER || 'true' }}
+  RENDER_DEPLOY_HOOK: ${{ secrets.RENDER_DEPLOY_HOOK }}
 ```
+
+### Render Backend Deployment
+
+For automated backend deployments to Render:
+
+```yaml
+env:
+  RENDER_DEPLOY_HOOK: ${{ secrets.RENDER_DEPLOY_HOOK }}
+```
+
+**Note**: The Render deploy hook URL can be found in your Render dashboard under the service settings → "Manual Deploy" section. The workflow will use this hook to trigger deployments automatically when backend code changes are pushed to the main branch.
 
 ## 🔍 Using Secrets in Workflows
 
@@ -188,6 +206,9 @@ jobs:
             echo "❌ JWT_SECRET secret is missing"
             exit 1
           fi
+          if [ -z "${{ secrets.RENDER_DEPLOY_HOOK }}" ]; then
+            echo "⚠️ RENDER_DEPLOY_HOOK secret is missing (optional for CI/CD)"
+          fi
           echo "✅ All required secrets are configured"
 ```
 
@@ -197,17 +218,19 @@ jobs:
 - [Local Environment Setup](./../apps/backend/.env.example) - See `.env.example` for local development
 - [Backend Environment Configuration](./../apps/backend/src/environments/) - Environment files
 - [Deployment Guide](./../docs/DEPLOYMENT.md) - Deployment-specific configuration
+- [Backend Deployment Workflow](./.github/workflows/deploy-backend.yml) - Automated Render deployment workflow
 
 ## 🆘 Troubleshooting
 
 ### Secret Not Found
 
-**Error**: `Error: JWT_SECRET environment variable is required`
+**Error**: `Error: JWT_SECRET environment variable is required` or `RENDER_DEPLOY_HOOK secret is missing`
 
 **Solution**: 
 1. Verify the secret exists in GitHub repository settings
 2. Check the secret name matches exactly (case-sensitive)
 3. Ensure the workflow has access to the secret
+4. For `RENDER_DEPLOY_HOOK`: Get the deploy hook URL from Render dashboard (Service → Settings → Manual Deploy)
 
 ### Secret Value Incorrect
 

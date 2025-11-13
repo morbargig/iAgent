@@ -14,7 +14,7 @@
       },
       "configurations": {
         "local": {
-          "mode": "local"
+          "mode": ""
         },
         "development": {
           "mode": "development",
@@ -47,7 +47,7 @@
     },
     "serve": {
       "executor": "@nx/vite:dev-server",
-      "defaultConfiguration": "development",
+      "defaultConfiguration": "local",
       "options": {
         "buildTarget": "@iagent/frontend:build"
       },
