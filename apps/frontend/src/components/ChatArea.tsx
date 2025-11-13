@@ -1,4 +1,12 @@
-import { useEffect, useRef, useState, MouseEvent, useMemo, useCallback, ReactNode } from "react";
+import {
+  useEffect,
+  useRef,
+  useState,
+  MouseEvent,
+  useMemo,
+  useCallback,
+  ReactNode,
+} from "react";
 import {
   Box,
   Typography,
@@ -92,7 +100,7 @@ interface DraggableButtonProps {
   onDragLeave: () => void;
   isDragging: boolean;
   isDragOver: boolean;
-  dragPosition: 'before' | 'after' | null;
+  dragPosition: "before" | "after" | null;
 }
 
 const DraggableButton: React.FC<DraggableButtonProps> = ({
@@ -120,7 +128,7 @@ const DraggableButton: React.FC<DraggableButtonProps> = ({
       }}
       onDragStart={(e) => {
         onDragStart(id);
-        e.dataTransfer.effectAllowed = 'move';
+        e.dataTransfer.effectAllowed = "move";
         setHasDragged(true);
       }}
       onDragEnd={() => {
@@ -132,7 +140,7 @@ const DraggableButton: React.FC<DraggableButtonProps> = ({
       }}
       onDragOver={(e) => {
         e.preventDefault();
-        e.dataTransfer.dropEffect = 'move';
+        e.dataTransfer.dropEffect = "move";
         onDragOver(e, id);
       }}
       onDragLeave={onDragLeave}
@@ -148,7 +156,7 @@ const DraggableButton: React.FC<DraggableButtonProps> = ({
           const currentPos = { x: e.clientX, y: e.clientY };
           const distance = Math.sqrt(
             Math.pow(currentPos.x - dragStartPosRef.current.x, 2) +
-            Math.pow(currentPos.y - dragStartPosRef.current.y, 2)
+              Math.pow(currentPos.y - dragStartPosRef.current.y, 2)
           );
           if (distance > 5) {
             e.preventDefault();
@@ -157,37 +165,47 @@ const DraggableButton: React.FC<DraggableButtonProps> = ({
         }
       }}
       sx={{
-        cursor: isDragging ? 'grabbing' : 'grab',
+        cursor: isDragging ? "grabbing" : "grab",
         opacity: isDragging ? 0.3 : 1,
-        transition: isDragging ? 'none' : 'transform 200ms, opacity 150ms',
-        userSelect: 'none',
-        position: 'relative',
-        transform: isDragOver && dragPosition === 'before' ? 'translateX(-4px)' : 
-                   isDragOver && dragPosition === 'after' ? 'translateX(4px)' : 'translateX(0)',
-        '&::before': isDragOver && dragPosition === 'before' ? {
-          content: '""',
-          position: 'absolute',
-          left: '-2px',
-          top: '50%',
-          transform: 'translateY(-50%)',
-          width: '2px',
-          height: '24px',
-          backgroundColor: theme.palette.primary.main,
-          borderRadius: '1px',
-          zIndex: 1,
-        } : {},
-        '&::after': isDragOver && dragPosition === 'after' ? {
-          content: '""',
-          position: 'absolute',
-          right: '-2px',
-          top: '50%',
-          transform: 'translateY(-50%)',
-          width: '2px',
-          height: '24px',
-          backgroundColor: theme.palette.primary.main,
-          borderRadius: '1px',
-          zIndex: 1,
-        } : {},
+        transition: isDragging ? "none" : "transform 200ms, opacity 150ms",
+        userSelect: "none",
+        position: "relative",
+        transform:
+          isDragOver && dragPosition === "before"
+            ? "translateX(-4px)"
+            : isDragOver && dragPosition === "after"
+              ? "translateX(4px)"
+              : "translateX(0)",
+        "&::before":
+          isDragOver && dragPosition === "before"
+            ? {
+                content: '""',
+                position: "absolute",
+                left: "-2px",
+                top: "50%",
+                transform: "translateY(-50%)",
+                width: "2px",
+                height: "24px",
+                backgroundColor: theme.palette.primary.main,
+                borderRadius: "1px",
+                zIndex: 1,
+              }
+            : {},
+        "&::after":
+          isDragOver && dragPosition === "after"
+            ? {
+                content: '""',
+                position: "absolute",
+                right: "-2px",
+                top: "50%",
+                transform: "translateY(-50%)",
+                width: "2px",
+                height: "24px",
+                backgroundColor: theme.palette.primary.main,
+                borderRadius: "1px",
+                zIndex: 1,
+              }
+            : {},
       }}
     >
       {children}
@@ -217,7 +235,9 @@ const ChatHeader = ({
 }) => {
   const theme = useTheme();
   const { t, currentLang } = useTranslation();
-  const [buttonOrder, setButtonOrder] = useAppLocalStorage('header-buttons-order');
+  const [buttonOrder, setButtonOrder] = useAppLocalStorage(
+    "header-buttons-order"
+  );
   const [draggedButtonId, setDraggedButtonId] = useState<string | null>(null);
   const [dragOverButtonId, setDragOverButtonId] = useState<string | null>(null);
   const [userMenuAnchor, setUserMenuAnchor] = useState<HTMLElement | null>(
@@ -226,42 +246,45 @@ const ChatHeader = ({
   const [infoMenuAnchor, setInfoMenuAnchor] = useState<HTMLElement | null>(
     null
   );
-  const [contactMenuAnchor, setContactMenuAnchor] = useState<HTMLElement | null>(
-    null
-  );
+  const [contactMenuAnchor, setContactMenuAnchor] =
+    useState<HTMLElement | null>(null);
 
-  const baseVersion = typeof __APP_VERSION__ !== 'undefined'
-    ? __APP_VERSION__
-    : environment.app.version;
+  const baseVersion =
+    typeof __APP_VERSION__ !== "undefined"
+      ? __APP_VERSION__
+      : environment.app.version;
   const appVersion = `v.${baseVersion}-${environment.env}`;
-  
+
   const getLocaleCode = () => {
     switch (currentLang) {
-      case 'he': return 'he-IL';
-      case 'ar': return 'ar-SA';
-      default: return 'en-US';
+      case "he":
+        return "he-IL";
+      case "ar":
+        return "ar-SA";
+      default:
+        return "en-US";
     }
   };
 
   const formatBuildDate = (dateString: string | undefined) => {
     const date = dateString
       ? new Date(dateString)
-      : typeof __BUILD_DATE__ !== 'undefined'
-      ? new Date(__BUILD_DATE__)
-      : new Date();
-    
+      : typeof __BUILD_DATE__ !== "undefined"
+        ? new Date(__BUILD_DATE__)
+        : new Date();
+
     const locale = getLocaleCode();
     const options: Intl.DateTimeFormatOptions = {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
     };
-    
+
     return date.toLocaleString(locale, options);
   };
-  
+
   const buildDate = formatBuildDate(environment.buildDate);
 
   const handleUserMenuOpen = (event: MouseEvent<HTMLElement>) => {
@@ -302,7 +325,10 @@ const ChatHeader = ({
     }
   };
 
-  const [dragOverPosition, setDragOverPosition] = useState<{ id: string; position: 'before' | 'after' } | null>(null);
+  const [dragOverPosition, setDragOverPosition] = useState<{
+    id: string;
+    position: "before" | "after";
+  } | null>(null);
 
   const handleDragStart = (id: string) => {
     setDraggedButtonId(id);
@@ -315,7 +341,7 @@ const ChatHeader = ({
     const targetElement = e.currentTarget as HTMLElement;
     const rect = targetElement.getBoundingClientRect();
     const midpoint = rect.left + rect.width / 2;
-    const position = e.clientX < midpoint ? 'before' : 'after';
+    const position = e.clientX < midpoint ? "before" : "after";
     setDragOverButtonId(targetId);
     setDragOverPosition({ id: targetId, position });
   };
@@ -334,7 +360,9 @@ const ChatHeader = ({
     }
 
     const currentOrder = [...buttonOrder];
-    const draggedIndex = currentOrder.indexOf(draggedButtonId as HeaderButtonId);
+    const draggedIndex = currentOrder.indexOf(
+      draggedButtonId as HeaderButtonId
+    );
     const targetIndex = currentOrder.indexOf(targetId as HeaderButtonId);
 
     if (draggedIndex === -1 || targetIndex === -1) {
@@ -344,13 +372,14 @@ const ChatHeader = ({
       return;
     }
 
-    const position = dragOverPosition?.position || 'before';
+    const position = dragOverPosition?.position || "before";
     currentOrder.splice(draggedIndex, 1);
-    
-    const newTargetIndex = position === 'before' 
-      ? targetIndex 
-      : targetIndex + (draggedIndex < targetIndex ? 0 : 1);
-    
+
+    const newTargetIndex =
+      position === "before"
+        ? targetIndex
+        : targetIndex + (draggedIndex < targetIndex ? 0 : 1);
+
     currentOrder.splice(newTargetIndex, 0, draggedButtonId as HeaderButtonId);
     setButtonOrder(currentOrder);
     setDraggedButtonId(null);
@@ -358,17 +387,28 @@ const ChatHeader = ({
     setDragOverPosition(null);
   };
 
-  const availableButtons: HeaderButtonId[] = ['theme', 'language', 'mockMode', 'contact', 'info'];
-  const orderedButtons = buttonOrder.filter((id): id is HeaderButtonId => availableButtons.includes(id as HeaderButtonId));
-  const missingButtons = availableButtons.filter(id => !buttonOrder.includes(id));
+  const availableButtons: HeaderButtonId[] = [
+    "theme",
+    "language",
+    "mockMode",
+    "contact",
+    "info",
+  ];
+  const orderedButtons = buttonOrder.filter((id): id is HeaderButtonId =>
+    availableButtons.includes(id as HeaderButtonId)
+  );
+  const missingButtons = availableButtons.filter(
+    (id) => !buttonOrder.includes(id)
+  );
   const finalOrder = [...orderedButtons, ...missingButtons];
 
   const renderButton = (buttonId: string) => {
     const isDragOver = dragOverButtonId === buttonId;
-    const dragPosition = dragOverPosition?.id === buttonId ? dragOverPosition.position : null;
+    const dragPosition =
+      dragOverPosition?.id === buttonId ? dragOverPosition.position : null;
 
     switch (buttonId) {
-      case 'language':
+      case "language":
         return (
           <DraggableButton
             key={buttonId}
@@ -386,7 +426,7 @@ const ChatHeader = ({
             <LanguageSwitcher isDarkMode={isDarkMode} />
           </DraggableButton>
         );
-      case 'mockMode':
+      case "mockMode":
         return (
           <DraggableButton
             key={buttonId}
@@ -401,56 +441,60 @@ const ChatHeader = ({
             isDragOver={isDragOver}
             dragPosition={dragPosition}
           >
-      <Tooltip
-        title={
-          useMockMode ? t("common.disableMockApi") : t("common.enableMockApi")
-        }
-      >
-        <IconButton
-          onClick={onToggleMockMode}
-          className="no-rtl-transform"
-          aria-label={
-            useMockMode ? t("common.disableMockApi") : t("common.enableMockApi")
-          }
-          sx={{
-            width: "36px",
-            height: "36px",
-            borderRadius: "8px",
-            border: `1px solid ${theme.palette.divider}`,
-            backgroundColor: useMockMode
-              ? isDarkMode
-                ? "rgba(52, 53, 65, 1)"
-                : "rgba(0, 0, 0, 0.05)"
-              : "transparent",
-            color: useMockMode
-              ? theme.palette.primary.main
-              : theme.palette.text.secondary,
-            transition: "all 150ms cubic-bezier(0.4, 0, 0.2, 1)",
-            "&:hover": {
-              backgroundColor: useMockMode
-                ? isDarkMode
-                  ? "rgba(52, 53, 65, 0.8)"
-                  : "rgba(0, 0, 0, 0.08)"
-                : theme.palette.action.hover,
-              borderColor: useMockMode
-                ? theme.palette.primary.main
-                : theme.palette.text.secondary,
-            },
-            "&:active": {
-              transform: "scale(0.95)",
-            },
-          }}
-        >
-          {useMockMode ? (
-            <MockIcon sx={{ fontSize: "18px" }} />
-          ) : (
-            <ApiIcon sx={{ fontSize: "18px" }} />
-          )}
-        </IconButton>
-      </Tooltip>
+            <Tooltip
+              title={
+                useMockMode
+                  ? t("common.disableMockApi")
+                  : t("common.enableMockApi")
+              }
+            >
+              <IconButton
+                onClick={onToggleMockMode}
+                className="no-rtl-transform"
+                aria-label={
+                  useMockMode
+                    ? t("common.disableMockApi")
+                    : t("common.enableMockApi")
+                }
+                sx={{
+                  width: "36px",
+                  height: "36px",
+                  borderRadius: "8px",
+                  border: `1px solid ${theme.palette.divider}`,
+                  backgroundColor: useMockMode
+                    ? isDarkMode
+                      ? "rgba(52, 53, 65, 1)"
+                      : "rgba(0, 0, 0, 0.05)"
+                    : "transparent",
+                  color: useMockMode
+                    ? theme.palette.primary.main
+                    : theme.palette.text.secondary,
+                  transition: "all 150ms cubic-bezier(0.4, 0, 0.2, 1)",
+                  "&:hover": {
+                    backgroundColor: useMockMode
+                      ? isDarkMode
+                        ? "rgba(52, 53, 65, 0.8)"
+                        : "rgba(0, 0, 0, 0.08)"
+                      : theme.palette.action.hover,
+                    borderColor: useMockMode
+                      ? theme.palette.primary.main
+                      : theme.palette.text.secondary,
+                  },
+                  "&:active": {
+                    transform: "scale(0.95)",
+                  },
+                }}
+              >
+                {useMockMode ? (
+                  <MockIcon sx={{ fontSize: "18px" }} />
+                ) : (
+                  <ApiIcon sx={{ fontSize: "18px" }} />
+                )}
+              </IconButton>
+            </Tooltip>
           </DraggableButton>
         );
-      case 'theme':
+      case "theme":
         return (
           <DraggableButton
             key={buttonId}
@@ -465,36 +509,38 @@ const ChatHeader = ({
             isDragOver={isDragOver}
             dragPosition={dragPosition}
           >
-      <IconButton
-        onClick={onToggleTheme}
-        className="no-rtl-transform"
-        aria-label={isDarkMode ? t("theme.light") : t("theme.dark")}
-        sx={{
-          width: "36px",
-          height: "36px",
-          borderRadius: "8px",
-          border: `1px solid ${theme.palette.divider}`,
-          backgroundColor: "transparent",
-          color: theme.palette.text.secondary,
-          transition: "all 150ms cubic-bezier(0.4, 0, 0.2, 1)",
-          "&:hover": {
-            backgroundColor: theme.palette.action.hover,
-            borderColor: theme.palette.text.secondary,
-          },
-          "&:active": {
-            transform: "scale(0.95)",
-          },
-        }}
-      >
-        {isDarkMode ? (
-          <LightModeIcon sx={{ fontSize: "18px" }} />
-        ) : (
-          <DarkModeIcon sx={{ fontSize: "18px" }} />
-        )}
-      </IconButton>
+            <Tooltip title={isDarkMode ? t("theme.light") : t("theme.dark")}>
+              <IconButton
+                onClick={onToggleTheme}
+                className="no-rtl-transform"
+                aria-label={isDarkMode ? t("theme.light") : t("theme.dark")}
+                sx={{
+                  width: "36px",
+                  height: "36px",
+                  borderRadius: "8px",
+                  border: `1px solid ${theme.palette.divider}`,
+                  backgroundColor: "transparent",
+                  color: theme.palette.text.secondary,
+                  transition: "all 150ms cubic-bezier(0.4, 0, 0.2, 1)",
+                  "&:hover": {
+                    backgroundColor: theme.palette.action.hover,
+                    borderColor: theme.palette.text.secondary,
+                  },
+                  "&:active": {
+                    transform: "scale(0.95)",
+                  },
+                }}
+              >
+                {isDarkMode ? (
+                  <LightModeIcon sx={{ fontSize: "18px" }} />
+                ) : (
+                  <DarkModeIcon sx={{ fontSize: "18px" }} />
+                )}
+              </IconButton>
+            </Tooltip>
           </DraggableButton>
         );
-      case 'info':
+      case "info":
         if (!onOpenAppDetails) return null;
         return (
           <DraggableButton
@@ -539,7 +585,7 @@ const ChatHeader = ({
             </Tooltip>
           </DraggableButton>
         );
-      case 'contact':
+      case "contact":
         return (
           <DraggableButton
             key={buttonId}
@@ -622,11 +668,11 @@ const ChatHeader = ({
         <MenuIcon />
       </IconButton>
 
-          <Box
-            sx={{
-              width: "1px",
-              height: "16px",
-              backgroundColor: theme.palette.divider,
+      <Box
+        sx={{
+          width: "1px",
+          height: "16px",
+          backgroundColor: theme.palette.divider,
           marginInlineEnd: "8px",
         }}
       />
@@ -638,9 +684,7 @@ const ChatHeader = ({
             <Typography variant="body2" sx={{ fontWeight: 600, mb: 0.5 }}>
               {appVersion}
             </Typography>
-            <Typography variant="caption">
-              {buildDate}
-            </Typography>
+            <Typography variant="caption">{buildDate}</Typography>
           </Box>
         }
         arrow
@@ -1121,8 +1165,23 @@ const MessageBubble = ({
             onOpenReport={onOpenReport}
             sections={message.sections}
             currentSection={message.currentSection}
-            section={message.metadata?.section as "reasoning" | "tool-t" | "tool-h" | "tool-f" | "answer" | undefined}
-            contentType={message.metadata?.contentType as "citation" | "table" | "report" | "markdown" | undefined}
+            section={
+              message.metadata?.section as
+                | "reasoning"
+                | "tool-t"
+                | "tool-h"
+                | "tool-f"
+                | "answer"
+                | undefined
+            }
+            contentType={
+              message.metadata?.contentType as
+                | "citation"
+                | "table"
+                | "report"
+                | "markdown"
+                | undefined
+            }
           />
 
           {message.isStreaming && (
@@ -1360,8 +1419,22 @@ const MessageBubble = ({
           onOpenReport={onOpenReport}
           sections={message.sections}
           currentSection={message.currentSection}
-          section={message.metadata?.section as "reasoning" | "tool-t" | "tool-x" | "answer" | undefined}
-          contentType={message.metadata?.contentType as "citation" | "table" | "report" | "markdown" | undefined}
+          section={
+            message.metadata?.section as
+              | "reasoning"
+              | "tool-t"
+              | "tool-x"
+              | "answer"
+              | undefined
+          }
+          contentType={
+            message.metadata?.contentType as
+              | "citation"
+              | "table"
+              | "report"
+              | "markdown"
+              | undefined
+          }
         />
 
         {message.isStreaming && (
@@ -1966,7 +2039,7 @@ const OtherChatStreamingIndicator = ({
   isDarkMode: boolean;
 }) => {
   const { t } = useTranslation();
-  
+
   return (
     <Box
       sx={{
@@ -1976,12 +2049,12 @@ const OtherChatStreamingIndicator = ({
         py: 2.5,
         px: 3,
         borderRadius: "16px",
-        backgroundColor: isDarkMode 
-          ? "rgba(255, 152, 0, 0.08)" 
+        backgroundColor: isDarkMode
+          ? "rgba(255, 152, 0, 0.08)"
           : "rgba(255, 152, 0, 0.06)",
-        border: `1px solid ${isDarkMode 
-          ? "rgba(255, 152, 0, 0.25)" 
-          : "rgba(255, 152, 0, 0.2)"}`,
+        border: `1px solid ${
+          isDarkMode ? "rgba(255, 152, 0, 0.25)" : "rgba(255, 152, 0, 0.2)"
+        }`,
         animation: "pulseSubtle 2s ease-in-out infinite",
         "@keyframes pulseSubtle": {
           "0%, 100%": {
@@ -2010,8 +2083,8 @@ const OtherChatStreamingIndicator = ({
             width: "36px",
             height: "36px",
             borderRadius: "50%",
-            backgroundColor: isDarkMode 
-              ? "rgba(255, 152, 0, 0.15)" 
+            backgroundColor: isDarkMode
+              ? "rgba(255, 152, 0, 0.15)"
               : "rgba(255, 152, 0, 0.12)",
             animation: "rotate 2s linear infinite",
             "@keyframes rotate": {
@@ -2042,8 +2115,8 @@ const OtherChatStreamingIndicator = ({
           <Typography
             variant="caption"
             sx={{
-              color: isDarkMode 
-                ? "rgba(255, 255, 255, 0.6)" 
+              color: isDarkMode
+                ? "rgba(255, 255, 255, 0.6)"
                 : "rgba(0, 0, 0, 0.6)",
               fontSize: "12px",
               lineHeight: 1.4,
@@ -2252,8 +2325,10 @@ export function ChatArea({
   }, [messages]);
 
   const isCurrentChatStreaming = useMemo(() => {
-    return messages.some((m) => m.isStreaming) || 
-           (isLoading && streamingConversationId === currentChatId);
+    return (
+      messages.some((m) => m.isStreaming) ||
+      (isLoading && streamingConversationId === currentChatId)
+    );
   }, [messages, isLoading, streamingConversationId, currentChatId]);
 
   const isOtherChatStreaming = useMemo(() => {
@@ -2261,11 +2336,16 @@ export function ChatArea({
       return false;
     }
     return Boolean(
-      streamingConversationId && 
-      streamingConversationId !== currentChatId &&
-      isLoading
+      streamingConversationId &&
+        streamingConversationId !== currentChatId &&
+        isLoading
     );
-  }, [isCurrentChatStreaming, streamingConversationId, currentChatId, isLoading]);
+  }, [
+    isCurrentChatStreaming,
+    streamingConversationId,
+    currentChatId,
+    isLoading,
+  ]);
 
   const showFilterInfo = useMemo(() => {
     return Boolean(filterInfoAnchor);
@@ -2519,7 +2599,10 @@ export function ChatArea({
 
         {/* Other Chat Streaming Indicator */}
         {isOtherChatStreaming && (
-          <Box id="iagent-other-chat-indicator" className="iagent-loading-state">
+          <Box
+            id="iagent-other-chat-indicator"
+            className="iagent-loading-state"
+          >
             <OtherChatStreamingIndicator isDarkMode={isDarkMode} />
           </Box>
         )}

@@ -5,14 +5,15 @@ import {
   MenuItem, 
   Typography, 
   Box,
-  useTheme 
+  useTheme,
+  Tooltip
 } from '@mui/material';
 import { Language as LanguageIcon } from '@mui/icons-material';
 import { useTranslation } from '../contexts/TranslationContext';
 import { SUPPORTED_LANGUAGES } from '../i18n/types';
 
 export const LanguageSwitcher: React.FC<{ isDarkMode: boolean }> = ({ isDarkMode }) => {
-  const { currentLang, changeLanguage } = useTranslation();
+  const { currentLang, changeLanguage, t } = useTranslation();
   const theme = useTheme();
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const open = Boolean(anchorEl);
@@ -32,30 +33,32 @@ export const LanguageSwitcher: React.FC<{ isDarkMode: boolean }> = ({ isDarkMode
 
   return (
     <>
-      <IconButton
-        id="language-button"
-        onClick={handleClick}
-        className="no-rtl-transform"
-        aria-label="Change language"
-        sx={{
-          width: '36px',
-          height: '36px',
-          borderRadius: '8px',
-          border: `1px solid ${theme.palette.divider}`,
-          backgroundColor: 'transparent',
-          color: theme.palette.text.secondary,
-          transition: 'all 150ms cubic-bezier(0.4, 0, 0.2, 1)',
-          '&:hover': {
-            backgroundColor: theme.palette.action.hover,
-            borderColor: theme.palette.text.secondary,
-          },
-          '&:active': {
-            transform: 'scale(0.95)',
-          },
-        }}
-      >
-        <LanguageIcon sx={{ fontSize: '18px' }} />
-      </IconButton>
+      <Tooltip title={t("common.changeLanguage") || "Change language"}>
+        <IconButton
+          id="language-button"
+          onClick={handleClick}
+          className="no-rtl-transform"
+          aria-label="Change language"
+          sx={{
+            width: '36px',
+            height: '36px',
+            borderRadius: '8px',
+            border: `1px solid ${theme.palette.divider}`,
+            backgroundColor: 'transparent',
+            color: theme.palette.text.secondary,
+            transition: 'all 150ms cubic-bezier(0.4, 0, 0.2, 1)',
+            '&:hover': {
+              backgroundColor: theme.palette.action.hover,
+              borderColor: theme.palette.text.secondary,
+            },
+            '&:active': {
+              transform: 'scale(0.95)',
+            },
+          }}
+        >
+          <LanguageIcon sx={{ fontSize: '18px' }} />
+        </IconButton>
+      </Tooltip>
 
       <Menu
         anchorEl={anchorEl}

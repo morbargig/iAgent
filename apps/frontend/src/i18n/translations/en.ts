@@ -4,6 +4,7 @@ const translations: Translation = {
   common: {
     welcome: 'Welcome',
     language: 'Language',
+    changeLanguage: 'Change Language',
     mockApi: 'Mock API',
     enableMockApi: 'Enable Mock API',
     disableMockApi: 'Disable Mock API',

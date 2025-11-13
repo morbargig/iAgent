@@ -4,6 +4,7 @@ const translations: Translation = {
   common: {
     welcome: 'مرحباً',
     language: 'اللغة',
+    changeLanguage: 'تغيير اللغة',
     mockApi: 'واجهة برمجة تطبيقات وهمية',
     enableMockApi: 'تفعيل الواجهة الوهمية',
     disableMockApi: 'إلغاء الواجهة الوهمية',

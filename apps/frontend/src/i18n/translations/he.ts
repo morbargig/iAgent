@@ -4,6 +4,7 @@ const translations: Translation = {
   common: {
     welcome: 'ברוכים הבאים',
     language: 'שפה',
+    changeLanguage: 'שנה שפה',
     mockApi: 'ממשק API מדומה',
     enableMockApi: 'הפעל ממשק API מדומה',
     disableMockApi: 'כבה ממשק API מדומה',
