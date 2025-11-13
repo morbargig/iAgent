@@ -564,6 +564,9 @@ Just let me know which direction you'd like to take this conversation, and I'll 
     phone: 'Phone',
     email: 'Email',
     teamName: 'Team',
+    api: 'API Documentation',
+    apiBaseUrl: 'API Base URL',
+    swaggerDocs: 'View Swagger Documentation',
   },
 };
 

@@ -51,6 +51,8 @@ import {
   ContactMail as ContactMailIcon,
   Phone as PhoneIcon,
   Email as EmailIcon,
+  OpenInNew as OpenInNewIcon,
+  MenuBook as MenuBookIcon,
 } from "@mui/icons-material";
 import { type Message } from "@iagent/chat-types";
 import { MarkdownRenderer } from "./MarkdownRenderer";
@@ -236,9 +238,9 @@ const ChatHeader = ({
 }) => {
   const theme = useTheme();
   const { t, currentLang } = useTranslation();
-  const enableLanguageSwitcher = useFeatureFlag('enableLanguageSwitcher');
-  const enableContactUs = useFeatureFlag('enableContactUs');
-  const enableAppDetails = useFeatureFlag('enableAppDetails');
+  const enableLanguageSwitcher = useFeatureFlag("enableLanguageSwitcher");
+  const enableContactUs = useFeatureFlag("enableContactUs");
+  const enableAppDetails = useFeatureFlag("enableAppDetails");
   const [buttonOrder, setButtonOrder] = useAppLocalStorage(
     "header-buttons-order"
   );
@@ -251,6 +253,8 @@ const ChatHeader = ({
     null
   );
   const [contactMenuAnchor, setContactMenuAnchor] =
+    useState<HTMLElement | null>(null);
+  const [swaggerMenuAnchor, setSwaggerMenuAnchor] =
     useState<HTMLElement | null>(null);
 
   const baseVersion =
@@ -291,6 +295,16 @@ const ChatHeader = ({
 
   const buildDate = formatBuildDate(environment.buildDate);
 
+  const getSwaggerUrl = () => {
+    const apiBaseUrl = environment.api.baseUrl || environment.apiUrl;
+    try {
+      const url = new URL(apiBaseUrl);
+      return `${url.origin}/docs`;
+    } catch {
+      return "/docs";
+    }
+  };
+
   const handleUserMenuOpen = (event: MouseEvent<HTMLElement>) => {
     setUserMenuAnchor(event.currentTarget);
   };
@@ -313,6 +327,14 @@ const ChatHeader = ({
 
   const handleContactMenuClose = () => {
     setContactMenuAnchor(null);
+  };
+
+  const handleSwaggerMenuOpen = (event: MouseEvent<HTMLElement>) => {
+    setSwaggerMenuAnchor(event.currentTarget);
+  };
+
+  const handleSwaggerMenuClose = () => {
+    setSwaggerMenuAnchor(null);
   };
 
   const handleLogout = () => {
@@ -397,6 +419,7 @@ const ChatHeader = ({
     "mockMode",
     "contact",
     "info",
+    "swagger",
   ];
   const orderedButtons = buttonOrder.filter((id): id is HeaderButtonId =>
     availableButtons.includes(id as HeaderButtonId)
@@ -635,6 +658,50 @@ const ChatHeader = ({
             </Tooltip>
           </DraggableButton>
         );
+      case "swagger":
+        return (
+          <DraggableButton
+            key={buttonId}
+            id={buttonId}
+            isDarkMode={isDarkMode}
+            theme={theme}
+            onDragStart={handleDragStart}
+            onDragOver={handleDragOver}
+            onDrop={handleDrop}
+            onDragLeave={handleDragLeave}
+            isDragging={draggedButtonId === buttonId}
+            isDragOver={isDragOver}
+            dragPosition={dragPosition}
+          >
+            <Tooltip title={t("appDetails.swaggerDocs")}>
+              <IconButton
+                onClick={handleSwaggerMenuOpen}
+                className="no-rtl-transform"
+                aria-label={t("appDetails.swaggerDocs")}
+                sx={{
+                  width: "36px",
+                  height: "36px",
+                  borderRadius: "8px",
+                  border: `1px solid ${theme.palette.divider}`,
+                  backgroundColor: swaggerMenuAnchor
+                    ? theme.palette.action.selected
+                    : "transparent",
+                  color: theme.palette.text.secondary,
+                  transition: "all 150ms cubic-bezier(0.4, 0, 0.2, 1)",
+                  "&:hover": {
+                    backgroundColor: theme.palette.action.hover,
+                    borderColor: theme.palette.text.secondary,
+                  },
+                  "&:active": {
+                    transform: "scale(0.95)",
+                  },
+                }}
+              >
+                <MenuBookIcon sx={{ fontSize: "18px" }} />
+              </IconButton>
+            </Tooltip>
+          </DraggableButton>
+        );
       default:
         return null;
     }
@@ -802,6 +869,108 @@ const ChatHeader = ({
           open={Boolean(contactMenuAnchor)}
           anchorEl={contactMenuAnchor}
           onClose={handleContactMenuClose}
+          anchorOrigin={{
+            vertical: "bottom",
+            horizontal: "right",
+          }}
+          transformOrigin={{
+            vertical: "top",
+            horizontal: "right",
+          }}
+          sx={{
+            "& .MuiPaper-root": {
+              mt: 1,
+              minWidth: 240,
+              borderRadius: "12px",
+              border: `1px solid ${theme.palette.divider}`,
+              boxShadow: isDarkMode
+                ? "0 8px 32px rgba(0, 0, 0, 0.4)"
+                : "0 8px 32px rgba(0, 0, 0, 0.12)",
+              backgroundColor: theme.palette.background.paper,
+            },
+          }}
+        >
+          <List sx={{ padding: "8px" }}>
+            <ListItem sx={{ padding: "12px 16px" }}>
+              <ListItemText
+                primary={environment.contact.teamName}
+                primaryTypographyProps={{
+                  variant: "body2",
+                  fontWeight: 600,
+                  color: theme.palette.text.primary,
+                }}
+              />
+            </ListItem>
+            <Divider sx={{ margin: "4px 8px" }} />
+            <ListItem disablePadding>
+              <ListItemButton
+                href={`mailto:${environment.contact.email}`}
+                sx={{
+                  borderRadius: "8px",
+                  margin: "0 4px",
+                  padding: "8px 12px",
+                  transition: "all 150ms cubic-bezier(0.4, 0, 0.2, 1)",
+                  "&:hover": {
+                    backgroundColor: theme.palette.action.hover,
+                  },
+                }}
+              >
+                <ListItemIcon sx={{ minWidth: "36px" }}>
+                  <EmailIcon
+                    sx={{
+                      fontSize: "18px",
+                      color: theme.palette.primary.main,
+                    }}
+                  />
+                </ListItemIcon>
+                <ListItemText
+                  primary={environment.contact.email}
+                  primaryTypographyProps={{
+                    variant: "body2",
+                    fontWeight: 500,
+                  }}
+                />
+              </ListItemButton>
+            </ListItem>
+            <ListItem disablePadding>
+              <ListItemButton
+                href={`tel:${environment.contact.phone}`}
+                sx={{
+                  borderRadius: "8px",
+                  margin: "0 4px",
+                  padding: "8px 12px",
+                  transition: "all 150ms cubic-bezier(0.4, 0, 0.2, 1)",
+                  "&:hover": {
+                    backgroundColor: theme.palette.action.hover,
+                  },
+                }}
+              >
+                <ListItemIcon sx={{ minWidth: "36px" }}>
+                  <PhoneIcon
+                    sx={{
+                      fontSize: "18px",
+                      color: theme.palette.primary.main,
+                    }}
+                  />
+                </ListItemIcon>
+                <ListItemText
+                  primary={environment.contact.phone}
+                  primaryTypographyProps={{
+                    variant: "body2",
+                    fontWeight: 500,
+                  }}
+                />
+              </ListItemButton>
+            </ListItem>
+          </List>
+        </Popover>
+      )}
+
+      {/* Swagger Menu Popover */}
+      <Popover
+        open={Boolean(swaggerMenuAnchor)}
+        anchorEl={swaggerMenuAnchor}
+        onClose={handleSwaggerMenuClose}
         anchorOrigin={{
           vertical: "bottom",
           horizontal: "right",
@@ -813,7 +982,7 @@ const ChatHeader = ({
         sx={{
           "& .MuiPaper-root": {
             mt: 1,
-            minWidth: 240,
+            minWidth: 200,
             borderRadius: "12px",
             border: `1px solid ${theme.palette.divider}`,
             boxShadow: isDarkMode
@@ -824,20 +993,13 @@ const ChatHeader = ({
         }}
       >
         <List sx={{ padding: "8px" }}>
-          <ListItem sx={{ padding: "12px 16px" }}>
-            <ListItemText
-              primary={environment.contact.teamName}
-              primaryTypographyProps={{
-                variant: "body2",
-                fontWeight: 600,
-                color: theme.palette.text.primary,
-              }}
-            />
-          </ListItem>
-          <Divider sx={{ margin: "4px 8px" }} />
           <ListItem disablePadding>
             <ListItemButton
-              href={`mailto:${environment.contact.email}`}
+              component="a"
+              href={getSwaggerUrl()}
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={handleSwaggerMenuClose}
               sx={{
                 borderRadius: "8px",
                 margin: "0 4px",
@@ -849,7 +1011,7 @@ const ChatHeader = ({
               }}
             >
               <ListItemIcon sx={{ minWidth: "36px" }}>
-                <EmailIcon
+                <OpenInNewIcon
                   sx={{
                     fontSize: "18px",
                     color: theme.palette.primary.main,
@@ -857,37 +1019,7 @@ const ChatHeader = ({
                 />
               </ListItemIcon>
               <ListItemText
-                primary={environment.contact.email}
-                primaryTypographyProps={{
-                  variant: "body2",
-                  fontWeight: 500,
-                }}
-              />
-            </ListItemButton>
-          </ListItem>
-          <ListItem disablePadding>
-            <ListItemButton
-              href={`tel:${environment.contact.phone}`}
-              sx={{
-                borderRadius: "8px",
-                margin: "0 4px",
-                padding: "8px 12px",
-                transition: "all 150ms cubic-bezier(0.4, 0, 0.2, 1)",
-                "&:hover": {
-                  backgroundColor: theme.palette.action.hover,
-                },
-              }}
-            >
-              <ListItemIcon sx={{ minWidth: "36px" }}>
-                <PhoneIcon
-                  sx={{
-                    fontSize: "18px",
-                    color: theme.palette.primary.main,
-                  }}
-                />
-              </ListItemIcon>
-              <ListItemText
-                primary={environment.contact.phone}
+                primary={t("appDetails.swaggerDocs")}
                 primaryTypographyProps={{
                   variant: "body2",
                   fontWeight: 500,
@@ -897,7 +1029,6 @@ const ChatHeader = ({
           </ListItem>
         </List>
       </Popover>
-      )}
 
       {/* User Menu - Separated from other buttons */}
       {userEmail && (

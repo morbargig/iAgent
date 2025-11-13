@@ -562,6 +562,9 @@ const translations: Translation = {
     phone: 'الهاتف',
     email: 'البريد الإلكتروني',
     teamName: 'الفريق',
+    api: 'توثيق API',
+    apiBaseUrl: 'عنوان API الأساسي',
+    swaggerDocs: 'عرض توثيق Swagger',
   },
 };
 

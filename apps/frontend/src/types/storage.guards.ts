@@ -105,7 +105,8 @@ const isHeaderButtonId = isUnion(
   isLiteral('language'),
   isLiteral('mockMode'),
   isLiteral('contact'),
-  isLiteral('info')
+  isLiteral('info'),
+  isLiteral('swagger')
 );
 
 export const isHeaderButtonsOrder = isArray(isHeaderButtonId);

@@ -12,8 +12,8 @@ import {
   Divider,
 } from "@mui/material";
 import {
-  Close as CloseIcon,
   Info as InfoIcon,
+  OpenInNew as OpenInNewIcon,
 } from "@mui/icons-material";
 import { useTranslation } from "../contexts/TranslationContext";
 import { environment } from "../environments/environment";
@@ -69,6 +69,18 @@ export const AppDetailsDialog: React.FC<AppDetailsDialogProps> = ({
   const buildDate = formatBuildDate(environment.buildDate);
 
   const envLabel = environment.env.charAt(0).toUpperCase() + environment.env.slice(1);
+
+  const getSwaggerUrl = () => {
+    const apiBaseUrl = environment.api.baseUrl || environment.apiUrl;
+    try {
+      const url = new URL(apiBaseUrl);
+      return `${url.origin}/docs`;
+    } catch {
+      return '/docs';
+    }
+  };
+
+  const swaggerUrl = getSwaggerUrl();
 
   return (
     <Dialog
@@ -251,8 +263,22 @@ export const AppDetailsDialog: React.FC<AppDetailsDialogProps> = ({
         sx={{
           borderTop: `1px solid ${isDarkMode ? '#404040' : '#e0e0e0'}`,
           p: 2,
+          gap: 1,
         }}
       >
+        <Button
+          href={swaggerUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          variant="outlined"
+          startIcon={<OpenInNewIcon />}
+          sx={{
+            textTransform: 'none',
+            borderRadius: '8px',
+        }}
+      >
+          {t('appDetails.swaggerDocs')}
+        </Button>
         <Button
           onClick={onClose}
           variant="contained"

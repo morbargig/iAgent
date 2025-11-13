@@ -568,6 +568,9 @@ const translations: Translation = {
     phone: 'טלפון',
     email: 'אימייל',
     teamName: 'צוות',
+    api: 'תיעוד API',
+    apiBaseUrl: 'כתובת בסיס API',
+    swaggerDocs: 'צפה בתיעוד Swagger',
   },
 };
 
