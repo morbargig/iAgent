@@ -113,11 +113,11 @@ export const Sidebar = React.forwardRef<HTMLDivElement, SidebarProps>(
         sx={{
           width: sidebarWidth,
           height: "100vh",
-          backgroundColor: isDarkMode ? "#171717" : "#f9fafb", // Clean, muted background
+          backgroundColor: isDarkMode ? "#0d0d0d" : "#fafafa", // Match page background closely
           display: "flex",
           flexDirection: "column",
           borderInlineEnd: isDarkMode
-            ? "none"
+            ? `1px solid rgba(255, 255, 255, 0.05)`
             : `1px solid ${theme.palette.divider}`,
           overflow: "hidden",
           position: "relative",
@@ -163,7 +163,9 @@ export const Sidebar = React.forwardRef<HTMLDivElement, SidebarProps>(
             variant="outlined"
             fullWidth
             sx={{
-              borderColor: theme.palette.divider,
+              borderColor: isDarkMode
+                ? "rgba(255, 255, 255, 0.1)"
+                : theme.palette.divider,
               color: theme.palette.text.primary,
               backgroundColor: "transparent",
               padding: "8px 12px",
@@ -174,8 +176,12 @@ export const Sidebar = React.forwardRef<HTMLDivElement, SidebarProps>(
               transition: "all 150ms cubic-bezier(0.4, 0, 0.2, 1)",
               boxShadow: "none",
               "&:hover": {
-                backgroundColor: theme.palette.action.hover,
-                borderColor: theme.palette.text.secondary,
+                backgroundColor: isDarkMode
+                  ? "rgba(255, 255, 255, 0.05)"
+                  : "rgba(0, 0, 0, 0.03)",
+                borderColor: isDarkMode
+                  ? "rgba(255, 255, 255, 0.15)"
+                  : theme.palette.text.secondary,
                 boxShadow: "none",
               },
             }}
@@ -269,7 +275,9 @@ export const Sidebar = React.forwardRef<HTMLDivElement, SidebarProps>(
                           width: "100%",
                           padding: "8px 12px",
                           borderRadius: "8px",
-                          backgroundColor: theme.palette.action.hover,
+                          backgroundColor: isDarkMode
+                            ? "rgba(255, 255, 255, 0.05)"
+                            : "rgba(0, 0, 0, 0.03)",
                           gap: "8px",
                         }}
                       >
@@ -342,14 +350,20 @@ export const Sidebar = React.forwardRef<HTMLDivElement, SidebarProps>(
                         // Active state
                         backgroundColor:
                           currentConversationId === conversation.id
-                            ? theme.palette.action.selected
+                            ? isDarkMode
+                              ? "rgba(59, 130, 246, 0.12)"
+                              : "rgba(59, 130, 246, 0.08)"
                             : "transparent",
                         transition: "all 150ms cubic-bezier(0.4, 0, 0.2, 1)",
                         "&:hover": {
                           backgroundColor:
                             currentConversationId === conversation.id
-                              ? theme.palette.action.selected
-                              : theme.palette.action.hover,
+                              ? isDarkMode
+                                ? "rgba(59, 130, 246, 0.15)"
+                                : "rgba(59, 130, 246, 0.1)"
+                              : isDarkMode
+                                ? "rgba(255, 255, 255, 0.03)"
+                                : "rgba(0, 0, 0, 0.02)",
                           "& .action-btns": { opacity: 1 },
                         },
                       }}
