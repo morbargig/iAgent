@@ -100,7 +100,15 @@ export const isAppSettings = isType({
   mockMode: isBoolean,
 });
 
-export const isHeaderButtonsOrder = isArray(isString);
+const isHeaderButtonId = isUnion(
+  isLiteral('theme'),
+  isLiteral('language'),
+  isLiteral('mockMode'),
+  isLiteral('contact'),
+  isLiteral('info')
+);
+
+export const isHeaderButtonsOrder = isArray(isHeaderButtonId);
 
 export const localStorageGuards: {
   [K in LocalStorageKeys]: (value: unknown) => value is LocalStorageValues[K];

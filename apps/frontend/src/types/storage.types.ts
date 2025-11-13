@@ -11,6 +11,8 @@ export type UseLocalStorageReturn<T> = [
   (value: T | ((prev: T) => T)) => void
 ];
 
+export type HeaderButtonId = 'theme' | 'language' | 'mockMode' | 'contact' | 'info';
+
 export interface ToolConfiguration {
   toolId: string;
   enabled: boolean;
@@ -68,7 +70,7 @@ export interface LocalStorageValues {
     mockMode: boolean;
     [key: string]: unknown;
   };
-  'header-buttons-order': string[];
+  'header-buttons-order': HeaderButtonId[];
 }
 
 export type LocalStorageKeys = keyof LocalStorageValues;
@@ -126,7 +128,7 @@ export const localStorageDefaults: LocalStorageValues = {
   'app-settings': {
     mockMode: true,
   },
-  'header-buttons-order': ['language', 'mockMode', 'theme', 'info', 'contact'],
+  'header-buttons-order': ['theme', 'language', 'mockMode', 'contact', 'info'],
 };
 
 export const sessionStorageDefaults: SessionStorageValues = {

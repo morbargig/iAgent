@@ -29,7 +29,7 @@ export const AppDetailsDialog: React.FC<AppDetailsDialogProps> = ({
   onClose,
   isDarkMode,
 }) => {
-  const { t } = useTranslation();
+  const { t, currentLang } = useTranslation();
 
   const baseVersion = typeof __APP_VERSION__ !== 'undefined' 
     ? __APP_VERSION__ 
@@ -37,11 +37,34 @@ export const AppDetailsDialog: React.FC<AppDetailsDialogProps> = ({
   
   const appVersion = `v.${baseVersion}-${environment.env}`;
   
-  const buildDate = environment.buildDate 
-    ? new Date(environment.buildDate).toLocaleString()
-    : typeof __BUILD_DATE__ !== 'undefined'
-    ? new Date(__BUILD_DATE__).toLocaleString()
-    : new Date().toLocaleString();
+  const getLocaleCode = () => {
+    switch (currentLang) {
+      case 'he': return 'he-IL';
+      case 'ar': return 'ar-SA';
+      default: return 'en-US';
+    }
+  };
+
+  const formatBuildDate = (dateString: string | undefined) => {
+    const date = dateString
+      ? new Date(dateString)
+      : typeof __BUILD_DATE__ !== 'undefined'
+      ? new Date(__BUILD_DATE__)
+      : new Date();
+    
+    const locale = getLocaleCode();
+    const options: Intl.DateTimeFormatOptions = {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+    };
+    
+    return date.toLocaleString(locale, options);
+  };
+  
+  const buildDate = formatBuildDate(environment.buildDate);
 
   const envLabel = environment.env.charAt(0).toUpperCase() + environment.env.slice(1);
 
