@@ -10,7 +10,7 @@ export const useDocumentManager = () => {
 
     const debouncedSearchQuery = useDebounce(searchQuery, 500);
 
-    const { data, isLoading, error, isFetching } = useDocuments(page, 10, {
+    const { data, isLoading, error, isFetching, refetch } = useDocuments(page, 10, {
         ...filters,
         query: debouncedSearchQuery || undefined,
     });
@@ -20,6 +20,12 @@ export const useDocumentManager = () => {
         setPage(1);
     }, []);
 
+    const loadDocuments = useCallback(async (force?: boolean) => {
+        if (force) {
+            await refetch();
+        }
+    }, [refetch]);
+
     return {
         documents: data?.documents || [],
         loading: isLoading,
@@ -28,9 +34,7 @@ export const useDocumentManager = () => {
         page,
         totalPages: data ? Math.ceil(data.total / 10) : 1,
         totalDocuments: data?.total || 0,
-        loadDocuments: () => {
-            // Documents are loaded via useDocuments hook
-        },
+        loadDocuments,
         handleSearch,
         setPage,
         setError: () => {
