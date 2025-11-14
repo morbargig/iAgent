@@ -126,6 +126,36 @@ export class FileController {
     return { count };
   }
 
+  @Get(':id/preview')
+  @ApiOperation({
+    summary: 'Preview a file',
+    description: 'Preview a file by its ID (inline display)',
+  })
+  @ApiParam({ name: 'id', description: 'File ID' })
+  @ApiResponse({ status: 200, description: 'File preview served successfully' })
+  @ApiResponse({ status: 404, description: 'File not found' })
+  async previewFile(
+    @Param('id') id: string,
+    @Res() res: Response,
+  ): Promise<void> {
+    try {
+      const { stream, fileInfo } = await this.fileService.getFileStream(id);
+
+      res.set({
+        'Content-Type': fileInfo.mimetype,
+        'Content-Disposition': `inline; filename="${fileInfo.filename}"`,
+        'Content-Length': fileInfo.size.toString(),
+      });
+
+      stream.pipe(res);
+    } catch (error) {
+      if (error instanceof NotFoundException) {
+        throw error;
+      }
+      throw new NotFoundException(`File with ID ${id} not found`);
+    }
+  }
+
   @Get(':id')
   @ApiOperation({
     summary: 'Download a file',
