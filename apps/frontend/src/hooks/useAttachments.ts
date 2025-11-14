@@ -33,6 +33,7 @@ const mapFileInfoToDocument = (f: FileInfo, baseUrl: string): DocumentFile => {
 
 export const useAttachments = (attachmentIds: string[]): {
   attachments: DocumentFile[];
+  failedIds: string[];
   isLoading: boolean;
   isError: boolean;
 } => {
@@ -61,8 +62,14 @@ export const useAttachments = (attachmentIds: string[]): {
   const isLoading = queries.some((query) => query.isLoading);
   const isError = queries.some((query) => query.isError);
 
+  const failedIds = attachmentIds.filter((id, index) => {
+    const query = queries[index];
+    return !query.isLoading && (query.isError || query.data === null);
+  });
+
   return {
     attachments,
+    failedIds,
     isLoading,
     isError,
   };

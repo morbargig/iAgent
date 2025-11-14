@@ -247,6 +247,7 @@ const translations: Translation = {
     previewInNewTab: 'معاينة في علامة تبويب جديدة',
     download: 'تحميل',
     delete: 'حذف',
+    fileNotFound: 'الملف غير موجود',
     moreOptions: 'خيارات إضافية',
     // FileManagement specific keys
     management: {

@@ -248,6 +248,7 @@ const translations: Translation = {
     previewInNewTab: 'Preview in new tab',
     download: 'Download',
     delete: 'Delete',
+    fileNotFound: 'File not found',
     moreOptions: 'More options',
     // FileManagement specific keys
     management: {
