@@ -60,6 +60,7 @@ export const convertMongoMessageToMessage = (
   const contentType = mongoMessage.metadata?.contentType as string | undefined;
   const sections = mongoMessage.metadata?.sections as Record<string, { content: string; parsed: ParsedMessageContent }> | undefined;
   const parsedFromMetadata = mongoMessage.metadata?.parsed as ParsedMessageContent | undefined;
+  const attachmentIds = (mongoMessage.metadata?.attachmentIds as string[] | undefined) || [];
 
   const parsed = parsedFromMetadata || convertContentToParsedMessage({
     content: mongoMessage.content,
@@ -80,7 +81,10 @@ export const convertMongoMessageToMessage = (
     isInterrupted: false,
     filterId: mongoMessage.filterId || null,
     filterSnapshot: mongoMessage.filterSnapshot || null,
-    metadata: mongoMessage.metadata,
+    metadata: {
+      ...mongoMessage.metadata,
+      attachmentIds,
+    },
     parsed,
     sections,
     currentSection: sectionMetadata,

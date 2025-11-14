@@ -1040,6 +1040,12 @@ const App = () => {
 
       // Save user message immediately to MongoDB
       if (authToken && userId) {
+        const attachmentIds = attachments?.map((att) => att.id) || [];
+        const metadata = {
+          ...(userMessage.metadata || {}),
+          ...(attachmentIds.length > 0 && { attachmentIds }),
+        };
+
         saveMessageMutation.mutate({
           chatId: updatedConversation.id,
           message: {
@@ -1047,7 +1053,7 @@ const App = () => {
             role: userMessage.role,
             content: userMessage.content,
             timestamp: userMessage.timestamp,
-            metadata: userMessage.metadata || {},
+            metadata,
             filterId: userMessage.filterId,
             filterSnapshot: userMessage.filterSnapshot,
           },

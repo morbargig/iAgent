@@ -60,6 +60,7 @@ export interface Message {
     categories?: string[];
     section?: 'reasoning' | 'tool-t' | 'tool-h' | 'tool-f' | 'answer';
     contentType?: string;
+    attachmentIds?: string[];
   };
   parsed?: ParsedMessageContent;
   sections?: Record<string, { content: string; parsed: ParsedMessageContent }>;

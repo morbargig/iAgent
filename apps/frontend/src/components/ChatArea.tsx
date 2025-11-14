@@ -57,6 +57,7 @@ import {
 import { type Message } from "@iagent/chat-types";
 import { MarkdownRenderer } from "./MarkdownRenderer";
 import { FileAttachmentCard } from "./FileAttachmentCard";
+import { MessageAttachments } from "./MessageAttachments";
 import {
   extractPlainTextFromMarkdown,
   copyToClipboard,
@@ -1288,13 +1289,20 @@ const MessageBubble = ({
                 mimeType:
                   f.mimetype || f.mimeType || "application/octet-stream",
                 uploadedAt: new Date(
-                  f.uploadDate || f.uploadedAt || Date.now()
+                  f.uploadDate || f.uploadedAt || new Date().getTime()
                 ),
                 userId: "user",
                 status: "ready" as const,
                 url: getApiUrl(`/files/${f.id}`),
                 metadata: {},
               }))}
+              isDarkMode={isDarkMode}
+            />
+          )}
+          {/* Message Attachments from MongoDB (using attachment IDs) */}
+          {message.metadata?.attachmentIds && Array.isArray(message.metadata.attachmentIds) && message.metadata.attachmentIds.length > 0 && (
+            <MessageAttachments
+              attachmentIds={message.metadata.attachmentIds as string[]}
               isDarkMode={isDarkMode}
             />
           )}

@@ -95,6 +95,12 @@ export const chatService = {
 
       for (const message of messagesToSave) {
         try {
+          const attachmentIds = message.attachments?.map((att) => att.id) || [];
+          const metadata = {
+            ...(message.metadata || {}),
+            ...(attachmentIds.length > 0 && { attachmentIds }),
+          };
+
           const response = await fetch(
             `${baseUrl}/api/chats/${conversation.id}/messages`,
             {
@@ -108,7 +114,7 @@ export const chatService = {
                 role: message.role,
                 content: message.content,
                 timestamp: message.timestamp.toISOString(),
-                metadata: message.metadata || {},
+                metadata,
                 filterId: message.filterId || null,
                 filterSnapshot: message.filterSnapshot || null,
               }),
