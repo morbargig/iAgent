@@ -1673,8 +1673,23 @@ const App = () => {
   }, [authToken, userId, translation]);
 
   const deleteConversation = React.useCallback(async (id: string) => {
+    // Stop stream if this chat is currently streaming
+    if (streamingConversationId === id && streamingClientRef.current) {
+      streamingClientRef.current.abort();
+      setIsLoading(false);
+      setStreamingConversationId(null);
+      accumulatedStreamContentRef.current = "";
+    }
+
     // Remove from loaded conversations
     setLoadedConversations((prev) => {
+      const updated = new Map(prev);
+      updated.delete(id);
+      return updated;
+    });
+
+    // Remove from streaming conversations
+    setStreamingConversations((prev) => {
       const updated = new Map(prev);
       updated.delete(id);
       return updated;
@@ -1687,12 +1702,12 @@ const App = () => {
     if (authToken) {
       try {
         await deleteChatMutation.mutateAsync(id);
-        console.log(`✅ Deleted chat ${id} from MongoDB`);
+        console.log(`✅ Deleted chat ${id} and all messages from MongoDB`);
       } catch (error) {
         console.error("Failed to delete conversation from MongoDB:", error);
       }
     }
-  }, [authToken, currentConversationId, deleteChatMutation]);
+  }, [authToken, currentConversationId, deleteChatMutation, streamingConversationId, setIsLoading, setStreamingConversationId, setCurrentConversationId]);
 
   const renameConversation = React.useCallback(async (id: string, newTitle: string) => {
 

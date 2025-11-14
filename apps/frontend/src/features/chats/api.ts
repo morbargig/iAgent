@@ -234,12 +234,15 @@ export const useDeleteChat = () => {
     },
     onMutate: async (chatId) => {
       await qc.cancelQueries({ queryKey: apiKeys.chats.detail(chatId) });
+      await qc.cancelQueries({ queryKey: apiKeys.chats.messages(chatId) });
       await qc.cancelQueries({ queryKey: apiKeys.chats.list() });
 
       const prevChat = qc.getQueryData<Conversation | null>(apiKeys.chats.detail(chatId));
+      const prevMessages = qc.getQueryData<ChatMessageDocument[]>(apiKeys.chats.messages(chatId));
       const prevList = qc.getQueryData<ChatDocument[]>(apiKeys.chats.list());
 
       qc.setQueryData(apiKeys.chats.detail(chatId), null);
+      qc.setQueryData(apiKeys.chats.messages(chatId), []);
 
       if (prevList) {
         qc.setQueryData(
@@ -248,18 +251,23 @@ export const useDeleteChat = () => {
         );
       }
 
-      return { prevChat, prevList };
+      return { prevChat, prevMessages, prevList };
     },
     onError: (_error, chatId, context) => {
       if (context?.prevChat) {
         qc.setQueryData(apiKeys.chats.detail(chatId), context.prevChat);
       }
+      if (context?.prevMessages) {
+        qc.setQueryData(apiKeys.chats.messages(chatId), context.prevMessages);
+      }
       if (context?.prevList) {
         qc.setQueryData(apiKeys.chats.list(), context.prevList);
       }
     },
-    onSuccess: () => {
+    onSuccess: (_data, chatId) => {
       qc.invalidateQueries({ queryKey: apiKeys.chats.list() });
+      qc.invalidateQueries({ queryKey: apiKeys.chats.messages(chatId) });
+      qc.invalidateQueries({ queryKey: apiKeys.chats.detail(chatId) });
     },
   });
 };
