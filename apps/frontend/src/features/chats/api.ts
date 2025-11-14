@@ -384,6 +384,11 @@ export const useSaveMessage = () => {
         qc.setQueryData(apiKeys.chats.detail(chatId), context.prevChat);
       }
     },
+    onSettled: (_data, _error, { chatId }) => {
+      qc.invalidateQueries({ queryKey: apiKeys.chats.messages(chatId) });
+      qc.invalidateQueries({ queryKey: apiKeys.chats.detail(chatId) });
+      qc.invalidateQueries({ queryKey: apiKeys.chats.list() });
+    },
   });
 };
 

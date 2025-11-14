@@ -782,6 +782,40 @@ const App = () => {
               });
 
               setStreamingConversations((prev) => {
+                const streamingConv = prev.get(updatedConversation.id);
+                if (streamingConv) {
+                  const lastMessage = streamingConv.messages[streamingConv.messages.length - 1];
+                  if (lastMessage) {
+                    const finalConv = {
+                      ...streamingConv,
+                      messages: [
+                        ...streamingConv.messages.slice(0, -1),
+                        {
+                          ...updateMessageContent(
+                            lastMessage,
+                            finalContent,
+                            false
+                          ),
+                          parsed: finalParsed,
+                          sections: sections,
+                          currentSection: currentSection,
+                          metadata: {
+                            ...(lastMessage.metadata || {}),
+                            ...(result.metadata || {}),
+                          },
+                        },
+                      ],
+                      lastUpdated: new Date(),
+                    };
+                    
+                    setLoadedConversations((loadedPrev) => {
+                      const loadedUpdated = new Map(loadedPrev);
+                      loadedUpdated.set(updatedConversation.id, finalConv);
+                      return loadedUpdated;
+                    });
+                  }
+                }
+                
                 const updated = new Map(prev);
                 updated.delete(updatedConversation.id);
                 return updated;
@@ -848,6 +882,41 @@ const App = () => {
                   return loadedUpdated;
                 });
                 
+                return updated;
+              });
+              
+              setStreamingConversations((prev) => {
+                const streamingConv = prev.get(updatedConversation.id);
+                if (streamingConv) {
+                  const lastMessage = streamingConv.messages[streamingConv.messages.length - 1];
+                  if (lastMessage) {
+                    const finalMessage = hasContent
+                      ? updateMessageContent(lastMessage, currentContent, false, true)
+                      : updateMessageContent(
+                          lastMessage,
+                          translation("errors.streaming", { error: error.message }),
+                          false
+                        );
+                    
+                    const finalConv = {
+                      ...streamingConv,
+                      messages: [
+                        ...streamingConv.messages.slice(0, -1),
+                        finalMessage,
+                      ],
+                      lastUpdated: new Date(),
+                    };
+                    
+                    setLoadedConversations((loadedPrev) => {
+                      const loadedUpdated = new Map(loadedPrev);
+                      loadedUpdated.set(updatedConversation.id, finalConv);
+                      return loadedUpdated;
+                    });
+                  }
+                }
+                
+                const updated = new Map(prev);
+                updated.delete(updatedConversation.id);
                 return updated;
               });
               
@@ -958,10 +1027,14 @@ const App = () => {
         setStreamingConversationId(updatedConversation.id);
         
         if (authToken && userId) {
-          createChatMutation.mutate({
-            chatId: updatedConversation.id,
-            name: updatedConversation.title,
-          });
+          try {
+            await createChatMutation.mutateAsync({
+              chatId: updatedConversation.id,
+              name: updatedConversation.title,
+            });
+          } catch (error) {
+            console.error("Failed to create chat in MongoDB:", error);
+          }
         }
       }
 
@@ -1130,6 +1203,40 @@ const App = () => {
           });
 
           setStreamingConversations((prev) => {
+            const streamingConv = prev.get(updatedConversation.id);
+            if (streamingConv) {
+              const lastMessage = streamingConv.messages[streamingConv.messages.length - 1];
+              if (lastMessage) {
+                const finalConv = {
+                  ...streamingConv,
+                  messages: [
+                    ...streamingConv.messages.slice(0, -1),
+                    {
+                      ...updateMessageContent(
+                        lastMessage,
+                        finalContent,
+                        false
+                      ),
+                      parsed: finalParsed,
+                      sections: sections,
+                      currentSection: currentSection,
+                      metadata: {
+                        ...(lastMessage.metadata || {}),
+                        ...(result.metadata || {}),
+                      },
+                    },
+                  ],
+                  lastUpdated: new Date(),
+                };
+                
+                setLoadedConversations((loadedPrev) => {
+                  const loadedUpdated = new Map(loadedPrev);
+                  loadedUpdated.set(updatedConversation.id, finalConv);
+                  return loadedUpdated;
+                });
+              }
+            }
+            
             const updated = new Map(prev);
             updated.delete(updatedConversation.id);
             return updated;
@@ -1196,6 +1303,41 @@ const App = () => {
               return loadedUpdated;
             });
             
+            return updated;
+          });
+          
+          setStreamingConversations((prev) => {
+            const streamingConv = prev.get(updatedConversation.id);
+            if (streamingConv) {
+              const lastMessage = streamingConv.messages[streamingConv.messages.length - 1];
+              if (lastMessage) {
+                const finalMessage = hasContent
+                  ? updateMessageContent(lastMessage, currentContent, false, true)
+                  : updateMessageContent(
+                      lastMessage,
+                      translation("errors.streaming", { error: error.message }),
+                      false
+                    );
+                
+                const finalConv = {
+                  ...streamingConv,
+                  messages: [
+                    ...streamingConv.messages.slice(0, -1),
+                    finalMessage,
+                  ],
+                  lastUpdated: new Date(),
+                };
+                
+                setLoadedConversations((loadedPrev) => {
+                  const loadedUpdated = new Map(loadedPrev);
+                  loadedUpdated.set(updatedConversation.id, finalConv);
+                  return loadedUpdated;
+                });
+              }
+            }
+            
+            const updated = new Map(prev);
+            updated.delete(updatedConversation.id);
             return updated;
           });
           
