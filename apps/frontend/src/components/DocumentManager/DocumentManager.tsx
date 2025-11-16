@@ -38,6 +38,7 @@ export const DocumentManager: React.FC<DocumentManagerProps> = ({
   onUploadClick,
 }) => {
   const [documentService] = useState(() => new DocumentService());
+  const [isDeleting, setIsDeleting] = useState(false);
 
   // Custom hooks
   const {
@@ -89,7 +90,7 @@ export const DocumentManager: React.FC<DocumentManagerProps> = ({
   };
 
   const handleErrorClose = () => {
-    setError(null);
+    setError();
   };
 
   const handlePageChange = (newPage: number) => {
@@ -105,13 +106,23 @@ export const DocumentManager: React.FC<DocumentManagerProps> = ({
   };
 
   const handleConfirmDelete = async (document: DocumentFile) => {
-    await handleDeleteDocument(document);
-    closeDeleteDialog();
+    setIsDeleting(true);
+    try {
+      await handleDeleteDocument(document);
+      closeDeleteDialog();
+    } finally {
+      setIsDeleting(false);
+    }
   };
 
   const handleConfirmBulkDelete = async (documents: DocumentFile[]) => {
-    await handleBulkDelete(documents);
-    closeBulkDeleteDialog();
+    setIsDeleting(true);
+    try {
+      await handleBulkDelete(documents);
+      closeBulkDeleteDialog();
+    } finally {
+      setIsDeleting(false);
+    }
   };
 
   const handleMenuDeleteClick = (document: DocumentFile) => {
@@ -158,7 +169,7 @@ export const DocumentManager: React.FC<DocumentManagerProps> = ({
       <DocumentList
         searchQuery={searchQuery}
         documents={documents}
-        loading={loading}
+        loading={loading || isDeleting}
         viewMode={viewMode}
         maxHeight={maxHeight}
         selectionMode={selectionMode}

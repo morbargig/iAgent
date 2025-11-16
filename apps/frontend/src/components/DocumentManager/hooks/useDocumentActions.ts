@@ -6,7 +6,7 @@ interface UseDocumentActionsProps {
     documentService: DocumentService;
     onDocumentDelete?: (document: DocumentFile) => void;
     onClearSelection?: () => void;
-    onReload: () => Promise<void>;
+    onReload: (force?: boolean) => Promise<void>;
 }
 
 export const useDocumentActions = ({
@@ -40,9 +40,10 @@ export const useDocumentActions = ({
             try {
                 await documentService.deleteDocument(document.id);
                 onDocumentDelete?.(document);
-                await onReload();
+                await onReload(true);
             } catch (error) {
                 console.error("Delete failed:", error);
+                throw error;
             }
         },
         [documentService, onDocumentDelete, onReload]
@@ -63,9 +64,10 @@ export const useDocumentActions = ({
                 onClearSelection?.();
 
                 // Refresh the document list
-                await onReload();
+                await onReload(true);
             } catch (error) {
                 console.error("Bulk delete failed:", error);
+                throw error;
             }
         },
         [documentService, onDocumentDelete, onClearSelection, onReload]
