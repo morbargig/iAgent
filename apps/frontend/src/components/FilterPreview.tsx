@@ -42,25 +42,25 @@ interface FilterPreviewProps {
 
 // Country flag mapping
 const countryFlags: Record<string, string> = {
-  PS: "🇵🇸",
-  LB: "🇱🇧",
-  SA: "🇸🇦",
-  IQ: "🇮🇶",
-  SY: "🇸🇾",
-  JO: "🇯🇴",
-  EG: "🇪🇬",
-  IL: "🇮🇱",
+  DE: "🇩🇪",
+  FR: "🇫🇷",
+  IT: "🇮🇹",
+  ES: "🇪🇸",
+  GB: "🇬🇧",
+  NL: "🇳🇱",
+  BE: "🇧🇪",
+  PL: "🇵🇱",
 };
 
 const countryNames: Record<string, string> = {
-  PS: "Palestine",
-  LB: "Lebanon",
-  SA: "Saudi Arabia",
-  IQ: "Iraq",
-  SY: "Syria",
-  JO: "Jordan",
-  EG: "Egypt",
-  IL: "Israel",
+  DE: "Germany",
+  FR: "France",
+  IT: "Italy",
+  ES: "Spain",
+  GB: "United Kingdom",
+  NL: "Netherlands",
+  BE: "Belgium",
+  PL: "Poland",
 };
 
 export function FilterPreview({

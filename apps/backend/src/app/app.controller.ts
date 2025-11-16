@@ -211,14 +211,14 @@ export class AppController {
   })
   getCountries(): CountryDto[] {
     return [
-      { code: 'PS', flag: '🇵🇸', nameKey: 'countries.palestine' },
-      { code: 'LB', flag: '🇱🇧', nameKey: 'countries.lebanon' },
-      { code: 'SA', flag: '🇸🇦', nameKey: 'countries.saudi_arabia' },
-      { code: 'IQ', flag: '🇮🇶', nameKey: 'countries.iraq' },
-      { code: 'SY', flag: '🇸🇾', nameKey: 'countries.syria' },
-      { code: 'JO', flag: '🇯🇴', nameKey: 'countries.jordan' },
-      { code: 'EG', flag: '🇪🇬', nameKey: 'countries.egypt' },
-      { code: 'IL', flag: '🇮🇱', nameKey: 'countries.israel' },
+      { code: 'DE', flag: '🇩🇪', nameKey: 'countries.germany' },
+      { code: 'FR', flag: '🇫🇷', nameKey: 'countries.france' },
+      { code: 'IT', flag: '🇮🇹', nameKey: 'countries.italy' },
+      { code: 'ES', flag: '🇪🇸', nameKey: 'countries.spain' },
+      { code: 'GB', flag: '🇬🇧', nameKey: 'countries.united_kingdom' },
+      { code: 'NL', flag: '🇳🇱', nameKey: 'countries.netherlands' },
+      { code: 'BE', flag: '🇧🇪', nameKey: 'countries.belgium' },
+      { code: 'PL', flag: '🇵🇱', nameKey: 'countries.poland' },
     ];
   }
 

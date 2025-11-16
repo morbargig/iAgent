@@ -103,7 +103,7 @@ export class ChatMessageDto {
       name: 'Filter 12/1/2024, 2:00:00 PM',
       config: {
         dateFilter: { type: 'custom', customRange: { amount: 1, type: 'months' } },
-        selectedCountries: ['PS', 'LB'],
+        selectedCountries: ['DE', 'FR'],
         enabledTools: ['web_search', 'document_analyzer']
       }
     }
@@ -430,19 +430,19 @@ export class ToolSchemaDto {
 export class CountryDto {
   @ApiProperty({
     description: 'Country code (ISO 3166-1 alpha-2)',
-    example: 'PS'
+    example: 'DE'
   })
   code!: string;
 
   @ApiProperty({
     description: 'Country flag emoji',
-    example: '🇵🇸'
+    example: '🇩🇪'
   })
   flag!: string;
 
   @ApiProperty({
     description: 'Translation key for country name',
-    example: 'countries.palestine'
+    example: 'countries.germany'
   })
   nameKey!: string;
 }

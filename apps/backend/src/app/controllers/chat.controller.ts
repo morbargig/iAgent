@@ -352,7 +352,7 @@ export class ChatController {
               type: 'custom',
               customRange: { amount: 7, type: 'days' }
             },
-            selectedCountries: ['PS', 'LB'],
+            selectedCountries: ['DE', 'FR'],
             enabledTools: ['tool-t', 'tool-h'],
             filterText: 'work related',
             selectedMode: 'flow'
