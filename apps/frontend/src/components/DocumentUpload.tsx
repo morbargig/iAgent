@@ -8,33 +8,38 @@ import {
   Typography,
   Button,
   LinearProgress,
-  List,
-  ListItem,
-  ListItemIcon,
-  ListItemText,
-  ListItemSecondaryAction,
   Alert,
   useTheme,
   Fade,
-  Collapse,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  Checkbox,
+  Avatar,
+  Tooltip,
+  IconButton,
 } from "@mui/material";
 import {
   CloudUpload as UploadIcon,
-  Close as CloseIcon,
-  CheckCircle as CheckIcon,
   Error as ErrorIcon,
   Cancel as CancelIcon,
   InsertDriveFile as FileIcon,
+  Delete as DeleteIcon,
 } from "@mui/icons-material";
-import { MoreOptionsMenu } from "./MoreOptionsMenu";
 import { useDropzone } from "react-dropzone";
 import {
   DocumentFile,
   UploadProgress,
   formatFileSize,
+  getFileIconComponent,
+  getFileTypeName,
 } from "../types/document.types";
 import { useDocumentService } from "../services/documentService";
 import { useTranslation } from "../contexts/TranslationContext";
+import { format } from "date-fns";
 
 interface DocumentUploadProps {
   onUploadComplete?: (documents: DocumentFile[]) => void;
@@ -44,6 +49,10 @@ interface DocumentUploadProps {
   allowedTypes?: string[];
   disabled?: boolean;
   showProgress?: boolean;
+  selectionMode?: boolean;
+  selectedDocuments?: DocumentFile[];
+  onToggleSelection?: (document: DocumentFile) => void;
+  onSelectAll?: (documents: DocumentFile[]) => void;
 }
 
 interface FileUploadState {
@@ -62,6 +71,10 @@ export const DocumentUpload: React.FC<DocumentUploadProps> = ({
   allowedTypes,
   disabled = false,
   showProgress = true,
+  selectionMode = false,
+  selectedDocuments = [],
+  onToggleSelection,
+  onSelectAll,
 }) => {
   const theme = useTheme();
   const { t } = useTranslation();
@@ -72,6 +85,7 @@ export const DocumentUpload: React.FC<DocumentUploadProps> = ({
   >(new Map());
   const [isDragActive, setIsDragActive] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [completedDocuments, setCompletedDocuments] = useState<DocumentFile[]>([]);
 
   // Handle file drop
   const onDrop = useCallback(
@@ -177,17 +191,20 @@ export const DocumentUpload: React.FC<DocumentUploadProps> = ({
             return newMap;
           });
 
-          // Auto-remove completed file after 1 second
-          setTimeout(() => {
-            setUploadingFiles((prev) => {
-              const newMap = new Map(prev);
-              const currentState = newMap.get(fileId);
-              if (currentState && currentState.status === "completed") {
-                newMap.delete(fileId);
+          // Add to completed documents list (for tracking)
+          const uploadedDocument = response.document;
+          if (uploadedDocument) {
+            setCompletedDocuments((prev) => {
+              // Avoid duplicates
+              if (!prev.some((d) => d.id === uploadedDocument.id)) {
+                return [...prev, uploadedDocument];
               }
-              return newMap;
+              return prev;
             });
-          }, 100000);
+          }
+
+          // Keep the file in uploadingFiles with completed status
+          // The row will update automatically to show completed state
 
           // Notify parent component
           onUploadComplete?.([response.document]);
@@ -242,26 +259,102 @@ export const DocumentUpload: React.FC<DocumentUploadProps> = ({
   const removeFile = (fileId: string) => {
     setUploadingFiles((prev) => {
       const newMap = new Map(prev);
+      const uploadState = newMap.get(fileId);
+      if (uploadState?.document) {
+        const docId = uploadState.document.id;
+        setCompletedDocuments((prevDocs) =>
+          prevDocs.filter((doc) => doc.id !== docId)
+        );
+      }
       newMap.delete(fileId);
       return newMap;
     });
   };
 
-  // Get status icon
-  const getStatusIcon = (status: FileUploadState["status"]) => {
-    switch (status) {
-      case "completed":
-        return <CheckIcon color="success" />;
-      case "error":
-        return <ErrorIcon color="error" />;
-      case "cancelled":
-        return <CancelIcon color="disabled" />;
-      default:
-        return <FileIcon />;
-    }
+  // Remove completed document from table
+  const removeCompletedDocument = (documentId: string) => {
+    setCompletedDocuments((prev) => prev.filter((doc) => doc.id !== documentId));
   };
 
-  const uploadStates = Array.from(uploadingFiles.entries());
+  // Check if document is selected
+  const isDocumentSelected = (document: DocumentFile) => {
+    return selectedDocuments.some((d) => d.id === document.id);
+  };
+
+  // Get all files (uploading + completed) for unified table
+  // Uploading files stay in the same row and update when completed
+  const getAllFiles = () => {
+    const allFiles: Array<{
+      id: string;
+      file?: File;
+      document?: DocumentFile;
+      status: FileUploadState["status"];
+      progress: number;
+      error?: string;
+      isUploading: boolean;
+    }> = [];
+
+    // Track which document IDs are already in uploading files
+    const uploadedDocumentIds = new Set<string>();
+    
+    // Add uploading files (including those that completed but are still in uploadingFiles)
+    uploadingFiles.forEach((uploadState, fileId) => {
+      if (uploadState.document) {
+        uploadedDocumentIds.add(uploadState.document.id);
+      }
+      allFiles.push({
+        id: fileId,
+        file: uploadState.file,
+        document: uploadState.document,
+        status: uploadState.status,
+        progress: uploadState.progress,
+        error: uploadState.error,
+        isUploading: uploadState.status === "uploading",
+      });
+    });
+
+    // Add completed documents that aren't already in uploading files
+    completedDocuments.forEach((doc) => {
+      if (!uploadedDocumentIds.has(doc.id)) {
+        allFiles.push({
+          id: doc.id,
+          document: doc,
+          status: "completed",
+          progress: 100,
+          isUploading: false,
+        });
+      }
+    });
+
+    return allFiles;
+  };
+
+  const allFiles = getAllFiles();
+
+  // Check if all files are selected (only completed ones can be selected)
+  const areAllFilesSelected = () => {
+    const selectableFiles = allFiles.filter((f) => f.document && f.status === "completed");
+    if (selectableFiles.length === 0) return false;
+    return selectableFiles.every((f) => f.document && isDocumentSelected(f.document));
+  };
+
+  // Check if some files are selected
+  const areSomeFilesSelected = () => {
+    const selectableFiles = allFiles.filter((f) => f.document && f.status === "completed");
+    if (selectableFiles.length === 0) return false;
+    return selectableFiles.some((f) => f.document && isDocumentSelected(f.document));
+  };
+
+  // Handle select all files
+  const handleSelectAllFiles = () => {
+    const selectableFiles = allFiles
+      .filter((f) => f.document && f.status === "completed")
+      .map((f) => f.document)
+      .filter((doc): doc is DocumentFile => doc !== undefined);
+    if (onSelectAll && selectableFiles.length > 0) {
+      onSelectAll(selectableFiles);
+    }
+  };
 
   return (
     <Box sx={{ width: "100%" }}>
@@ -317,92 +410,268 @@ export const DocumentUpload: React.FC<DocumentUploadProps> = ({
         </Fade>
       )}
 
-      {/* Upload Progress */}
-      {showProgress && uploadStates.length > 0 && (
-        <Collapse in={uploadStates.length > 0}>
-          <Paper sx={{ mt: 2, p: 2 }}>
-            <Typography variant="h6" gutterBottom>
-              {t("files.uploadingFiles")} ({uploadStates.length})
-            </Typography>
-
-            <List>
-              {uploadStates.map(([fileId, uploadState]) => (
-                // TODO flex and gap between icons
-                <ListItem key={fileId} sx={{ px: -1, display: "flex", gap: 1 }}>
-                  <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                    <ListItemIcon
-                      sx={{ minWidth: 0, me: 2, justifyContent: "center" }}
+      {/* Unified Files Table */}
+      {allFiles.length > 0 && (
+        <Box sx={{ mt: 3 }}>
+          <Typography variant="h6" gutterBottom>
+            {t("files.files")} ({allFiles.length})
+          </Typography>
+          <TableContainer component={Paper} elevation={0}>
+            <Table>
+              <TableHead>
+                <TableRow>
+                  {selectionMode && (
+                    <TableCell
+                      padding="checkbox"
+                      sx={{
+                        backgroundColor:
+                          theme.palette.mode === "dark"
+                            ? "rgba(255, 255, 255, 0.05)"
+                            : "rgba(0, 0, 0, 0.02)",
+                        borderBottom: `1px solid ${theme.palette.divider}`,
+                      }}
                     >
-                      {getStatusIcon(uploadState.status)}
-                    </ListItemIcon>
-                  </Box>
-                  <ListItemText
-                    primary={uploadState.file.name}
-                    secondary={
-                      <Box>
-                        <Typography variant="body2" color="text.secondary">
-                          {formatFileSize(uploadState.file.size)} •{" "}
-                          {uploadState.file.type}
-                        </Typography>
-                        {uploadState.status === "uploading" && (
-                          <LinearProgress
-                            variant="determinate"
-                            value={uploadState.progress}
-                            sx={{ mt: 1 }}
-                          />
-                        )}
-                        {uploadState.status === "error" &&
-                          uploadState.error && (
-                            <Typography
-                              variant="body2"
-                              color="error"
-                              sx={{ mt: 1 }}
-                            >
-                              {uploadState.error}
-                            </Typography>
-                          )}
-                      </Box>
-                    }
+                      <Tooltip
+                        title={
+                          areAllFilesSelected()
+                            ? t("files.deselectAll")
+                            : t("files.selectAll")
+                        }
+                        arrow
+                      >
+                        <Checkbox
+                          checked={areAllFilesSelected()}
+                          indeterminate={
+                            areSomeFilesSelected() && !areAllFilesSelected()
+                          }
+                          onChange={handleSelectAllFiles}
+                          size="small"
+                          inputProps={{
+                            "aria-label": areAllFilesSelected()
+                              ? t("files.deselectAll")
+                              : t("files.selectAll"),
+                          }}
+                        />
+                      </Tooltip>
+                    </TableCell>
+                  )}
+                  <TableCell
+                    sx={{
+                      backgroundColor:
+                        theme.palette.mode === "dark"
+                          ? "rgba(255, 255, 255, 0.05)"
+                          : "rgba(0, 0, 0, 0.02)",
+                      borderBottom: `1px solid ${theme.palette.divider}`,
+                      fontWeight: 600,
+                    }}
+                  >
+                    {t("files.name")}
+                  </TableCell>
+                  <TableCell
+                    sx={{
+                      backgroundColor:
+                        theme.palette.mode === "dark"
+                          ? "rgba(255, 255, 255, 0.05)"
+                          : "rgba(0, 0, 0, 0.02)",
+                      borderBottom: `1px solid ${theme.palette.divider}`,
+                      fontWeight: 600,
+                    }}
+                  >
+                    {t("files.type")}
+                  </TableCell>
+                  <TableCell
+                    sx={{
+                      backgroundColor:
+                        theme.palette.mode === "dark"
+                          ? "rgba(255, 255, 255, 0.05)"
+                          : "rgba(0, 0, 0, 0.02)",
+                      borderBottom: `1px solid ${theme.palette.divider}`,
+                      fontWeight: 600,
+                    }}
+                  >
+                    {t("files.size")}
+                  </TableCell>
+                  <TableCell
+                    sx={{
+                      backgroundColor:
+                        theme.palette.mode === "dark"
+                          ? "rgba(255, 255, 255, 0.05)"
+                          : "rgba(0, 0, 0, 0.02)",
+                      borderBottom: `1px solid ${theme.palette.divider}`,
+                      fontWeight: 600,
+                    }}
+                  >
+                    {t("files.date")}
+                  </TableCell>
+                  <TableCell
+                    sx={{
+                      backgroundColor:
+                        theme.palette.mode === "dark"
+                          ? "rgba(255, 255, 255, 0.05)"
+                          : "rgba(0, 0, 0, 0.02)",
+                      borderBottom: `1px solid ${theme.palette.divider}`,
+                      width: 48,
+                    }}
                   />
-                  <ListItemSecondaryAction>
-                    <MoreOptionsMenu
-                      items={[
-                        ...(uploadState.status === "uploading"
-                          ? [
-                              {
-                                id: "cancel",
-                                label: "Cancel upload",
-                                icon: <CancelIcon sx={{ fontSize: 18 }} />,
-                                onClick: (e: React.MouseEvent) => {
-                                  e.stopPropagation();
-                                  cancelUpload(fileId);
-                                },
-                              },
-                            ]
-                          : []),
-                        ...(uploadState.status === "completed" ||
-                        uploadState.status === "error" ||
-                        uploadState.status === "cancelled"
-                          ? [
-                              {
-                                id: "remove",
-                                label: "Remove",
-                                icon: <CloseIcon sx={{ fontSize: 18 }} />,
-                                onClick: (e: React.MouseEvent) => {
-                                  e.stopPropagation();
-                                  removeFile(fileId);
-                                },
-                              },
-                            ]
-                          : []),
-                      ]}
-                    />
-                  </ListItemSecondaryAction>
-                </ListItem>
-              ))}
-            </List>
-          </Paper>
-        </Collapse>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {allFiles.map((fileItem) => {
+                  const isCompleted = fileItem.status === "completed" && fileItem.document;
+                  const isError = fileItem.status === "error";
+                  const isUploading = fileItem.status === "uploading";
+                  const isSelected = fileItem.document ? isDocumentSelected(fileItem.document) : false;
+                  
+                  const fileName = fileItem.document?.name || fileItem.file?.name || "";
+                  const fileSize = fileItem.document?.size || fileItem.file?.size || 0;
+                  const fileType = fileItem.document?.mimeType || fileItem.file?.type || "";
+                  const uploadDate = fileItem.document?.uploadedAt || new Date();
+                  
+                  const { Icon, color } = fileItem.document
+                    ? getFileIconComponent(fileItem.document.mimeType)
+                    : { Icon: FileIcon, color: theme.palette.text.secondary };
+
+                  return (
+                    <TableRow
+                      key={fileItem.id}
+                      sx={{
+                        cursor: isCompleted ? "pointer" : "default",
+                        backgroundColor: isSelected
+                          ? theme.palette.action.selected
+                          : isError
+                          ? theme.palette.error.light + "15"
+                          : "transparent",
+                        opacity: isError ? 0.7 : 1,
+                        "&:hover": {
+                          backgroundColor: isSelected
+                            ? theme.palette.action.selected
+                            : isError
+                            ? theme.palette.error.light + "20"
+                            : theme.palette.action.hover,
+                        },
+                      }}
+                    >
+                      {selectionMode && (
+                        <TableCell padding="checkbox">
+                          {isCompleted ? (
+                            <Checkbox
+                              checked={isSelected}
+                              onChange={() => fileItem.document && onToggleSelection?.(fileItem.document)}
+                              onClick={(e) => e.stopPropagation()}
+                              size="small"
+                            />
+                          ) : (
+                            <Checkbox disabled size="small" />
+                          )}
+                        </TableCell>
+                      )}
+                      <TableCell>
+                        <Box display="flex" alignItems="center" gap={2}>
+                          <Avatar
+                            sx={{
+                              width: 32,
+                              height: 32,
+                              backgroundColor: isError
+                                ? theme.palette.error.light + "20"
+                                : `${color}20`,
+                            }}
+                          >
+                            {isUploading ? (
+                              <FileIcon sx={{ color: color, fontSize: 18 }} />
+                            ) : isError ? (
+                              <ErrorIcon sx={{ color: theme.palette.error.main, fontSize: 18 }} />
+                            ) : (
+                              <Icon sx={{ color: color, fontSize: 18 }} />
+                            )}
+                          </Avatar>
+                          <Box sx={{ flex: 1, minWidth: 0 }}>
+                            <Typography variant="body2" noWrap>
+                              {fileName}
+                            </Typography>
+                            {isUploading && (
+                              <LinearProgress
+                                variant="determinate"
+                                value={fileItem.progress}
+                                sx={{ mt: 0.5, height: 4, borderRadius: 2 }}
+                              />
+                            )}
+                            {isError && fileItem.error && (
+                              <Typography
+                                variant="caption"
+                                color="error"
+                                sx={{ mt: 0.5, display: "block" }}
+                              >
+                                {fileItem.error}
+                              </Typography>
+                            )}
+                          </Box>
+                        </Box>
+                      </TableCell>
+                      <TableCell>
+                        <Typography variant="body2" color="text.secondary">
+                          {isCompleted
+                            ? getFileTypeName(fileType)
+                            : isUploading
+                            ? t("files.uploading", { defaultValue: "Uploading..." })
+                            : isError
+                            ? t("files.error", { defaultValue: "Error" })
+                            : "-"}
+                        </Typography>
+                      </TableCell>
+                      <TableCell>
+                        <Typography variant="body2" color="text.secondary">
+                          {formatFileSize(fileSize)}
+                        </Typography>
+                      </TableCell>
+                      <TableCell>
+                        <Typography variant="body2" color="text.secondary">
+                          {isCompleted
+                            ? format(uploadDate, "MMM dd, yyyy")
+                            : isUploading
+                            ? t("files.uploading", { defaultValue: "Uploading..." })
+                            : "-"}
+                        </Typography>
+                      </TableCell>
+                      <TableCell>
+                        {isUploading ? (
+                          <Tooltip title={t("files.cancel", { defaultValue: "Cancel" })} arrow>
+                            <IconButton
+                              size="small"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                cancelUpload(fileItem.id);
+                              }}
+                              color="default"
+                            >
+                              <CancelIcon fontSize="small" />
+                            </IconButton>
+                          </Tooltip>
+                        ) : (
+                          <Tooltip title={t("files.remove")} arrow>
+                            <IconButton
+                              size="small"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                if (fileItem.document) {
+                                  removeCompletedDocument(fileItem.document.id);
+                                } else {
+                                  removeFile(fileItem.id);
+                                }
+                              }}
+                              color="error"
+                            >
+                              <DeleteIcon fontSize="small" />
+                            </IconButton>
+                          </Tooltip>
+                        )}
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
+              </TableBody>
+            </Table>
+          </TableContainer>
+        </Box>
       )}
     </Box>
   );

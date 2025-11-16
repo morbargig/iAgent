@@ -286,6 +286,10 @@ export const DocumentManagementDialog: React.FC<
               onUploadComplete={handleUploadComplete}
               maxFiles={5}
               maxFileSize={10 * 1024 * 1024} // 10MB
+              selectionMode={selectionMode}
+              selectedDocuments={selectedDocs}
+              onToggleSelection={handleToggleSelection}
+              onSelectAll={handleSelectAll}
             />
           )}
 
