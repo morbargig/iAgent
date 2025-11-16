@@ -2,7 +2,6 @@ import React from "react";
 import {
   Card,
   CardContent,
-  CardActions,
   Box,
   Typography,
   Avatar,
@@ -110,63 +109,65 @@ export const DocumentCard: React.FC<DocumentCardProps> = ({
       }}
       onClick={() => onDocumentClick(document)}
     >
-      <CardContent className="flex-grow pb-4 pt-8 px-8 flex flex-col justify-center relative">
-        <MoreOptionsMenu
-          items={menuItems}
-          buttonPosition="absolute"
-          buttonPositionStyles={{ top: 8, left: 8 }}
-        />
-        {selectionMode && (
-          <Checkbox
-            checked={isSelected}
-            onChange={() => onToggleSelection?.(document)}
-            onClick={(e) => e.stopPropagation()}
-            className={`absolute top-2 right-2 z-10 ${
-              isDarkMode ? "text-white/70" : "text-black/60"
-            }`}
-            sx={{
-              "&.Mui-checked": {
-                color: theme.palette.primary.main,
-              },
-            }}
-            size="small"
-          />
-        )}
-        <Box className={`flex flex-col items-center justify-center w-full mx-auto ${
-          selectionMode ? "px-0" : "px-2"
-        }`}>
-        
-            <Avatar
-              className="mb-6 w-[52px] h-[52px] sm:w-[60px] sm:h-[60px]"
-              style={{
-                backgroundColor: `${color}15`,
-                border: `1px solid ${color}30`,
+      <CardContent className="flex-grow pb-6 pt-4 px-4 flex flex-col relative">
+        <Box className="flex items-center justify-between mb-4">
+          {selectionMode && (
+            <Checkbox
+              checked={isSelected}
+              onChange={() => onToggleSelection?.(document)}
+              onClick={(e) => e.stopPropagation()}
+              className={`z-10 ${
+                isDarkMode ? "text-white/70" : "text-black/60"
+              }`}
+              sx={{
+                "&.Mui-checked": {
+                  color: theme.palette.primary.main,
+                },
+                padding: "4px",
               }}
+              size="small"
+            />
+          )}
+          {!selectionMode && <Box sx={{ width: 32 }} />}
+          <MoreOptionsMenu
+            items={menuItems}
+            buttonPosition="relative"
+            buttonPositionStyles={{}}
+          />
+        </Box>
+        <Box className="flex flex-col items-center justify-center w-full flex-grow">
+          <Avatar
+            className="mb-4 w-[56px] h-[56px] sm:w-[64px] sm:h-[64px]"
+            style={{
+              backgroundColor: `${color}15`,
+              border: `1px solid ${color}30`,
+            }}
+          >
+            <Icon
+              sx={{
+                color: color,
+                fontSize: { xs: 28, sm: 32 },
+              }}
+            />
+          </Avatar>
+          <Tooltip title={document.name} placement="top">
+            <Typography
+              variant="body2"
+              fontWeight={500}
+              textAlign="center"
+              className={`mb-2 line-clamp-2 break-words leading-[1.4] text-[13px] sm:text-[14px] px-1 ${
+                isDarkMode ? "text-white/90" : "text-black/87"
+              }`}
             >
-              <Icon
-                sx={{
-                  color: color,
-                  fontSize: { xs: 26, sm: 30 },
-                }}
-              />
-            </Avatar>
-            <Tooltip title={document.name} placement="top">
-              <Typography
-                variant="body2"
-                fontWeight={500}
-                textAlign="center"
-                className={`mb-3 line-clamp-2 break-words leading-[1.3] text-[13px] sm:text-[14px] px-2 ${
-                  isDarkMode ? "text-white/90" : "text-black/87"
-                }`}
-              >
-                {document.name}
-              </Typography>
-            </Tooltip>
+              {document.name}
+            </Typography>
+          </Tooltip>
+          <Box className="flex flex-col items-center gap-0.5 mt-auto">
             <Typography
               variant="caption"
               textAlign="center"
-              className={`block mb-1 text-[11px] font-normal ${
-                isDarkMode ? "text-white/60" : "text-black/60"
+              className={`text-[11px] font-medium ${
+                isDarkMode ? "text-white/70" : "text-black/70"
               }`}
             >
               {getFileTypeName(document.mimeType)}
@@ -174,24 +175,15 @@ export const DocumentCard: React.FC<DocumentCardProps> = ({
             <Typography
               variant="caption"
               textAlign="center"
-              className={`block mb-1 text-[11px] ${
-                isDarkMode ? "text-white/50" : "text-black/50"
+              className={`text-[10px] ${
+                isDarkMode ? "text-white/55" : "text-black/55"
               }`}
             >
-              {formatFileSize(document.size)}
+              {formatFileSize(document.size)} • {format(document.uploadedAt, "MMM dd, yyyy")}
             </Typography>
-            <Typography
-              variant="caption"
-              textAlign="center"
-              className={`block text-[10px] ${
-                isDarkMode ? "text-white/50" : "text-black/50"
-              }`}
-            >
-              {format(document.uploadedAt, "MMM dd, yyyy")}
-            </Typography>
+          </Box>
         </Box>
       </CardContent>
-      <CardActions className="pt-0 pb-4 px-4 min-h-[40px]" />
     </Card>
   );
 };
