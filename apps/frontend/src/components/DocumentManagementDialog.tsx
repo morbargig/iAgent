@@ -88,6 +88,8 @@ export const DocumentManagementDialog: React.FC<
 
   const [currentTab, setCurrentTab] = useState<TabValue>(initialTab);
   const [selectedDocs, setSelectedDocs] = useState<DocumentFile[]>([]);
+  const [refetchTrigger, setRefetchTrigger] = useState(0);
+  const uploadCompleteRef = React.useRef<NodeJS.Timeout | null>(null);
 
   // Initialize selectedDocs with converted attachedFiles when dialog opens
   React.useEffect(() => {
@@ -102,6 +104,15 @@ export const DocumentManagementDialog: React.FC<
     }
   }, [open, selectionMode, attachedFiles]);
 
+  // Cleanup timeout on unmount
+  React.useEffect(() => {
+    return () => {
+      if (uploadCompleteRef.current) {
+        clearTimeout(uploadCompleteRef.current);
+      }
+    };
+  }, []);
+
   // Handle tab change
   const handleTabChange = (event: React.SyntheticEvent, newValue: TabValue) => {
     setCurrentTab(newValue);
@@ -109,9 +120,18 @@ export const DocumentManagementDialog: React.FC<
 
   // Handle upload completion
   const handleUploadComplete = (documents: DocumentFile[]) => {
-    // Upload completed - do not automatically switch tabs
-    // Let the user manually navigate to see uploaded documents
     console.log(`${documents.length} documents uploaded successfully`);
+
+    // Clear any existing timeout
+    if (uploadCompleteRef.current) {
+      clearTimeout(uploadCompleteRef.current);
+    }
+
+    // Debounce refetch to handle multiple files completing at similar times
+    // Wait a bit to ensure all uploads in a batch are finished
+    uploadCompleteRef.current = setTimeout(() => {
+      setRefetchTrigger((prev) => prev + 1);
+    }, 500);
   };
 
   // Handle document selection (single click)
@@ -280,6 +300,7 @@ export const DocumentManagementDialog: React.FC<
               onSelectAll={handleSelectAll}
               onClearSelection={handleClearSelection}
               showUploadButton={false}
+              refetchTrigger={refetchTrigger}
             />
           )}
         </Box>

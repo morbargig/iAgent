@@ -22,6 +22,7 @@ interface DocumentManagerProps {
   maxHeight?: number;
   showUploadButton?: boolean;
   onUploadClick?: () => void;
+  refetchTrigger?: number;
 }
 
 export const DocumentManager: React.FC<DocumentManagerProps> = ({
@@ -36,6 +37,7 @@ export const DocumentManager: React.FC<DocumentManagerProps> = ({
   maxHeight = 600,
   showUploadButton = true,
   onUploadClick,
+  refetchTrigger,
 }) => {
   const [documentService] = useState(() => new DocumentService());
   const [isDeleting, setIsDeleting] = useState(false);
@@ -54,6 +56,13 @@ export const DocumentManager: React.FC<DocumentManagerProps> = ({
     setPage,
     setError,
   } = useDocumentManager();
+
+  // Refetch when upload completes
+  React.useEffect(() => {
+    if (refetchTrigger !== undefined && refetchTrigger > 0) {
+      loadDocuments(true);
+    }
+  }, [refetchTrigger, loadDocuments]);
 
   const { handleDownloadDocument, handleDeleteDocument, handleBulkDelete } =
     useDocumentActions({
