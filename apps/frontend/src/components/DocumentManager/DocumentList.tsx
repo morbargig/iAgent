@@ -2,12 +2,20 @@ import React from "react";
 import {
   Box,
   Typography,
-  List,
   Avatar,
   Skeleton,
   Checkbox,
   Pagination,
   PaginationItem,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  Tooltip,
+  Paper,
+  IconButton,
 } from "@mui/material";
 import {
   ArrowBack,
@@ -48,6 +56,10 @@ interface DocumentListProps {
   isDocumentSelected: (document: DocumentFile) => boolean;
   onPreview?: (document: DocumentFile) => void;
   onDownload?: (document: DocumentFile) => void;
+  onSelectAll?: () => void;
+  areAllVisibleSelected?: boolean;
+  areSomeVisibleSelected?: boolean;
+  onBulkDeleteClick?: () => void;
 }
 
 export const DocumentList: React.FC<DocumentListProps> = ({
@@ -68,6 +80,10 @@ export const DocumentList: React.FC<DocumentListProps> = ({
   isDocumentSelected,
   onPreview,
   onDownload,
+  onSelectAll,
+  areAllVisibleSelected = false,
+  areSomeVisibleSelected = false,
+  onBulkDeleteClick,
 }) => {
   const theme = useTheme();
   const { t, isRTL } = useTranslation();
@@ -135,135 +151,289 @@ export const DocumentList: React.FC<DocumentListProps> = ({
   return (
     <>
       {viewMode === "list" ? (
-        // List View
-        <List className="overflow-auto" style={{ maxHeight }}>
-          {documents.map((document) => {
-            const isSelected = isDocumentSelected(document);
-            const { Icon, color } = getFileIconComponent(document.mimeType);
-            return (
-              <Box
-                key={document.id}
-                onClick={() => onDocumentClick(document)}
-                className={`flex items-center rounded mb-4 p-4 cursor-pointer flex-row direction-ltr ${
-                  isSelected
-                    ? "border-2"
-                    : "border border-transparent"
-                } ${
-                  isSelected
-                    ? "bg-blue-500/10 dark:bg-blue-500/10"
-                    : "bg-transparent hover:bg-black/5 dark:hover:bg-white/5"
-                }`}
-                style={{
-                  borderColor: isSelected ? theme.palette.primary.main : undefined,
-                }}
-              >
-                {/* 1. Checkbox - Always at start (left) */}
-                <Checkbox
-                  checked={isSelected}
-                  onChange={() => onToggleSelection?.(document)}
-                  onClick={(e) => e.stopPropagation()}
-                  size="small"
-                  disabled={!selectionMode}
-                  className={`mr-4 flex-shrink-0 ${
-                    selectionMode ? "opacity-100" : "opacity-0 pointer-events-none"
-                  }`}
-                />
-                
-                {/* 2. File Icon - After checkbox */}
-                <Avatar 
-                  className="w-10 h-10 mr-8 flex-shrink-0"
-                  style={{ 
-                    backgroundColor: `${color}20`,
+        // Table View
+        <TableContainer
+          component={Paper}
+          sx={{ maxHeight, overflow: "auto" }}
+          elevation={0}
+        >
+          <Table stickyHeader>
+            <TableHead>
+              <TableRow>
+                {selectionMode && onSelectAll && documents.length > 0 && (
+                  <TableCell
+                    padding="checkbox"
+                    sx={{
+                      backgroundColor: theme.palette.mode === "dark" 
+                        ? "rgba(255, 255, 255, 0.05)" 
+                        : "rgba(0, 0, 0, 0.02)",
+                      borderBottom: `1px solid ${theme.palette.divider}`,
+                    }}
+                  >
+                    <Tooltip
+                      title={
+                        areAllVisibleSelected
+                          ? t("files.deselectAll")
+                          : t("files.selectAll")
+                      }
+                      arrow
+                    >
+                      <Checkbox
+                        checked={areAllVisibleSelected}
+                        indeterminate={
+                          areSomeVisibleSelected && !areAllVisibleSelected
+                        }
+                        onChange={onSelectAll}
+                        size="small"
+                        inputProps={{
+                          "aria-label": areAllVisibleSelected
+                            ? t("files.deselectAll")
+                            : t("files.selectAll"),
+                        }}
+                      />
+                    </Tooltip>
+                  </TableCell>
+                )}
+                <TableCell
+                  sx={{
+                    backgroundColor: theme.palette.mode === "dark" 
+                      ? "rgba(255, 255, 255, 0.05)" 
+                      : "rgba(0, 0, 0, 0.02)",
+                    borderBottom: `1px solid ${theme.palette.divider}`,
+                    fontWeight: 600,
                   }}
                 >
-                  <Icon sx={{ color: color, fontSize: 20 }} />
-                </Avatar>
-                
-                {/* 3. File Name - Takes remaining space */}
-                <Box className="flex-1 min-w-0 mr-8">
-                  <Typography variant="body1" noWrap>
-                    {document.name}
-                  </Typography>
-                  <Typography variant="body2" color="text.secondary">
-                    {getFileTypeName(document.mimeType)} •{" "}
-                    {formatFileSize(document.size)} •{" "}
-                    {format(document.uploadedAt, "MMM dd, yyyy")}
-                  </Typography>
-                </Box>
-                
-                {/* 4. More Action Button - Always at end (right) */}
-                <Box className="flex-shrink-0">
-                  <MoreOptionsMenu
-                    items={[
-                      {
-                        id: "preview",
-                        label: t("files.previewInNewTab"),
-                        icon: <PreviewIcon sx={{ fontSize: 18 }} />,
-                        onClick: (e: React.MouseEvent) => {
-                          e.stopPropagation();
-                          handlePreview(document);
-                        },
+                  {t("files.name")}
+                </TableCell>
+                <TableCell
+                  sx={{
+                    backgroundColor: theme.palette.mode === "dark" 
+                      ? "rgba(255, 255, 255, 0.05)" 
+                      : "rgba(0, 0, 0, 0.02)",
+                    borderBottom: `1px solid ${theme.palette.divider}`,
+                    fontWeight: 600,
+                  }}
+                >
+                  {t("files.type")}
+                </TableCell>
+                <TableCell
+                  sx={{
+                    backgroundColor: theme.palette.mode === "dark" 
+                      ? "rgba(255, 255, 255, 0.05)" 
+                      : "rgba(0, 0, 0, 0.02)",
+                    borderBottom: `1px solid ${theme.palette.divider}`,
+                    fontWeight: 600,
+                  }}
+                >
+                  {t("files.size")}
+                </TableCell>
+                <TableCell
+                  sx={{
+                    backgroundColor: theme.palette.mode === "dark" 
+                      ? "rgba(255, 255, 255, 0.05)" 
+                      : "rgba(0, 0, 0, 0.02)",
+                    borderBottom: `1px solid ${theme.palette.divider}`,
+                    fontWeight: 600,
+                  }}
+                >
+                  {t("files.date")}
+                </TableCell>
+                <TableCell
+                  sx={{
+                    backgroundColor: theme.palette.mode === "dark" 
+                      ? "rgba(255, 255, 255, 0.05)" 
+                      : "rgba(0, 0, 0, 0.02)",
+                    borderBottom: `1px solid ${theme.palette.divider}`,
+                    width: 48,
+                  }}
+                >
+                  {selectionMode && selectedDocuments.length > 0 && onBulkDeleteClick && (
+                    <Tooltip title={t("files.deleteSelected")} arrow>
+                      <IconButton
+                        size="small"
+                        onClick={onBulkDeleteClick}
+                        color="error"
+                      >
+                        <DeleteIcon fontSize="small" />
+                      </IconButton>
+                    </Tooltip>
+                  )}
+                </TableCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {documents.map((document) => {
+                const isSelected = isDocumentSelected(document);
+                const { Icon, color } = getFileIconComponent(document.mimeType);
+                return (
+                  <TableRow
+                    key={document.id}
+                    onClick={() => onDocumentClick(document)}
+                    sx={{
+                      cursor: "pointer",
+                      backgroundColor: isSelected
+                        ? theme.palette.action.selected
+                        : "transparent",
+                      "&:hover": {
+                        backgroundColor: isSelected
+                          ? theme.palette.action.selected
+                          : theme.palette.action.hover,
                       },
-                      {
-                        id: "download",
-                        label: t("files.download"),
-                        icon: <DownloadIcon sx={{ fontSize: 18 }} />,
-                        onClick: (e: React.MouseEvent) => {
-                          e.stopPropagation();
-                          handleDownload(document);
-                        },
-                      },
-                      ...(selectionMode
-                        ? [
+                    }}
+                  >
+                    {selectionMode && (
+                      <TableCell padding="checkbox">
+                        <Checkbox
+                          checked={isSelected}
+                          onChange={() => onToggleSelection?.(document)}
+                          onClick={(e) => e.stopPropagation()}
+                          size="small"
+                        />
+                      </TableCell>
+                    )}
+                    <TableCell>
+                      <Box display="flex" alignItems="center" gap={2}>
+                        <Avatar
+                          sx={{
+                            width: 32,
+                            height: 32,
+                            backgroundColor: `${color}20`,
+                          }}
+                        >
+                          <Icon sx={{ color: color, fontSize: 18 }} />
+                        </Avatar>
+                        <Typography variant="body2" noWrap>
+                          {document.name}
+                        </Typography>
+                      </Box>
+                    </TableCell>
+                    <TableCell>
+                      <Typography variant="body2" color="text.secondary">
+                        {getFileTypeName(document.mimeType)}
+                      </Typography>
+                    </TableCell>
+                    <TableCell>
+                      <Typography variant="body2" color="text.secondary">
+                        {formatFileSize(document.size)}
+                      </Typography>
+                    </TableCell>
+                    <TableCell>
+                      <Typography variant="body2" color="text.secondary">
+                        {format(document.uploadedAt, "MMM dd, yyyy")}
+                      </Typography>
+                    </TableCell>
+                    <TableCell>
+                      <Box onClick={(e) => e.stopPropagation()}>
+                        <MoreOptionsMenu
+                          items={[
                             {
-                              id: "delete",
-                              label: t("files.delete"),
-                              icon: <DeleteIcon sx={{ fontSize: 18 }} />,
-                              color: "error" as const,
+                              id: "preview",
+                              label: t("files.previewInNewTab"),
+                              icon: <PreviewIcon sx={{ fontSize: 18 }} />,
                               onClick: (e: React.MouseEvent) => {
                                 e.stopPropagation();
-                                onDeleteClick(document);
+                                handlePreview(document);
                               },
                             },
-                          ]
-                        : [
                             {
-                              id: "more",
-                              label: t("files.moreOptions"),
+                              id: "download",
+                              label: t("files.download"),
+                              icon: <DownloadIcon sx={{ fontSize: 18 }} />,
                               onClick: (e: React.MouseEvent) => {
                                 e.stopPropagation();
-                                onContextMenu(e as any, document);
+                                handleDownload(document);
                               },
                             },
-                          ]),
-                    ]}
-                  />
-                </Box>
-              </Box>
-            );
-          })}
-        </List>
+                            ...(selectionMode
+                              ? [
+                                  {
+                                    id: "delete",
+                                    label: t("files.delete"),
+                                    icon: <DeleteIcon sx={{ fontSize: 18 }} />,
+                                    color: "error" as const,
+                                    onClick: (e: React.MouseEvent) => {
+                                      e.stopPropagation();
+                                      onDeleteClick(document);
+                                    },
+                                  },
+                                ]
+                              : [
+                                  {
+                                    id: "more",
+                                    label: t("files.moreOptions"),
+                                    onClick: (e: React.MouseEvent) => {
+                                      e.stopPropagation();
+                                      onContextMenu(e as any, document);
+                                    },
+                                  },
+                                ]),
+                          ]}
+                        />
+                      </Box>
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
+            </TableBody>
+          </Table>
+        </TableContainer>
       ) : (
         // Grid View
-        <Box className="overflow-auto" style={{ maxHeight }}>
-          <Box className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-4 sm:gap-8">
-            {documents.map((document) => {
-              const isSelected = isDocumentSelected(document);
-              return (
-                <DocumentCard
-                  key={document.id}
-                  document={document}
-                  isSelected={isSelected}
-                  selectionMode={selectionMode}
-                  onDocumentClick={onDocumentClick}
-                  onToggleSelection={onToggleSelection}
-                  onContextMenu={onContextMenu}
-                  onDeleteClick={onDeleteClick}
-                  onPreview={onPreview}
-                  onDownload={onDownload}
+        <Box>
+          {selectionMode && onSelectAll && documents.length > 0 && (
+            <Box
+              sx={{
+                display: "flex",
+                alignItems: "center",
+                mb: 2,
+                pb: 1,
+                borderBottom: `1px solid ${theme.palette.divider}`,
+              }}
+            >
+              <Tooltip
+                title={
+                  areAllVisibleSelected
+                    ? t("files.deselectAll")
+                    : t("files.selectAll")
+                }
+                arrow
+              >
+                <Checkbox
+                  checked={areAllVisibleSelected}
+                  indeterminate={
+                    areSomeVisibleSelected && !areAllVisibleSelected
+                  }
+                  onChange={onSelectAll}
+                  size="small"
+                  inputProps={{
+                    "aria-label": areAllVisibleSelected
+                      ? t("files.deselectAll")
+                      : t("files.selectAll"),
+                  }}
                 />
-              );
-            })}
+              </Tooltip>
+            </Box>
+          )}
+          <Box className="overflow-auto" style={{ maxHeight }}>
+            <Box className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-4 sm:gap-8">
+              {documents.map((document) => {
+                const isSelected = isDocumentSelected(document);
+                return (
+                  <DocumentCard
+                    key={document.id}
+                    document={document}
+                    isSelected={isSelected}
+                    selectionMode={selectionMode}
+                    onDocumentClick={onDocumentClick}
+                    onToggleSelection={onToggleSelection}
+                    onContextMenu={onContextMenu}
+                    onDeleteClick={onDeleteClick}
+                    onPreview={onPreview}
+                    onDownload={onDownload}
+                  />
+                );
+              })}
+            </Box>
           </Box>
         </Box>
       )}

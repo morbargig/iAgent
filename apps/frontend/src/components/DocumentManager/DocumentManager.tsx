@@ -4,7 +4,6 @@ import { DocumentFile } from "../../types/document.types";
 import { DocumentService } from "../../services/documentService";
 import { DocumentToolbar } from "./DocumentToolbar";
 import { DocumentList } from "./DocumentList";
-import { BulkActionsToolbar } from "./BulkActionsToolbar";
 import { DocumentDialogs } from "./DocumentDialogs";
 import { useDocumentManager } from "./hooks/useDocumentManager";
 import { useDocumentActions } from "./hooks/useDocumentActions";
@@ -16,6 +15,7 @@ interface DocumentManagerProps {
   onDocumentPreview?: (document: DocumentFile) => void;
   onDocumentDelete?: (document: DocumentFile) => void;
   onToggleSelection?: (document: DocumentFile) => void;
+  onSelectAll?: (documents: DocumentFile[]) => void;
   onClearSelection?: () => void;
   selectionMode?: boolean;
   selectedDocuments?: DocumentFile[];
@@ -29,6 +29,7 @@ export const DocumentManager: React.FC<DocumentManagerProps> = ({
   onDocumentPreview,
   onDocumentDelete,
   onToggleSelection,
+  onSelectAll,
   onClearSelection,
   selectionMode = false,
   selectedDocuments = [],
@@ -117,6 +118,26 @@ export const DocumentManager: React.FC<DocumentManagerProps> = ({
     openDeleteDialog(document);
   };
 
+  const handleSelectAll = () => {
+    if (onSelectAll && documents.length > 0) {
+      onSelectAll(documents);
+    }
+  };
+
+  const areAllVisibleSelected = () => {
+    if (documents.length === 0) return false;
+    return documents.every((doc) =>
+      selectedDocuments.some((selected) => selected.id === doc.id)
+    );
+  };
+
+  const areSomeVisibleSelected = () => {
+    if (documents.length === 0) return false;
+    return documents.some((doc) =>
+      selectedDocuments.some((selected) => selected.id === doc.id)
+    );
+  };
+
   return (
     <Box sx={{ width: "100%" }}>
       <DocumentToolbar
@@ -130,12 +151,8 @@ export const DocumentManager: React.FC<DocumentManagerProps> = ({
         onSearch={handleSearch}
         error={error}
         onErrorClose={handleErrorClose}
-      />
-
-      <BulkActionsToolbar
-        selectedDocuments={selectedDocuments}
         selectionMode={selectionMode}
-        onBulkDeleteClick={handleBulkDeleteClick}
+        selectedDocumentsCount={selectedDocuments.length}
       />
 
       <DocumentList
@@ -154,6 +171,10 @@ export const DocumentManager: React.FC<DocumentManagerProps> = ({
         onDeleteClick={handleDeleteClick}
         onPageChange={handlePageChange}
         isDocumentSelected={isDocumentSelected}
+        onSelectAll={handleSelectAll}
+        areAllVisibleSelected={areAllVisibleSelected()}
+        areSomeVisibleSelected={areSomeVisibleSelected()}
+        onBulkDeleteClick={handleBulkDeleteClick}
       />
 
       <DocumentDialogs

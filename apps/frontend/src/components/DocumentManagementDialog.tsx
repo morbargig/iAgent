@@ -137,6 +137,27 @@ export const DocumentManagementDialog: React.FC<
     });
   };
 
+  // Handle select all documents (toggle behavior)
+  const handleSelectAll = (documents: DocumentFile[]) => {
+    setSelectedDocs((prev) => {
+      const visibleIds = new Set(documents.map((d) => d.id));
+      const selectedVisibleIds = new Set(
+        prev.filter((d) => visibleIds.has(d.id)).map((d) => d.id)
+      );
+      const allVisibleSelected = documents.every((d) =>
+        selectedVisibleIds.has(d.id)
+      );
+
+      if (allVisibleSelected) {
+        return prev.filter((d) => !visibleIds.has(d.id));
+      } else {
+        const existingIds = new Set(prev.map((d) => d.id));
+        const newDocuments = documents.filter((d) => !existingIds.has(d.id));
+        return [...prev, ...newDocuments];
+      }
+    });
+  };
+
   // Handle clearing selection
   const handleClearSelection = () => {
     setSelectedDocs([]);
@@ -256,6 +277,7 @@ export const DocumentManagementDialog: React.FC<
               selectionMode={selectionMode}
               selectedDocuments={selectedDocs}
               onToggleSelection={handleToggleSelection}
+              onSelectAll={handleSelectAll}
               onClearSelection={handleClearSelection}
               showUploadButton={false}
             />

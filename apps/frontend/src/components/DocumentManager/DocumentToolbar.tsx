@@ -30,6 +30,8 @@ interface DocumentToolbarProps {
   onSearch: (query: string) => void;
   error: string | null;
   onErrorClose: () => void;
+  selectionMode?: boolean;
+  selectedDocumentsCount?: number;
 }
 
 export const DocumentToolbar: React.FC<DocumentToolbarProps> = ({
@@ -43,6 +45,8 @@ export const DocumentToolbar: React.FC<DocumentToolbarProps> = ({
   onSearch,
   error,
   onErrorClose,
+  selectionMode = false,
+  selectedDocumentsCount = 0,
 }) => {
   const { t } = useTranslation();
 
@@ -54,9 +58,20 @@ export const DocumentToolbar: React.FC<DocumentToolbarProps> = ({
         justifyContent="space-between"
         mb={2}
       >
-        <Typography variant="h6">
-          {t("files.documents")} ({totalDocuments})
-        </Typography>
+        <Box display="flex" alignItems="center" gap={2}>
+          <Typography variant="h6">
+            {t("files.documents")} ({totalDocuments})
+          </Typography>
+          {selectionMode && selectedDocumentsCount > 0 && (
+            <Typography variant="body2" color="primary">
+              {selectedDocumentsCount > 1 && `${selectedDocumentsCount} `}
+              {selectedDocumentsCount === 1 ? t("files.file") : t("files.files")}{" "}
+              {selectedDocumentsCount === 1
+                ? t("files.selectedFile")
+                : t("files.selectedFiles")}
+            </Typography>
+          )}
+        </Box>
         <Box display="flex" gap={1}>
           {showUploadButton && (
             <Button
