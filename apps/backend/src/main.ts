@@ -89,6 +89,10 @@ async function bootstrap() {
         .addTag('Environment', 'Environment configuration endpoints')
         .addTag('Files', 'File upload/download endpoints')
         .addServer(baseUrl, environment.production ? 'Production' : 'Development')
+        .setExternalDoc(
+          'Agent API Documentation',
+          `${environment.agentApi.url}/docs`
+        )
         .addBearerAuth(
           {
             type: 'http',
