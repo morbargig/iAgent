@@ -80,13 +80,15 @@ export class ChatMessageDto {
   @ApiPropertyOptional({
     description: 'Message metadata',
     example: { 
-      edited: false, 
-      tokenCount: 25,
-      confidence: 0.95 
+      'iagent-version': '1.0.0',
+      'session-id': 'session_1640995200000_abc123'
     }
   })
   @IsOptional()
-  metadata?: Record<string, unknown>;
+  metadata?: {
+    'iagent-version'?: string;
+    'session-id'?: string;
+  };
 
   @ApiPropertyOptional({
     description: 'Filter ID associated with this message',

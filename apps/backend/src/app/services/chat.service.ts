@@ -11,7 +11,10 @@ export interface CreateMessageDto {
   role: 'user' | 'assistant' | 'system';
   content: string;
   timestamp?: Date;
-  metadata?: Record<string, unknown>;
+  metadata?: {
+    'iagent-version'?: string;
+    'session-id'?: string;
+  };
   filterId?: string | null;
   filterSnapshot?: {
     filterId?: string;

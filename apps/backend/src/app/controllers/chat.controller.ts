@@ -109,7 +109,17 @@ export class ChatController {
         role: { type: 'string', enum: ['user', 'assistant', 'system'], example: 'user' },
         content: { type: 'string', example: 'Hello!' },
         timestamp: { type: 'string', format: 'date-time', example: '2024-01-01T12:00:00.000Z' },
-        metadata: { type: 'object', example: {} },
+        metadata: { 
+          type: 'object', 
+          properties: {
+            'iagent-version': { type: 'string', example: '1.0.0' },
+            'session-id': { type: 'string', example: 'session_1640995200000_abc123' }
+          },
+          example: { 
+            'iagent-version': '1.0.0',
+            'session-id': 'session_1640995200000_abc123'
+          }
+        },
         filterId: { type: 'string', nullable: true },
         filterSnapshot: { type: 'object', nullable: true }
       },
@@ -125,7 +135,10 @@ export class ChatController {
       role: 'user' | 'assistant' | 'system';
       content: string;
       timestamp: string;
-      metadata?: Record<string, unknown>;
+      metadata?: {
+        'iagent-version'?: string;
+        'session-id'?: string;
+      };
       filterId?: string | null;
       filterSnapshot?: {
         filterId?: string;

@@ -398,8 +398,8 @@ export class AppController {
             content: lastUserMessage.content,
             timestamp: lastUserMessage.timestamp,
             metadata: {
-              requestTimestamp: requestTimestamp || new Date().toISOString(),
-              tools: tools || []
+              'iagent-version': environment.app.version,
+              'session-id': sessionId
             },
             filterId,
             filterSnapshot: filterSnapshot || undefined
@@ -750,14 +750,8 @@ export class AppController {
               content: currentContent,
               timestamp: new Date(),
               metadata: {
-                sessionId,
-                model: 'chatgpt-clone-v1',
-                usage: {
-                  promptTokens: promptTokenCount,
-                  completionTokens: totalTokens,
-                  totalTokens: promptTokenCount + totalTokens,
-                },
-                responseType: this.getResponseType(lastUserContent),
+                'iagent-version': environment.app.version,
+                'session-id': sessionId
               },
               filterId: assistantPlaceholderDto.filterId || lastUserMessageDto?.filterId || null,
               filterSnapshot: assistantPlaceholderDto.filterSnapshot || lastUserMessageDto?.filterSnapshot,
