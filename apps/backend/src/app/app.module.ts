@@ -11,6 +11,7 @@ import { JwtAuthGuard } from './auth/jwt-auth.guard';
 import { ChatController } from './controllers/chat.controller';
 import { EnvironmentController } from './controllers/environment.controller';
 import { FileController } from './controllers/file.controller';
+import { DatabaseController } from './controllers/database.controller';
 import { ChatService } from './services/chat.service';
 import { FileService } from './services/file.service';
 import { Chat, ChatSchema, ChatMessage, ChatMessageSchema, ChatFilter, ChatFilterSchema } from './schemas/chat.schema';
@@ -40,7 +41,7 @@ import { environment } from '../environments/environment';
       { name: ChatFilter.name, schema: ChatFilterSchema }
     ])
   ],
-  controllers: [AppController, ChatController, EnvironmentController, FileController],
+  controllers: [AppController, ChatController, EnvironmentController, FileController, DatabaseController],
   providers: [AppService, AuthService, AuthGuard, ChatService, FileService, JwtStrategy, JwtAuthGuard],
 })
 export class AppModule {
