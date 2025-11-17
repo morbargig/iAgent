@@ -56,10 +56,11 @@ WORKDIR /app
 COPY --from=builder --chown=nestjs:nodejs /app/dist/apps/agent-api ./
 
 # Copy generated package.json and install only production dependencies
-COPY --from=builder --chown=nestjs:nodejs /app/dist/apps/agent-api/package*.json ./
+COPY --from=builder --chown=nestjs:nodejs /app/dist/apps/agent-api/package.json ./
 
 # Install production dependencies for the built application
-RUN npm ci --only=production && npm cache clean --force
+# Using npm install instead of npm ci since webpack generates package.json without lock file
+RUN npm install --production && npm cache clean --force
 
 # Switch to non-root user
 USER nestjs
