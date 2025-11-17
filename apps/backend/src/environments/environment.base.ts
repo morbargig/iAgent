@@ -3,7 +3,7 @@ import { requireEnv, getPort, getCorsOrigins, getAppVersion } from './environmen
 
 export const baseEnvironment: Omit<Environment, 'production' | 'port' | 'host' | 'apiUrl' | 'frontendUrl'> = {
   app: {
-    name: 'iAgent BFF',
+    name: 'iAgent Backend',
     version: getAppVersion(),
   },
   
@@ -55,6 +55,10 @@ export const baseEnvironment: Omit<Environment, 'production' | 'port' | 'host' |
     enableCors: true,
     enableRateLimit: false,
     enableHelmet: false
+  },
+
+  agentApi: {
+    url: process.env.AGENT_API_URL || 'http://localhost:3033'
   }
 };
 

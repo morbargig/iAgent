@@ -20,15 +20,15 @@ import { AppFooter } from "../components/AppFooter";
 import { parseReportId } from "../utils/reportLinks";
 
 import {
-  StreamingClient,
   createMessage,
   updateMessageContent,
   type Message,
   type Conversation,
-  type StreamingCompletionPayload,
   type ParsedMessageContent,
   buildParsedMessageContent,
 } from "@iagent/chat-types";
+import type { StreamingCompletionPayload } from "@iagent/shared-renderer";
+import { StreamingClient } from "../utils/streaming-client";
 import { convertMongoMessageToMessage } from "../utils/chunkConverter";
 import { useMockMode } from "../hooks/useMockMode";
 import { useAppLocalStorage, useAppSessionStorage } from "../hooks/storage";

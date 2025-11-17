@@ -9,36 +9,36 @@ export interface Environment {
   host: string;
   apiUrl: string;
   frontendUrl: string;
-  
+
   app: {
     name: string;
     version: string;
   };
-  
+
   mongodb: {
     uri: string;
     dbName: string;
   };
-  
+
   fileUpload: {
     maxFileSize: number;
     maxTotalSize: number;
     maxFileCount: number;
     acceptedTypes: string[];
   };
-  
+
   jwt: {
     secret: string;
     expiresIn: string;
   };
-  
+
   cors: {
     origins: (string | RegExp)[];
     methods: string[];
     allowedHeaders: string[];
     credentials: boolean;
   };
-  
+
   swagger: {
     enabled: boolean;
     title: string;
@@ -51,18 +51,21 @@ export interface Environment {
       email?: string;
     };
   };
-  
+
   logging: {
     level: string;
     enableConsole: boolean;
     enableFile: boolean;
   };
-  
+
   features: {
     enableSwagger: boolean;
     enableCors: boolean;
     enableRateLimit: boolean;
     enableHelmet: boolean;
+  };
+  agentApi: {
+    url: string;
   };
 }
 

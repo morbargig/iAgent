@@ -58,7 +58,8 @@
         "targetName": "test"
       },
       "exclude": [
-        "backend-e2e/**/*"
+        "backend-e2e/**/*",
+        "apps/agent-api-e2e/**/*"
       ]
     },
     {
@@ -67,6 +68,17 @@
         "buildTargetName": "build",
         "buildDepsTargetName": "build-deps",
         "watchDepsTargetName": "watch-deps"
+      }
+    },
+    {
+      "plugin": "@nx/webpack/plugin",
+      "options": {
+        "buildTargetName": "webpack:build",
+        "serveTargetName": "webpack:serve",
+        "previewTargetName": "preview",
+        "buildDepsTargetName": "build-deps",
+        "watchDepsTargetName": "watch-deps",
+        "serveStaticTargetName": "serve-static"
       }
     }
   ],

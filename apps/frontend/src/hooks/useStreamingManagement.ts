@@ -1,5 +1,7 @@
 import { useState, useRef, useEffect, useCallback } from "react";
-import { StreamingClient, updateMessageContent, type Conversation, type StreamingCompletionPayload, buildParsedMessageContent, type ParsedMessageContent } from "@iagent/chat-types";
+import { updateMessageContent, type Conversation, buildParsedMessageContent, type ParsedMessageContent } from "@iagent/chat-types";
+import type { StreamingCompletionPayload } from "@iagent/shared-renderer";
+import { StreamingClient } from "../utils/streaming-client";
 import { useSaveMessage } from "../features/chats/api";
 
 interface UseStreamingManagementProps {

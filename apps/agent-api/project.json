@@ -1,0 +1,67 @@
+{
+  "name": "@iagent/agent-api",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "targets": {
+    "build": {
+      "executor": "@nx/webpack:webpack",
+      "outputs": [
+        "{options.outputPath}"
+      ],
+      "defaultConfiguration": "production",
+      "options": {
+        "outputPath": "dist/apps/agent-api",
+        "main": "apps/agent-api/src/main.ts",
+        "tsConfig": "apps/agent-api/tsconfig.app.json",
+        "webpackConfig": "apps/agent-api/webpack.config.js",
+        "assets": ["apps/agent-api/src/assets"]
+      },
+      "configurations": {
+        "local": {
+          "optimization": false,
+          "extractLicenses": false,
+          "sourceMap": true,
+          "watch": true
+        },
+        "development": {
+          "optimization": false,
+          "extractLicenses": false,
+          "sourceMap": true,
+          "watch": true
+        },
+        "production": {
+          "optimization": true,
+          "extractLicenses": true,
+          "sourceMap": false,
+          "watch": false
+        }
+      }
+    },
+    "serve": {
+      "executor": "@nx/js:node",
+      "defaultConfiguration": "development",
+      "options": {
+        "buildTarget": "@iagent/agent-api:build:development",
+        "watch": true,
+        "runBuildTargetDependencies": true
+      },
+      "configurations": {
+        "development": {
+          "buildTarget": "@iagent/agent-api:build:development",
+          "watch": true,
+          "runBuildTargetDependencies": true
+        },
+        "production": {
+          "buildTarget": "@iagent/agent-api:build:production",
+          "watch": false,
+          "runBuildTargetDependencies": true
+        }
+      }
+    }
+  },
+  "projectType": "application",
+  "tags": [
+    "scope:agent-api",
+    "type:app"
+  ]
+}
+

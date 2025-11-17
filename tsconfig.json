@@ -7,9 +7,6 @@
       "path": "./apps/frontend"
     },
     {
-      "path": "./apps/backend"
-    },
-    {
       "path": "./libs/chat-types"
     },
     {
@@ -17,6 +14,12 @@
     },
     {
       "path": "./libs/shared/renderer"
+    },
+    {
+      "path": "./apps/agent-api"
+    },
+    {
+      "path": "./apps/backend"
     }
   ]
 }

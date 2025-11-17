@@ -33,7 +33,7 @@ export interface ChatDividerBlock {
 }
 
 export interface ChatTableBlock {
-  type: 'table';
+  type: 'app-table';
   headers: string[];
   rows: string[][];
   presentation: TablePresentation;
@@ -186,7 +186,7 @@ const ORDERED_LIST_REGEX = /^\s*(\d+)\.\s+(.*)$/;
 const UNORDERED_LIST_REGEX = /^\s*[-*+]\s+(.*)$/;
 const DIVIDER_REGEX = /^\s*(-{3,}|_{3,}|\*{3,})\s*$/;
 const TABLE_DIVIDER_REGEX = /^\s*\|?(?:\s*:?-{3,}:?\s*\|)+\s*$/;
-const TABLE_CAPTION_REGEX = /^(?:table|טבלה)\s*[:\-]\s*(.+)$/i;
+const TABLE_CAPTION_REGEX = /^(?:table|טבלה)\s*[:-]\s*(.+)$/i;
 const TABLE_CITATION_REGEX = /\[table-(\d+)\]/gi;
 const TABLE_CITATION_DEFINITION_REGEX = /^table-citation:\s*(\w+)/i;
 
@@ -377,7 +377,7 @@ export const parseMarkdownToBlocks = (markdown: string): ChatContentBlock[] => {
       }
 
       blocks.push({
-        type: 'table',
+        type: 'app-table',
         headers: tableCandidate.headers,
         rows: tableCandidate.rows,
         presentation,
@@ -466,7 +466,7 @@ export const parseMarkdownToBlocks = (markdown: string): ChatContentBlock[] => {
     }
 
     const paragraphText = paragraphLines.join(' ');
-    const REPORT_BLOCK_REGEX = /^report\s*[:\-]\s*(\{[\s\S]*\})$/i;
+    const REPORT_BLOCK_REGEX = /^report\s*[:-]\s*(\{[\s\S]*\})$/i;
     const reportMatch = REPORT_BLOCK_REGEX.exec(paragraphText);
     if (reportMatch) {
       try {
@@ -483,7 +483,7 @@ export const parseMarkdownToBlocks = (markdown: string): ChatContentBlock[] => {
           metadata: { ...rest, metadata },
         });
         continue;
-      } catch (error) {
+      } catch {
         // ignore malformed report payloads and treat as paragraph
       }
     }
@@ -570,9 +570,9 @@ const blocksToPlainText = (blocks: ChatContentBlock[]): string => {
           return block.text;
         case 'divider':
           return '';
-        case 'table':
+        case 'app-table':
           return `${block.caption ? `${block.caption}\n` : ''}${block.headers.join(' | ')}\n${block.rows
-            .map((row) => row.join(' | '))
+            .map((row: string[]) => row.join(' | '))
             .join('\n')}`;
         case 'report':
           return `${block.title}${block.summary ? ` - ${block.summary}` : ''}`;
@@ -619,7 +619,7 @@ const blocksToCustomElements = (blocks: ChatContentBlock[]): CustomElementNode[]
         });
         break;
       }
-      case 'table': {
+      case 'app-table': {
         const tablePayload = {
           headers: block.headers,
           rows: block.rows,

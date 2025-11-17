@@ -1,5 +1,7 @@
 import { useCallback } from "react";
-import { createMessage, updateMessageContent, type Message, type Conversation, type StreamingCompletionPayload, type ParsedMessageContent, buildParsedMessageContent, StreamingClient } from "@iagent/chat-types";
+import { createMessage, updateMessageContent, type Message, type Conversation, buildParsedMessageContent, type ParsedMessageContent } from "@iagent/chat-types";
+import type { StreamingCompletionPayload } from "@iagent/shared-renderer";
+import { StreamingClient } from "../utils/streaming-client";
 import { generateUniqueId } from "../utils/id-generator";
 import { useSaveMessage, useCreateChat } from "../features/chats/api";
 import { getBaseApiUrl } from "../config/config";
