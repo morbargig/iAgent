@@ -67,11 +67,13 @@
     "backend"
   ],
   "dependencies": {
+    "@nestjs/axios": "^4.0.1",
     "@nestjs/jwt": "^11.0.1",
     "@nestjs/mongoose": "^11.0.3",
     "@nestjs/passport": "^11.0.5",
-    "mongoose": "^8.19.2",
+    "axios": "^1.13.2",
     "mongodb": "^6.20.0",
+    "mongoose": "^8.19.2",
     "passport": "^0.7.0",
     "passport-jwt": "^4.0.1"
   },

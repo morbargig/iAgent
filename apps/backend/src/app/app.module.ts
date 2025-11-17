@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
 import { JwtModule } from '@nestjs/jwt';
 import { PassportModule } from '@nestjs/passport';
+import { HttpModule } from '@nestjs/axios';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { AuthService } from './auth/auth.service';
@@ -19,6 +20,7 @@ import { environment } from '../environments/environment';
 
 @Module({
   imports: [
+    HttpModule,
     PassportModule,
     JwtModule.register({
       secret: process.env.JWT_SECRET || 'demo-secret-key-for-development',

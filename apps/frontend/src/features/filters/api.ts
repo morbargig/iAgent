@@ -1,4 +1,6 @@
+
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import axios from 'axios';
 import { http } from '../../lib/http';
 import { apiKeys } from '../../lib/keys';
 import { getApiUrl } from '../../config/config';
@@ -26,26 +28,39 @@ export const useFilters = (chatId: string | number | null) => {
       const token = getAuthToken();
       if (!token) return [];
 
-      if (chatId) {
-        const response = await http.get<ChatFilter[]>(getApiUrl(`/chats/${chatId}/filters`), {
+      try {
+        if (chatId) {
+          const response = await http.get<ChatFilter[]>(getApiUrl(`/chats/${chatId}/filters`), {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          });
+          return response.data;
+        }
+
+        const response = await http.get<ChatFilter[]>(getApiUrl(`/chats/filters`), {
           headers: {
             Authorization: `Bearer ${token}`,
           },
         });
-        return response.data;
+        return response.data.filter(f => f.chatId === null);
+      } catch (error: unknown) {
+        if (axios.isAxiosError(error) && error.response?.status === 404) {
+          return [];
+        }
+        throw error;
       }
-
-      const response = await http.get<ChatFilter[]>(getApiUrl(`/chats/filters`), {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-      return response.data.filter(f => f.chatId === null);
     },
     staleTime: 2 * 60 * 1000,
     enabled: !!getAuthToken(),
     refetchOnWindowFocus: false,
     refetchOnMount: true,
+    retry: (failureCount, error) => {
+      if (axios.isAxiosError(error) && error.response?.status === 404) {
+        return false;
+      }
+      return failureCount < 2;
+    },
   });
 };
 

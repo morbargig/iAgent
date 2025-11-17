@@ -1,5 +1,7 @@
 import { Controller, Get, Post, Body, Res, HttpStatus } from '@nestjs/common';
 import type { Response } from 'express';
+import { HttpService } from '@nestjs/axios';
+import { firstValueFrom } from 'rxjs';
 import {
   ApiTags,
   ApiOperation,
@@ -44,7 +46,8 @@ interface ChatMessage {
 export class AppController {
   constructor(
     private readonly chatService: ChatService,
-    private readonly authService: AuthService
+    private readonly authService: AuthService,
+    private readonly httpService: HttpService
   ) { }
 
   @Get()
@@ -390,36 +393,30 @@ export class AppController {
         const agentApiUrl = `${environment.agentApi.url}/api/chat/stream`;
         console.log('🔄 Forwarding request to agent-api:', agentApiUrl);
 
-        const agentResponse = await fetch(agentApiUrl, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(request),
-        });
+        const response = await firstValueFrom(
+          this.httpService.post(agentApiUrl, request, {
+            responseType: 'stream',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+          })
+        );
 
-        if (!agentResponse.ok) {
-          throw new Error(`Agent API returned ${agentResponse.status}: ${agentResponse.statusText}`);
-        }
-
-        if (!agentResponse.body) {
-          throw new Error('Agent API response has no body');
-        }
-
-        const reader = agentResponse.body.getReader();
+        const stream = response.data;
         const decoder = new TextDecoder();
         let finalContent = '';
         let completeChunk: { chunkType: string; data?: { finalContent?: string } } | null = null;
+        let buffer = '';
 
         try {
-          while (true) {
-            const { done, value } = await reader.read();
-            if (done) break;
-
-            const chunk = decoder.decode(value, { stream: true });
-            const lines = chunk.split('\n').filter(line => line.trim());
+          for await (const chunk of stream) {
+            buffer += decoder.decode(chunk, { stream: true });
+            const lines = buffer.split('\n');
+            buffer = lines.pop() || '';
 
             for (const line of lines) {
+              if (!line.trim()) continue;
+              
               try {
                 const parsed = JSON.parse(line);
                 
@@ -435,6 +432,24 @@ export class AppController {
               } catch (parseError) {
                 console.error('Failed to parse chunk:', parseError);
               }
+            }
+          }
+
+          if (buffer.trim()) {
+            try {
+              const parsed = JSON.parse(buffer);
+              
+              if (parsed.chunkType === 'token' && parsed.data?.token) {
+                finalContent += parsed.data.token;
+              }
+              
+              if (parsed.chunkType === 'complete') {
+                completeChunk = parsed;
+              }
+
+              res.write(buffer + '\n');
+            } catch (parseError) {
+              console.error('Failed to parse final buffer:', parseError);
             }
           }
 

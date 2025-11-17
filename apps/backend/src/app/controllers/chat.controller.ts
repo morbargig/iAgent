@@ -270,6 +270,24 @@ export class ChatController {
   // ==================== FILTER ENDPOINTS ====================
   // Note: More specific routes (filters/:filterId) must come before parameterized routes (:chatId/filters)
 
+  @Get('filters')
+  @ApiOperation({
+    summary: 'Get all filters for user',
+    description: 'Retrieves all filter configurations for the user (global and chat-specific).'
+  })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'Filters retrieved successfully'
+  })
+  async getAllFilters(@UserId() userId: string) {
+    try {
+      return await this.chatService.getAllFiltersForUser(userId);
+    } catch (error) {
+      this.logger.error(`Failed to get filters for user ${userId}:`, error);
+      throw new InternalServerErrorException('Failed to retrieve filters');
+    }
+  }
+
   @Put('filters/:filterId')
   @ApiOperation({
     summary: 'Update a filter',
@@ -388,24 +406,6 @@ export class ChatController {
     } catch (error) {
       this.logger.error(`Failed to create filter for chat ${chatId}:`, error);
       throw new BadRequestException('Failed to create filter');
-    }
-  }
-
-  @Get('filters')
-  @ApiOperation({
-    summary: 'Get all filters for user',
-    description: 'Retrieves all filter configurations for the user (global and chat-specific).'
-  })
-  @ApiResponse({
-    status: HttpStatus.OK,
-    description: 'Filters retrieved successfully'
-  })
-  async getAllFilters(@UserId() userId: string) {
-    try {
-      return await this.chatService.getAllFiltersForUser(userId);
-    } catch (error) {
-      this.logger.error(`Failed to get filters for user ${userId}:`, error);
-      throw new InternalServerErrorException('Failed to retrieve filters');
     }
   }
 
