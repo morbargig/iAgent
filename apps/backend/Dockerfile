@@ -31,6 +31,9 @@ RUN npm i && npm cache clean --force
 # Copy the entire apps/backend directory (including src)
 COPY apps/backend/ ./apps/backend/
 
+# Sync TypeScript project references before building
+RUN npx nx sync
+
 # Build the application using Nx
 RUN npx nx build backend --configuration=production
 

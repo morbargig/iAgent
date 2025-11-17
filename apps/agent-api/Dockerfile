@@ -34,6 +34,9 @@ COPY apps/agent-api/ ./apps/agent-api/
 # Set build environment variables
 ENV NODE_ENV=production
 
+# Sync TypeScript project references before building
+RUN npx nx sync
+
 # Build the application using Nx (it will automatically build dependencies)
 RUN npx nx build agent-api --configuration=production
 
