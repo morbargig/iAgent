@@ -8,6 +8,7 @@ WORKDIR /app
 # Copy all package files first for better caching
 COPY package*.json ./
 COPY tsconfig.base.json ./
+COPY tsconfig.json ./
 COPY nx.json ./
 COPY jest.config.ts ./
 COPY jest.preset.js ./
@@ -30,7 +31,10 @@ RUN npm i && npm cache clean --force
 # Copy the entire apps/agent-api directory (including src)
 COPY apps/agent-api/ ./apps/agent-api/
 
-# Build the application using Nx
+# Set build environment variables
+ENV NODE_ENV=production
+
+# Build the application using Nx (it will automatically build dependencies)
 RUN npx nx build agent-api --configuration=production
 
 # Stage 2: Runtime stage
