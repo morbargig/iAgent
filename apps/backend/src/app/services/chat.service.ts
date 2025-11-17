@@ -41,7 +41,6 @@ export interface CreateChatInput {
   userId: string;
   chatId?: string;
   name?: string;
-  tags?: string[];
   settings?: Record<string, unknown>;
 }
 
@@ -151,8 +150,6 @@ export class ChatService {
         createdAt: now,
         lastMessageAt: now,
         messageCount: 0,
-        archived: false,
-        tags: input.tags ?? [],
         settings: input.settings ?? {},
       });
 
@@ -306,7 +303,7 @@ export class ChatService {
   async listChats(userId: string): Promise<ChatDocument[]> {
     return this.chatModel
       .find({ userId })
-      .sort({ archived: 1, lastMessageAt: -1 })
+      .sort({ lastMessageAt: -1 })
       .exec();
   }
 
