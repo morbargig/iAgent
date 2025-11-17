@@ -1,5 +1,7 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { useFilters, useCreateFilter, useUpdateFilter, useDeleteFilter, useSetActiveFilter } from "../features/filters/api";
+import { useQueryClient } from "@tanstack/react-query";
+import { apiKeys } from "../lib/keys";
 import type { ToolConfiguration } from "../components/ToolSettingsDialog";
 import type { ToolId } from "../utils/toolUtils";
 import type { DateRangeSettings } from "../types/storage.types";
@@ -25,8 +27,10 @@ interface FilterConfig {
 
 interface ChatFilter {
     filterId: string;
+    version: number;
     name: string;
     config: FilterConfig;
+    chatId: string | null;
     isActive?: boolean;
     createdAt: string;
 }
@@ -168,8 +172,8 @@ export const useFilterManagement = ({
     const setActiveFilterMutation = useSetActiveFilter();
 
     const handleSaveNewFilter = async (name: string, isGlobal: boolean) => {
-        if (!currentChatId || !authToken) {
-            console.error("Cannot create filter: missing chatId or authToken");
+        if (!authToken) {
+            console.error("Cannot create filter: missing authToken");
             return;
         }
 
@@ -201,25 +205,30 @@ export const useFilterManagement = ({
 
         try {
             const savedFilter = await createFilterMutation.mutateAsync({
-                chatId: currentChatId,
+                chatId: isGlobal ? null : (currentChatId || null),
                 filterId,
                 name,
                 filterConfig,
                 isActive: true,
+                isGlobal,
             });
 
             const newFilter: ChatFilter = {
                 filterId: savedFilter.filterId,
+                version: savedFilter.version,
                 name: savedFilter.name,
                 config: savedFilter.filterConfig,
+                chatId: savedFilter.chatId,
                 isActive: savedFilter.isActive || true,
                 createdAt: savedFilter.createdAt || new Date().toISOString(),
             };
 
-            await setActiveFilterMutation.mutateAsync({
-                chatId: currentChatId,
-                filterId: newFilter.filterId,
-            });
+            if (!isGlobal && currentChatId) {
+                await setActiveFilterMutation.mutateAsync({
+                    chatId: currentChatId,
+                    filterId: newFilter.filterId,
+                });
+            }
 
             await selectFilter(newFilter);
         } catch (error) {
@@ -256,15 +265,17 @@ export const useFilterManagement = ({
     const transformedFilters = useMemo(() => {
         return filtersData.map((f) => ({
             filterId: f.filterId,
+            version: f.version,
             name: f.name,
             config: f.filterConfig,
+            chatId: f.chatId,
             isActive: f.isActive || false,
             createdAt: f.createdAt || new Date().toISOString(),
         }));
     }, [filtersData]);
 
     useEffect(() => {
-        const currentFiltersKey = JSON.stringify(transformedFilters.map(f => f.filterId));
+        const currentFiltersKey = JSON.stringify(transformedFilters.map(f => `${f.filterId}-${f.version}`));
         
         if (currentFiltersKey !== previousFiltersRef.current) {
             setChatFilters(transformedFilters);
@@ -273,6 +284,14 @@ export const useFilterManagement = ({
             previousFiltersRef.current = currentFiltersKey;
         }
     }, [transformedFilters]);
+
+    const queryClient = useQueryClient();
+    
+    useEffect(() => {
+        if (currentChatId) {
+            queryClient.invalidateQueries({ queryKey: apiKeys.filters.list(currentChatId) });
+        }
+    }, [currentChatId, queryClient]);
 
     const loadAllFilters = useCallback(async () => {
         // Filters are now loaded via useFilters hook

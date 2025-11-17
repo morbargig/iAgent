@@ -24,11 +24,7 @@ export interface Message {
   isStreaming?: boolean;
   isInterrupted?: boolean; // Add flag to indicate if generation was stopped in the middle
   filterId?: string | null; // Associated filter ID
-  filterSnapshot?: {
-    filterId?: string;
-    name?: string;
-    config?: Record<string, unknown>;
-  } | null; // Filter configuration snapshot at time of message creation
+  filterVersion?: number | null; // Filter version at time of message creation
   attachments?: Array<{
     id: string;
     filename?: string;
@@ -226,11 +222,7 @@ export function createMessage(
   content: string,
   isStreaming = false,
   filterId?: string | null,
-  filterSnapshot?: {
-    filterId?: string;
-    name?: string;
-    config?: Record<string, unknown>;
-  } | null
+  filterVersion?: number | null
 ): Message {
   return {
     id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
@@ -239,7 +231,7 @@ export function createMessage(
     timestamp: new Date(),
     isStreaming,
     filterId: filterId || null,
-    filterSnapshot: filterSnapshot || null,
+    filterVersion: filterVersion || null,
   };
 }
 

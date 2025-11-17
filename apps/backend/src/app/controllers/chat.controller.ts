@@ -121,7 +121,7 @@ export class ChatController {
           }
         },
         filterId: { type: 'string', nullable: true },
-        filterSnapshot: { type: 'object', nullable: true }
+        filterVersion: { type: 'number', nullable: true }
       },
       required: ['id', 'role', 'content', 'timestamp']
     }
@@ -140,11 +140,7 @@ export class ChatController {
         'session-id'?: string;
       };
       filterId?: string | null;
-      filterSnapshot?: {
-        filterId?: string;
-        name?: string;
-        config?: Record<string, unknown>;
-      } | null;
+      filterVersion?: number | null;
     }
   ) {
     try {
@@ -157,7 +153,7 @@ export class ChatController {
         timestamp: new Date(body.timestamp),
         metadata: body.metadata,
         filterId: body.filterId,
-        filterSnapshot: body.filterSnapshot
+        filterVersion: body.filterVersion
       });
     } catch (error) {
       this.logger.error(`Failed to add message ${body.id} to chat ${chatId}:`, error);
@@ -238,15 +234,8 @@ export class ChatController {
       type: 'object',
       properties: {
         content: { type: 'string', example: 'Updated message content' },
-        filterSnapshot: {
-          type: 'object',
-          nullable: true,
-          properties: {
-            filterId: { type: 'string' },
-            name: { type: 'string' },
-            config: { type: 'object' },
-          },
-        },
+        filterId: { type: 'string', nullable: true },
+        filterVersion: { type: 'number', nullable: true },
       },
       required: ['content'],
     },
@@ -258,11 +247,8 @@ export class ChatController {
     @UserId() userId: string,
     @Body() body: {
       content: string;
-      filterSnapshot?: {
-        filterId?: string;
-        name?: string;
-        config?: Record<string, unknown>;
-      } | null;
+      filterId?: string | null;
+      filterVersion?: number | null;
     }
   ) {
     try {
@@ -271,7 +257,8 @@ export class ChatController {
         userId,
         messageId,
         body.content,
-        body.filterSnapshot
+        body.filterId,
+        body.filterVersion
       );
     } catch (error) {
       this.logger.error(`Failed to edit message ${messageId} in chat ${chatId}:`, error);
@@ -349,9 +336,9 @@ export class ChatController {
   @Post(':chatId/filters')
   @ApiOperation({
     summary: 'Create a new filter for a chat',
-    description: 'Creates a new filter configuration for the specified chat. Requires Bearer token authentication.'
+    description: 'Creates a new filter configuration for the specified chat. Pass null chatId for global filters.'
   })
-  @ApiParam({ name: 'chatId', description: 'Chat ID' })
+  @ApiParam({ name: 'chatId', description: 'Chat ID (or "global" for global filters)' })
   @ApiBody({
     schema: {
       type: 'object',
@@ -371,7 +358,8 @@ export class ChatController {
             selectedMode: 'flow'
           }
         },
-        isActive: { type: 'boolean', example: false }
+        isActive: { type: 'boolean', example: false },
+        isGlobal: { type: 'boolean', example: false }
       },
       required: ['filterId', 'name', 'filterConfig']
     }
@@ -385,20 +373,39 @@ export class ChatController {
   async createFilter(
     @Param('chatId') chatId: string,
     @UserId() userId: string,
-    @Body() filterData: Omit<CreateFilterDto, 'userId' | 'chatId'>
+    @Body() filterData: Omit<CreateFilterDto, 'userId' | 'chatId'> & { isGlobal?: boolean }
   ) {
     try {
+      const actualChatId = filterData.isGlobal || chatId === 'global' ? null : chatId;
       const createFilterDto: CreateFilterDto = {
         ...filterData,
         userId,
-        chatId
+        chatId: actualChatId
       };
       const filter = await this.chatService.createFilter(createFilterDto);
-      this.logger.log(`Created filter ${createFilterDto.filterId} for chat ${chatId}`);
+      this.logger.log(`Created filter ${createFilterDto.filterId} for ${actualChatId ? `chat ${actualChatId}` : 'user (global)'}`);
       return filter;
     } catch (error) {
       this.logger.error(`Failed to create filter for chat ${chatId}:`, error);
       throw new BadRequestException('Failed to create filter');
+    }
+  }
+
+  @Get('filters')
+  @ApiOperation({
+    summary: 'Get all filters for user',
+    description: 'Retrieves all filter configurations for the user (global and chat-specific).'
+  })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'Filters retrieved successfully'
+  })
+  async getAllFilters(@UserId() userId: string) {
+    try {
+      return await this.chatService.getAllFiltersForUser(userId);
+    } catch (error) {
+      this.logger.error(`Failed to get filters for user ${userId}:`, error);
+      throw new InternalServerErrorException('Failed to retrieve filters');
     }
   }
 
@@ -417,9 +424,10 @@ export class ChatController {
         type: 'object',
         properties: {
           filterId: { type: 'string' },
+          version: { type: 'number' },
           name: { type: 'string' },
           userId: { type: 'string' },
-          chatId: { type: 'string' },
+          chatId: { type: 'string', nullable: true },
           filterConfig: { type: 'object' },
           isActive: { type: 'boolean' },
           createdAt: { type: 'string' },

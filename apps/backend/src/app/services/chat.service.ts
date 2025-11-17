@@ -16,19 +16,16 @@ export interface CreateMessageDto {
     'session-id'?: string;
   };
   filterId?: string | null;
-  filterSnapshot?: {
-    filterId?: string;
-    name?: string;
-    config?: Record<string, unknown>;
-  } | null;
+  filterVersion?: number | null;
   chatName?: string | null;
 }
 
 export interface CreateFilterDto {
   filterId: string;
+  version?: number;
   name: string;
   userId: string;
-  chatId: string;
+  chatId: string | null;
   filterConfig: Record<string, unknown>;
   isActive?: boolean;
 }
@@ -77,7 +74,6 @@ export class ChatService {
       timestamp,
     });
 
-    // Check if message already exists to prevent duplicates
     const existingMessage = await this.messageModel.findOne({
       id: messageDto.id,
       chatId: messageDto.chatId,
@@ -86,7 +82,6 @@ export class ChatService {
 
     if (existingMessage) {
       this.logger.log(`Message ${messageDto.id} already exists, skipping duplicate save`);
-      // Update lastMessageAt but don't increment message count
       await this.chatModel.findOneAndUpdate(
         { chatId: messageDto.chatId, userId: messageDto.userId },
         {
@@ -97,17 +92,16 @@ export class ChatService {
     }
 
     let filterId = messageDto.filterId ?? null;
-    let filterSnapshot = messageDto.filterSnapshot ?? null;
+    let filterVersion = messageDto.filterVersion ?? null;
 
     if (chat.activeFilterId && !filterId) {
-      const activeFilter = await this.filterModel.findOne({ filterId: chat.activeFilterId, userId: messageDto.userId }).exec();
+      const activeFilter = await this.filterModel
+        .findOne({ filterId: chat.activeFilterId, userId: messageDto.userId, isActive: true })
+        .sort({ version: -1 })
+        .exec();
       if (activeFilter) {
         filterId = activeFilter.filterId;
-        filterSnapshot = {
-          filterId: activeFilter.filterId,
-          name: activeFilter.name,
-          config: activeFilter.filterConfig,
-        };
+        filterVersion = activeFilter.version;
       }
     }
 
@@ -115,7 +109,7 @@ export class ChatService {
       ...messageDto,
       timestamp,
       filterId,
-      filterSnapshot,
+      filterVersion,
     };
 
     const message = new this.messageModel(messageWithFilter);
@@ -333,6 +327,10 @@ export class ChatService {
       this.messageModel.deleteMany({ chatId, userId }).exec(),
       this.filterModel.deleteMany({ chatId, userId }).exec(),
     ]);
+
+    setTimeout(async () => {
+      await this.cleanupUnusedFilterVersions(userId);
+    }, 0);
   }
 
   async deleteMessagesFrom(chatId: string, userId: string, messageId: string): Promise<void> {
@@ -367,6 +365,10 @@ export class ChatService {
         messageCount: remainingCount,
       }
     ).exec();
+
+    setTimeout(async () => {
+      await this.cleanupUnusedFilterVersions(userId);
+    }, 0);
   }
 
   async editMessage(
@@ -374,11 +376,8 @@ export class ChatService {
     userId: string,
     messageId: string,
     content: string,
-    filterSnapshot?: {
-      filterId?: string;
-      name?: string;
-      config?: Record<string, unknown>;
-    } | null
+    filterId?: string | null,
+    filterVersion?: number | null
   ): Promise<ChatMessageDocument> {
     const chat = await this.chatModel.findOne({ chatId, userId }).exec();
     if (!chat) {
@@ -405,8 +404,8 @@ export class ChatService {
       { chatId, userId, id: messageId },
       {
         content,
-        filterId: filterSnapshot?.filterId || null,
-        filterSnapshot: filterSnapshot || null,
+        filterId: filterId ?? null,
+        filterVersion: filterVersion ?? null,
         timestamp: new Date(),
       },
       { new: true }
@@ -425,6 +424,10 @@ export class ChatService {
         messageCount: remainingCount,
       }
     ).exec();
+
+    setTimeout(async () => {
+      await this.cleanupUnusedFilterVersions(userId);
+    }, 0);
 
     return updatedMessage;
   }
@@ -446,57 +449,98 @@ export class ChatService {
   // ==================== FILTER MANAGEMENT ====================
 
   async createFilter(createFilterDto: CreateFilterDto): Promise<ChatFilterDocument> {
-    const filter = new this.filterModel(createFilterDto);
+    const latestVersion = await this.filterModel
+      .findOne({ filterId: createFilterDto.filterId, userId: createFilterDto.userId })
+      .sort({ version: -1 })
+      .exec();
+
+    const version = createFilterDto.version ?? (latestVersion ? latestVersion.version + 1 : 1);
+
+    const filter = new this.filterModel({
+      ...createFilterDto,
+      version,
+    });
     const savedFilter = await filter.save();
     
-    // Update chat's associated filters
-    await this.chatModel.findOneAndUpdate(
-      { chatId: createFilterDto.chatId, userId: createFilterDto.userId },
-      { 
-        $addToSet: { associatedFilters: createFilterDto.filterId }
-      }
-    ).exec();
+    if (createFilterDto.chatId) {
+      await this.chatModel.findOneAndUpdate(
+        { chatId: createFilterDto.chatId, userId: createFilterDto.userId },
+        { 
+          $addToSet: { associatedFilters: createFilterDto.filterId }
+        }
+      ).exec();
+    }
     
     return savedFilter;
   }
 
-  async getFiltersForChat(chatId: string, userId: string): Promise<ChatFilterDocument[]> {
+  async getFiltersForChat(chatId: string | null, userId: string): Promise<ChatFilterDocument[]> {
+    if (chatId) {
+      const [chatFilters, globalFilters] = await Promise.all([
+        this.filterModel.find({ userId, chatId }).sort({ version: -1 }).exec(),
+        this.filterModel.find({ userId, chatId: null }).sort({ version: -1 }).exec(),
+      ]);
+      return [...chatFilters, ...globalFilters];
+    }
     return await this.filterModel
-      .find({ chatId, userId })
-      .sort({ createdAt: -1 })
+      .find({ userId, chatId: null })
+      .sort({ version: -1 })
       .exec();
   }
 
+  async getAllFiltersForUser(userId: string): Promise<ChatFilterDocument[]> {
+    return await this.filterModel
+      .find({ userId })
+      .sort({ createdAt: -1, version: -1 })
+      .exec();
+  }
 
   async updateFilter(filterId: string, userId: string, updateData: Partial<CreateFilterDto>): Promise<ChatFilterDocument> {
-    const filter = await this.filterModel
-      .findOneAndUpdate(
-        { filterId, userId },
-        { ...updateData, updatedAt: new Date() },
-        { new: true }
-      )
+    const latestVersion = await this.filterModel
+      .findOne({ filterId, userId })
+      .sort({ version: -1 })
       .exec();
 
-    if (!filter) {
+    if (!latestVersion) {
       throw new NotFoundException(`Filter with ID ${filterId} not found`);
     }
-    return filter;
+
+    const newVersion = latestVersion.version + 1;
+    const filterConfig = updateData.filterConfig ?? latestVersion.filterConfig;
+    const chatId = updateData.chatId !== undefined ? updateData.chatId : latestVersion.chatId;
+
+    const newFilter = new this.filterModel({
+      filterId,
+      version: newVersion,
+      name: updateData.name ?? latestVersion.name,
+      userId,
+      chatId,
+      filterConfig,
+      isActive: updateData.isActive ?? false,
+    });
+
+    await this.filterModel.updateMany(
+      { filterId, userId },
+      { isActive: false }
+    ).exec();
+
+    return await newFilter.save();
   }
 
   async deleteFilter(filterId: string, userId: string): Promise<void> {
-    const filter = await this.filterModel.findOneAndDelete({ filterId, userId }).exec();
+    const filters = await this.filterModel.find({ filterId, userId }).exec();
     
-    if (!filter) {
+    if (filters.length === 0) {
       throw new NotFoundException(`Filter with ID ${filterId} not found`);
     }
 
-    // Remove filter from chat's associated filters
+    await this.filterModel.deleteMany({ filterId, userId }).exec();
+
     await this.chatModel.updateMany(
       { userId },
       { $pull: { associatedFilters: filterId } }
     ).exec();
 
-    // If this was the active filter, clear it
     await this.chatModel.updateMany(
       { userId, activeFilterId: filterId },
       { $unset: { activeFilterId: 1 }, $set: { currentFilterConfig: null } }
@@ -504,28 +548,34 @@ export class ChatService {
   }
 
   async setActiveFilter(chatId: string, userId: string, filterId: string | null): Promise<ChatDocument> {
-    // Deactivate all filters for this chat
     await this.filterModel.updateMany(
-      { chatId, userId },
+      { userId, chatId },
       { isActive: false }
     ).exec();
 
-    // Activate the selected filter
     let filterConfig = null;
     if (filterId) {
-      const filter = await this.filterModel.findOneAndUpdate(
-        { filterId, userId, chatId },
-        { isActive: true },
-        { new: true }
-      ).exec();
+      const filter = await this.filterModel
+        .findOne({ 
+          filterId, 
+          userId,
+          $or: [{ chatId }, { chatId: null }]
+        })
+        .sort({ version: -1 })
+        .exec();
       
       if (!filter) {
         throw new NotFoundException(`Filter with ID ${filterId} not found`);
       }
+
+      await this.filterModel.findOneAndUpdate(
+        { filterId, userId, version: filter.version },
+        { isActive: true }
+      ).exec();
+
       filterConfig = filter.filterConfig;
     }
 
-    // Update chat with active filter
     const chat = await this.chatModel.findOneAndUpdate(
       { chatId, userId },
       { 
@@ -540,6 +590,27 @@ export class ChatService {
     }
     
     return chat;
+  }
+
+  async cleanupUnusedFilterVersions(userId?: string): Promise<number> {
+    const filterVersions = await this.filterModel.find(userId ? { userId } : {}).exec();
+    let deletedCount = 0;
+
+    for (const filterVersion of filterVersions) {
+      const isUsed = await this.messageModel.exists({
+        filterId: filterVersion.filterId,
+        filterVersion: filterVersion.version,
+      });
+
+      const isActive = filterVersion.isActive;
+
+      if (!isUsed && !isActive) {
+        await this.filterModel.deleteOne({ _id: filterVersion._id }).exec();
+        deletedCount++;
+      }
+    }
+
+    return deletedCount;
   }
 
 } 

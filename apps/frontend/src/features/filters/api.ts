@@ -5,10 +5,13 @@ import { getApiUrl } from '../../config/config';
 
 export interface ChatFilter {
   filterId: string;
+  version: number;
   name: string;
+  chatId: string | null;
   filterConfig: Record<string, unknown>;
   isActive?: boolean;
   createdAt: string;
+  updatedAt: string;
 }
 
 const getAuthToken = (): string | null => {
@@ -20,20 +23,29 @@ export const useFilters = (chatId: string | number | null) => {
   return useQuery({
     queryKey: apiKeys.filters.list(chatId || ''),
     queryFn: async (): Promise<ChatFilter[]> => {
-      if (!chatId) return [];
-
       const token = getAuthToken();
       if (!token) return [];
 
-      const response = await http.get<ChatFilter[]>(getApiUrl(`/chats/${chatId}/filters`), {
+      if (chatId) {
+        const response = await http.get<ChatFilter[]>(getApiUrl(`/chats/${chatId}/filters`), {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+        return response.data;
+      }
+
+      const response = await http.get<ChatFilter[]>(getApiUrl(`/chats/filters`), {
         headers: {
           Authorization: `Bearer ${token}`,
         },
       });
-      return response.data;
+      return response.data.filter(f => f.chatId === null);
     },
     staleTime: 2 * 60 * 1000,
-    enabled: !!chatId && !!getAuthToken(),
+    enabled: !!getAuthToken(),
+    refetchOnWindowFocus: false,
+    refetchOnMount: true,
   });
 };
 
@@ -59,23 +71,30 @@ export const useCreateFilter = () => {
       name,
       filterConfig,
       isActive,
+      isGlobal,
     }: {
-      chatId: string;
+      chatId: string | null;
       filterId: string;
       name: string;
       filterConfig: Record<string, unknown>;
       isActive?: boolean;
+      isGlobal?: boolean;
     }): Promise<ChatFilter> => {
       const token = getAuthToken();
       if (!token) throw new Error('Not authenticated');
 
+      const endpoint = isGlobal || !chatId 
+        ? getApiUrl(`/chats/global/filters`)
+        : getApiUrl(`/chats/${chatId}/filters`);
+
       const response = await http.post<ChatFilter>(
-        getApiUrl(`/chats/${chatId}/filters`),
+        endpoint,
         {
           filterId,
           name,
           filterConfig,
           isActive: isActive ?? true,
+          isGlobal: isGlobal ?? false,
         },
         {
           headers: {
@@ -86,8 +105,9 @@ export const useCreateFilter = () => {
       return response.data;
     },
     onSuccess: (_data, { chatId }) => {
-      qc.invalidateQueries({ queryKey: apiKeys.filters.list(chatId) });
-      qc.invalidateQueries({ queryKey: apiKeys.filters.active(chatId) });
+      qc.invalidateQueries({ queryKey: apiKeys.filters.list(chatId || '') });
+      qc.invalidateQueries({ queryKey: apiKeys.filters.active(chatId || '') });
+      qc.invalidateQueries({ queryKey: apiKeys.filters.lists() });
     },
   });
 };

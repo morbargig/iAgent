@@ -1,9 +1,9 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsString, IsEnum, IsOptional, IsArray, IsDateString, IsBoolean, MinLength } from 'class-validator';
+import { IsString, IsEnum, IsOptional, IsArray, IsDateString, IsBoolean, IsNumber, MinLength } from 'class-validator';
 
 export class AuthTokenDto {
   @ApiProperty({
-    description: 'JWT authentication token',
+    description: 'JWT authentication token' ,
     example: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...'
   })
   @IsString()
@@ -99,23 +99,12 @@ export class ChatMessageDto {
   filterId?: string;
 
   @ApiPropertyOptional({
-    description: 'Filter configuration snapshot at time of message creation',
-    example: {
-      filterId: 'filter_1638360000000_def456',
-      name: 'Filter 12/1/2024, 2:00:00 PM',
-      config: {
-        dateFilter: { type: 'custom', customRange: { amount: 1, type: 'months' } },
-        selectedCountries: ['DE', 'FR'],
-        enabledTools: ['web_search', 'document_analyzer']
-      }
-    }
+    description: 'Filter version associated with this message',
+    example: 1
   })
   @IsOptional()
-  filterSnapshot?: {
-    filterId?: string;
-    name?: string;
-    config?: Record<string, unknown>;
-  };
+  @IsNumber()
+  filterVersion?: number;
 }
 
 export class ChatRequestDto {

@@ -40,7 +40,7 @@ export class StreamingClient {
           content: msg.content,
           timestamp: new Date().toISOString(),
           filterId: msg.filterId,
-          filterSnapshot: msg.filterSnapshot
+          filterVersion: msg.filterVersion
         })),
         tools: tools || [],
         dateFilter: dateFilter || null,

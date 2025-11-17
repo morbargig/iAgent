@@ -21,11 +21,7 @@ export interface ChatMessageDocument {
   userId: string;
   metadata?: Record<string, unknown>;
   filterId?: string | null;
-  filterSnapshot?: {
-    filterId?: string;
-    name?: string;
-    config?: Record<string, unknown>;
-  } | null;
+  filterVersion?: number | null;
 }
 
 export const chatService = {
@@ -116,7 +112,7 @@ export const chatService = {
                 timestamp: message.timestamp.toISOString(),
                 metadata,
                 filterId: message.filterId || null,
-                filterSnapshot: message.filterSnapshot || null,
+                filterVersion: message.filterVersion || null,
               }),
             }
           );
@@ -238,7 +234,7 @@ export const chatService = {
           timestamp: msg.timestamp,
           metadata: msg.metadata,
           filterId: msg.filterId,
-          filterSnapshot: msg.filterSnapshot,
+          filterVersion: msg.filterVersion,
         })),
         createdAt: new Date(chat.createdAt),
         updatedAt: new Date(chat.lastMessageAt),

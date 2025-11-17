@@ -32,11 +32,7 @@ export interface MongoMessageInput {
   timestamp: Date | string;
   metadata?: Record<string, unknown>;
   filterId?: string | null;
-  filterSnapshot?: {
-    filterId?: string;
-    name?: string;
-    config?: Record<string, unknown>;
-  } | null;
+  filterVersion?: number | null;
 }
 
 export const convertContentToParsedMessage = (
@@ -80,7 +76,7 @@ export const convertMongoMessageToMessage = (
     isStreaming: false,
     isInterrupted: false,
     filterId: mongoMessage.filterId || null,
-    filterSnapshot: mongoMessage.filterSnapshot || null,
+    filterVersion: mongoMessage.filterVersion || null,
     metadata: {
       ...mongoMessage.metadata,
       attachmentIds,
@@ -112,7 +108,7 @@ export const convertStreamingChunkToMessage = (
     isStreaming: false,
     isInterrupted: false,
     filterId: null,
-    filterSnapshot: null,
+    filterVersion: null,
     metadata,
     parsed,
     currentSection: section,

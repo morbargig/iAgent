@@ -444,7 +444,7 @@ const App = () => {
             currentSection: updatedMessage.currentSection,
           },
           filterId: updatedMessage.filterId,
-          filterSnapshot: updatedMessage.filterSnapshot,
+          filterVersion: updatedMessage.filterVersion,
         },
       });
     }
@@ -521,7 +521,8 @@ const App = () => {
       dateFilter,
       selectedCountries,
       enabledTools,
-      filterSnapshot,
+      filterId,
+      filterVersion,
       attachments,
     } = data;
     if (!content.trim() || isLoading) return;
@@ -538,23 +539,12 @@ const App = () => {
         setInput("");
         
         try {
-          const messageFilterSnapshot = filterSnapshot || {
-            filterId: `filter_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-            name: `Filter ${new Date().toLocaleString()}`,
-            config: {
-              dateFilter,
-              selectedCountries,
-              enabledTools,
-              toolConfigurations: {},
-            },
-          };
-
           const messagesBeforeEdit = currentConv.messages.slice(0, messageIndex + 1);
           const editedMessage = {
             ...currentConv.messages[messageIndex],
             content,
-            filterId: messageFilterSnapshot.filterId,
-            filterSnapshot: messageFilterSnapshot,
+            filterId: filterId || null,
+            filterVersion: filterVersion || null,
           };
 
           const updatedMessages = [...messagesBeforeEdit.slice(0, -1), editedMessage];
@@ -578,7 +568,8 @@ const App = () => {
             dateFilter,
             selectedCountries,
             enabledTools,
-            filterSnapshot: messageFilterSnapshot,
+            filterId: filterId || null,
+            filterVersion: filterVersion || null,
           });
 
           setEditingMessageId(null);
@@ -594,7 +585,7 @@ const App = () => {
               timestamp: msg.timestamp,
               metadata: msg.metadata,
               filterId: msg.filterId,
-              filterSnapshot: msg.filterSnapshot,
+              filterVersion: msg.filterVersion,
             }));
 
             messagesForStreaming = convertedMessages;
@@ -740,7 +731,7 @@ const App = () => {
                           currentSection: lastMsg.currentSection,
                         },
                         filterId: lastMsg.filterId,
-                        filterSnapshot: lastMsg.filterSnapshot,
+                        filterVersion: lastMsg.filterVersion,
                       },
                     });
                   }
@@ -871,7 +862,7 @@ const App = () => {
                         currentSection: finalMessage.currentSection,
                       },
                       filterId: finalMessage.filterId,
-                      filterSnapshot: finalMessage.filterSnapshot,
+                      filterVersion: finalMessage.filterVersion,
                     },
                   });
                 }
@@ -946,24 +937,12 @@ const App = () => {
     setInput("");
 
     try {
-      // Use the filter snapshot from the InputArea, or create a basic one if not provided
-      const messageFilterSnapshot = filterSnapshot || {
-        filterId: `filter_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-        name: `Filter ${new Date().toLocaleString()}`,
-        config: {
-          dateFilter,
-          selectedCountries,
-          enabledTools,
-          toolConfigurations: {},
-        },
-      };
-
       const userMessage = createMessage(
         "user",
         content,
         false,
-        messageFilterSnapshot.filterId,
-        messageFilterSnapshot
+        filterId || null,
+        filterVersion || null
       );
 
       if (attachments && attachments.length > 0) {
@@ -974,8 +953,8 @@ const App = () => {
         "assistant",
         "",
         true,
-        messageFilterSnapshot.filterId,
-        messageFilterSnapshot
+        filterId || null,
+        filterVersion || null
       );
       
       assistantMessage.timestamp = new Date(userMessage.timestamp.getTime() + 1);
@@ -1055,7 +1034,7 @@ const App = () => {
             timestamp: userMessage.timestamp,
             metadata,
             filterId: userMessage.filterId,
-            filterSnapshot: userMessage.filterSnapshot,
+            filterVersion: userMessage.filterVersion,
           },
         });
       }
@@ -1167,7 +1146,7 @@ const App = () => {
                       currentSection: lastMsg.currentSection,
                     },
                     filterId: lastMsg.filterId,
-                    filterSnapshot: lastMsg.filterSnapshot,
+                    filterVersion: lastMsg.filterVersion,
                   },
                 });
               }
@@ -1298,7 +1277,7 @@ const App = () => {
                     currentSection: finalMessage.currentSection,
                   },
                   filterId: finalMessage.filterId,
-                  filterSnapshot: finalMessage.filterSnapshot,
+                  filterVersion: finalMessage.filterVersion,
                 },
               });
             }
@@ -1438,7 +1417,7 @@ const App = () => {
                 currentSection: lastMessage.currentSection,
               },
               filterId: lastMessage.filterId,
-              filterSnapshot: lastMessage.filterSnapshot,
+              filterVersion: lastMessage.filterVersion,
             },
           });
         }
@@ -1497,7 +1476,7 @@ const App = () => {
                         currentSection: lastMessage.currentSection,
                       },
                       filterId: lastMessage.filterId,
-                      filterSnapshot: lastMessage.filterSnapshot,
+                      filterVersion: lastMessage.filterVersion,
                     },
                   });
                 }
@@ -1553,7 +1532,7 @@ const App = () => {
                         currentSection: lastMessage.currentSection,
                       },
                       filterId: lastMessage.filterId,
-                      filterSnapshot: lastMessage.filterSnapshot,
+                      filterVersion: lastMessage.filterVersion,
                     },
                   });
                 }
@@ -1626,7 +1605,7 @@ const App = () => {
           timestamp: msg.timestamp,
           metadata: msg.metadata,
           filterId: msg.filterId,
-          filterSnapshot: msg.filterSnapshot,
+          filterVersion: msg.filterVersion,
         })),
         createdAt: new Date(chatResponse.data.createdAt),
         updatedAt: new Date(chatResponse.data.lastMessageAt),
@@ -1816,7 +1795,7 @@ const App = () => {
                 currentSection: lastMessage.currentSection,
               },
               filterId: lastMessage.filterId,
-              filterSnapshot: lastMessage.filterSnapshot,
+              filterVersion: lastMessage.filterVersion,
             },
           });
         }
@@ -1908,7 +1887,7 @@ const App = () => {
                         currentSection: lastMessage.currentSection,
                       },
                       filterId: lastMessage.filterId,
-                      filterSnapshot: lastMessage.filterSnapshot,
+                      filterVersion: lastMessage.filterVersion,
                     },
                   });
                 }

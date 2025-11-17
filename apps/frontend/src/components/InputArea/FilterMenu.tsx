@@ -67,14 +67,16 @@ export const FilterMenu: React.FC<FilterMenuProps> = ({
       onClose={onClose}
       PaperProps={{
         sx: {
-          backgroundColor: isDarkMode ? "#2d2d2d" : "#ffffff",
-          border: `1px solid ${isDarkMode ? "#444444" : "#e0e0e0"}`,
-          borderRadius: "12px",
-          minWidth: "280px",
-          maxWidth: "400px",
+          backgroundColor: isDarkMode ? "#1f1f1f" : "#ffffff",
+          border: `1px solid ${isDarkMode ? "#333333" : "#e5e7eb"}`,
+          borderRadius: "16px",
+          minWidth: "320px",
+          maxWidth: "420px",
           boxShadow: isDarkMode
-            ? "0 8px 32px rgba(0, 0, 0, 0.4)"
-            : "0 8px 32px rgba(0, 0, 0, 0.12)",
+            ? "0 12px 48px rgba(0, 0, 0, 0.5), 0 4px 16px rgba(0, 0, 0, 0.3)"
+            : "0 12px 48px rgba(0, 0, 0, 0.15), 0 4px 16px rgba(0, 0, 0, 0.08)",
+          padding: "8px",
+          overflow: "hidden",
         },
       }}
       anchorOrigin={{
@@ -85,39 +87,71 @@ export const FilterMenu: React.FC<FilterMenuProps> = ({
         vertical: "bottom",
         horizontal: "left",
       }}
+      MenuListProps={{
+        sx: {
+          padding: 0,
+        },
+      }}
     >
       {/* Create New Filter Option */}
-      <MenuItem onClick={onCreateFilter}>
+      <MenuItem 
+        onClick={onCreateFilter}
+        sx={{
+          borderRadius: "12px",
+          marginBottom: "4px",
+          padding: "12px 16px",
+          "&:hover": {
+            backgroundColor: isDarkMode ? "rgba(255, 255, 255, 0.08)" : "rgba(0, 0, 0, 0.04)",
+          },
+        }}
+      >
         <ListItemIcon>
-          <AddIcon sx={{ color: isDarkMode ? "#ffffff" : "#000000" }} />
+          <AddIcon sx={{ color: isDarkMode ? "#60a5fa" : "#2563eb", fontSize: 22 }} />
         </ListItemIcon>
         <ListItemText
           primary={t("filter.saveCurrentSettings")}
-          sx={{ color: isDarkMode ? "#ffffff" : "#000000" }}
+          primaryTypographyProps={{
+            sx: {
+              color: isDarkMode ? "#ffffff" : "#111827",
+              fontWeight: 500,
+              fontSize: "14px",
+            },
+          }}
         />
       </MenuItem>
 
       {chatFilters.length > 0 && (
-        <Divider sx={{ backgroundColor: isDarkMode ? "#444444" : "#e0e0e0" }} />
+        <Divider 
+          sx={{ 
+            backgroundColor: isDarkMode ? "#333333" : "#e5e7eb",
+            margin: "8px 0",
+          }} 
+        />
       )}
 
       {/* Existing Filters */}
       {chatFilters.map((filter) => (
         <MenuItem
-          key={filter.filterId}
+          key={`${filter.filterId}-${filter.version}`}
           sx={{
             backgroundColor:
-              activeFilter?.filterId === filter.filterId
+              activeFilter?.filterId === filter.filterId && activeFilter?.version === filter.version
                 ? isDarkMode
-                  ? "rgba(33, 150, 243, 0.2)"
-                  : "rgba(33, 150, 243, 0.1)"
+                  ? "rgba(96, 165, 250, 0.15)"
+                  : "rgba(37, 99, 235, 0.08)"
                 : "transparent",
             display: "block",
-            padding: "8px 16px",
+            padding: "12px 16px",
+            borderRadius: "12px",
+            marginBottom: "4px",
+            border: activeFilter?.filterId === filter.filterId && activeFilter?.version === filter.version
+              ? `1px solid ${isDarkMode ? "#60a5fa" : "#2563eb"}`
+              : `1px solid transparent`,
             "&:hover": {
               backgroundColor: isDarkMode
-                ? "rgba(255, 255, 255, 0.1)"
-                : "rgba(0, 0, 0, 0.05)",
+                ? "rgba(255, 255, 255, 0.08)"
+                : "rgba(0, 0, 0, 0.04)",
+              border: `1px solid ${isDarkMode ? "#444444" : "#d1d5db"}`,
             },
           }}
         >
@@ -138,13 +172,13 @@ export const FilterMenu: React.FC<FilterMenuProps> = ({
               }}
               onClick={() => onSelectFilter(filter)}
             >
-              <Box sx={{ mr: 1 }}>
-                {activeFilter?.filterId === filter.filterId ? (
-                  <CheckIcon sx={{ color: "#2196f3", fontSize: 20 }} />
+              <Box sx={{ mr: 1.5 }}>
+                {activeFilter?.filterId === filter.filterId && activeFilter?.version === filter.version ? (
+                  <CheckIcon sx={{ color: isDarkMode ? "#60a5fa" : "#2563eb", fontSize: 22 }} />
                 ) : (
                   <FilterListIcon
                     sx={{
-                      color: isDarkMode ? "#ffffff" : "#000000",
+                      color: isDarkMode ? "#9ca3af" : "#6b7280",
                       fontSize: 20,
                     }}
                   />
@@ -154,38 +188,58 @@ export const FilterMenu: React.FC<FilterMenuProps> = ({
                 <Typography
                   variant="body2"
                   sx={{
-                    color: isDarkMode ? "#ffffff" : "#000000",
+                    color: isDarkMode ? "#ffffff" : "#111827",
                     fontWeight:
-                      activeFilter?.filterId === filter.filterId ? 600 : 400,
+                      activeFilter?.filterId === filter.filterId && activeFilter?.version === filter.version ? 600 : 500,
                     display: "flex",
                     alignItems: "center",
-                    gap: 1,
+                    gap: 0.75,
+                    fontSize: "14px",
+                    marginBottom: 0.25,
                   }}
                 >
                   {filter.name}
-                  {(filter as any).scope === "global" && (
+                  {filter.chatId === null && (
                     <Chip
                       label={t("common.global")}
                       size="small"
                       sx={{
-                        height: "16px",
+                        height: "18px",
                         fontSize: "10px",
+                        fontWeight: 500,
                         backgroundColor: isDarkMode ? "#2563eb" : "#dbeafe",
                         color: isDarkMode ? "#ffffff" : "#1e40af",
+                        marginLeft: 0.5,
+                      }}
+                    />
+                  )}
+                  {filter.version > 1 && (
+                    <Chip
+                      label={`v${filter.version}`}
+                      size="small"
+                      sx={{
+                        height: "18px",
+                        fontSize: "10px",
+                        backgroundColor: isDarkMode ? "#444444" : "#e5e7eb",
+                        color: isDarkMode ? "#aaaaaa" : "#6b7280",
+                        marginLeft: 0.5,
                       }}
                     />
                   )}
                 </Typography>
                 <Typography
                   variant="caption"
-                  sx={{ color: isDarkMode ? "#aaaaaa" : "#666666" }}
+                  sx={{ 
+                    color: isDarkMode ? "#9ca3af" : "#6b7280",
+                    fontSize: "11px",
+                  }}
                 >
                   {new Date(filter.createdAt).toLocaleDateString()}
                 </Typography>
               </Box>
             </Box>
 
-            <Box sx={{ display: "flex", gap: 0.5 }}>
+            <Box sx={{ display: "flex", gap: 0.25 }}>
               <IconButton
                 size="small"
                 onClick={(e) => {
@@ -193,16 +247,18 @@ export const FilterMenu: React.FC<FilterMenuProps> = ({
                   onViewFilter(filter);
                 }}
                 sx={{
-                  color: isDarkMode ? "#aaaaaa" : "#666666",
+                  color: isDarkMode ? "#9ca3af" : "#6b7280",
+                  padding: "6px",
                   "&:hover": {
                     backgroundColor: isDarkMode
                       ? "rgba(255, 255, 255, 0.1)"
-                      : "rgba(0, 0, 0, 0.1)",
+                      : "rgba(0, 0, 0, 0.06)",
+                    color: isDarkMode ? "#ffffff" : "#111827",
                   },
                 }}
                 title={t("filter.viewTooltip")}
               >
-                <ViewIcon sx={{ fontSize: 16 }} />
+                <ViewIcon sx={{ fontSize: 18 }} />
               </IconButton>
 
               <IconButton
@@ -212,16 +268,18 @@ export const FilterMenu: React.FC<FilterMenuProps> = ({
                   onPickFilter(filter);
                 }}
                 sx={{
-                  color: isDarkMode ? "#4ade80" : "#166534",
+                  color: isDarkMode ? "#4ade80" : "#16a34a",
+                  padding: "6px",
                   "&:hover": {
                     backgroundColor: isDarkMode
-                      ? "rgba(74, 222, 128, 0.1)"
-                      : "rgba(22, 101, 52, 0.1)",
+                      ? "rgba(74, 222, 128, 0.15)"
+                      : "rgba(22, 163, 74, 0.1)",
+                    color: isDarkMode ? "#86efac" : "#15803d",
                   },
                 }}
                 title={t("filter.applyTooltip")}
               >
-                <PickIcon sx={{ fontSize: 16 }} />
+                <PickIcon sx={{ fontSize: 18 }} />
               </IconButton>
 
               <IconButton
@@ -231,16 +289,18 @@ export const FilterMenu: React.FC<FilterMenuProps> = ({
                   onRenameFilter(filter);
                 }}
                 sx={{
-                  color: isDarkMode ? "#aaaaaa" : "#666666",
+                  color: isDarkMode ? "#9ca3af" : "#6b7280",
+                  padding: "6px",
                   "&:hover": {
                     backgroundColor: isDarkMode
                       ? "rgba(255, 255, 255, 0.1)"
-                      : "rgba(0, 0, 0, 0.1)",
+                      : "rgba(0, 0, 0, 0.06)",
+                    color: isDarkMode ? "#ffffff" : "#111827",
                   },
                 }}
                 title={t("filter.renameTooltip")}
               >
-                <EditIcon sx={{ fontSize: 16 }} />
+                <EditIcon sx={{ fontSize: 18 }} />
               </IconButton>
 
               <IconButton
@@ -250,23 +310,31 @@ export const FilterMenu: React.FC<FilterMenuProps> = ({
                   onDeleteFilter(filter);
                 }}
                 sx={{
-                  color: isDarkMode ? "#ef4444" : "#dc2626",
+                  color: isDarkMode ? "#f87171" : "#dc2626",
+                  padding: "6px",
                   "&:hover": {
                     backgroundColor: isDarkMode
-                      ? "rgba(239, 68, 68, 0.1)"
+                      ? "rgba(248, 113, 113, 0.15)"
                       : "rgba(220, 38, 38, 0.1)",
+                    color: isDarkMode ? "#fca5a5" : "#b91c1c",
                   },
                 }}
                 title={t("filter.deleteTooltip")}
               >
-                <DeleteIcon sx={{ fontSize: 16 }} />
+                <DeleteIcon sx={{ fontSize: 18 }} />
               </IconButton>
             </Box>
           </Box>
 
           {/* Filter Configuration Preview */}
           {filter.config && (
-            <Box sx={{ mt: 1.5, mx: -1 }}>
+            <Box sx={{ 
+              mt: 1.5, 
+              mx: -1,
+              padding: "8px 12px",
+              backgroundColor: isDarkMode ? "rgba(0, 0, 0, 0.2)" : "rgba(0, 0, 0, 0.02)",
+              borderRadius: "8px",
+            }}>
               <FilterPreview
                 filterConfig={filter.config}
                 isDarkMode={isDarkMode}

@@ -24,11 +24,7 @@ export interface ChatMessageDocument {
   userId: string;
   metadata?: Record<string, unknown>;
   filterId?: string | null;
-  filterSnapshot?: {
-    filterId?: string;
-    name?: string;
-    config?: Record<string, unknown>;
-  } | null;
+  filterVersion?: number | null;
 }
 
 const getAuthToken = (): string | null => {
@@ -52,7 +48,7 @@ const mapChatDocumentToConversation = (chat: ChatDocument, messages: ChatMessage
       timestamp: msg.timestamp,
       metadata: msg.metadata,
       filterId: msg.filterId,
-      filterSnapshot: msg.filterSnapshot,
+      filterVersion: msg.filterVersion,
     })),
     createdAt: new Date(chat.createdAt),
     updatedAt: new Date(chat.lastMessageAt),
@@ -288,7 +284,7 @@ export const useSaveMessage = () => {
         timestamp: Date;
         metadata?: Record<string, unknown>;
         filterId?: string | null;
-        filterSnapshot?: unknown;
+        filterVersion?: number | null;
       };
     }): Promise<void> => {
       const token = getAuthToken();
@@ -304,7 +300,7 @@ export const useSaveMessage = () => {
           timestamp: message.timestamp.toISOString(),
           metadata: message.metadata || {},
           filterId: message.filterId || null,
-          filterSnapshot: message.filterSnapshot || null,
+          filterVersion: message.filterVersion || null,
         },
         {
           headers: {
@@ -331,7 +327,7 @@ export const useSaveMessage = () => {
         userId,
         metadata: message.metadata,
         filterId: message.filterId || null,
-        filterSnapshot: message.filterSnapshot as ChatMessageDocument['filterSnapshot'] || null,
+        filterVersion: message.filterVersion || null,
       };
 
       if (prevMessages) {
@@ -357,7 +353,7 @@ export const useSaveMessage = () => {
           isStreaming: false,
           isInterrupted: false,
           filterId: message.filterId || null,
-          filterSnapshot: message.filterSnapshot as Conversation['messages'][0]['filterSnapshot'] || null,
+          filterVersion: message.filterVersion || null,
           metadata: message.metadata,
         };
 
@@ -467,7 +463,8 @@ export const useEditMessage = () => {
       dateFilter,
       selectedCountries,
       enabledTools,
-      filterSnapshot,
+      filterId,
+      filterVersion,
     }: {
       chatId: string;
       messageId: string;
@@ -475,7 +472,8 @@ export const useEditMessage = () => {
       dateFilter?: unknown;
       selectedCountries?: string[];
       enabledTools?: string[];
-      filterSnapshot?: unknown;
+      filterId?: string | null;
+      filterVersion?: number | null;
     }): Promise<void> => {
       const token = getAuthToken();
       if (!token) throw new Error('Not authenticated');
@@ -485,10 +483,8 @@ export const useEditMessage = () => {
         `${baseUrl}/api/chats/${chatId}/messages/${messageId}`,
         {
           content,
-          dateFilter,
-          selectedCountries,
-          enabledTools,
-          filterSnapshot,
+          filterId,
+          filterVersion,
         },
         {
           headers: {

@@ -34,7 +34,6 @@ import {
 } from "../../utils/toolUtils";
 import {
   createDateFilter,
-  createFilterSnapshot,
   createSendMessageData,
 } from "../../utils/messageUtils";
 
@@ -53,28 +52,8 @@ export interface SendMessageData {
   dateFilter: DateFilter;
   selectedCountries: string[];
   enabledTools: ToolId[];
-  filterSnapshot?: {
-    filterId?: string;
-    name?: string;
-    config: {
-      dateFilter: {
-        type: "custom" | "picker";
-        customRange?: {
-          amount: number;
-          type: string;
-        };
-        dateRange?: {
-          start?: string;
-          end?: string;
-        };
-      };
-      selectedCountries: string[];
-      enabledTools: ToolId[];
-      toolConfigurations: Partial<Record<ToolId, ToolConfiguration>>;
-    };
-    isActive?: boolean;
-    createdAt?: string;
-  };
+  filterId?: string | null;
+  filterVersion?: number | null;
   attachments?: Array<{
     id: string;
     filename: string;
@@ -280,25 +259,13 @@ export function InputArea({
         dateRange: dateRange.dateRange,
       });
 
-      const filterSnapshot = createFilterSnapshot({
-        filterId: filterManagement.activeFilter?.filterId,
-        name: filterManagement.activeFilter?.name,
-        committedTab: dateRange.committedTab,
-        rangeAmount: dateRange.rangeAmount,
-        rangeType: dateRange.rangeType,
-        dateRange: dateRange.dateRange,
-        selectedCountries: countrySelection.selectedFlags,
-        enabledTools,
-        toolConfigurations: filterManagement.synchronizedConfigurations,
-        isActive: !!filterManagement.activeFilter,
-      });
-
       const sendData = createSendMessageData({
         content: value,
         dateFilter,
         selectedCountries: countrySelection.selectedFlags,
         enabledTools,
-        filterSnapshot,
+        filterId: filterManagement.activeFilter?.filterId || null,
+        filterVersion: filterManagement.activeFilter?.version || null,
         attachments: enableFileUpload ? attachments : undefined,
       });
 

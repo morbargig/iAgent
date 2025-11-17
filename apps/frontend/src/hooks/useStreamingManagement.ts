@@ -87,7 +87,7 @@ export const useStreamingManagement = ({
                   currentSection: lastMessage.currentSection,
                 },
                 filterId: lastMessage.filterId,
-                filterSnapshot: lastMessage.filterSnapshot,
+                filterVersion: lastMessage.filterVersion,
               },
             });
           }

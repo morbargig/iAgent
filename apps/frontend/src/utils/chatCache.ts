@@ -192,11 +192,7 @@ export const convertMongoChatToConversation = (mongoChat: {
     timestamp: Date | string;
     metadata?: Record<string, unknown>;
     filterId?: string | null;
-    filterSnapshot?: {
-      filterId?: string;
-      name?: string;
-      config?: Record<string, unknown>;
-    } | null;
+    filterVersion?: number | null;
   }>;
 }): Conversation => {
   const messages = (mongoChat.messages || []).map(convertMongoMessageToMessage);

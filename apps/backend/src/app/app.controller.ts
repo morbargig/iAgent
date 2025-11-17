@@ -350,30 +350,13 @@ export class AppController {
       if (lastUserMessage && lastUserMessageDto) {
         try {
           let filterId = null;
-          let filterSnapshot = null;
+          let filterVersion = null;
 
-          if (lastUserMessageDto.filterId && lastUserMessageDto.filterSnapshot) {
-            const filterData = {
-              filterId: lastUserMessageDto.filterId,
-              name: lastUserMessageDto.filterSnapshot.name || 'Unnamed Filter',
-              filterConfig: lastUserMessageDto.filterSnapshot.config || {},
-              chatId,
-              userId: auth.userId
-            };
-
-            try {
-              const savedFilter = await this.chatService.createFilter(filterData);
-              filterId = savedFilter.filterId;
-            } catch (filterError) {
-              if ((filterError as { code?: number }).code !== 11000) {
-                throw filterError;
-              }
-              filterId = filterData.filterId;
-            }
-
-            filterSnapshot = lastUserMessageDto.filterSnapshot;
+          if (lastUserMessageDto.filterId && lastUserMessageDto.filterVersion) {
+            filterId = lastUserMessageDto.filterId;
+            filterVersion = lastUserMessageDto.filterVersion;
             await this.chatService.setActiveFilter(chatId, auth.userId, filterId);
-            console.log('💾 Filter saved and set as active:', filterId);
+            console.log('💾 Filter set as active:', filterId, 'version:', filterVersion);
           }
 
           await this.chatService.addMessage({
@@ -388,7 +371,7 @@ export class AppController {
               'session-id': sessionId
             },
             filterId,
-            filterSnapshot: filterSnapshot || undefined
+            filterVersion: filterVersion || undefined
           });
 
           console.log('💬 User message saved with filter data');
@@ -473,7 +456,7 @@ export class AppController {
                   'session-id': sessionId
                 },
                 filterId: assistantPlaceholderDto.filterId || lastUserMessageDto?.filterId || null,
-                filterSnapshot: assistantPlaceholderDto.filterSnapshot || lastUserMessageDto?.filterSnapshot,
+                filterVersion: assistantPlaceholderDto.filterVersion || lastUserMessageDto?.filterVersion || null,
               });
               console.log('🤖 Assistant message saved to chat history');
             } catch (saveError) {

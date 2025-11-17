@@ -5,11 +5,14 @@ export type ChatMessageDocument = ChatMessage & Document;
 export type ChatDocument = Chat & Document;
 export type ChatFilterDocument = ChatFilter & Document;
 
-// Filter schema for storing filter configurations
+// Filter schema for storing filter configurations with versioning
 @Schema({ timestamps: true })
 export class ChatFilter {
-  @Prop({ required: true, unique: true })
+  @Prop({ required: true })
   filterId!: string;
+
+  @Prop({ required: true })
+  version!: number;
 
   @Prop({ required: true })
   name!: string;
@@ -17,12 +20,11 @@ export class ChatFilter {
   @Prop({ required: true })
   userId!: string;
 
-  @Prop({ required: true })
-  chatId!: string;
+  @Prop({ type: String, default: null })
+  chatId!: string | null;
 
   @Prop({ type: Object, required: true })
   filterConfig!: {
-    // Date filter
     dateFilter?: {
       type: 'custom' | 'picker';
       customRange?: {
@@ -34,20 +36,12 @@ export class ChatFilter {
         end: Date;
       };
     };
-
-    // Country filter
     selectedCountries?: string[];
-
-    // Tools filter
     enabledTools?: string[];
-
-    // Advanced filters
     filterText?: string;
     excludeAmi?: boolean;
     includeAmi?: boolean;
     selectedMode?: 'free' | 'flow' | 'product';
-
-    // Any additional custom filters
     customFilters?: Record<string, any>;
   };
 
@@ -84,17 +78,11 @@ export class ChatMessage {
   @Prop({ required: true })
   userId!: string;
 
-  // Associate message with filter
   @Prop({ type: String, default: null })
   filterId!: string | null;
 
-  // Store the filter config snapshot at the time of message creation
-  @Prop({ type: Object, default: null })
-  filterSnapshot!: {
-    filterId?: string;
-    name?: string;
-    config?: Record<string, any>;
-  } | null;
+  @Prop({ type: Number, default: null })
+  filterVersion!: number | null;
 }
 
 @Schema({ timestamps: true })
@@ -143,14 +131,14 @@ export const ChatFilterSchema = SchemaFactory.createForClass(ChatFilter);
 export const ChatMessageSchema = SchemaFactory.createForClass(ChatMessage);
 export const ChatSchema = SchemaFactory.createForClass(Chat);
 
-// Add indexes for better performance
-// Note: filterId already has unique: true which creates an index automatically
+ChatFilterSchema.index({ filterId: 1, version: 1 }, { unique: true });
 ChatFilterSchema.index({ userId: 1, chatId: 1 });
 ChatFilterSchema.index({ userId: 1, isActive: 1 });
+ChatFilterSchema.index({ userId: 1 });
 
 ChatMessageSchema.index({ chatId: 1, timestamp: 1 });
 ChatMessageSchema.index({ userId: 1, timestamp: -1 });
-ChatMessageSchema.index({ filterId: 1 });
+ChatMessageSchema.index({ filterId: 1, filterVersion: 1 });
 
 ChatSchema.index({ userId: 1, lastMessageAt: -1 });
 ChatSchema.index({ userId: 1, archived: 1, lastMessageAt: -1 });

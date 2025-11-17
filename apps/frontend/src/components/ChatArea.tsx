@@ -1407,7 +1407,7 @@ const MessageBubble = ({
           }}
         >
           {/* Filter Info Icon */}
-          {message.filterSnapshot && (
+          {message.filterId && (
             <Tooltip title={t("message.filterInfo")}>
               <IconButton
                 onClick={(e) => onFilterInfo?.(e, message)}
@@ -1663,7 +1663,7 @@ const MessageBubble = ({
         }}
       >
         {/* Filter Info Icon */}
-        {message.filterSnapshot && (
+        {message.filterId && (
           <Tooltip title={t("message.filterInfo")}>
             <IconButton
               onClick={(e) => onFilterInfo?.(e, message)}
@@ -1883,7 +1883,7 @@ const FilterInfoPopover = ({
       },
     }}
   >
-    {message?.filterSnapshot && (
+    {message?.filterId && (
       <Box>
         <Typography
           variant="subtitle2"
@@ -1897,47 +1897,8 @@ const FilterInfoPopover = ({
           }}
         >
           <FilterIcon sx={{ fontSize: 16 }} />
-          {message.filterSnapshot.name || "Filter Settings"}
+          {t("filter.filterSettings")}
         </Typography>
-
-        {message.filterSnapshot.config && (
-          <Box sx={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-            {formatFilterConfig(message.filterSnapshot.config).map(
-              (entry: any, index: number) => (
-                <Typography
-                  key={index}
-                  variant="body2"
-                  sx={{
-                    color: theme.palette.text.secondary,
-                    fontSize: "13px",
-                    lineHeight: 1.4,
-                    padding: "6px 12px",
-                    backgroundColor: isDarkMode ? "#1e1e1e" : "#f8f9fa",
-                    borderRadius: "8px",
-                    fontFamily: "monospace",
-                  }}
-                >
-                  {entry}
-                </Typography>
-              )
-            )}
-
-            {formatFilterConfig(message.filterSnapshot.config).length === 0 && (
-              <Typography
-                variant="body2"
-                sx={{
-                  color: theme.palette.text.secondary,
-                  fontSize: "13px",
-                  fontStyle: "italic",
-                  textAlign: "center",
-                  padding: "12px",
-                }}
-              >
-                {t("filter.noFilterConfigurationAvailable")}
-              </Typography>
-            )}
-          </Box>
-        )}
 
         <Typography
           variant="caption"
@@ -1949,10 +1910,8 @@ const FilterInfoPopover = ({
             opacity: 0.7,
           }}
         >
-          {t("filter.filterId")}:{" "}
-          {message?.filterSnapshot?.filterId ||
-            message?.filterId ||
-            t("common.unknown")}
+          {t("filter.filterId")}: {message.filterId}
+          {message.filterVersion && ` (v${message.filterVersion})`}
         </Typography>
 
         {/* Filter Action Buttons */}
@@ -2647,17 +2606,18 @@ export function ChatArea({
   };
 
   const handleViewFilterDetails = () => {
-    if (activeMessage?.filterSnapshot) {
+    if (activeMessage?.filterId) {
       setFilterDetailsDialogOpen(true);
       setFilterInfoAnchor(null);
     }
   };
 
   const handleApplyFilterFromMessage = () => {
-    if (activeMessage?.filterSnapshot && currentChatId) {
+    if (activeMessage?.filterId && currentChatId) {
       const event = new CustomEvent("applyFilterFromMessage", {
         detail: {
-          filter: activeMessage.filterSnapshot,
+          filterId: activeMessage.filterId,
+          filterVersion: activeMessage.filterVersion,
           chatId: currentChatId,
         },
       });
@@ -2668,20 +2628,20 @@ export function ChatArea({
   };
 
   const handleRenameFilter = () => {
-    if (activeMessage?.filterSnapshot?.name) {
-      setNewFilterName(activeMessage.filterSnapshot.name);
+    if (activeMessage?.filterId) {
+      setNewFilterName("");
       setRenameDialogOpen(true);
     }
     setFilterInfoAnchor(null);
   };
 
   const saveFilterName = async () => {
-    if (!activeMessage?.filterSnapshot?.filterId || !newFilterName.trim())
+    if (!activeMessage?.filterId || !newFilterName.trim())
       return;
 
     try {
       const response = await fetch(
-        `${getBaseApiUrl()}/api/chats/filters/${activeMessage.filterSnapshot.filterId}`,
+        `${getBaseApiUrl()}/api/chats/filters/${activeMessage.filterId}`,
         {
           method: "PUT",
           headers: {
@@ -2888,14 +2848,17 @@ export function ChatArea({
         onApply={handleApplyFilterFromMessage}
         isDarkMode={isDarkMode}
         filter={
-          activeMessage?.filterSnapshot
+          activeMessage?.filterId
             ? {
-                ...activeMessage.filterSnapshot,
+                filterId: activeMessage.filterId,
+                version: activeMessage.filterVersion || 1,
+                name: "",
+                config: {},
                 isActive: false,
                 createdAt:
                   activeMessage.timestamp?.toISOString() ||
                   new Date().toISOString(),
-                scope: "chat" as const,
+                chatId: currentChatId || null,
               }
             : null
         }

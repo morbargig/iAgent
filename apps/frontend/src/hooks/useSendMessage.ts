@@ -49,7 +49,8 @@ export const useSendMessage = ({
       dateFilter,
       selectedCountries,
       enabledTools,
-      filterSnapshot,
+      filterId,
+      filterVersion,
       attachments,
     } = data;
     if (!content.trim()) return;
@@ -86,23 +87,12 @@ export const useSendMessage = ({
     setInput("");
 
     try {
-      const messageFilterSnapshot = filterSnapshot || {
-        filterId: `filter_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-        name: `Filter ${new Date().toLocaleString()}`,
-        config: {
-          dateFilter,
-          selectedCountries,
-          enabledTools,
-          toolConfigurations: {},
-        },
-      };
-
       const userMessage = createMessage(
         "user",
         content,
         false,
-        messageFilterSnapshot.filterId,
-        messageFilterSnapshot
+        filterId || null,
+        filterVersion || null
       );
 
       if (attachments && attachments.length > 0) {
@@ -113,8 +103,8 @@ export const useSendMessage = ({
         "assistant",
         "",
         true,
-        messageFilterSnapshot.filterId,
-        messageFilterSnapshot
+        filterId || null,
+        filterVersion || null
       );
       
       assistantMessage.timestamp = new Date(userMessage.timestamp.getTime() + 1);
@@ -183,7 +173,7 @@ export const useSendMessage = ({
             timestamp: userMessage.timestamp,
             metadata: userMessage.metadata,
             filterId: userMessage.filterId,
-            filterSnapshot: userMessage.filterSnapshot,
+            filterVersion: userMessage.filterVersion,
           },
         });
       }
@@ -295,7 +285,7 @@ export const useSendMessage = ({
                       currentSection: lastMessage.currentSection,
                     },
                     filterId: lastMessage.filterId,
-                    filterSnapshot: lastMessage.filterSnapshot,
+                    filterVersion: lastMessage.filterVersion,
                   },
                 });
               }
