@@ -12,17 +12,14 @@ import {
   DEFAULT_UPLOAD_OPTIONS,
   DocumentUploadOptions
 } from '../types/document.types';
-import { mockDocumentStore } from './mockDocumentStore';
 import { FileProcessingService } from './fileProcessingService';
-import { FileUrlService } from './fileUrlService';
 import { API_CONFIG } from '../config/config';
 
 export class DocumentService {
   private baseUrl: string;
   private authToken: string | null = null;
   private eventListeners: ((event: DocumentUploadEvent) => void)[] = [];
-  private useMockData = false; // Use live API by default
-  private currentUserId = 'demo-user'; // Default user ID for mock
+  private currentUserId = 'demo-user';
 
   constructor(baseUrl = API_CONFIG.BASE_URL) {
     this.baseUrl = baseUrl;
@@ -33,12 +30,7 @@ export class DocumentService {
     this.authToken = token;
   }
 
-  // Enable/disable mock data mode
-  setMockMode(enabled: boolean): void {
-    this.useMockData = enabled;
-  }
-
-  // Set current user ID (for mock mode)
+  // Set current user ID
   setUserId(userId: string): void {
     this.currentUserId = userId;
   }
@@ -82,11 +74,6 @@ export class DocumentService {
     const validation = validateFile(file, uploadOptions);
     if (!validation.valid) {
       return { success: false, error: validation.error };
-    }
-
-    // Use mock upload in development
-    if (this.useMockData) {
-      return this.simulateUpload(file, onProgress);
     }
 
     const fileId = `upload_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
@@ -151,7 +138,7 @@ export class DocumentService {
 
               this.emitEvent({ type: 'completed', data: document });
               resolve({ success: true, document });
-            } catch (error) {
+            } catch {
               reject(new Error('Failed to parse response'));
             }
           } else {
@@ -173,87 +160,12 @@ export class DocumentService {
     }
   }
 
-  // Simulate upload for mock mode
-  private async simulateUpload(
-    file: File,
-    onProgress?: (progress: UploadProgress) => void
-  ): Promise<DocumentUploadResponse> {
-    const fileId = `upload_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-
-    // Simulate upload progress
-    const simulateProgress = () => {
-      return new Promise<void>((resolve) => {
-        let progress = 0;
-        const interval = setInterval(() => {
-          progress += Math.random() * 20;
-          if (progress >= 100) {
-            progress = 100;
-            clearInterval(interval);
-            resolve();
-          }
-
-          if (onProgress) {
-            const progressData: UploadProgress = {
-              fileId,
-              fileName: file.name,
-              progress: Math.round(progress),
-              status: 'uploading',
-              speed: Math.random() * 1000000, // Random speed
-              timeRemaining: (100 - progress) / 10 // Estimated time
-            };
-            onProgress(progressData);
-            this.emitEvent({ type: 'progress', data: progressData });
-          }
-        }, 200);
-      });
-    };
-
-    try {
-      await simulateProgress();
-
-      // Process file
-      const processingResult = await FileProcessingService.processFile(file);
-
-      // Create document
-      const document: DocumentFile = {
-        id: fileId,
-        name: file.name,
-        originalName: file.name,
-        size: file.size,
-        type: file.type,
-        mimeType: file.type,
-        uploadedAt: new Date(),
-        userId: this.currentUserId,
-        status: 'ready',
-        url: FileUrlService.getDownloadUrl(fileId),
-        metadata: processingResult.metadata
-      };
-
-      // Add to mock store
-      mockDocumentStore.addDocument(document);
-
-      this.emitEvent({ type: 'completed', data: document });
-
-      return { success: true, document };
-    } catch (error) {
-      this.emitEvent({
-        type: 'error',
-        data: { fileId, error: error instanceof Error ? error.message : 'Upload failed' }
-      });
-      return { success: false, error: error instanceof Error ? error.message : 'Upload failed' };
-    }
-  }
-
   // Get documents with pagination and filters
   async getDocuments(
     page = 1,
     limit = 10,
     filters?: DocumentSearchFilters
   ): Promise<DocumentListResponse> {
-    if (this.useMockData) {
-      return mockDocumentStore.getPaginatedDocuments(page, limit, filters?.query, filters);
-    }
-
     try {
       const skip = Math.max(0, (page - 1) * limit);
       const params = new URLSearchParams({
@@ -278,7 +190,7 @@ export class DocumentService {
       }
       const total = await this.getDocumentCount(filters?.query);
       return {
-        documents: files.map((f) => this.mapFileInfoToDocument(f as any)),
+        documents: files.map((f) => this.mapFileInfoToDocument(f as Record<string, unknown>)),
         total,
         page,
         limit,
@@ -291,18 +203,6 @@ export class DocumentService {
 
   // Download document
   async downloadDocument(documentId: string): Promise<Blob> {
-    if (this.useMockData) {
-      // Create mock blob for download
-      const document = mockDocumentStore.getDocumentById(documentId);
-      if (!document) {
-        throw new Error('Document not found');
-      }
-
-      // Create a mock blob with document content
-      const content = document.metadata?.extractedText || `Content of ${document.name}`;
-      return new Blob([content], { type: document.mimeType });
-    }
-
     try {
       const response = await fetch(`${this.baseUrl}/files/${documentId}`, {
         headers: this.getHeaders()
@@ -313,17 +213,13 @@ export class DocumentService {
       }
 
       return await response.blob();
-    } catch (error) {
-      throw new Error(`Download failed: ${error}`);
+    } catch {
+      throw new Error('Download failed');
     }
   }
 
   // Delete document
   async deleteDocument(documentId: string): Promise<boolean> {
-    if (this.useMockData) {
-      return mockDocumentStore.deleteDocument(documentId);
-    }
-
     try {
       const response = await fetch(`${this.baseUrl}/files/${documentId}`, {
         method: 'DELETE',
@@ -338,10 +234,6 @@ export class DocumentService {
 
   // Get document by ID
   async getDocument(documentId: string): Promise<DocumentFile | null> {
-    if (this.useMockData) {
-      return mockDocumentStore.getDocumentById(documentId) || null;
-    }
-
     try {
       const response = await fetch(`${this.baseUrl}/files/${documentId}/info`, {
         headers: this.getHeaders()
@@ -360,10 +252,6 @@ export class DocumentService {
 
   // Search documents
   async searchDocuments(query: string, filters?: DocumentSearchFilters): Promise<DocumentFile[]> {
-    if (this.useMockData) {
-      return mockDocumentStore.searchDocuments(query, filters);
-    }
-
     try {
       const params = new URLSearchParams({
         query,
@@ -379,8 +267,11 @@ export class DocumentService {
         throw new Error(`Search failed: ${response.statusText}`);
       }
 
-      const files: any[] = await response.json();
-      return files.map((f) => this.mapFileInfoToDocument(f));
+      const files: unknown = await response.json();
+      if (!Array.isArray(files)) {
+        throw new Error('Unexpected response format for files list');
+      }
+      return files.map((f) => this.mapFileInfoToDocument(f as Record<string, unknown>));
     } catch (error) {
       throw new Error(`Search failed: ${error}`);
     }
@@ -393,10 +284,6 @@ export class DocumentService {
     byStatus: Record<string, number>;
     totalSize: number;
   }> {
-    if (this.useMockData) {
-      return mockDocumentStore.getDocumentStats();
-    }
-
     try {
       const response = await fetch(`${this.baseUrl}/documents/stats`, {
         headers: this.getHeaders()
@@ -444,19 +331,20 @@ export class DocumentService {
     }
   }
 
-  private mapFileInfoToDocument(f: any): DocumentFile {
+  private mapFileInfoToDocument(f: Record<string, unknown>): DocumentFile {
+    const metadata = (f.metadata as Record<string, unknown> | undefined) || {};
     return {
-      id: f.id,
-      name: f.filename || f.name,
-      originalName: f.metadata?.originalName || f.filename || f.name,
-      size: f.size ?? f.length,
-      type: f.mimetype || f.mimeType || 'application/octet-stream',
-      mimeType: f.mimetype || f.mimeType || 'application/octet-stream',
-      uploadedAt: new Date(f.uploadDate || f.uploadedAt || Date.now()),
-      userId: f.metadata?.userId || 'unknown',
+      id: String(f.id || ''),
+      name: String(f.filename || f.name || ''),
+      originalName: String(metadata.originalName || f.filename || f.name || ''),
+      size: Number(f.size ?? f.length ?? 0),
+      type: String(f.mimetype || f.mimeType || 'application/octet-stream'),
+      mimeType: String(f.mimetype || f.mimeType || 'application/octet-stream'),
+      uploadedAt: new Date(String(f.uploadDate || f.uploadedAt || Date.now())),
+      userId: String(metadata.userId || 'unknown'),
       status: 'ready',
       url: `${this.baseUrl}/files/${f.id}`,
-      metadata: f.metadata || {},
+      metadata,
     };
   }
 }

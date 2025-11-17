@@ -10,7 +10,6 @@ import type {
   UploadProgress,
   DocumentMetadata,
 } from '../../types/document.types';
-import { mockDocumentStore } from '../../services/mockDocumentStore';
 
 export interface FileInfo {
   id: string;
@@ -41,18 +40,6 @@ const mapFileInfoToDocument = (f: FileInfo, baseUrl: string): DocumentFile => {
   };
 };
 
-const getMockMode = (): boolean => {
-  if (typeof window === 'undefined') return false;
-  const stored = localStorage.getItem('app-settings');
-  if (!stored) return false;
-  try {
-    const settings = JSON.parse(stored);
-    return settings?.mockMode === true;
-  } catch {
-    return false;
-  }
-};
-
 export const useDocuments = (
   page = 1,
   limit = 10,
@@ -65,10 +52,6 @@ export const useDocuments = (
       status: filters?.status,
     }),
     queryFn: async (): Promise<DocumentListResponse> => {
-      if (getMockMode()) {
-        return mockDocumentStore.getPaginatedDocuments(page, limit, filters?.query, filters);
-      }
-
       const skip = Math.max(0, (page - 1) * limit);
       const params = new URLSearchParams({
         limit: limit.toString(),
@@ -104,10 +87,6 @@ export const useDocument = (id: string | number) => {
   return useQuery({
     queryKey: apiKeys.documents.detail(id),
     queryFn: async (): Promise<DocumentFile | null> => {
-      if (getMockMode()) {
-        return mockDocumentStore.getDocumentById(String(id)) || null;
-      }
-
       const response = await http.get<FileInfo>(`/files/${id}/info`);
       return mapFileInfoToDocument(response.data, http.defaults.baseURL || '');
     },
@@ -120,13 +99,6 @@ export const useDocumentCount = (filters?: { query?: string }) => {
   return useQuery({
     queryKey: apiKeys.documents.count(filters),
     queryFn: async (): Promise<number> => {
-      if (getMockMode()) {
-        const allResults = filters?.query
-          ? mockDocumentStore.searchDocuments(filters.query)
-          : mockDocumentStore.getDocuments();
-        return allResults.length;
-      }
-
       const params = filters?.query ? `?query=${encodeURIComponent(filters.query)}` : '';
       try {
         const response = await http.get<{ count: number }>(`/files/count${params}`);
@@ -143,10 +115,6 @@ export const useDocumentStats = () => {
   return useQuery({
     queryKey: apiKeys.documents.stats(),
     queryFn: async () => {
-      if (getMockMode()) {
-        return mockDocumentStore.getDocumentStats();
-      }
-
       const response = await http.get<{
         total: number;
         byType: Record<string, number>;
@@ -172,59 +140,6 @@ export const useUploadDocument = () => {
       options?: Partial<DocumentUploadOptions>;
       onProgress?: (progress: UploadProgress) => void;
     }): Promise<DocumentUploadResponse> => {
-      if (getMockMode()) {
-        const fileId = `upload_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-        
-        const simulateProgress = () => {
-          return new Promise<void>((resolve) => {
-            let progress = 0;
-            const interval = setInterval(() => {
-              progress += Math.random() * 20;
-              if (progress >= 100) {
-                progress = 100;
-                clearInterval(interval);
-                resolve();
-              }
-
-              if (onProgress) {
-                onProgress({
-                  fileId,
-                  fileName: file.name,
-                  progress: Math.round(progress),
-                  status: 'uploading',
-                  speed: Math.random() * 1000000,
-                  timeRemaining: (100 - progress) / 10,
-                });
-              }
-            }, 200);
-          });
-        };
-
-        await simulateProgress();
-
-        const { FileProcessingService } = await import('../../services/fileProcessingService');
-        const { FileUrlService } = await import('../../services/fileUrlService');
-        const processingResult = await FileProcessingService.processFile(file);
-
-        const document: DocumentFile = {
-          id: fileId,
-          name: file.name,
-          originalName: file.name,
-          size: file.size,
-          type: file.type,
-          mimeType: file.type,
-          uploadedAt: new Date(),
-          userId: 'demo-user',
-          status: 'ready',
-          url: FileUrlService.getDownloadUrl(fileId),
-          metadata: processingResult.metadata,
-        };
-
-        mockDocumentStore.addDocument(document);
-
-        return { success: true, document };
-      }
-
       const formData = new FormData();
       formData.append('file', file);
       if (options) {
@@ -311,10 +226,6 @@ export const useDeleteDocument = () => {
 
   return useMutation({
     mutationFn: async (id: string | number): Promise<boolean> => {
-      if (getMockMode()) {
-        return mockDocumentStore.deleteDocument(String(id));
-      }
-
       await http.delete(`/files/${id}`);
       return true;
     },
@@ -358,15 +269,6 @@ export const useDeleteDocument = () => {
 export const useDownloadDocument = () => {
   return useMutation({
     mutationFn: async (id: string | number): Promise<Blob> => {
-      if (getMockMode()) {
-        const document = mockDocumentStore.getDocumentById(String(id));
-        if (!document) {
-          throw new Error('Document not found');
-        }
-        const content = document.metadata?.extractedText || `Content of ${document.name}`;
-        return new Blob([content], { type: document.mimeType });
-      }
-
       const response = await http.get<Blob>(`/files/${id}`, {
         responseType: 'blob',
       });
