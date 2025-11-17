@@ -83,10 +83,9 @@ async function bootstrap() {
       }
       
       const config = configBuilder
-        .addTag('Chat', 'Chat and messaging endpoints')
-        .addTag('Authentication', 'Authentication endpoints')
+        .addTag('Environment', 'Environment configuration and health check endpoints')
+        .addTag('Chat API', 'Chat streaming and authentication endpoints')
         .addTag('Chat Management', 'Chat CRUD operations')
-        .addTag('Environment', 'Environment configuration endpoints')
         .addTag('Files', 'File upload/download endpoints')
         .addServer(baseUrl, environment.production ? 'Production' : 'Development')
         .setExternalDoc(
