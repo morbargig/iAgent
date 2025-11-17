@@ -1,0 +1,91 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1400 500">
+  <defs>
+    <style>
+      .title { font-family: Arial, sans-serif; font-size: 24px; font-weight: bold; fill: #333; }
+      .box { stroke-width: 2; rx: 5; }
+      .user-box { fill: #dae8fc; stroke: #6c8ebf; }
+      .frontend-box { fill: #d5e8d4; stroke: #82b366; }
+      .backend-box { fill: #fff2cc; stroke: #d6b656; }
+      .agent-box { fill: #e1d5e7; stroke: #9673a6; }
+      .db-box { fill: #f8cecc; stroke: #b85450; }
+      .label { font-family: Arial, sans-serif; font-size: 15px; font-weight: bold; fill: #333; }
+      .subtitle { font-family: Arial, sans-serif; font-size: 12px; fill: #666; }
+      .arrow { stroke: #666; stroke-width: 2; fill: none; marker-end: url(#arrowhead); }
+      .arrow-label { font-family: Arial, sans-serif; font-size: 11px; fill: #666; }
+      .arrow-dashed { stroke: #999; stroke-width: 2; fill: none; stroke-dasharray: 5,3; marker-end: url(#arrowhead); }
+      .icon { font-size: 32px; }
+    </style>
+    <marker id="arrowhead" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto">
+      <polygon points="0 0, 10 3, 0 6" fill="#666" />
+    </marker>
+  </defs>
+  
+  <!-- Title -->
+  <text x="700" y="40" text-anchor="middle" class="title">iAgent Architecture</text>
+  
+  <!-- User -->
+  <rect x="200" y="90" width="160" height="100" class="box user-box"/>
+  <text x="280" y="125" text-anchor="middle" class="icon">👤</text>
+  <text x="280" y="150" text-anchor="middle" class="label">User</text>
+  <text x="280" y="170" text-anchor="middle" class="subtitle">Browser</text>
+  <text x="280" y="185" text-anchor="middle" class="subtitle">Chat Interface</text>
+  
+  <!-- Frontend -->
+  <rect x="480" y="90" width="160" height="100" class="box frontend-box"/>
+  <text x="560" y="125" text-anchor="middle" class="icon">⚛️</text>
+  <text x="560" y="150" text-anchor="middle" class="label">Frontend</text>
+  <text x="560" y="170" text-anchor="middle" class="subtitle">React + Material-UI</text>
+  <text x="560" y="185" text-anchor="middle" class="subtitle">Vite</text>
+  
+  <!-- Backend -->
+  <rect x="760" y="90" width="160" height="100" class="box backend-box"/>
+  <text x="840" y="125" text-anchor="middle" class="icon">🔧</text>
+  <text x="840" y="150" text-anchor="middle" class="label">Backend</text>
+  <text x="840" y="170" text-anchor="middle" class="subtitle">NestJS BFF</text>
+  <text x="840" y="185" text-anchor="middle" class="subtitle">Express</text>
+  
+  <!-- Agent API -->
+  <rect x="1040" y="90" width="160" height="100" class="box agent-box"/>
+  <text x="1120" y="125" text-anchor="middle" class="icon">🤖</text>
+  <text x="1120" y="150" text-anchor="middle" class="label">Agent API</text>
+  <text x="1120" y="170" text-anchor="middle" class="subtitle">NestJS</text>
+  <text x="1120" y="185" text-anchor="middle" class="subtitle">Streaming</text>
+  
+  <!-- MongoDB -->
+  <path d="M 760 300 L 760 350 L 920 350 L 920 300 Q 920 280 840 280 Q 760 280 760 300 Z" class="box db-box" fill="#f8cecc" stroke="#b85450"/>
+  <text x="840" y="330" text-anchor="middle" class="label">MongoDB</text>
+  <text x="840" y="345" text-anchor="middle" class="subtitle">Database</text>
+  
+  <!-- Arrows -->
+  <!-- User to Frontend -->
+  <line x1="360" y1="140" x2="480" y2="140" class="arrow"/>
+  <text x="420" y="135" text-anchor="middle" class="arrow-label">HTTP/SSE</text>
+  
+  <!-- Frontend to Backend -->
+  <line x1="640" y1="140" x2="760" y2="140" class="arrow"/>
+  <text x="700" y="135" text-anchor="middle" class="arrow-label">/api/chat/stream</text>
+  
+  <!-- Backend to Agent API -->
+  <line x1="920" y1="140" x2="1040" y2="140" class="arrow"/>
+  <text x="980" y="135" text-anchor="middle" class="arrow-label">Proxy Request</text>
+  
+  <!-- Agent API to Backend (response) -->
+  <line x1="1040" y1="160" x2="920" y2="160" class="arrow-dashed"/>
+  <text x="980" y="155" text-anchor="middle" class="arrow-label">Stream Response</text>
+  
+  <!-- Backend to Frontend (response) -->
+  <line x1="760" y1="160" x2="640" y2="160" class="arrow-dashed"/>
+  <text x="700" y="155" text-anchor="middle" class="arrow-label">Stream Chunks</text>
+  
+  <!-- Frontend to User (response) -->
+  <line x1="480" y1="160" x2="360" y2="160" class="arrow-dashed"/>
+  <text x="420" y="155" text-anchor="middle" class="arrow-label">Live Updates</text>
+  
+  <!-- Backend to MongoDB -->
+  <line x1="840" y1="190" x2="840" y2="300" class="arrow"/>
+  <text x="855" y="245" class="arrow-label">Save Data</text>
+  
+  <!-- MongoDB to Backend (read) -->
+  <line x1="810" y1="320" x2="810" y2="220" class="arrow-dashed"/>
+  <text x="795" y="270" class="arrow-label">Read</text>
+</svg>

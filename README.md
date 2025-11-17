@@ -28,15 +28,39 @@ A modern, full-stack AI chat application built with React, NestJS, and TypeScrip
 
 ## 🏗️ Architecture
 
+The iAgent application follows a microservices architecture with a Backend-for-Frontend (BFF) pattern:
+
+![Architecture Diagram](./docs/architecture.svg)
+
+### Architecture Overview
+
 ```
 iAgent/
 ├── apps/
-│   ├── frontend/          # React application with Material-UI
-│   └── backend/           # NestJS API server
-├── libs/                  # Shared libraries (future)
+│   ├── frontend/          # React application with Material-UI (Port 4200)
+│   ├── backend/           # NestJS BFF - Chat persistence & proxy (Port 3030)
+│   └── agent-api/         # NestJS streaming service (Port 3033)
+├── libs/
+│   ├── chat-types/        # Shared DTOs and types
+│   └── shared-renderer/   # Markup parsing utilities
 ├── docs/                  # Documentation
 └── scripts/               # Build and deployment scripts
 ```
+
+### Request Flow
+
+1. **Frontend** → Sends chat request to **Backend** via HTTP/SSE
+2. **Backend** → Validates request, saves user message to MongoDB
+3. **Backend** → Proxies request to **Agent API** for streaming
+4. **Agent API** → Generates streaming response with mock data
+5. **Backend** → Streams chunks back to **Frontend** and saves final message to MongoDB
+
+### Components
+
+- **Frontend (React)**: User interface with real-time streaming, multi-language support, and chat management
+- **Backend (BFF)**: Handles authentication, chat persistence (MongoDB), file management, and proxies streaming requests
+- **Agent API**: Dedicated service for streaming logic, mock generation, and response formatting
+- **Shared Libraries**: Common DTOs and utilities used across all applications
 
 ## 🚀 Quick Start
 
@@ -59,13 +83,16 @@ npm install
 npx nx serve @iagent/frontend
 # The app will be available at: http://localhost:4200/iAgent/
 
-# Start the backend (NestJS API)
+# Start the backend (NestJS BFF)
 npx nx serve @iagent/backend
-# The API will be available at: http://localhost:3000
+# The API will be available at: http://localhost:3030
 
-# Or use npm scripts if available
-npm run dev:frontend  # Alternative command
-npm run dev:backend   # Alternative command
+# Start the agent-api (NestJS streaming service)
+npx nx serve agent-api
+# The API will be available at: http://localhost:3033
+
+# Or use npm scripts to start all services
+npm run dev  # Starts frontend, backend, and agent-api concurrently
 ```
 
 ### Available Scripts
@@ -73,21 +100,25 @@ npm run dev:backend   # Alternative command
 ```bash
 # Development (using Nx)
 npx nx serve @iagent/frontend   # Start React app at http://localhost:4200/iAgent/
-npx nx serve @iagent/backend    # Start NestJS API at http://localhost:3000
+npx nx serve @iagent/backend    # Start NestJS BFF at http://localhost:3030
+npx nx serve agent-api          # Start Agent API at http://localhost:3033
 
 # Building (using Nx)
 npx nx build @iagent/frontend   # Build React app
-npx nx build @iagent/backend    # Build NestJS API
+npx nx build @iagent/backend    # Build NestJS BFF
+npx nx build agent-api          # Build Agent API
 npx nx run-many -t build        # Build all projects
 
 # Testing (using Nx)
 npx nx test @iagent/frontend    # Test React app
-npx nx test @iagent/backend     # Test NestJS API
+npx nx test @iagent/backend     # Test NestJS BFF
+npx nx test agent-api           # Test Agent API
 npx nx run-many -t test         # Test all projects
 
 # Linting (using Nx)
 npx nx lint @iagent/frontend    # Lint React app
-npx nx lint @iagent/backend     # Lint NestJS API
+npx nx lint @iagent/backend     # Lint NestJS BFF
+npx nx lint agent-api           # Lint Agent API
 npx nx run-many -t lint         # Lint all projects
 
 # Utilities
@@ -136,20 +167,37 @@ React-based chat interface with Material-UI components, real-time streaming, and
 - Message actions (copy, edit, regenerate)
 
 ### [Backend](./apps/backend/README.md)
-NestJS API server providing chat functionality with comprehensive documentation and streaming support.
+NestJS BFF (Backend-for-Frontend) providing chat persistence, authentication, and request proxying.
 
 **Key Features:**
 - RESTful API with Swagger docs
-- Server-Sent Events streaming
+- Chat persistence with MongoDB
+- Authentication and authorization
 - Request validation and error handling
-- Mock responses for development
-- CORS and security configuration
+- File upload and management
+- Proxies streaming requests to Agent API
+
+### [Agent API](./apps/agent-api/)
+NestJS service dedicated to streaming logic and mock generation.
+
+**Key Features:**
+- Server-Sent Events streaming
+- Mock response generation
+- Tokenization and delay calculation
+- Response formatting
+- Swagger documentation
 
 ## 🌐 API Documentation
 
-When running the backend, comprehensive API documentation is available at:
-- **Swagger UI**: http://localhost:3000/api/docs
-- **API Base**: http://localhost:3000/api
+When running the services, comprehensive API documentation is available at:
+
+**Backend (BFF):**
+- **Swagger UI**: http://localhost:3030/docs
+- **API Base**: http://localhost:3030/api
+
+**Agent API:**
+- **Swagger UI**: http://localhost:3033/docs
+- **API Base**: http://localhost:3033/api
 
 ## 🔧 Configuration
 
