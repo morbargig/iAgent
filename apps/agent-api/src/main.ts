@@ -47,7 +47,7 @@ async function bootstrap() {
 
       if (!baseUrl) {
         if (environment.production) {
-          baseUrl = process.env.RENDER_EXTERNAL_URL || process.env.API_URL || `https://iagent-agent-api.onrender.com`;
+          baseUrl = process.env.RENDER_EXTERNAL_URL || process.env.API_URL || `https://iagent-api.onrender.com`;
         } else {
           baseUrl = `http://localhost:${environment.port}`;
         }

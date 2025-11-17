@@ -32,7 +32,13 @@
           "optimization": true,
           "extractLicenses": true,
           "sourceMap": false,
-          "watch": false
+          "watch": false,
+          "fileReplacements": [
+            {
+              "replace": "apps/agent-api/src/environments/environment.ts",
+              "with": "apps/agent-api/src/environments/environment.prod.ts"
+            }
+          ]
         }
       }
     },
