@@ -23,7 +23,7 @@ interface DateRangeSelectorProps {
   dateAnchorEl: HTMLElement | null;
   timeRangeOptions: TimeRangeOption[];
   isDarkMode: boolean;
-  t: (key: string, params?: Record<string, string>) => string;
+  t: (key: string, params?: Record<string, string | number>) => string;
   getDateRangeButtonText: () => string;
   onDateClick: (event: React.MouseEvent<HTMLElement>) => void;
   onDateRangeTabChange: (tab: number) => void;
@@ -34,7 +34,8 @@ interface DateRangeSelectorProps {
   onApply: () => void;
   onReset: () => void;
   onClose: () => void;
-  enabledTools?: { [key: string]: boolean };
+  isEnabled?: boolean;
+  requiredTools?: readonly string[];
 }
 
 export const DateRangeSelector: React.FC<DateRangeSelectorProps> = ({
@@ -59,13 +60,18 @@ export const DateRangeSelector: React.FC<DateRangeSelectorProps> = ({
   onApply,
   onReset,
   onClose,
-  enabledTools = {},
+  isEnabled = true,
+  requiredTools = [],
 }) => {
   const { isRTL } = useTranslation();
-  const hasEnabledTools = Object.values(enabledTools).some(enabled => enabled);
-  const tooltipText = hasEnabledTools
+  const toolNames = requiredTools.map((toolId) => t(`tools.${toolId}`));
+  const formattedToolList =
+    toolNames.length <= 1
+      ? toolNames[0] || ""
+      : `${toolNames.slice(0, -1).join(", ")} ${t("tools.tooltips.and")} ${toolNames.slice(-1)}`;
+  const tooltipText = isEnabled
     ? t("tools.tooltips.datesAvailableForTools")
-    : t("dateRange.customRange");
+    : `${t("tools.tooltips.datesRequireTools")} ${formattedToolList}`.trim();
 
   return (
     <>
@@ -74,7 +80,7 @@ export const DateRangeSelector: React.FC<DateRangeSelectorProps> = ({
         <Box
           id="iagent-date-selector"
           className="iagent-date-range-button"
-          onClick={onDateClick}
+          onClick={isEnabled ? onDateClick : undefined}
           sx={{
             display: "flex",
             position: "relative",
@@ -84,11 +90,18 @@ export const DateRangeSelector: React.FC<DateRangeSelectorProps> = ({
             border: `1px solid ${isDarkMode ? "#6b6d7a" : "#d1d5db"}`,
             borderRadius: "20px",
             padding: "6px 12px",
-            cursor: "pointer",
+            cursor: isEnabled ? "pointer" : "not-allowed",
             transition: "all 0.2s ease",
+            opacity: isEnabled ? 1 : 0.5,
             "&:hover": {
-              backgroundColor: isDarkMode ? "#6b6d7a" : "#d1d5db",
-              transform: "translateY(-1px)",
+              backgroundColor: isEnabled
+                ? isDarkMode
+                  ? "#6b6d7a"
+                  : "#d1d5db"
+                : isDarkMode
+                  ? "#565869"
+                  : "#e5e7eb",
+              transform: isEnabled ? "translateY(-1px)" : "none",
             },
           }}
         >
@@ -117,7 +130,7 @@ export const DateRangeSelector: React.FC<DateRangeSelectorProps> = ({
       {/* Date Range Popover */}
       <Popover
         id="iagent-date-range-popover"
-        open={datePopoverOpen}
+        open={datePopoverOpen && isEnabled}
         anchorEl={dateAnchorEl}
         onClose={onClose}
         anchorOrigin={{

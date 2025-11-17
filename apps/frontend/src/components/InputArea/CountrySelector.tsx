@@ -15,11 +15,12 @@ interface CountrySelectorProps {
   flagAnchorEl: HTMLElement | null;
   flagOptions: FlagOption[];
   isDarkMode: boolean;
-  t: (key: string, params?: Record<string, string>) => string;
+  t: (key: string, params?: Record<string, string | number>) => string;
   onFlagClick: (event: React.MouseEvent<HTMLElement>) => void;
   onFlagToggle: (flagCode: string) => void;
   onClose: () => void;
-  enabledTools?: { [key: string]: boolean };
+  isEnabled?: boolean;
+  requiredTools?: readonly string[];
 }
 
 export const CountrySelector: React.FC<CountrySelectorProps> = ({
@@ -32,13 +33,20 @@ export const CountrySelector: React.FC<CountrySelectorProps> = ({
   onFlagClick,
   onFlagToggle,
   onClose,
-  enabledTools = {},
+  isEnabled = true,
+  requiredTools = [],
 }) => {
   const { isRTL } = useTranslation();
-  const hasEnabledTools = Object.values(enabledTools).some(enabled => enabled);
-  const tooltipText = hasEnabledTools
-    ? t("tools.tooltips.countriesAvailableForTools")
-    : t("input.selectCountries");
+  const toolNames = requiredTools.map((toolId) => t(`tools.${toolId}`));
+  const formattedToolList =
+    toolNames.length <= 1
+      ? toolNames[0] || ""
+      : `${toolNames.slice(0, -1).join(", ")} ${t("tools.tooltips.and")} ${toolNames.slice(-1)}`;
+  const tooltipText = isEnabled
+    ? t("input.selectCountries")
+    : t("tools.tooltips.countriesRequireTool", {
+        tool: formattedToolList || t("tools.tooltips.countriesAvailableForTools"),
+      });
 
   return (
     <>
@@ -47,7 +55,7 @@ export const CountrySelector: React.FC<CountrySelectorProps> = ({
         <Box
           id="iagent-country-selector"
           className="iagent-country-dropdown"
-          onClick={onFlagClick}
+          onClick={isEnabled ? onFlagClick : undefined}
           sx={{
             display: "flex",
             position: "relative",
@@ -56,14 +64,21 @@ export const CountrySelector: React.FC<CountrySelectorProps> = ({
             border: `1px solid ${isDarkMode ? "#6b6d7a" : "#d1d5db"}`,
             borderRadius: "20px",
             padding: "6px 12px",
-            cursor: "pointer",
+            cursor: isEnabled ? "pointer" : "not-allowed",
             transition: "all 0.2s ease",
             minWidth: "120px",
             height: "32px",
+            opacity: isEnabled ? 1 : 0.5,
             "&:hover": {
-              backgroundColor: isDarkMode ? "#6b6d7a" : "#d1d5db",
-              transform: "translateY(-1px)",
-              boxShadow: "0 2px 8px rgba(0, 0, 0, 0.1)",
+              backgroundColor: isEnabled
+                ? isDarkMode
+                  ? "#6b6d7a"
+                  : "#d1d5db"
+                : isDarkMode
+                  ? "#565869"
+                  : "#e5e7eb",
+              transform: isEnabled ? "translateY(-1px)" : "none",
+              boxShadow: isEnabled ? "0 2px 8px rgba(0, 0, 0, 0.1)" : "none",
             },
           }}
         >
@@ -160,7 +175,7 @@ export const CountrySelector: React.FC<CountrySelectorProps> = ({
       {/* Flag Multi-Select Dropdown */}
       <Popover
         id="iagent-country-popover"
-        open={flagPopoverOpen}
+        open={flagPopoverOpen && isEnabled}
         anchorEl={flagAnchorEl}
         onClose={onClose}
         anchorOrigin={{

@@ -5,7 +5,7 @@ import { useTranslation } from "../../contexts/TranslationContext";
 import { Translate } from "../Translate";
 import { FilterNameDialog } from "../FilterNameDialog";
 import { FilterDetailsDialog } from "../FilterDetailsDialog";
-import { useToolToggles } from "../../hooks/useToolToggles";
+import { useToolToggles, TOOL_FILTER_CONFIG } from "../../hooks/useToolToggles";
 import { ToolSettingsDialog, ToolConfiguration } from "../ToolSettingsDialog";
 import { useToolSchemas } from "../../features/tools/api";
 import { usePermissions } from "../../features/auth/api";
@@ -27,7 +27,11 @@ import { InputControls } from "./InputControls";
 import { FilterMenu } from "./FilterMenu";
 
 // Import utilities
-import { TOOLS_LIST, filterToolsByPermissions } from "../../utils/toolUtils";
+import {
+  TOOLS_LIST,
+  filterToolsByPermissions,
+  ToolId,
+} from "../../utils/toolUtils";
 import {
   createDateFilter,
   createFilterSnapshot,
@@ -48,7 +52,7 @@ export interface SendMessageData {
   content: string;
   dateFilter: DateFilter;
   selectedCountries: string[];
-  enabledTools: string[];
+  enabledTools: ToolId[];
   filterSnapshot?: {
     filterId?: string;
     name?: string;
@@ -65,8 +69,8 @@ export interface SendMessageData {
         };
       };
       selectedCountries: string[];
-      enabledTools: string[];
-      toolConfigurations: Record<string, ToolConfiguration>;
+      enabledTools: ToolId[];
+      toolConfigurations: Partial<Record<ToolId, ToolConfiguration>>;
     };
     isActive?: boolean;
     createdAt?: string;
@@ -154,7 +158,11 @@ export function InputArea({
     setToolConfiguration,
     setToolEnabled,
     hasUnconfiguredTools,
+    filterAvailability,
   } = useToolToggles();
+
+  const { flagPopoverOpen, setFlagAnchorEl } = countrySelection;
+  const { datePopoverOpen, setDateAnchorEl, setRangeTypeOpen } = dateRange;
 
   // Tool schemas and settings dialog
   const toolSchemas = useToolSchemas();
@@ -209,6 +217,19 @@ export function InputArea({
 
   // Use ref for handleSubmit to avoid dependency issues
   const handleSubmitRef = React.useRef<(() => Promise<void>) | null>(null);
+
+  React.useEffect(() => {
+    if (!filterAvailability.countries && flagPopoverOpen) {
+      setFlagAnchorEl(null);
+    }
+  }, [filterAvailability.countries, flagPopoverOpen, setFlagAnchorEl]);
+
+  React.useEffect(() => {
+    if (!filterAvailability.dateRange && datePopoverOpen) {
+      setDateAnchorEl(null);
+      setRangeTypeOpen(false);
+    }
+  }, [filterAvailability.dateRange, datePopoverOpen, setDateAnchorEl, setRangeTypeOpen]);
 
   const handleSubmit = React.useCallback(async () => {
     if (isLoading && onStop) {
@@ -315,7 +336,7 @@ export function InputArea({
   }, [needsToolConfig, value, enableFileUpload, attachedFilesCount, disabled, isLoading, setToolSettingsOpen]);
 
   // Tool toggle handler with hint ring
-  const handleToolToggle = React.useCallback((toolId: string) => {
+  const handleToolToggle = React.useCallback((toolId: ToolId) => {
     const isCurrentlyEnabled = enabledTools[toolId];
 
     // Toggle the tool
@@ -346,7 +367,7 @@ export function InputArea({
 
   // Tool settings handlers
   const handleToolConfigurationChange = React.useCallback((
-    toolId: string,
+    toolId: ToolId,
     config: ToolConfiguration
   ) => {
     setToolConfiguration(toolId, config);
@@ -368,7 +389,9 @@ export function InputArea({
 
     return {
       countries: countrySelection.selectedFlags,
-      tools: Object.keys(enabledTools).filter((toolId) => enabledTools[toolId]),
+      tools: (Object.keys(enabledTools) as ToolId[]).filter(
+        (toolId) => enabledTools[toolId]
+      ),
       dateRange: dateText,
     };
   }, [dateRange.dateRangeTab, dateRange.rangeAmount, dateRange.rangeType, dateRange.dateRange, countrySelection.selectedFlags, enabledTools, t]);
@@ -646,6 +669,10 @@ export function InputArea({
               chatFilters={filterManagement.chatFilters}
               activeFilter={filterManagement.activeFilter}
               onFilterMenuOpen={filterManagement.handleFilterMenuOpen}
+            countryFilterEnabled={filterAvailability.countries}
+            countryFilterRequiredTools={TOOL_FILTER_CONFIG.countries}
+            dateFilterEnabled={filterAvailability.dateRange}
+            dateFilterRequiredTools={TOOL_FILTER_CONFIG.dateRange}
               // Tools
               toolsList={TOOLS_LIST}
               enabledTools={enabledTools}

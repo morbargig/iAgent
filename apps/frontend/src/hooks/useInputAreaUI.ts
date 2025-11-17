@@ -1,6 +1,8 @@
 import React, { useState, useRef, useEffect, useMemo } from "react";
 import { useAnimatedPlaceholder } from "./useAnimatedPlaceholder";
 import { useTranslation } from "../contexts/TranslationContext";
+import type { ToolId } from "../utils/toolUtils";
+import type { ToolSchema } from "../components/ToolSettingsDialog";
 
 const detectLanguage = (text: string): "ltr" | "rtl" => {
     if (!text) return "ltr";
@@ -16,8 +18,8 @@ interface UseInputAreaUIProps {
     isDarkMode: boolean;
     disabled: boolean;
     onHeightChange?: (height: number) => void;
-    toolSchemas: any[];
-    enabledTools: { [key: string]: boolean };
+    toolSchemas: ToolSchema[];
+    enabledTools: Partial<Record<ToolId, boolean>>;
     needsToolConfiguration?: boolean;
 }
 

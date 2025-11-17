@@ -15,8 +15,6 @@ import type {
   LocalStorageKeys,
   SessionStorageValues,
   SessionStorageKeys,
-  ToolConfiguration,
-  DateRangeSettings,
 } from './storage.types';
 
 export const isChatbotSidebarOpen = isBoolean;

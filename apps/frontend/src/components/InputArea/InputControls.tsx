@@ -9,9 +9,10 @@ import { DateRangeSelector } from "./DateRangeSelector";
 import { ToolSelector } from "./ToolSelector";
 import { AttachmentButton, SubmitButton } from "./ActionButtons";
 import { UploadingFile, AttachedFile } from "../../hooks/useFileHandling";
+import type { ToolId } from "../../utils/toolUtils";
 
 interface Tool {
-  id: string;
+  id: ToolId;
   nameKey: string;
 }
 
@@ -63,14 +64,18 @@ interface InputControlsProps {
   onToolSettingsOpen: () => void;
 
   // Filter
-  chatFilters: any[];
-  activeFilter: any;
+  chatFilters: Array<{ name?: string }>;
+  activeFilter: { name?: string } | null;
   onFilterMenuOpen: (event: React.MouseEvent<HTMLElement>) => void;
+  countryFilterEnabled: boolean;
+  countryFilterRequiredTools: readonly ToolId[];
+  dateFilterEnabled: boolean;
+  dateFilterRequiredTools: readonly ToolId[];
 
   // Tools
-  toolsList: Tool[];
-  enabledTools: { [key: string]: boolean };
-  onToolToggle: (toolId: string) => void;
+  toolsList: ReadonlyArray<Tool>;
+  enabledTools: Partial<Record<ToolId, boolean>>;
+  onToolToggle: (toolId: ToolId) => void;
 
   // Action Buttons
   value: string;
@@ -96,7 +101,7 @@ interface InputControlsProps {
 
   // Styling
   isDarkMode: boolean;
-  t: (key: string, params?: any) => string;
+  t: (key: string, params?: Record<string, string | number>) => string;
 }
 
 export const InputControls: React.FC<InputControlsProps> = ({
@@ -139,6 +144,10 @@ export const InputControls: React.FC<InputControlsProps> = ({
   chatFilters,
   activeFilter,
   onFilterMenuOpen,
+  countryFilterEnabled,
+  countryFilterRequiredTools,
+  dateFilterEnabled,
+  dateFilterRequiredTools,
 
   // Tools
   toolsList,
@@ -357,7 +366,8 @@ export const InputControls: React.FC<InputControlsProps> = ({
           onApply={onDateRangeApply}
           onReset={onDateRangeReset}
           onClose={onDateClose}
-          enabledTools={enabledTools}
+          isEnabled={dateFilterEnabled}
+          requiredTools={dateFilterRequiredTools}
         />
 
         {/* Country Selector */}
@@ -371,7 +381,8 @@ export const InputControls: React.FC<InputControlsProps> = ({
           onFlagClick={onFlagClick}
           onFlagToggle={onFlagToggle}
           onClose={onFlagClose}
-          enabledTools={enabledTools}
+          isEnabled={countryFilterEnabled}
+          requiredTools={countryFilterRequiredTools}
         />
 
         {/* Docs Button (Attachment) */}

@@ -1,11 +1,32 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from "react";
-import { getApiUrl } from "../config/config";
 import { useFilters, useCreateFilter, useUpdateFilter, useDeleteFilter, useSetActiveFilter } from "../features/filters/api";
+import type { ToolConfiguration } from "../components/ToolSettingsDialog";
+import type { ToolId } from "../utils/toolUtils";
+import type { DateRangeSettings } from "../types/storage.types";
+
+const generateFilterId = () =>
+    `filter_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+
+type CustomRangeType = DateRangeSettings["customRange"]["type"];
+
+interface FilterConfig {
+    dateFilter?: {
+        type: "custom" | "picker";
+        customRange?: {
+            amount: number;
+            type: CustomRangeType;
+        };
+        dateRange?: [string, string];
+    };
+    selectedCountries?: string[];
+    enabledTools?: ToolId[];
+    [key: string]: unknown;
+}
 
 interface ChatFilter {
     filterId: string;
     name: string;
-    config: Record<string, any>;
+    config: FilterConfig;
     isActive?: boolean;
     createdAt: string;
 }
@@ -13,8 +34,8 @@ interface ChatFilter {
 interface UseFilterManagementProps {
     currentChatId?: string;
     authToken?: string;
-    enabledTools: { [key: string]: boolean };
-    toolConfigurations: Record<string, any>;
+    enabledTools: Partial<Record<ToolId, boolean>>;
+    toolConfigurations: Partial<Record<ToolId, ToolConfiguration>>;
     selectedFlags: string[];
     dateRangeTab: number;
     rangeAmount: number;
@@ -26,7 +47,7 @@ interface UseFilterManagementProps {
     setDateRange: (range: [Date | null, Date | null]) => void;
     setCommittedTab: (tab: number) => void;
     setDateRangeTab: (tab: number) => void;
-    toggleTool: (toolId: string) => void;
+    toggleTool: (toolId: ToolId) => void;
 }
 
 export const useFilterManagement = ({
@@ -61,10 +82,16 @@ export const useFilterManagement = ({
         useState<ChatFilter | null>(null);
 
     const synchronizedConfigurations = useMemo(
-        () => Object.keys(toolConfigurations).reduce(
-            (synced: { [toolId: string]: any }, toolId) => {
+        () => (Object.keys(toolConfigurations) as ToolId[]).reduce(
+            (synced: Partial<Record<ToolId, ToolConfiguration>>, toolId) => {
+                const currentConfig = toolConfigurations[toolId];
+                const baseConfig: ToolConfiguration = currentConfig || {
+                    toolId,
+                    enabled: false,
+                    parameters: {},
+                };
                 synced[toolId] = {
-                    ...toolConfigurations[toolId],
+                    ...baseConfig,
                     enabled: enabledTools[toolId] || false,
                 };
                 return synced;
@@ -74,7 +101,7 @@ export const useFilterManagement = ({
         [toolConfigurations, enabledTools]
     );
 
-    const applyFilterToUI = (filter: ChatFilter) => {
+    const applyFilterToUI = useCallback((filter: ChatFilter) => {
         const config = filter.config;
 
         console.log("🔄 Applying filter to UI:", filter.name, config);
@@ -105,7 +132,7 @@ export const useFilterManagement = ({
             setSelectedFlags(config.selectedCountries);
         }
 
-        Object.keys(enabledTools).forEach((toolId) => {
+        (Object.keys(enabledTools) as ToolId[]).forEach((toolId) => {
             if (enabledTools[toolId]) {
                 toggleTool(toolId); // Disable currently enabled tools
             }
@@ -113,7 +140,7 @@ export const useFilterManagement = ({
 
         // Apply enabled tools
         if (config.enabledTools && config.enabledTools.length > 0) {
-            config.enabledTools.forEach((toolId: string) => {
+            (config.enabledTools as ToolId[]).forEach((toolId) => {
                 if (!enabledTools[toolId]) {
                     toggleTool(toolId); // Enable tools from filter
                 }
@@ -121,7 +148,16 @@ export const useFilterManagement = ({
         }
 
         console.log("✅ Filter applied successfully");
-    };
+    }, [
+        setRangeAmount,
+        setRangeType,
+        setCommittedTab,
+        setDateRangeTab,
+        setDateRange,
+        setSelectedFlags,
+        enabledTools,
+        toggleTool,
+    ]);
 
     const createNewFilter = () => {
         setFilterMenuAnchor(null);
@@ -155,13 +191,13 @@ export const useFilterManagement = ({
                         },
                     },
             selectedCountries: selectedFlags,
-            enabledTools: Object.keys(enabledTools).filter(
+            enabledTools: (Object.keys(enabledTools) as ToolId[]).filter(
                 (toolId) => enabledTools[toolId]
             ),
             toolConfigurations: synchronizedConfigurations,
         };
 
-        const filterId = `filter_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+        const filterId = generateFilterId();
 
         try {
             const savedFilter = await createFilterMutation.mutateAsync({
@@ -367,7 +403,7 @@ export const useFilterManagement = ({
                 handleOpenFilterPopup as EventListener
             );
         };
-    }, [currentChatId]);
+    }, [currentChatId, applyFilterToUI]);
 
     return {
         chatFilters,

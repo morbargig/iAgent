@@ -1,17 +1,18 @@
 import React from "react";
 import { Box, Tooltip } from "@mui/material";
+import type { ToolId } from "../../utils/toolUtils";
 
 interface Tool {
-  id: string;
+  id: ToolId;
   nameKey: string;
 }
 
 interface ToolSelectorProps {
-  toolsList: Tool[];
-  enabledTools: { [key: string]: boolean };
+  toolsList: ReadonlyArray<Tool>;
+  enabledTools: Partial<Record<ToolId, boolean>>;
   isDarkMode: boolean;
   t: (key: string, params?: Record<string, string>) => string;
-  onToolToggle: (toolId: string) => void;
+  onToolToggle: (toolId: ToolId) => void;
 }
 
 export const ToolSelector: React.FC<ToolSelectorProps> = ({

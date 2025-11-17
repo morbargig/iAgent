@@ -30,9 +30,10 @@ import {
   Warning as WarningIcon,
 } from '@mui/icons-material';
 import { useTranslation } from '../contexts/TranslationContext';
+import type { ToolId } from '../utils/toolUtils';
 
 export interface ToolConfiguration {
-  toolId: string;
+  toolId: ToolId;
   enabled: boolean;
   parameters: {
     pages?: {
@@ -45,7 +46,7 @@ export interface ToolConfiguration {
 }
 
 export interface ToolSchema {
-  id: string;
+  id: ToolId;
   name: string;
   description: string;
   requiresConfiguration: boolean;
@@ -66,8 +67,8 @@ interface ToolSettingsDialogProps {
   open: boolean;
   onClose: () => void;
   tools: ToolSchema[];
-  configurations: { [toolId: string]: ToolConfiguration };
-  onConfigurationChange: (toolId: string, config: ToolConfiguration) => void;
+  configurations: Partial<Record<ToolId, ToolConfiguration>>;
+  onConfigurationChange: (toolId: ToolId, config: ToolConfiguration) => void;
   isDarkMode: boolean;
   isLoading?: boolean;
 }
@@ -83,14 +84,14 @@ export const ToolSettingsDialog: React.FC<ToolSettingsDialogProps> = ({
 }) => {
   const { t } = useTranslation();
   
-  const [localConfigs, setLocalConfigs] = useState<{ [toolId: string]: ToolConfiguration }>({});
+  const [localConfigs, setLocalConfigs] = useState<Partial<Record<ToolId, ToolConfiguration>>>({});
   
-  const [expandedTool, setExpandedTool] = useState<string | null>(null);
-  const [newWord, setNewWord] = useState<{ [toolId: string]: string }>({});
+  const [expandedTool, setExpandedTool] = useState<ToolId | null>(null);
+  const [newWord, setNewWord] = useState<Partial<Record<ToolId, string>>>({});
 
   useEffect(() => {
     if (open) {
-      const configs: { [toolId: string]: ToolConfiguration } = {};
+      const configs: Partial<Record<ToolId, ToolConfiguration>> = {};
       tools.forEach(tool => {
         const existingConfig = configurations[tool.id];
         if (existingConfig) {
@@ -111,7 +112,7 @@ export const ToolSettingsDialog: React.FC<ToolSettingsDialogProps> = ({
     }
   }, [open, tools, configurations]);
 
-  const updateToolConfig = (toolId: string, updater: (config: ToolConfiguration) => ToolConfiguration) => {
+  const updateToolConfig = (toolId: ToolId, updater: (config: ToolConfiguration) => ToolConfiguration) => {
     setLocalConfigs(prev => {
       const current = prev[toolId] || {
         toolId,
@@ -123,14 +124,14 @@ export const ToolSettingsDialog: React.FC<ToolSettingsDialogProps> = ({
     });
   };
 
-  const handleToolToggle = (toolId: string, enabled: boolean) => {
+  const handleToolToggle = (toolId: ToolId, enabled: boolean) => {
     updateToolConfig(toolId, (config) => ({
       ...config,
       enabled,
     }));
   };
 
-  const handlePagesChange = (toolId: string, selectedPages: string[]) => {
+  const handlePagesChange = (toolId: ToolId, selectedPages: string[]) => {
     updateToolConfig(toolId, (config) => ({
       ...config,
       parameters: {
@@ -143,7 +144,7 @@ export const ToolSettingsDialog: React.FC<ToolSettingsDialogProps> = ({
     }));
   };
 
-  const handleInclusionTypeChange = (toolId: string, inclusionType: 'include' | 'include_only' | 'exclude') => {
+  const handleInclusionTypeChange = (toolId: ToolId, inclusionType: 'include' | 'include_only' | 'exclude') => {
     updateToolConfig(toolId, (config) => ({
       ...config,
       parameters: {
@@ -156,7 +157,7 @@ export const ToolSettingsDialog: React.FC<ToolSettingsDialogProps> = ({
     }));
   };
 
-  const handleAddRequiredWord = (toolId: string) => {
+  const handleAddRequiredWord = (toolId: ToolId) => {
     const word = newWord[toolId]?.trim();
     if (!word) return;
 
@@ -176,7 +177,7 @@ export const ToolSettingsDialog: React.FC<ToolSettingsDialogProps> = ({
     setNewWord(prev => ({ ...prev, [toolId]: '' }));
   };
 
-  const handleRemoveRequiredWord = (toolId: string, wordToRemove: string) => {
+  const handleRemoveRequiredWord = (toolId: ToolId, wordToRemove: string) => {
     updateToolConfig(toolId, (config) => ({
       ...config,
       parameters: {
@@ -194,7 +195,7 @@ export const ToolSettingsDialog: React.FC<ToolSettingsDialogProps> = ({
   };
 
   const handleCancel = () => {
-    const configs: { [toolId: string]: ToolConfiguration } = {};
+    const configs: Partial<Record<ToolId, ToolConfiguration>> = {};
     tools.forEach(tool => {
       const existingConfig = configurations[tool.id];
       if (existingConfig) {
@@ -213,7 +214,7 @@ export const ToolSettingsDialog: React.FC<ToolSettingsDialogProps> = ({
     onClose();
   };
 
-  const isToolConfigured = (toolId: string): boolean => {
+  const isToolConfigured = (toolId: ToolId): boolean => {
     const config = localConfigs[toolId];
     const tool = tools.find(t => t.id === toolId);
     

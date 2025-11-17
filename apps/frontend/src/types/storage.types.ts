@@ -1,3 +1,5 @@
+import type { ToolId } from '../utils/toolUtils';
+
 export type TypeGuard<T> = (value: unknown) => value is T;
 
 export type UseStorageReturn<T> = [
@@ -13,8 +15,9 @@ export type UseLocalStorageReturn<T> = [
 
 export type HeaderButtonId = 'theme' | 'language' | 'mockMode' | 'contact' | 'info' | 'swagger';
 
+
 export interface ToolConfiguration {
-  toolId: string;
+  toolId: ToolId;
   enabled: boolean;
   parameters: {
     pages?: {
@@ -53,8 +56,8 @@ export interface LocalStorageValues {
   'chatbot-current-conversation-id': string | null;
   'sidebar-width': number;
   'report-panel-width': number;
-  'enabled-tools': Record<string, boolean>;
-  'tool-configurations': Record<string, ToolConfiguration>;
+  'enabled-tools': Partial<Record<ToolId, boolean>>;
+  'tool-configurations': Partial<Record<ToolId, ToolConfiguration>>;
   'selected-countries': string[];
   'available-countries': Array<{
     code: string;

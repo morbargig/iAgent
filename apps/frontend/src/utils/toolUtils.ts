@@ -1,4 +1,3 @@
-import type { ToolSchema } from '../components/ToolSettingsDialog';
 import type { Permissions } from '../features/auth/api';
 
 export const TOOLS_LIST = [
@@ -7,20 +6,22 @@ export const TOOLS_LIST = [
   { id: "tool-f", nameKey: "tools.tool-f" },
 ] as const;
 
-const PERMISSION_KEY_MAP: Record<string, keyof Permissions['permissions']> = {
+export type ToolId = typeof TOOLS_LIST[number]['id'];
+
+const PERMISSION_KEY_MAP: Record<ToolId, keyof Permissions['permissions']> = {
   'tool-t': 'canUseToolT',
   'tool-h': 'canUseToolH',
   'tool-f': 'canUseToolF',
 };
 
-export const filterToolsByPermissions = (
-  toolSchemas: ToolSchema[],
+export const filterToolsByPermissions = <T extends { id: ToolId }>(
+  toolSchemas: T[],
   permissions?: Permissions
-): ToolSchema[] => {
+): T[] => {
   if (!permissions?.permissions) {
     return toolSchemas;
   }
-  
+
   return toolSchemas.filter(tool => {
     const permissionKey = PERMISSION_KEY_MAP[tool.id];
     if (!permissionKey) {
@@ -29,4 +30,3 @@ export const filterToolsByPermissions = (
     return permissions.permissions[permissionKey] !== false;
   });
 };
-

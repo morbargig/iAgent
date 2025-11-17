@@ -1,5 +1,6 @@
 import type { DateFilter, SendMessageData } from '../components/InputArea/InputArea';
 import type { ToolConfiguration } from '../components/ToolSettingsDialog';
+import type { ToolId } from './toolUtils';
 
 interface CreateDateFilterParams {
   committedTab: number;
@@ -36,8 +37,8 @@ interface CreateFilterSnapshotParams {
   rangeType: string;
   dateRange: [Date | null, Date | null];
   selectedCountries: string[];
-  enabledTools: Record<string, boolean>;
-  toolConfigurations: Record<string, ToolConfiguration>;
+  enabledTools: Partial<Record<ToolId, boolean>>;
+  toolConfigurations: Partial<Record<ToolId, ToolConfiguration>>;
   isActive: boolean;
 }
 
@@ -76,7 +77,7 @@ export const createFilterSnapshot = ({
     config: {
       dateFilter: snapshotDateFilter,
       selectedCountries,
-      enabledTools: Object.keys(enabledTools).filter(
+      enabledTools: (Object.keys(enabledTools) as ToolId[]).filter(
         (toolId) => enabledTools[toolId]
       ),
       toolConfigurations,
@@ -90,7 +91,7 @@ interface CreateSendMessageDataParams {
   content: string;
   dateFilter: DateFilter;
   selectedCountries: string[];
-  enabledTools: Record<string, boolean>;
+  enabledTools: Partial<Record<ToolId, boolean>>;
   filterSnapshot: ReturnType<typeof createFilterSnapshot>;
   attachments?: Array<{
     id: string;
@@ -113,7 +114,7 @@ export const createSendMessageData = ({
     content,
     dateFilter,
     selectedCountries,
-    enabledTools: Object.keys(enabledTools).filter(
+    enabledTools: (Object.keys(enabledTools) as ToolId[]).filter(
       (toolId) => enabledTools[toolId]
     ),
     filterSnapshot,
