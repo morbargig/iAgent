@@ -9,6 +9,10 @@ import { AuthService } from './auth/auth.service';
 import { AuthGuard } from './auth/auth.guard';
 import { JwtStrategy } from './auth/jwt.strategy';
 import { JwtAuthGuard } from './auth/jwt-auth.guard';
+import { AuthController } from './controllers/auth.controller';
+import { ToolsController } from './controllers/tools.controller';
+import { CountriesController } from './controllers/countries.controller';
+import { StreamingController } from './controllers/streaming.controller';
 import { ChatController } from './controllers/chat.controller';
 import { EnvironmentController } from './controllers/environment.controller';
 import { FileController } from './controllers/file.controller';
@@ -43,7 +47,17 @@ import { environment } from '../environments/environment';
       { name: ChatFilter.name, schema: ChatFilterSchema }
     ])
   ],
-  controllers: [AppController, ChatController, EnvironmentController, FileController, DatabaseController],
+  controllers: [
+    AppController,
+    AuthController,
+    ToolsController,
+    CountriesController,
+    StreamingController,
+    ChatController,
+    EnvironmentController,
+    FileController,
+    DatabaseController
+  ],
   providers: [AppService, AuthService, AuthGuard, ChatService, FileService, JwtStrategy, JwtAuthGuard],
 })
 export class AppModule {
