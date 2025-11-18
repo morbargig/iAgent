@@ -8,6 +8,7 @@ WORKDIR /app
 # Copy all package files first for better caching
 COPY package*.json ./
 COPY tsconfig.base.json ./
+COPY tsconfig.json ./
 COPY nx.json ./
 COPY jest.config.ts ./
 COPY jest.preset.js ./
