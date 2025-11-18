@@ -27,15 +27,20 @@ export class AuthService {
   
   // Mock users database - In production, use a real database
   private readonly users: User[] = [
-    // Add your users here
-    // Example:
-    // {
-    //   userId: 'user_123456789',
-    //   email: 'user@example.com',
-    //   password: 'password', // In production: hash this with bcrypt
-    //   role: 'user',
-    //   createdAt: new Date()
-    // }
+    {
+      userId: 'user_demo_001',
+      email: 'demo@iagent.com',
+      password: 'demo',
+      role: 'user',
+      createdAt: new Date('2024-01-01')
+    },
+    {
+      userId: 'user_test_001',
+      email: 'test@iagent.com',
+      password: 'test',
+      role: 'user',
+      createdAt: new Date('2024-01-01')
+    }
   ];
 
   async login(loginRequest: LoginRequest): Promise<LoginResponse> {
