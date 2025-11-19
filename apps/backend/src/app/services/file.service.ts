@@ -281,4 +281,63 @@ export class FileService {
 
     return results;
   }
+
+  /**
+   * Update file content (for text files)
+   */
+  async updateFileContent(
+    fileId: string,
+    content: Buffer,
+    createVersion: boolean = false
+  ): Promise<FileInfo> {
+    try {
+      const objectId = new ObjectId(fileId);
+      
+      // Get existing file info
+      const existingFile = await this.getFileInfo(fileId);
+      
+      // TODO: When versioning is enabled, create version here if createVersion is true
+      // For now, createVersion parameter is ignored
+
+      // Delete old file
+      await this.gridFSBucket.delete(objectId);
+
+      // Upload new file with same metadata
+      const uploadStream = this.gridFSBucket.openUploadStream(
+        existingFile.filename,
+        {
+          metadata: {
+            ...existingFile.metadata,
+            originalName: existingFile.filename,
+            mimetype: existingFile.mimetype,
+            size: content.length,
+            updatedAt: new Date(),
+          }
+        }
+      );
+
+      return new Promise((resolve, reject) => {
+        const readable = new Readable();
+        readable.push(content);
+        readable.push(null);
+
+        readable.pipe(uploadStream);
+
+        uploadStream.on('error', (error) => {
+          reject(new BadRequestException(`Update failed: ${error.message}`));
+        });
+
+        uploadStream.on('finish', async () => {
+          // Get the updated file info
+          const updatedFileInfo = await this.getFileInfo(uploadStream.id.toString());
+          resolve(updatedFileInfo);
+        });
+      });
+    } catch (error) {
+      if (error instanceof NotFoundException) {
+        throw error;
+      }
+      throw new NotFoundException(`File with ID ${fileId} not found`);
+    }
+  }
 }

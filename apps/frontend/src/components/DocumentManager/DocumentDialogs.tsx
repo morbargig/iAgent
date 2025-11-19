@@ -13,6 +13,7 @@ import {
   Visibility as PreviewIcon,
   Download as DownloadIcon,
   Delete as DeleteIcon,
+  Edit as EditIcon,
 } from "@mui/icons-material";
 import { useTheme } from "@mui/material/styles";
 import { DocumentFile } from "../../types/document.types";
@@ -25,6 +26,7 @@ interface DocumentDialogsProps {
   onPreviewClick: (document: DocumentFile) => void;
   onDownloadClick: (document: DocumentFile) => void;
   onMenuDeleteClick: (document: DocumentFile) => void;
+  onEditClick?: (document: DocumentFile) => void;
 
   // Delete Dialog Props
   deleteDialog: { open: boolean; document?: DocumentFile };
@@ -43,6 +45,7 @@ export const DocumentDialogs: React.FC<DocumentDialogsProps> = ({
   onPreviewClick,
   onDownloadClick,
   onMenuDeleteClick,
+  onEditClick,
   deleteDialog,
   onCloseDeleteDialog,
   onConfirmDelete,
@@ -52,6 +55,8 @@ export const DocumentDialogs: React.FC<DocumentDialogsProps> = ({
 }) => {
   const theme = useTheme();
   const { t } = useTranslation();
+
+  const isTextFile = menuAnchor?.document?.mimeType === 'text/plain';
 
   return (
     <>
@@ -83,6 +88,19 @@ export const DocumentDialogs: React.FC<DocumentDialogsProps> = ({
           <DownloadIcon sx={{ mr: 1 }} />
           {t("download")}
         </MenuItem>
+        {isTextFile && onEditClick && (
+          <MenuItem
+            onClick={() => {
+              if (menuAnchor?.document) {
+                onEditClick(menuAnchor.document);
+              }
+              onCloseMenu();
+            }}
+          >
+            <EditIcon sx={{ mr: 1 }} />
+            {t("files.editText")}
+          </MenuItem>
+        )}
         <MenuItem
           onClick={() => {
             if (menuAnchor?.document) {

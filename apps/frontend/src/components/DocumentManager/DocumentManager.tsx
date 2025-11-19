@@ -5,6 +5,7 @@ import { DocumentService } from "../../services/documentService";
 import { DocumentToolbar } from "./DocumentToolbar";
 import { DocumentList } from "./DocumentList";
 import { DocumentDialogs } from "./DocumentDialogs";
+import { TextFileEditorDialog } from "../TextFileEditorDialog";
 import { useDocumentManager } from "./hooks/useDocumentManager";
 import { useDocumentActions } from "./hooks/useDocumentActions";
 import { useDocumentSelection } from "./hooks/useDocumentSelection";
@@ -41,6 +42,7 @@ export const DocumentManager: React.FC<DocumentManagerProps> = ({
 }) => {
   const [documentService] = useState(() => new DocumentService());
   const [isDeleting, setIsDeleting] = useState(false);
+  const [editingDocument, setEditingDocument] = useState<DocumentFile | null>(null);
 
   // Custom hooks
   const {
@@ -138,6 +140,19 @@ export const DocumentManager: React.FC<DocumentManagerProps> = ({
     openDeleteDialog(document);
   };
 
+  const handleEditClick = (document: DocumentFile) => {
+    setEditingDocument(document);
+  };
+
+  const handleEditSaveComplete = (updatedDocument: DocumentFile) => {
+    loadDocuments(true);
+    setEditingDocument(null);
+  };
+
+  const handleEditClose = () => {
+    setEditingDocument(null);
+  };
+
   const handleSelectAll = () => {
     if (onSelectAll && documents.length > 0) {
       onSelectAll(documents);
@@ -195,6 +210,7 @@ export const DocumentManager: React.FC<DocumentManagerProps> = ({
         areAllVisibleSelected={areAllVisibleSelected()}
         areSomeVisibleSelected={areSomeVisibleSelected()}
         onBulkDeleteClick={handleBulkDeleteClick}
+        onEditClick={handleEditClick}
       />
 
       <DocumentDialogs
@@ -208,12 +224,20 @@ export const DocumentManager: React.FC<DocumentManagerProps> = ({
         }
         onDownloadClick={handleDownloadDocument}
         onMenuDeleteClick={handleMenuDeleteClick}
+        onEditClick={handleEditClick}
         deleteDialog={deleteDialog}
         onCloseDeleteDialog={closeDeleteDialog}
         onConfirmDelete={handleConfirmDelete}
         bulkDeleteDialog={bulkDeleteDialog}
         onCloseBulkDeleteDialog={closeBulkDeleteDialog}
         onConfirmBulkDelete={handleConfirmBulkDelete}
+      />
+
+      <TextFileEditorDialog
+        open={editingDocument !== null}
+        onClose={handleEditClose}
+        document={editingDocument}
+        onSaveComplete={handleEditSaveComplete}
       />
     </Box>
   );

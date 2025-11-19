@@ -23,6 +23,7 @@ import {
   Delete as DeleteIcon,
   Visibility as PreviewIcon,
   Download as DownloadIcon,
+  Edit as EditIcon,
 } from "@mui/icons-material";
 import { useTheme } from "@mui/material/styles";
 import { format } from "date-fns";
@@ -56,6 +57,7 @@ interface DocumentListProps {
   isDocumentSelected: (document: DocumentFile) => boolean;
   onPreview?: (document: DocumentFile) => void;
   onDownload?: (document: DocumentFile) => void;
+  onEditClick?: (document: DocumentFile) => void;
   onSelectAll?: () => void;
   areAllVisibleSelected?: boolean;
   areSomeVisibleSelected?: boolean;
@@ -80,6 +82,7 @@ export const DocumentList: React.FC<DocumentListProps> = ({
   isDocumentSelected,
   onPreview,
   onDownload,
+  onEditClick,
   onSelectAll,
   areAllVisibleSelected = false,
   areSomeVisibleSelected = false,
@@ -344,6 +347,19 @@ export const DocumentList: React.FC<DocumentListProps> = ({
                                 handleDownload(document);
                               },
                             },
+                            ...(document.mimeType === 'text/plain' && onEditClick
+                              ? [
+                                  {
+                                    id: "edit",
+                                    label: t("files.editText"),
+                                    icon: <EditIcon sx={{ fontSize: 18 }} />,
+                                    onClick: (e: React.MouseEvent) => {
+                                      e.stopPropagation();
+                                      onEditClick(document);
+                                    },
+                                  },
+                                ]
+                              : []),
                             ...(selectionMode
                               ? [
                                   {
@@ -430,6 +446,7 @@ export const DocumentList: React.FC<DocumentListProps> = ({
                     onDeleteClick={onDeleteClick}
                     onPreview={onPreview}
                     onDownload={onDownload}
+                    onEditClick={onEditClick}
                   />
                 );
               })}

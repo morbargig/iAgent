@@ -28,6 +28,9 @@ import {
   Cancel as CancelIcon,
   InsertDriveFile as FileIcon,
   Delete as DeleteIcon,
+  Link as LinkIcon,
+  ContentPaste as PasteIcon,
+  CloudQueue as DriveIcon,
 } from "@mui/icons-material";
 import { useDropzone } from "react-dropzone";
 import {
@@ -40,6 +43,8 @@ import {
 import { useDocumentService } from "../services/documentService";
 import { useTranslation } from "../contexts/TranslationContext";
 import { format } from "date-fns";
+import { LinkUploadDialog } from "./LinkUploadDialog";
+import { PasteTextDialog } from "./PasteTextDialog";
 
 interface DocumentUploadProps {
   onUploadComplete?: (documents: DocumentFile[]) => void;
@@ -86,6 +91,8 @@ export const DocumentUpload: React.FC<DocumentUploadProps> = ({
   const [isDragActive, setIsDragActive] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [completedDocuments, setCompletedDocuments] = useState<DocumentFile[]>([]);
+  const [linkDialogOpen, setLinkDialogOpen] = useState(false);
+  const [pasteDialogOpen, setPasteDialogOpen] = useState(false);
 
   // Handle file drop
   const onDrop = useCallback(
@@ -356,9 +363,29 @@ export const DocumentUpload: React.FC<DocumentUploadProps> = ({
     }
   };
 
+  const handleLinkUploadComplete = (document: DocumentFile) => {
+    setCompletedDocuments((prev) => {
+      if (!prev.some((d) => d.id === document.id)) {
+        return [...prev, document];
+      }
+      return prev;
+    });
+    onUploadComplete?.([document]);
+  };
+
+  const handlePasteUploadComplete = (document: DocumentFile) => {
+    setCompletedDocuments((prev) => {
+      if (!prev.some((d) => d.id === document.id)) {
+        return [...prev, document];
+      }
+      return prev;
+    });
+    onUploadComplete?.([document]);
+  };
+
   return (
     <Box sx={{ width: "100%" }}>
-      {/* Drop Zone */}
+      {/* Main Upload Area */}
       <Paper
         {...getRootProps()}
         sx={{
@@ -370,6 +397,7 @@ export const DocumentUpload: React.FC<DocumentUploadProps> = ({
             ? theme.palette.action.hover
             : "transparent",
           transition: "all 0.2s ease-in-out",
+          mb: 3,
           "&:hover": {
             borderColor: theme.palette.primary.main,
             backgroundColor: theme.palette.action.hover,
@@ -377,29 +405,192 @@ export const DocumentUpload: React.FC<DocumentUploadProps> = ({
         }}
       >
         <input {...getInputProps()} />
-        <UploadIcon
+        <Box
           sx={{
-            fontSize: 48,
-            color: isDragActive
-              ? theme.palette.primary.main
-              : theme.palette.text.secondary,
+            width: 64,
+            height: 64,
+            borderRadius: "50%",
+            backgroundColor: theme.palette.primary.main,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            margin: "0 auto",
             mb: 2,
           }}
-        />
+        >
+          <UploadIcon
+            sx={{
+              fontSize: 32,
+              color: theme.palette.primary.contrastText,
+            }}
+          />
+        </Box>
         <Typography variant="h6" gutterBottom>
-          {isDragActive ? t("files.dropFilesHere") : t("files.dragDropFiles")}
+          {t("files.uploadSources")}
+        </Typography>
+        <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+          {t("files.uploadSourcesDescription")}
         </Typography>
         <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-          {t("files.supportedFormats")}: {t("files.supportedFormatsList")}
+          {t("files.uploadSourcesExamples")}
         </Typography>
-        <Typography variant="body2" color="text.secondary">
-          {t("files.maxFileSize")}: {formatFileSize(maxFileSize)} •{" "}
-          {t("files.maxFiles")}: {maxFiles}
+        <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+          {t("files.dragDropOrChoose")}{" "}
+          <Box
+            component="span"
+            sx={{
+              color: theme.palette.primary.main,
+              textDecoration: "underline",
+              cursor: "pointer",
+            }}
+            onClick={(e) => {
+              e.stopPropagation();
+              const input = document.querySelector('input[type="file"]') as HTMLInputElement;
+              input?.click();
+            }}
+          >
+            {t("files.chooseFile")}
+          </Box>
         </Typography>
-        <Button variant="outlined" sx={{ mt: 2 }} disabled={disabled}>
-          {t("files.selectFiles")}
-        </Button>
+        <Typography variant="caption" color="text.secondary">
+          {t("files.supportedFileTypes")}
+        </Typography>
       </Paper>
+
+      {/* Upload Option Cards */}
+      <Box
+        sx={{
+          display: "grid",
+          gridTemplateColumns: { xs: "1fr", sm: "repeat(3, 1fr)" },
+          gap: 2,
+          mb: 3,
+        }}
+      >
+        {/* Google Drive/S3 Card */}
+        <Paper
+          sx={{
+            p: 2,
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            gap: 1,
+            opacity: 0.5,
+            cursor: "not-allowed",
+          }}
+        >
+          <DriveIcon sx={{ fontSize: 32, color: "text.secondary" }} />
+          <Typography variant="subtitle2" fontWeight={600}>
+            {t("files.connectToDrive")}
+          </Typography>
+          <Button
+            variant="outlined"
+            size="small"
+            disabled
+            startIcon={<DriveIcon />}
+            fullWidth
+          >
+            Google Drive
+          </Button>
+          <Typography variant="caption" color="text.secondary">
+            {t("files.comingSoon")}
+          </Typography>
+        </Paper>
+
+        {/* Link Card */}
+        <Paper
+          sx={{
+            p: 2,
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            gap: 1,
+            cursor: disabled ? "not-allowed" : "pointer",
+            "&:hover": {
+              backgroundColor: theme.palette.action.hover,
+            },
+          }}
+          onClick={() => !disabled && setLinkDialogOpen(true)}
+        >
+          <LinkIcon sx={{ fontSize: 32, color: theme.palette.primary.main }} />
+          <Typography variant="subtitle2" fontWeight={600}>
+            {t("files.linkUpload")}
+          </Typography>
+          <Box sx={{ display: "flex", flexDirection: "column", gap: 1, width: "100%" }}>
+            <Button
+              variant="outlined"
+              size="small"
+              disabled={disabled}
+              startIcon={<LinkIcon />}
+              fullWidth
+              onClick={(e) => {
+                e.stopPropagation();
+                setLinkDialogOpen(true);
+              }}
+            >
+              {t("files.website")}
+            </Button>
+            <Button
+              variant="outlined"
+              size="small"
+              disabled={disabled}
+              startIcon={<LinkIcon />}
+              fullWidth
+              onClick={(e) => {
+                e.stopPropagation();
+                setLinkDialogOpen(true);
+              }}
+            >
+              {t("files.youtube")}
+            </Button>
+          </Box>
+        </Paper>
+
+        {/* Paste Text Card */}
+        <Paper
+          sx={{
+            p: 2,
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            gap: 1,
+            cursor: disabled ? "not-allowed" : "pointer",
+            "&:hover": {
+              backgroundColor: theme.palette.action.hover,
+            },
+          }}
+          onClick={() => !disabled && setPasteDialogOpen(true)}
+        >
+          <PasteIcon sx={{ fontSize: 32, color: theme.palette.primary.main }} />
+          <Typography variant="subtitle2" fontWeight={600}>
+            {t("files.pasteText")}
+          </Typography>
+          <Button
+            variant="outlined"
+            size="small"
+            disabled={disabled}
+            startIcon={<PasteIcon />}
+            fullWidth
+            onClick={(e) => {
+              e.stopPropagation();
+              setPasteDialogOpen(true);
+            }}
+          >
+            {t("files.copiedText")}
+          </Button>
+        </Paper>
+      </Box>
+
+      {/* Dialogs */}
+      <LinkUploadDialog
+        open={linkDialogOpen}
+        onClose={() => setLinkDialogOpen(false)}
+        onUploadComplete={handleLinkUploadComplete}
+      />
+      <PasteTextDialog
+        open={pasteDialogOpen}
+        onClose={() => setPasteDialogOpen(false)}
+        onUploadComplete={handlePasteUploadComplete}
+      />
 
       {/* Error Alert */}
       {error && (

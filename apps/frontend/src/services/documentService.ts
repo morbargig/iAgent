@@ -299,6 +299,55 @@ export class DocumentService {
     }
   }
 
+  // Get file content (for text files)
+  async getFileContent(fileId: string): Promise<string> {
+    try {
+      const response = await fetch(`${this.baseUrl}/files/${fileId}`, {
+        headers: this.getHeaders()
+      });
+
+      if (!response.ok) {
+        throw new Error(`Failed to fetch file content: ${response.statusText}`);
+      }
+
+      return await response.text();
+    } catch (error) {
+      throw new Error(`Failed to fetch file content: ${error}`);
+    }
+  }
+
+  // Update text file content
+  async updateTextFileContent(
+    fileId: string,
+    content: string
+  ): Promise<DocumentUploadResponse> {
+    try {
+      const response = await fetch(`${this.baseUrl}/files/${fileId}/content`, {
+        method: 'PUT',
+        headers: {
+          ...this.getHeaders(),
+          'Content-Type': 'text/plain',
+        },
+        body: content,
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ error: response.statusText }));
+        throw new Error(errorData.error || `Update failed: ${response.statusText}`);
+      }
+
+      const fileInfo = await response.json();
+      const document = this.mapFileInfoToDocument(fileInfo);
+
+      return { success: true, document };
+    } catch (error) {
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Update failed'
+      };
+    }
+  }
+
   // Cancel upload
   cancelUpload(fileId: string): void {
     this.emitEvent({ type: 'cancelled', data: { fileId } });

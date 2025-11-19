@@ -12,6 +12,7 @@ import {
   Visibility as PreviewIcon,
   Download as DownloadIcon,
   Delete as DeleteIcon,
+  Edit as EditIcon,
 } from "@mui/icons-material";
 import { useTheme } from "@mui/material/styles";
 import { format } from "date-fns";
@@ -35,6 +36,7 @@ interface DocumentCardProps {
   onDeleteClick: (document: DocumentFile) => void;
   onPreview?: (document: DocumentFile) => void;
   onDownload?: (document: DocumentFile) => void;
+  onEditClick?: (document: DocumentFile) => void;
 }
 
 export const DocumentCard: React.FC<DocumentCardProps> = ({
@@ -47,6 +49,7 @@ export const DocumentCard: React.FC<DocumentCardProps> = ({
   onDeleteClick,
   onPreview,
   onDownload,
+  onEditClick,
 }) => {
   const theme = useTheme();
   const { Icon, color } = getFileIconComponent(document.mimeType);
@@ -80,6 +83,19 @@ export const DocumentCard: React.FC<DocumentCardProps> = ({
         handleDownload(document);
       },
     },
+    ...(document.mimeType === 'text/plain' && onEditClick
+      ? [
+          {
+            id: "edit",
+            label: t("files.editText"),
+            icon: <EditIcon sx={{ fontSize: 18 }} />,
+            onClick: (e: React.MouseEvent) => {
+              e.stopPropagation();
+              onEditClick(document);
+            },
+          },
+        ]
+      : []),
     {
       id: "delete",
       label: t("files.delete"),

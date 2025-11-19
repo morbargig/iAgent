@@ -3,8 +3,10 @@ import {
   Controller,
   Post,
   Get,
+  Put,
   Delete,
   Param,
+  Req,
   Res,
   UseInterceptors,
   UploadedFile,
@@ -13,9 +15,10 @@ import {
   BadRequestException,
   NotFoundException,
   UseGuards,
+  Logger,
 } from '@nestjs/common';
 import { FileInterceptor, FilesInterceptor } from '@nestjs/platform-express';
-import type { Response } from 'express';
+import type { Request, Response } from 'express';
 import type { Express } from 'express';
 import { ApiTags, ApiOperation, ApiResponse, ApiConsumes, ApiParam, ApiQuery, ApiBearerAuth } from '@nestjs/swagger';
 import { FileService, FileUploadResult, FileInfo } from '../services/file.service';
@@ -25,6 +28,8 @@ import { UserId } from '../decorators/user.decorator';
 @ApiTags('Files')
 @Controller('files')
 export class FileController {
+  private readonly logger = new Logger(FileController.name);
+  
   constructor(private readonly fileService: FileService) { }
 
   @Post('upload')
@@ -156,6 +161,82 @@ export class FileController {
     }
   }
 
+  @Put(':id/content')
+  @ApiOperation({
+    summary: 'Update file content',
+    description: 'Update the content of a text file. Currently only supports text files.',
+  })
+  @ApiParam({ name: 'id', description: 'File ID' })
+  @ApiResponse({
+    status: 200,
+    description: 'File content updated successfully',
+    schema: {
+      type: 'object',
+      properties: {
+        id: { type: 'string' },
+        filename: { type: 'string' },
+        size: { type: 'number' },
+        mimetype: { type: 'string' },
+        uploadDate: { type: 'string', format: 'date-time' },
+        metadata: { type: 'object' },
+      },
+    },
+  })
+  @ApiResponse({ status: 404, description: 'File not found' })
+  @ApiResponse({ status: 400, description: 'Bad request' })
+  async updateFileContent(
+    @Param('id') id: string,
+    @Req() req: Request,
+  ): Promise<FileInfo> {
+    // Get raw body as string for text/plain content
+    // The express.text() middleware should have parsed it
+    let content: string;
+    
+    if (typeof req.body === 'string') {
+      content = req.body;
+    } else if (Buffer.isBuffer(req.body)) {
+      content = req.body.toString('utf-8');
+    } else if (req.body && typeof req.body === 'object' && 'toString' in req.body) {
+      content = String(req.body);
+    } else {
+      this.logger.error('Invalid body type:', typeof req.body);
+      throw new BadRequestException('Content must be provided as text/plain');
+    }
+    
+    if (!content) {
+      throw new BadRequestException('Content cannot be empty');
+    }
+    
+    const contentBuffer = Buffer.from(content, 'utf-8');
+    return await this.fileService.updateFileContent(id, contentBuffer, false);
+  }
+
+  @Get(':id/info')
+  @ApiOperation({
+    summary: 'Get file information',
+    description: 'Get metadata information about a file without downloading it',
+  })
+  @ApiParam({ name: 'id', description: 'File ID' })
+  @ApiResponse({
+    status: 200,
+    description: 'File information retrieved successfully',
+    schema: {
+      type: 'object',
+      properties: {
+        id: { type: 'string' },
+        filename: { type: 'string' },
+        size: { type: 'number' },
+        mimetype: { type: 'string' },
+        uploadDate: { type: 'string', format: 'date-time' },
+        metadata: { type: 'object' },
+      },
+    },
+  })
+  @ApiResponse({ status: 404, description: 'File not found' })
+  async getFileInfo(@Param('id') id: string): Promise<FileInfo> {
+    return this.fileService.getFileInfo(id);
+  }
+
   @Get(':id')
   @ApiOperation({
     summary: 'Download a file',
@@ -184,33 +265,6 @@ export class FileController {
       }
       throw new NotFoundException(`File with ID ${id} not found`);
     }
-  }
-
-
-  @Get(':id/info')
-  @ApiOperation({
-    summary: 'Get file information',
-    description: 'Get metadata information about a file without downloading it',
-  })
-  @ApiParam({ name: 'id', description: 'File ID' })
-  @ApiResponse({
-    status: 200,
-    description: 'File information retrieved successfully',
-    schema: {
-      type: 'object',
-      properties: {
-        id: { type: 'string' },
-        filename: { type: 'string' },
-        size: { type: 'number' },
-        mimetype: { type: 'string' },
-        uploadDate: { type: 'string', format: 'date-time' },
-        metadata: { type: 'object' },
-      },
-    },
-  })
-  @ApiResponse({ status: 404, description: 'File not found' })
-  async getFileInfo(@Param('id') id: string): Promise<FileInfo> {
-    return this.fileService.getFileInfo(id);
   }
 
   @Delete(':id')
