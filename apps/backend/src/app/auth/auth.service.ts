@@ -25,7 +25,8 @@ export interface LoginResponse {
 export class AuthService {
   private readonly JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-in-production';
   
-  // Mock users database - In production, use a real database
+  // Demo credentials - Available in all environments including production
+  // These are provided for easy testing and demonstration purposes
   private readonly users: User[] = [
     {
       userId: 'user_demo_001',
@@ -46,14 +47,23 @@ export class AuthService {
   async login(loginRequest: LoginRequest): Promise<LoginResponse> {
     const { email, password } = loginRequest;
 
-    // Find user by email
-    const user = this.users.find(u => u.email === email);
+    if (!email || !password) {
+      throw new UnauthorizedException('Email and password are required');
+    }
+
+    // Normalize email (trim and lowercase) for case-insensitive matching
+    const normalizedEmail = email.trim().toLowerCase();
+    const normalizedPassword = password.trim();
+
+    // Find user by email (case-insensitive)
+    // Demo credentials work in all environments including production
+    const user = this.users.find(u => u.email.toLowerCase() === normalizedEmail);
     if (!user) {
       throw new UnauthorizedException('Invalid email or password');
     }
 
-    // Verify password (in production, use bcrypt.compare)
-    if (user.password !== password) {
+    // Verify password
+    if (user.password !== normalizedPassword) {
       throw new UnauthorizedException('Invalid email or password');
     }
 

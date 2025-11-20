@@ -44,7 +44,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({
   const { login } = useAuth();
   const { useMockMode: isMockMode, enableMockMode, toggleMockMode } = useMockMode();
   const [credentials, setCredentials] = useState<LoginCredentials>({
-    email: "demo@iagent.com add demo",
+    email: "demo@iagent.com",
     password: "demo",
   });
   const [error, setError] = useState<string | null>(null);

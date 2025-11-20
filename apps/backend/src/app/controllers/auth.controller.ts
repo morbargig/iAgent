@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, HttpStatus } from '@nestjs/common';
+import { Controller, Get, Post, Body, HttpStatus, BadRequestException } from '@nestjs/common';
 import {
   ApiTags,
   ApiOperation,
@@ -19,15 +19,16 @@ export class AuthController {
   @Post('login')
   @ApiOperation({
     summary: 'User login',
-    description: 'Authenticate user and receive JWT token'
+    description: 'Authenticate user and receive JWT token. Demo credentials available: demo@iagent.com/demo, test@iagent.com/test'
   })
   @ApiBody({
     schema: {
       type: 'object',
       properties: {
-        email: { type: 'string', example: 'user@example.com' },
-        password: { type: 'string', example: 'password' }
-      }
+        email: { type: 'string', example: 'demo@iagent.com' },
+        password: { type: 'string', example: 'demo' }
+      },
+      required: ['email', 'password']
     }
   })
   @ApiResponse({
@@ -48,6 +49,10 @@ export class AuthController {
     description: 'Invalid credentials'
   })
   async login(@Body() loginRequest: LoginRequest): Promise<LoginResponse> {
+    if (!loginRequest || typeof loginRequest !== 'object') {
+      throw new BadRequestException('Invalid request body');
+    }
+    
     return await this.authService.login(loginRequest);
   }
 
