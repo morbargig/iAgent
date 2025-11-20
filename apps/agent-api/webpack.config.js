@@ -5,6 +5,7 @@ const { version } = require("./package.json");
 
 module.exports = {
   mode: process.env.NODE_ENV === "production" ? "production" : "development",
+  devtool: "source-map",
   output: {
     path: join(__dirname, "../../dist/apps/agent-api"),
   },
