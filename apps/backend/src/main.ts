@@ -15,16 +15,6 @@ async function bootstrap() {
   try {
     const app = await NestFactory.create<NestExpressApplication>(AppModule);
 
-    // Configure text/plain body parser for file content updates
-    // This must be before other middleware
-    // Match PUT requests to files/:id/content pattern
-    app.use((req: any, res: any, next: any) => {
-      if (req.method === 'PUT' && req.url && req.url.match(/^\/api\/files\/[^/]+\/content$/)) {
-        return express.text({ type: 'text/plain', limit: '10mb' })(req, res, next);
-      }
-      next();
-    });
-
     // Enable CORS for frontend communication
     if (environment.features.enableCors) {
       const isOriginAllowed = (origin: string | undefined, allowedOrigins: (string | RegExp)[]): boolean => {

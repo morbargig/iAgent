@@ -6,7 +6,6 @@ import {
   Put,
   Delete,
   Param,
-  Req,
   Res,
   UseInterceptors,
   UploadedFile,
@@ -18,12 +17,13 @@ import {
   Logger,
 } from '@nestjs/common';
 import { FileInterceptor, FilesInterceptor } from '@nestjs/platform-express';
-import type { Request, Response } from 'express';
+import type { Response } from 'express';
 import type { Express } from 'express';
 import { ApiTags, ApiOperation, ApiResponse, ApiConsumes, ApiParam, ApiQuery, ApiBearerAuth } from '@nestjs/swagger';
 import { FileService, FileUploadResult, FileInfo } from '../services/file.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { UserId } from '../decorators/user.decorator';
+import { TextBody } from '../decorators/text-body.decorator';
 
 @ApiTags('Files')
 @Controller('files')
@@ -166,6 +166,7 @@ export class FileController {
     summary: 'Update file content',
     description: 'Update the content of a text file. Currently only supports text files.',
   })
+  @ApiConsumes('text/plain')
   @ApiParam({ name: 'id', description: 'File ID' })
   @ApiResponse({
     status: 200,
@@ -186,27 +187,8 @@ export class FileController {
   @ApiResponse({ status: 400, description: 'Bad request' })
   async updateFileContent(
     @Param('id') id: string,
-    @Req() req: Request,
+    @TextBody() content: string,
   ): Promise<FileInfo> {
-    // Get raw body as string for text/plain content
-    // The express.text() middleware should have parsed it
-    let content: string;
-    
-    if (typeof req.body === 'string') {
-      content = req.body;
-    } else if (Buffer.isBuffer(req.body)) {
-      content = req.body.toString('utf-8');
-    } else if (req.body && typeof req.body === 'object' && 'toString' in req.body) {
-      content = String(req.body);
-    } else {
-      this.logger.error('Invalid body type:', typeof req.body);
-      throw new BadRequestException('Content must be provided as text/plain');
-    }
-    
-    if (!content) {
-      throw new BadRequestException('Content cannot be empty');
-    }
-    
     const contentBuffer = Buffer.from(content, 'utf-8');
     return await this.fileService.updateFileContent(id, contentBuffer, false);
   }
