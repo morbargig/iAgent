@@ -1,35 +1,36 @@
 {
   "version": "0.2.0",
+  "inputs": [
+    {
+      "id": "backendEnv",
+      "type": "pickString",
+      "description": "Select Backend Environment",
+      "options": ["local", "development", "stage", "test", "production"],
+      "default": "local"
+    },
+    {
+      "id": "agentApiEnv",
+      "type": "pickString",
+      "description": "Select Agent-API Environment",
+      "options": ["local", "development", "production"],
+      "default": "development"
+    }
+  ],
   "configurations": [
     {
       "type": "node",
       "request": "launch",
       "name": "Debug Backend",
       "runtimeExecutable": "npx",
-      "runtimeArgs": [
-        "nx",
-        "serve",
-        "backend",
-        "--configuration=local"
-      ],
+      "runtimeArgs": ["nx", "serve", "backend", "--configuration=${input:backendEnv}"],
       "cwd": "${workspaceFolder}",
-      "env": {
-        "NODE_OPTIONS": "--inspect=9229"
-      },
+      "env": { "NODE_OPTIONS": "--inspect=9229" },
       "console": "integratedTerminal",
       "internalConsoleOptions": "neverOpen",
-      "skipFiles": [
-        "<node_internals>/**"
-      ],
+      "skipFiles": ["<node_internals>/**"],
       "sourceMaps": true,
-      "outFiles": [
-        "${workspaceFolder}/dist/apps/backend/**/*.js",
-        "!**/node_modules/**"
-      ],
-      "resolveSourceMapLocations": [
-        "${workspaceFolder}/**",
-        "!**/node_modules/**"
-      ],
+      "outFiles": ["${workspaceFolder}/dist/apps/backend/**/*.js", "!**/node_modules/**"],
+      "resolveSourceMapLocations": ["${workspaceFolder}/**", "!**/node_modules/**"],
       "smartStep": true,
       "stopOnEntry": false
     },
@@ -38,30 +39,15 @@
       "request": "launch",
       "name": "Debug agent-api",
       "runtimeExecutable": "npx",
-      "runtimeArgs": [
-        "nx",
-        "serve",
-        "agent-api",
-        "--configuration=development"
-      ],
+      "runtimeArgs": ["nx", "serve", "agent-api", "--configuration=${input:agentApiEnv}"],
       "cwd": "${workspaceFolder}",
-      "env": {
-        "NODE_OPTIONS": "--inspect=9230"
-      },
+      "env": { "NODE_OPTIONS": "--inspect=9230" },
       "console": "integratedTerminal",
       "internalConsoleOptions": "neverOpen",
-      "skipFiles": [
-        "<node_internals>/**"
-      ],
+      "skipFiles": ["<node_internals>/**"],
       "sourceMaps": true,
-      "outFiles": [
-        "${workspaceFolder}/dist/apps/agent-api/**/*.js",
-        "!**/node_modules/**"
-      ],
-      "resolveSourceMapLocations": [
-        "${workspaceFolder}/**",
-        "!**/node_modules/**"
-      ],
+      "outFiles": ["${workspaceFolder}/dist/apps/agent-api/**/*.js", "!**/node_modules/**"],
+      "resolveSourceMapLocations": ["${workspaceFolder}/**", "!**/node_modules/**"],
       "smartStep": true,
       "stopOnEntry": false
     }
