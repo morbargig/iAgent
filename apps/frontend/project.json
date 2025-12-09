@@ -1,7 +1,11 @@
 {
   "name": "@iagent/frontend",
-  "root": "apps/frontend",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
   "projectType": "application",
+  "tags": [
+    "scope:frontend",
+    "type:app"
+  ],
   "targets": {
     "build": {
       "executor": "@nx/vite:build",
@@ -54,15 +58,18 @@
       "configurations": {
         "local": {
           "buildTarget": "@iagent/frontend:build:local",
-          "hmr": true
+          "hmr": true,
+          "mode": ""
         },
         "stage": {
           "buildTarget": "@iagent/frontend:build:stage",
-          "hmr": true
+          "hmr": true,
+          "mode": "stage"
         },
         "development": {
           "buildTarget": "@iagent/frontend:build:development",
-          "hmr": true
+          "hmr": true,
+          "mode": "dev"
         },
         "production": {
           "buildTarget": "@iagent/frontend:build:production",
@@ -87,7 +94,7 @@
       }
     },
     "test": {
-      "executor": "@nx/vite:test",
+      "executor": "@nx/vitest:test",
       "outputs": [
         "{options.reportsDirectory}"
       ],
@@ -117,9 +124,5 @@
         "mode": "development"
       }
     }
-  },
-  "tags": [
-    "scope:frontend",
-    "type:app"
-  ]
+  }
 }

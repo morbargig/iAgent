@@ -7,7 +7,7 @@ const apiBaseUrl = getEnvString('VITE_API_BASE_URL', 'https://iagent-1-6tin.onre
 
 export const environment: Environment = {
   production: false,
-  env: 'dev',
+  env: 'stage',
   apiUrl: apiBaseUrl,
   baseUrl: getEnvString('VITE_BASE_URL', '/'),
   

@@ -1,4 +1,4 @@
-export default {
+module.exports = {
   displayName: '@iagent/frontend',
   preset: '../../jest.preset.js',
   transform: {

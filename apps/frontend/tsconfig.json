@@ -3,15 +3,6 @@
   "include": [],
   "references": [
     {
-      "path": "../../libs/front/react"
-    },
-    {
-      "path": "../../libs/shared/renderer"
-    },
-    {
-      "path": "../../libs/chat-types"
-    },
-    {
       "path": "./tsconfig.app.json"
     },
     {

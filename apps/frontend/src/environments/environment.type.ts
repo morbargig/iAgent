@@ -5,7 +5,7 @@
 
 export interface Environment {
   production: boolean;
-  env: 'dev' | 'prod' | 'test' | 'local';
+  env: 'dev' | 'prod' | 'test' | 'local' | 'stage';
   apiUrl: string;
   baseUrl: string;
   

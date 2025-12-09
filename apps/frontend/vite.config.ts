@@ -1,9 +1,56 @@
 /// <reference types='vitest' />
-import { defineConfig } from 'vite';
+import { defineConfig, Plugin } from 'vite';
 import react from '@vitejs/plugin-react';
 import { nxViteTsPaths } from '@nx/vite/plugins/nx-tsconfig-paths.plugin';
 import { resolve } from 'path';
 import { version } from './package.json';
+
+const createEnvironmentPlugin = (mode: string): Plugin => {
+  const getEnvironmentFile = () => {
+    switch (mode) {
+      case 'stage':
+        return resolve(__dirname, 'src/environments/environment.stage.ts');
+      case 'development':
+        return resolve(__dirname, 'src/environments/environment.dev.ts');
+      case 'production':
+        return resolve(__dirname, 'src/environments/environment.prod.ts');
+      default:
+        return null;
+    }
+  };
+
+  const environmentFile = getEnvironmentFile();
+
+  if (!environmentFile) {
+    return {
+      name: 'environment-file-replacement',
+    };
+  }
+
+  return {
+    name: 'environment-file-replacement',
+    enforce: 'pre',
+    resolveId(source, importer) {
+      if (!importer || !source) return null;
+      
+      // Match imports that end with 'environments/environment' (with or without .ts extension)
+      // but exclude specific environment files (environment.dev.ts, environment.stage.ts, etc.)
+      const isEnvironmentImport = 
+        (source.endsWith('environments/environment') || 
+         source.endsWith('environments/environment.ts')) &&
+        !source.includes('environment.') &&
+        !source.includes('environment.type') &&
+        !source.includes('environment.base') &&
+        !source.includes('environment.helper');
+      
+      if (isEnvironmentImport) {
+        return environmentFile;
+      }
+      
+      return null;
+    },
+  };
+};
 
 export default defineConfig(({ mode }) => {
   // Determine base URL based on environment
@@ -50,6 +97,7 @@ export default defineConfig(({ mode }) => {
         jsxRuntime: 'automatic',
       }),
       nxViteTsPaths(),
+      createEnvironmentPlugin(mode),
     ],
 
     define: {
