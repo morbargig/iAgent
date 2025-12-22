@@ -71,7 +71,7 @@ export const TranslationProvider: React.FC<{ children: React.ReactNode }> = ({
           isLoading: false,
         };
       });
-    } catch (error) {
+    } catch {
       setState((prev) => ({
         ...prev,
         error: `Failed to load ${lang} translations`,

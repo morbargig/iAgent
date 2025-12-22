@@ -42,9 +42,10 @@ export const useFileHandling = ({ t }: UseFileHandlingProps) => {
 
     // Cleanup all pending timers on unmount to prevent memory leaks
     useEffect(() => {
+        const timersRef = pendingTimersRef.current;
         return () => {
-            pendingTimersRef.current.forEach((timerId) => clearTimeout(timerId));
-            pendingTimersRef.current.clear();
+            timersRef.forEach((timerId) => clearTimeout(timerId));
+            timersRef.clear();
         };
     }, []);
 

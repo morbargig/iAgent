@@ -134,10 +134,10 @@ export class StreamingClient {
                       console.log('📊 Metadata:', structuredChunk.data);
                       break;
                       
-                    case 'section':
+                    case 'section': {
                       const sectionData = structuredChunk.data;
                       const sectionName = sectionData.section as 'reasoning' | 'tool-t' | 'tool-h' | 'tool-f' | 'answer';
-                      
+
                       if (sectionData.action === 'start') {
                         currentSection = sectionName;
                         if (!sectionBuilders[sectionName]) {
@@ -156,11 +156,12 @@ export class StreamingClient {
                         currentSection = undefined;
                       }
                       break;
+                    }
                       
-                    case 'token':
+                    case 'token': {
                       const tokenSection = structuredChunk.data.section as 'reasoning' | 'tool-t' | 'tool-h' | 'tool-f' | 'answer' | undefined;
                       const tokenContentType = structuredChunk.data.contentType;
-                      
+
                       latestParsed = markupBuilder.append({
                         token: structuredChunk.data.token,
                         cumulativeContent: structuredChunk.data.cumulativeContent,
@@ -192,6 +193,7 @@ export class StreamingClient {
                         sections: tokenSection ? { ...sections } : undefined,
                       });
                       break;
+                    }
                       
                     case 'progress':
                       console.log('⏳ Progress:', structuredChunk.data.progress + '%');
