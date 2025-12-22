@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect, useMemo } from "react";
+import React, { useState, useRef, useEffect, useMemo, useCallback } from "react";
 import { ThemeProvider, createTheme } from "@mui/material/styles";
 import { CssBaseline, Box } from "@mui/material";
 import { useTranslation } from "../contexts/TranslationContext";
@@ -339,12 +339,12 @@ const App = () => {
   const [sidebarWidth, setSidebarWidth] = useState(250); // Track sidebar width
   const { authToken, userId, userEmail, isAuthenticated, logout } = useAuth();
 
-  React.useEffect(() => {
+  useEffect(() => {
     setAuthTokenGetter(() => authToken || null);
   }, [authToken]);
 
   const { data: chatsData } = useChats();
-  const chatList = React.useMemo(() => {
+  const chatList = useMemo(() => {
     if (!chatsData) return [];
     return chatsData
       .map((chat) => ({
@@ -381,7 +381,7 @@ const App = () => {
   currentConversationIdRef.current = currentConversationId;
 
   // Helper to enforce LRU limit on loadedConversations to prevent memory leaks
-  const enforceConversationLimit = React.useCallback((map: Map<string, Conversation>, currentId: string | null): Map<string, Conversation> => {
+  const enforceConversationLimit = useCallback((map: Map<string, Conversation>, currentId: string | null): Map<string, Conversation> => {
     if (map.size <= MAX_LOADED_CONVERSATIONS) return map;
 
     // Sort by lastUpdated, keep most recent + current conversation
@@ -397,7 +397,7 @@ const App = () => {
   }, []);
 
   // Wrapper that auto-enforces LRU limit on all setLoadedConversations calls
-  const setLoadedConversationsWithLimit = React.useCallback((
+  const setLoadedConversationsWithLimit = useCallback((
     updater: React.SetStateAction<Map<string, Conversation>>
   ) => {
     setLoadedConversations((prev) => {
@@ -406,7 +406,7 @@ const App = () => {
     });
   }, [enforceConversationLimit]);
 
-  const updateLoadedConversation = React.useCallback((chatId: string, updater: (conv: Conversation) => Conversation) => {
+  const updateLoadedConversation = useCallback((chatId: string, updater: (conv: Conversation) => Conversation) => {
     setLoadedConversations((prev) => {
       const updated = new Map(prev);
       const conversation = updated.get(chatId);
@@ -417,7 +417,7 @@ const App = () => {
     });
   }, [enforceConversationLimit]);
 
-  const saveCurrentStreamContent = React.useCallback(async () => {
+  const saveCurrentStreamContent = useCallback(async () => {
     if (!streamingConversationId || !authToken || !userId) return;
 
     const currentContent = accumulatedStreamContentRef.current;
@@ -485,7 +485,7 @@ const App = () => {
     });
   }, [streamingConversationId, authToken, userId, streamingConversations, loadedConversations, updateLoadedConversation, saveMessageMutation, setLoadedConversationsWithLimit]);
 
-  const stopGeneration = React.useCallback(async () => {
+  const stopGeneration = useCallback(async () => {
     if (streamingClientRef.current) {
       streamingClientRef.current.abort();
 
@@ -544,7 +544,7 @@ const App = () => {
     });
   }, [chatList, loadedConversations]);
 
-  const handleSendMessage = React.useCallback(async (data: SendMessageData) => {
+  const handleSendMessage = useCallback(async (data: SendMessageData) => {
     const {
       content,
       dateFilter,
@@ -1372,7 +1372,7 @@ const App = () => {
     }
   }, [isLoading, authToken, userId, translation, updateLoadedConversation, streamingClientRef, editingMessageId, editMessageMutation, refetchChatMessages, saveMessageMutation, createChatMutation, setStreamingConversationId, setEditingMessageId]);
 
-  const handleMockModeToggle = React.useCallback(() => {
+  const handleMockModeToggle = useCallback(() => {
     toggleMockMode?.();
   }, [toggleMockMode]);
 
@@ -1382,13 +1382,13 @@ const App = () => {
 
   const currentTheme = isDarkMode ? darkTheme : lightTheme;
 
-  const handleLogout = React.useCallback(() => {
+  const handleLogout = useCallback(() => {
     logout();
     setLoadedConversationsWithLimit(new Map());
     setCurrentConversationId(null);
   }, [logout]);
 
-  React.useEffect(() => {
+  useEffect(() => {
     if (currentChatData && !loadedConversationsRef.current.has(currentChatData.id)) {
       setLoadedConversationsWithLimit((prev) => {
         const updated = new Map(prev);
@@ -1518,7 +1518,7 @@ const App = () => {
   }, []);
 
   // Memoized handler for beforeunload/pagehide to prevent stale closures
-  const handleBeforeUnload = React.useCallback(() => {
+  const handleBeforeUnload = useCallback(() => {
     const currentStreamingId = streamingConversationIdRef.current;
     const currentAuthToken = authTokenRef.current;
     const currentUserId = userIdRef.current;
@@ -1582,26 +1582,26 @@ const App = () => {
     };
   }, [handleBeforeUnload]);
 
-  const toggleTheme = React.useCallback(() => {
+  const toggleTheme = useCallback(() => {
     if (!enableDarkMode) return;
     setIsDarkMode((prev) => !prev);
   }, [enableDarkMode]);
 
-  React.useEffect(() => {
+  useEffect(() => {
     if (!enableDarkMode && isDarkMode) {
       setIsDarkMode(false);
     }
   }, [enableDarkMode, isDarkMode]);
 
-  const toggleSidebar = React.useCallback(() => {
+  const toggleSidebar = useCallback(() => {
     setIsSidebarOpen((prev) => !prev);
   }, []);
 
-  const handleSidebarWidthChange = React.useCallback((width: number) => {
+  const handleSidebarWidthChange = useCallback((width: number) => {
     setSidebarWidth(width);
   }, []);
 
-  const loadConversation = React.useCallback(async (chatId: string) => {
+  const loadConversation = useCallback(async (chatId: string) => {
     if (!authToken) return;
 
     // Don't reload if already loaded
@@ -1656,7 +1656,7 @@ const App = () => {
     }
   }, [authToken]);
 
-  const createNewConversation = React.useCallback(async () => {
+  const createNewConversation = useCallback(async () => {
     const newConversation: Conversation = {
       id: generateUniqueId(),
       title: translation("sidebar.newChatTitle"),
@@ -1687,7 +1687,7 @@ const App = () => {
     }
   }, [authToken, userId, translation]);
 
-  const deleteConversation = React.useCallback(async (id: string) => {
+  const deleteConversation = useCallback(async (id: string) => {
     // Stop stream if this chat is currently streaming
     if (streamingConversationId === id && streamingClientRef.current) {
       streamingClientRef.current.abort();
@@ -1724,7 +1724,7 @@ const App = () => {
     }
   }, [authToken, currentConversationId, deleteChatMutation, streamingConversationId, setIsLoading, setStreamingConversationId, setCurrentConversationId]);
 
-  const renameConversation = React.useCallback(async (id: string, newTitle: string) => {
+  const renameConversation = useCallback(async (id: string, newTitle: string) => {
 
     setLoadedConversationsWithLimit((prev) => {
       const updated = new Map(prev);
@@ -1750,7 +1750,7 @@ const App = () => {
     }
   }, [authToken, updateChatNameMutation]);
 
-  const refreshMessage = React.useCallback(async (messageId: string) => {
+  const refreshMessage = useCallback(async (messageId: string) => {
     const currentConvId = currentConversationIdRef.current;
     if (!currentConvId || isLoading) return;
     
@@ -1962,7 +1962,7 @@ const App = () => {
     }
   }, [isLoading, authToken, userId, updateLoadedConversation, streamingClientRef]);
 
-  const editMessage = React.useCallback(async (messageId: string) => {
+  const editMessage = useCallback(async (messageId: string) => {
     const currentConvId = currentConversationIdRef.current;
     if (!currentConvId) return;
     
@@ -2024,7 +2024,7 @@ const App = () => {
 
   }, [updateLoadedConversation, streamingConversationId, streamingClientRef, setIsLoading, setStreamingConversationId, accumulatedStreamContentRef, setEditingMessageId, saveCurrentStreamContent]);
 
-  const deleteMessage = React.useCallback(async (messageId: string) => {
+  const deleteMessage = useCallback(async (messageId: string) => {
     const currentConvId = currentConversationIdRef.current;
     if (!currentConvId || !authToken) return;
 
@@ -2062,28 +2062,28 @@ const App = () => {
     }
   }, [authToken, updateLoadedConversation, deleteMessageMutation]);
 
-  const shareMessage = React.useCallback(() => {
+  const shareMessage = useCallback(() => {
     // Share functionality placeholder
   }, []);
 
-  const handleVoiceInput = React.useCallback(() => {
+  const handleVoiceInput = useCallback(() => {
     // Voice input functionality placeholder
   }, []);
 
-  const handleClearInput = React.useCallback(() => {
+  const handleClearInput = useCallback(() => {
     setInput("");
   }, []);
 
-  const closeReportPanel = React.useCallback(() => {
+  const closeReportPanel = useCallback(() => {
     setIsReportPanelOpen(false);
     setReportData(null);
   }, []);
 
-  const handleReportPanelWidthChange = React.useCallback((width: number) => {
+  const handleReportPanelWidthChange = useCallback((width: number) => {
     setReportPanelWidth(width);
   }, []);
 
-  const openReportFromUrl = React.useCallback(async (url: string) => {
+  const openReportFromUrl = useCallback(async (url: string) => {
     const reportId = parseReportId(url);
     if (!reportId) {
       console.error("Invalid report URL:", url);
