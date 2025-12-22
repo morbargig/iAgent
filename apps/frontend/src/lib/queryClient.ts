@@ -7,8 +7,8 @@ export const queryClient = new QueryClient({
       gcTime: 30 * 60 * 1000,
       retry: 2,
       refetchOnWindowFocus: false,
-      refetchOnReconnect: 'stale',
-      refetchOnMount: 'stale',
+      refetchOnReconnect: true,  // true = refetch only if stale (default behavior)
+      refetchOnMount: true,      // true = refetch only if stale (default behavior)
     },
     mutations: {
       retry: 0,
