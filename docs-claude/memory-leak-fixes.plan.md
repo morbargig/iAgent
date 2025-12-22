@@ -5,122 +5,14 @@ The frontend application experiences high memory usage (2GB+) over time. This do
 
 ---
 
-## Critical Issues
-
-### 1. Unbounded `loadedConversations` Map
-**File:** `apps/frontend/src/app/app.tsx:321-322`
-
-**Problem:**
-```typescript
-const [loadedConversations, setLoadedConversations] = useState<Map<string, Conversation>>(new Map());
-```
-- Map grows indefinitely as user opens conversations
-- No eviction policy or max size limit
-- Each Conversation contains large message arrays
-
-**Solution:**
-- Implement LRU cache with max 20 conversations
-- Evict oldest conversations when limit exceeded
+## Critical Issues by Phase
 
 ---
 
-### 2. setInterval with Missing Dependencies
-**File:** `apps/frontend/src/app/app.tsx:1372-1427`
+### Phase A: Quick Config Wins
+*Immediate impact with minimal code changes*
 
-**Problem:**
-- useEffect creates interval but dependency array is incomplete
-- `updateLoadedConversation` missing from deps
-- Creates overlapping intervals on state changes
-
-**Solution:**
-- Add missing dependencies to array
-- Or use refs for stable function references
-
----
-
-### 3. Window Event Listeners with Stale Refs
-**File:** `apps/frontend/src/app/app.tsx:1545-1552`
-
-**Problem:**
-- `beforeunload` and `pagehide` handlers capture refs
-- Refs hold large conversation objects
-- Prevents garbage collection
-
-**Solution:**
-- Memoize handler with useCallback
-- Ensure proper cleanup on dependency changes
-
----
-
-### 4. setTimeout Without Cleanup (File Upload)
-**File:** `apps/frontend/src/hooks/useFileHandling.ts:85-99`
-
-**Problem:**
-```typescript
-setTimeout(() => {
-  setAttachedFiles((prev) => [...prev, {...}]);
-  setUploadingFiles((prev) => prev.filter((f) => f.tempId !== tempId));
-}, 500);
-```
-- No timer reference stored
-- Cannot cancel on unmount
-- Fires state updates on unmounted component
-
-**Solution:**
-- Store timer ID in ref
-- Clear timer in cleanup function
-- Use isMounted flag pattern
-
----
-
-### 5. Translation State Accumulation
-**File:** `apps/frontend/src/contexts/TranslationContext.tsx:42-67`
-
-**Problem:**
-```typescript
-translations: { ...prev.translations, [lang]: module.default }
-```
-- All loaded languages stay in state
-- Switching languages 100x = 100 language modules in memory
-
-**Solution:**
-- Keep only current + fallback language
-- Clear previous translations on language switch
-
----
-
-### 6. Missing Ref Dependency in useStreamingManagement
-**File:** `apps/frontend/src/hooks/useStreamingManagement.ts:36-48`
-
-**Problem:**
-- `streamingClientRef` accessed but not in dependency array
-- Creates stale closure
-
-**Solution:**
-- Add `streamingClientRef` to dependencies (refs are stable, safe to add)
-
----
-
-### 7. Streaming Buffer Never Cleared
-**File:** `apps/frontend/src/utils/streaming-client.ts:71-113`
-
-**Problem:**
-```typescript
-let buffer = '';
-let sections: Record<string, { content: string; parsed: ParsedMessageContent }> = {};
-const sectionBuilders: Record<string, ReturnType<typeof createStreamingMarkupBuilder>> = {};
-```
-- Buffer accumulates streamed content
-- `sections` and `sectionBuilders` never cleared
-- Large responses persist in closure
-
-**Solution:**
-- Add cleanup in finally block after stream completes
-- Clear buffer, sections, sectionBuilders on complete/error
-
----
-
-### 8. React Query Over-fetching
+#### A1. React Query Over-fetching
 **File:** `apps/frontend/src/lib/queryClient.ts:10`
 
 **Problem:**
@@ -139,7 +31,56 @@ refetchOnMount: 'stale',
 
 ---
 
-### 9. useQueries with Large Arrays
+### Phase B: Buffer & Cache Management
+*High-impact fixes for unbounded memory growth*
+
+#### B1. Unbounded `loadedConversations` Map
+**File:** `apps/frontend/src/app/app.tsx:321-322`
+
+**Problem:**
+```typescript
+const [loadedConversations, setLoadedConversations] = useState<Map<string, Conversation>>(new Map());
+```
+- Map grows indefinitely as user opens conversations
+- No eviction policy or max size limit
+- Each Conversation contains large message arrays
+
+**Solution:**
+- Implement LRU cache with max 20 conversations
+- Evict oldest conversations when limit exceeded
+
+#### B2. Streaming Buffer Never Cleared
+**File:** `apps/frontend/src/utils/streaming-client.ts:71-113`
+
+**Problem:**
+```typescript
+let buffer = '';
+let sections: Record<string, { content: string; parsed: ParsedMessageContent }> = {};
+const sectionBuilders: Record<string, ReturnType<typeof createStreamingMarkupBuilder>> = {};
+```
+- Buffer accumulates streamed content
+- `sections` and `sectionBuilders` never cleared
+- Large responses persist in closure
+
+**Solution:**
+- Add cleanup in finally block after stream completes
+- Clear buffer, sections, sectionBuilders on complete/error
+
+#### B3. Translation State Accumulation
+**File:** `apps/frontend/src/contexts/TranslationContext.tsx:42-67`
+
+**Problem:**
+```typescript
+translations: { ...prev.translations, [lang]: module.default }
+```
+- All loaded languages stay in state
+- Switching languages 100x = 100 language modules in memory
+
+**Solution:**
+- Keep only current + fallback language
+- Clear previous translations on language switch
+
+#### B4. useQueries with Large Arrays
 **File:** `apps/frontend/src/hooks/useAttachments.ts:42-56`
 
 **Problem:**
@@ -152,16 +93,81 @@ refetchOnMount: 'stale',
 
 ---
 
+### Phase C: Timer & Lifecycle Cleanup
+*Prevent orphaned callbacks and state updates on unmounted components*
+
+#### C1. setTimeout Without Cleanup (File Upload)
+**File:** `apps/frontend/src/hooks/useFileHandling.ts:85-99`
+
+**Problem:**
+```typescript
+setTimeout(() => {
+  setAttachedFiles((prev) => [...prev, {...}]);
+  setUploadingFiles((prev) => prev.filter((f) => f.tempId !== tempId));
+}, 500);
+```
+- No timer reference stored
+- Cannot cancel on unmount
+- Fires state updates on unmounted component
+
+**Solution:**
+- Store timer ID in ref
+- Clear timer in cleanup function
+- Use isMounted flag pattern
+
+#### C2. Window Event Listeners with Stale Refs
+**File:** `apps/frontend/src/app/app.tsx:1545-1552`
+
+**Problem:**
+- `beforeunload` and `pagehide` handlers capture refs
+- Refs hold large conversation objects
+- Prevents garbage collection
+
+**Solution:**
+- Memoize handler with useCallback
+- Ensure proper cleanup on dependency changes
+
+---
+
+### Phase D: Dependency Array Fixes
+*Fix stale closures and overlapping effects*
+
+#### D1. setInterval with Missing Dependencies
+**File:** `apps/frontend/src/app/app.tsx:1372-1427`
+
+**Problem:**
+- useEffect creates interval but dependency array is incomplete
+- `updateLoadedConversation` missing from deps
+- Creates overlapping intervals on state changes
+
+**Solution:**
+- Add missing dependencies to array
+- Or use refs for stable function references
+
+#### D2. Missing Ref Dependency in useStreamingManagement
+**File:** `apps/frontend/src/hooks/useStreamingManagement.ts:36-48`
+
+**Problem:**
+- `streamingClientRef` accessed but not in dependency array
+- Creates stale closure
+
+**Solution:**
+- Add `streamingClientRef` to dependencies (refs are stable, safe to add)
+
+---
+
 ## Implementation Order
 
-1. **queryClient.ts** - Quick config change, immediate impact
-2. **streaming-client.ts** - Add cleanup, high impact
-3. **app.tsx (loadedConversations)** - Add LRU limit, high impact
-4. **useFileHandling.ts** - Add timer cleanup
-5. **TranslationContext.tsx** - Limit cached translations
-6. **app.tsx (useEffect deps)** - Fix dependency arrays
-7. **useStreamingManagement.ts** - Add missing dependency
-8. **useAttachments.ts** - Add query limit
+| Order | Phase | File | Task |
+|-------|-------|------|------|
+| 1 | A1 | queryClient.ts | Change refetch config to 'stale' |
+| 2 | B2 | streaming-client.ts | Add buffer cleanup in finally block |
+| 3 | B1 | app.tsx | Add LRU limit (20 conversations) |
+| 4 | C1 | useFileHandling.ts | Add timer cleanup with refs |
+| 5 | B3 | TranslationContext.tsx | Limit cached translations |
+| 6 | D1 | app.tsx | Fix useEffect dependency arrays |
+| 7 | D2 | useStreamingManagement.ts | Add missing ref dependency |
+| 8 | B4 | useAttachments.ts | Add query limit (50 max) |
 
 ---
 
