@@ -236,6 +236,10 @@ export class StreamingClient {
           }
         } finally {
           reader.releaseLock();
+          // Memory cleanup: clear all buffers and builders to prevent memory leaks
+          buffer = '';
+          Object.keys(sectionBuilders).forEach(key => delete sectionBuilders[key]);
+          sections = {};
         }
       }
     } catch (error) {

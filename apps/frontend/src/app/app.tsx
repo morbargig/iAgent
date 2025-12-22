@@ -37,6 +37,9 @@ import { useVersionMigration } from "../hooks/useVersionMigration";
 import { getBaseApiUrl } from "../config/config";
 
 import { generateUniqueId } from "../utils/id-generator";
+
+// Maximum number of conversations to keep in memory (LRU cache limit)
+const MAX_LOADED_CONVERSATIONS = 20;
 import { useChats, useChat, useSaveMessage, useCreateChat, useDeleteChat, useUpdateChatName, useDeleteMessage, useEditMessage, useChatMessages } from "../features/chats/api";
 import { setAuthTokenGetter } from "../lib/http";
 import { queryClient } from "../lib/queryClient";
@@ -377,6 +380,32 @@ const App = () => {
   const currentConversationIdRef = useRef<string | null>(null);
   currentConversationIdRef.current = currentConversationId;
 
+  // Helper to enforce LRU limit on loadedConversations to prevent memory leaks
+  const enforceConversationLimit = React.useCallback((map: Map<string, Conversation>, currentId: string | null): Map<string, Conversation> => {
+    if (map.size <= MAX_LOADED_CONVERSATIONS) return map;
+
+    // Sort by lastUpdated, keep most recent + current conversation
+    const entries = Array.from(map.entries());
+    const sorted = entries.sort((a, b) => {
+      // Always keep current conversation
+      if (a[0] === currentId) return -1;
+      if (b[0] === currentId) return 1;
+      return (b[1].lastUpdated?.getTime() ?? 0) - (a[1].lastUpdated?.getTime() ?? 0);
+    });
+
+    return new Map(sorted.slice(0, MAX_LOADED_CONVERSATIONS));
+  }, []);
+
+  // Wrapper that auto-enforces LRU limit on all setLoadedConversations calls
+  const setLoadedConversationsWithLimit = React.useCallback((
+    updater: React.SetStateAction<Map<string, Conversation>>
+  ) => {
+    setLoadedConversations((prev) => {
+      const next = typeof updater === 'function' ? updater(prev) : updater;
+      return enforceConversationLimit(next, currentConversationIdRef.current);
+    });
+  }, [enforceConversationLimit]);
+
   const updateLoadedConversation = React.useCallback((chatId: string, updater: (conv: Conversation) => Conversation) => {
     setLoadedConversations((prev) => {
       const updated = new Map(prev);
@@ -384,9 +413,9 @@ const App = () => {
       if (conversation) {
         updated.set(chatId, updater(conversation));
       }
-      return updated;
+      return enforceConversationLimit(updated, currentConversationIdRef.current);
     });
-  }, []);
+  }, [enforceConversationLimit]);
 
   const saveCurrentStreamContent = React.useCallback(async () => {
     if (!streamingConversationId || !authToken || !userId) return;
@@ -449,12 +478,12 @@ const App = () => {
       });
     }
 
-    setLoadedConversations((prev) => {
+    setLoadedConversationsWithLimit((prev) => {
       const updated = new Map(prev);
       updated.set(streamingConversationId, updatedConv);
       return updated;
     });
-  }, [streamingConversationId, authToken, userId, streamingConversations, loadedConversations, updateLoadedConversation, saveMessageMutation]);
+  }, [streamingConversationId, authToken, userId, streamingConversations, loadedConversations, updateLoadedConversation, saveMessageMutation, setLoadedConversationsWithLimit]);
 
   const stopGeneration = React.useCallback(async () => {
     if (streamingClientRef.current) {
@@ -472,7 +501,7 @@ const App = () => {
         setStreamingConversations((prev) => {
           const streamingConv = prev.get(currentStreamingId);
           if (streamingConv) {
-            setLoadedConversations((loadedPrev) => {
+            setLoadedConversationsWithLimit((loadedPrev) => {
               const updated = new Map(loadedPrev);
               updated.set(currentStreamingId, streamingConv);
               return updated;
@@ -483,10 +512,10 @@ const App = () => {
           return updated;
         });
       }
-      
+
       accumulatedStreamContentRef.current = ""; // Clear ref after saving
     }
-  }, [saveCurrentStreamContent, streamingConversationId, setStreamingConversationId, setStreamingConversations, setLoadedConversations]);
+  }, [saveCurrentStreamContent, streamingConversationId, setStreamingConversationId, setStreamingConversations, setLoadedConversationsWithLimit]);
 
   const currentConversation = useMemo(() => {
     if (!currentConversationId) return null;
@@ -741,7 +770,7 @@ const App = () => {
                 return updated;
               });
 
-              setLoadedConversations((prev) => {
+              setLoadedConversationsWithLimit((prev) => {
                 const conv = prev.get(updatedConversation.id);
                 if (!conv) return prev;
                 const updated = new Map(prev);
@@ -799,7 +828,7 @@ const App = () => {
                       lastUpdated: new Date(),
                     };
                     
-                    setLoadedConversations((loadedPrev) => {
+                    setLoadedConversationsWithLimit((loadedPrev) => {
                       const loadedUpdated = new Map(loadedPrev);
                       loadedUpdated.set(updatedConversation.id, finalConv);
                       return loadedUpdated;
@@ -867,7 +896,7 @@ const App = () => {
                   });
                 }
                 
-                setLoadedConversations((loadedPrev) => {
+                setLoadedConversationsWithLimit((loadedPrev) => {
                   const loadedUpdated = new Map(loadedPrev);
                   loadedUpdated.set(updatedConversation.id, updatedConv);
                   return loadedUpdated;
@@ -898,7 +927,7 @@ const App = () => {
                       lastUpdated: new Date(),
                     };
                     
-                    setLoadedConversations((loadedPrev) => {
+                    setLoadedConversationsWithLimit((loadedPrev) => {
                       const loadedUpdated = new Map(loadedPrev);
                       loadedUpdated.set(updatedConversation.id, finalConv);
                       return loadedUpdated;
@@ -997,7 +1026,7 @@ const App = () => {
         });
       } else {
         // New conversation - add to loaded conversations
-        setLoadedConversations((prev) => {
+        setLoadedConversationsWithLimit((prev) => {
           const updated = new Map(prev);
           updated.set(updatedConversation.id, updatedConversation);
           return updated;
@@ -1156,7 +1185,7 @@ const App = () => {
             return updated;
           });
 
-          setLoadedConversations((prev) => {
+          setLoadedConversationsWithLimit((prev) => {
             const conv = prev.get(updatedConversation.id);
             if (!conv) return prev;
             const updated = new Map(prev);
@@ -1214,7 +1243,7 @@ const App = () => {
                   lastUpdated: new Date(),
                 };
                 
-                setLoadedConversations((loadedPrev) => {
+                setLoadedConversationsWithLimit((loadedPrev) => {
                   const loadedUpdated = new Map(loadedPrev);
                   loadedUpdated.set(updatedConversation.id, finalConv);
                   return loadedUpdated;
@@ -1282,7 +1311,7 @@ const App = () => {
               });
             }
             
-            setLoadedConversations((loadedPrev) => {
+            setLoadedConversationsWithLimit((loadedPrev) => {
               const loadedUpdated = new Map(loadedPrev);
               loadedUpdated.set(updatedConversation.id, updatedConv);
               return loadedUpdated;
@@ -1313,7 +1342,7 @@ const App = () => {
                   lastUpdated: new Date(),
                 };
                 
-                setLoadedConversations((loadedPrev) => {
+                setLoadedConversationsWithLimit((loadedPrev) => {
                   const loadedUpdated = new Map(loadedPrev);
                   loadedUpdated.set(updatedConversation.id, finalConv);
                   return loadedUpdated;
@@ -1355,13 +1384,13 @@ const App = () => {
 
   const handleLogout = React.useCallback(() => {
     logout();
-    setLoadedConversations(new Map());
+    setLoadedConversationsWithLimit(new Map());
     setCurrentConversationId(null);
   }, [logout]);
 
   React.useEffect(() => {
     if (currentChatData && !loadedConversationsRef.current.has(currentChatData.id)) {
-      setLoadedConversations((prev) => {
+      setLoadedConversationsWithLimit((prev) => {
         const updated = new Map(prev);
         updated.set(currentChatData.id, currentChatData);
         return updated;
@@ -1425,7 +1454,7 @@ const App = () => {
     }, 5000);
 
     return () => clearInterval(interval);
-  }, [streamingConversationId, authToken, userId]);
+  }, [streamingConversationId, authToken, userId, updateLoadedConversation, saveMessageMutation]);
 
   const authTokenRef = useRef<string | null>(null);
   const userIdRef = useRef<string | null>(null);
@@ -1613,7 +1642,7 @@ const App = () => {
       };
 
       if (conversation) {
-        setLoadedConversations((prev) => {
+        setLoadedConversationsWithLimit((prev) => {
           const updated = new Map(prev);
           updated.set(conversation.id, conversation);
           return updated;
@@ -1637,7 +1666,7 @@ const App = () => {
       lastUpdated: new Date(),
     };
 
-    setLoadedConversations((prev) => {
+    setLoadedConversationsWithLimit((prev) => {
       const updated = new Map(prev);
       updated.set(newConversation.id, newConversation);
       return updated;
@@ -1667,7 +1696,7 @@ const App = () => {
     }
 
     // Remove from loaded conversations
-    setLoadedConversations((prev) => {
+    setLoadedConversationsWithLimit((prev) => {
       const updated = new Map(prev);
       updated.delete(id);
       return updated;
@@ -1696,7 +1725,7 @@ const App = () => {
 
   const renameConversation = React.useCallback(async (id: string, newTitle: string) => {
 
-    setLoadedConversations((prev) => {
+    setLoadedConversationsWithLimit((prev) => {
       const updated = new Map(prev);
       const conversation = updated.get(id);
       if (conversation) {
@@ -1962,7 +1991,7 @@ const App = () => {
       setStreamingConversations((prev) => {
         const streamingConv = prev.get(conversation.id);
         if (streamingConv) {
-          setLoadedConversations((loadedPrev) => {
+          setLoadedConversationsWithLimit((loadedPrev) => {
             const updated = new Map(loadedPrev);
             updated.set(conversation.id, streamingConv);
             return updated;

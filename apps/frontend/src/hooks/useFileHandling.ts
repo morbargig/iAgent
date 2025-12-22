@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { validateFiles } from "../services/fileService";
 import { useDocumentService } from "../services/documentService";
 
@@ -37,7 +37,16 @@ export const useFileHandling = ({ t }: UseFileHandlingProps) => {
     const [fileError, setFileError] = useState<string | null>(null);
     const [showFileError, setShowFileError] = useState(false);
     const fileInputRef = useRef<HTMLInputElement>(null);
+    const pendingTimersRef = useRef<Set<ReturnType<typeof setTimeout>>>(new Set());
     const documentService = useDocumentService();
+
+    // Cleanup all pending timers on unmount to prevent memory leaks
+    useEffect(() => {
+        return () => {
+            pendingTimersRef.current.forEach((timerId) => clearTimeout(timerId));
+            pendingTimersRef.current.clear();
+        };
+    }, []);
 
     const uploadFileImmediately = async (file: File): Promise<void> => {
         const tempId = `upload_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
@@ -82,7 +91,7 @@ export const useFileHandling = ({ t }: UseFileHandlingProps) => {
                     )
                 );
 
-                setTimeout(() => {
+                const timerId = setTimeout(() => {
                     setAttachedFiles((prev) => [
                         ...prev,
                         {
@@ -96,7 +105,9 @@ export const useFileHandling = ({ t }: UseFileHandlingProps) => {
                     ]);
 
                     setUploadingFiles((prev) => prev.filter((f) => f.tempId !== tempId));
+                    pendingTimersRef.current.delete(timerId);
                 }, 500);
+                pendingTimersRef.current.add(timerId);
             } else {
                 throw new Error(result.error || t("files.uploadFailed"));
             }

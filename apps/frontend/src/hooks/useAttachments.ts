@@ -3,6 +3,9 @@ import { http } from '../lib/http';
 import { apiKeys } from '../lib/keys';
 import type { DocumentFile } from '../types/document.types';
 
+// Limit concurrent queries to prevent memory issues with large attachment arrays
+const MAX_CONCURRENT_ATTACHMENT_QUERIES = 50;
+
 interface FileInfo {
   id: string;
   filename: string;
@@ -36,11 +39,16 @@ export const useAttachments = (attachmentIds: string[]): {
   failedIds: string[];
   isLoading: boolean;
   isError: boolean;
+  hasMore: boolean;
 } => {
   const baseUrl = http.defaults.baseURL || '';
 
+  // Limit queries to prevent memory issues with large attachment arrays
+  const limitedIds = attachmentIds.slice(0, MAX_CONCURRENT_ATTACHMENT_QUERIES);
+  const hasMore = attachmentIds.length > MAX_CONCURRENT_ATTACHMENT_QUERIES;
+
   const queries = useQueries({
-    queries: attachmentIds.map((id) => ({
+    queries: limitedIds.map((id) => ({
       queryKey: apiKeys.documents.detail(id),
       queryFn: async (): Promise<DocumentFile | null> => {
         try {
@@ -62,7 +70,7 @@ export const useAttachments = (attachmentIds: string[]): {
   const isLoading = queries.some((query) => query.isLoading);
   const isError = queries.some((query) => query.isError);
 
-  const failedIds = attachmentIds.filter((id, index) => {
+  const failedIds = limitedIds.filter((id, index) => {
     const query = queries[index];
     return !query.isLoading && (query.isError || query.data === null);
   });
@@ -72,6 +80,7 @@ export const useAttachments = (attachmentIds: string[]): {
     failedIds,
     isLoading,
     isError,
+    hasMore,
   };
 };
 
