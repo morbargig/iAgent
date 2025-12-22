@@ -37,13 +37,13 @@ import { useVersionMigration } from "../hooks/useVersionMigration";
 import { getBaseApiUrl } from "../config/config";
 
 import { generateUniqueId } from "../utils/id-generator";
-
-// Maximum number of conversations to keep in memory (LRU cache limit)
-const MAX_LOADED_CONVERSATIONS = 20;
 import { useChats, useChat, useSaveMessage, useCreateChat, useDeleteChat, useUpdateChatName, useDeleteMessage, useEditMessage, useChatMessages } from "../features/chats/api";
 import { setAuthTokenGetter } from "../lib/http";
 import { queryClient } from "../lib/queryClient";
 import { apiKeys } from "../lib/keys";
+
+// Maximum number of conversations to keep in memory (LRU cache limit)
+const MAX_LOADED_CONVERSATIONS = 20;
 
 // iagent-inspired Design System
 // Philosophy: Clean, minimal, muted aesthetic with subtle interactions

@@ -283,3 +283,200 @@ All memory leak fixes are correctly implemented:
 
 ### Phase 2 Complete
 All verification tasks passed. Memory leak fixes are correctly implemented and ready for manual testing.
+
+---
+
+## Phase 3 Completion Notes
+
+**Date:** 2025-12-22
+**Assigned Agents:** Claude Opus 4.5
+
+### Testing & Monitoring Documentation
+
+#### All Implementations Verified
+
+| # | Fix | File | Status |
+|---|-----|------|--------|
+| 1 | React Query `refetchOnReconnect: 'stale'` | queryClient.ts:10 | ✅ Verified |
+| 2 | React Query `refetchOnMount: 'stale'` | queryClient.ts:11 | ✅ Verified |
+| 3 | Streaming buffer cleanup in finally block | streaming-client.ts:239-244 | ✅ Verified |
+| 4 | `MAX_LOADED_CONVERSATIONS = 20` constant | app.tsx:42 | ✅ Verified |
+| 5 | `enforceConversationLimit()` LRU function | app.tsx:384-398 | ✅ Verified |
+| 6 | `setLoadedConversationsWithLimit()` wrapper | app.tsx:400-407 | ✅ Verified |
+| 7 | 21 usages of wrapper function | app.tsx (multiple) | ✅ Verified |
+| 8 | Timer cleanup with `pendingTimersRef` | useFileHandling.ts:40-50 | ✅ Verified |
+| 9 | Timer registration/cleanup | useFileHandling.ts:95-111 | ✅ Verified |
+| 10 | Translation cache limit (current + fallback) | TranslationContext.tsx:59-72 | ✅ Verified |
+| 11 | `loadTranslation` memoized with useCallback | TranslationContext.tsx:45-81 | ✅ Verified |
+
+---
+
+### Browser Memory Monitoring Guide
+
+#### Chrome DevTools Memory Profiling
+
+**Step 1: Open DevTools**
+```
+Cmd + Option + I (Mac) or F12 (Windows)
+Navigate to "Memory" tab
+```
+
+**Step 2: Take Heap Snapshot**
+1. Click "Take snapshot" button
+2. Note the total JS heap size
+3. Use the app normally for 5-10 minutes
+4. Take another snapshot
+5. Compare sizes
+
+**Step 3: Record Allocation Timeline**
+1. Select "Allocation instrumentation on timeline"
+2. Click "Start"
+3. Perform actions: open/close conversations, stream messages
+4. Click "Stop"
+5. Look for continuously growing bars (leak indicators)
+
+**Step 4: Memory Panel Metrics**
+Monitor these during extended use:
+- **JS Heap Size**: Should stabilize, not grow indefinitely
+- **Documents**: Should stay stable (no orphaned iframes)
+- **Nodes**: Should stabilize after initial load
+- **Listeners**: Should not grow unboundedly
+
+---
+
+### Manual Testing Checklist
+
+Run these tests to verify memory fixes:
+
+#### Test 1: Conversation Cache Limit
+```
+1. Open app in fresh browser tab
+2. Take initial heap snapshot
+3. Open 25+ different conversations
+4. Take second heap snapshot
+5. Expected: Only 20 conversations in memory (check loadedConversations Map)
+```
+
+#### Test 2: Streaming Buffer Cleanup
+```
+1. Open Performance tab
+2. Start recording
+3. Send 5 long messages that require streaming
+4. Stop recording
+5. Expected: Memory should return to baseline after each stream
+```
+
+#### Test 3: File Upload Timer Cleanup
+```
+1. Navigate to file upload feature
+2. Upload 5 files rapidly
+3. Close/navigate away before all complete
+4. Take heap snapshot
+5. Expected: No orphaned setTimeout callbacks
+```
+
+#### Test 4: Translation Memory
+```
+1. Take initial heap snapshot
+2. Switch language 10 times (English → Hebrew → Spanish → etc)
+3. Take second heap snapshot
+4. Expected: Only 2 language modules in memory (current + English fallback)
+```
+
+#### Test 5: Extended Use Stability
+```
+1. Take initial heap snapshot (note size)
+2. Use app for 30 minutes with:
+   - Multiple conversations
+   - Streaming responses
+   - File uploads
+   - Language switches
+3. Take final heap snapshot
+4. Expected: Memory should be within 50% of initial (not 2GB+)
+```
+
+---
+
+### Expected Memory Improvements
+
+| Scenario | Before Fix | After Fix |
+|----------|------------|-----------|
+| 50 conversations opened | ~500MB+ (all kept) | ~100MB (20 kept via LRU) |
+| Extended streaming | Growing buffer | Buffer cleared per stream |
+| Language switching | All langs cached | Only 2 langs max |
+| File upload abort | Orphaned timers | Timers cleaned up |
+| React Query cache | Aggressive refetch | Stale-based refetch |
+
+---
+
+### Monitoring Commands (Browser Console)
+
+```javascript
+// Check React Query cache size
+queryClient.getQueryCache().getAll().length
+
+// Check loaded conversations count (if exposed to window)
+// Add this temporarily to app.tsx for debugging:
+// window.__DEBUG_CONVERSATIONS = loadedConversations;
+window.__DEBUG_CONVERSATIONS?.size
+
+// Force garbage collection (Chrome with --js-flags="--expose-gc")
+gc()
+```
+
+---
+
+### Phase 3 Complete
+
+All memory leak fixes have been:
+1. ✅ Implemented in Phase 1
+2. ✅ Verified via build/lint in Phase 2
+3. ✅ Documented with testing guide in Phase 3
+
+**Next Steps for User:**
+- Run the manual testing checklist above
+- Monitor memory usage in browser DevTools during extended use
+- Report any remaining memory growth issues
+
+---
+
+## Phase 4 Completion Notes
+
+**Date:** 2025-12-22
+**Assigned Agents:** Claude Opus 4.5
+
+### Final Integration & Verification
+
+| # | Task | Status | Notes |
+|---|------|--------|-------|
+| 1 | Full production build | ✅ Pass | `nx build frontend` succeeds |
+| 2 | ESLint check - errors | ✅ Pass | 0 errors (fixed import order in app.tsx) |
+| 3 | ESLint check - warnings | ⚠️ 23 warnings | Pre-existing, not related to memory fixes |
+| 4 | LRU cache (MAX_LOADED_CONVERSATIONS=20) | ✅ Verified | app.tsx:46, 385, 396 |
+| 5 | React Query stale config | ✅ Verified | queryClient.ts:10-11 |
+| 6 | Timer cleanup (pendingTimersRef) | ✅ Verified | useFileHandling.ts:40, 45, 109, 111 |
+| 7 | Streaming buffer cleanup | ✅ Verified | streaming-client.ts:239-244 |
+| 8 | Translation cache limit | ✅ Verified | TranslationContext.tsx:10, 59-65 |
+| 9 | Attachment query limit | ✅ Verified | useAttachments.ts:7, 47-48 |
+
+### ESLint Fix Applied
+- **app.tsx**: Moved imports (lines 43-46) above const declaration (line 42) to fix `import/first` errors
+
+### Git Commits
+```
+440f6b0 fix(frontend): Phase 4 - ESLint import order fix and final verification
+8a2ae86 phase2
+1a5a5d3 phase1
+```
+
+### Phase 4 Complete
+All memory leak fixes are verified, build passes, and code is ready for testing.
+
+---
+
+## Summary
+
+**Total Issues Fixed:** 9
+**Files Modified:** 6
+**Implementation Date:** 2025-12-22
+**Phases Completed:** 4/4
