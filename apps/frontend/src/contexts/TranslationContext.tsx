@@ -1,10 +1,13 @@
-import React, { createContext, useContext, useEffect, useState } from "react";
+import React, { createContext, useContext, useEffect, useState, useCallback } from "react";
 import {
   TranslationContextType,
   TranslationState,
   SUPPORTED_LANGUAGES,
 } from "../i18n/types";
 import { useAppLocalStorage } from "../hooks/storage";
+
+// Only keep current language + English fallback in memory to prevent memory leaks
+const DEFAULT_FALLBACK_LANG = "en";
 
 const TranslationContext = createContext<TranslationContextType | undefined>(
   undefined
@@ -39,11 +42,11 @@ export const TranslationProvider: React.FC<{ children: React.ReactNode }> = ({
     error: null,
   });
 
-  const loadTranslation = async (lang: string) => {
+  const loadTranslation = useCallback(async (lang: string) => {
     if (lang === "none") {
       setState((prev) => ({
         ...prev,
-        translations: { ...prev.translations, [lang]: {} },
+        translations: { [lang]: {} },
         isLoading: false,
       }));
       return;
@@ -52,19 +55,30 @@ export const TranslationProvider: React.FC<{ children: React.ReactNode }> = ({
     try {
       setState((prev) => ({ ...prev, isLoading: true, error: null }));
       const module = await import(`../i18n/translations/${lang}.ts`);
-      setState((prev) => ({
-        ...prev,
-        translations: { ...prev.translations, [lang]: module.default },
-        isLoading: false,
-      }));
-    } catch (error) {
+
+      // Memory optimization: only keep current lang + fallback (English) to prevent unbounded growth
+      setState((prev) => {
+        const newTranslations: Record<string, Record<string, unknown>> = { [lang]: module.default };
+
+        // Keep English fallback if loading a non-English language
+        if (lang !== DEFAULT_FALLBACK_LANG && prev.translations[DEFAULT_FALLBACK_LANG]) {
+          newTranslations[DEFAULT_FALLBACK_LANG] = prev.translations[DEFAULT_FALLBACK_LANG];
+        }
+
+        return {
+          ...prev,
+          translations: newTranslations,
+          isLoading: false,
+        };
+      });
+    } catch {
       setState((prev) => ({
         ...prev,
         error: `Failed to load ${lang} translations`,
         isLoading: false,
       }));
     }
-  };
+  }, []);
 
   const changeLanguage = async (lang: string) => {
     if (lang !== "none" && !SUPPORTED_LANGUAGES.some((l) => l.code === lang)) {
@@ -109,7 +123,7 @@ export const TranslationProvider: React.FC<{ children: React.ReactNode }> = ({
   useEffect(() => {
     setDocumentDirection(state.currentLang);
     loadTranslation(state.currentLang);
-  }, []);
+  }, [loadTranslation]);
 
   // Set direction when language changes
   useEffect(() => {

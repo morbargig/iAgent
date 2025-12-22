@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect, useMemo } from "react";
+import React, { useState, useRef, useEffect, useMemo, useCallback } from "react";
 import { ThemeProvider, createTheme } from "@mui/material/styles";
 import { CssBaseline, Box } from "@mui/material";
 import { useTranslation } from "../contexts/TranslationContext";
@@ -41,6 +41,9 @@ import { useChats, useChat, useSaveMessage, useCreateChat, useDeleteChat, useUpd
 import { setAuthTokenGetter } from "../lib/http";
 import { queryClient } from "../lib/queryClient";
 import { apiKeys } from "../lib/keys";
+
+// Maximum number of conversations to keep in memory (LRU cache limit)
+const MAX_LOADED_CONVERSATIONS = 20;
 
 // iagent-inspired Design System
 // Philosophy: Clean, minimal, muted aesthetic with subtle interactions
@@ -336,12 +339,12 @@ const App = () => {
   const [sidebarWidth, setSidebarWidth] = useState(250); // Track sidebar width
   const { authToken, userId, userEmail, isAuthenticated, logout } = useAuth();
 
-  React.useEffect(() => {
+  useEffect(() => {
     setAuthTokenGetter(() => authToken || null);
   }, [authToken]);
 
   const { data: chatsData } = useChats();
-  const chatList = React.useMemo(() => {
+  const chatList = useMemo(() => {
     if (!chatsData) return [];
     return chatsData
       .map((chat) => ({
@@ -377,18 +380,44 @@ const App = () => {
   const currentConversationIdRef = useRef<string | null>(null);
   currentConversationIdRef.current = currentConversationId;
 
-  const updateLoadedConversation = React.useCallback((chatId: string, updater: (conv: Conversation) => Conversation) => {
+  // Helper to enforce LRU limit on loadedConversations to prevent memory leaks
+  const enforceConversationLimit = useCallback((map: Map<string, Conversation>, currentId: string | null): Map<string, Conversation> => {
+    if (map.size <= MAX_LOADED_CONVERSATIONS) return map;
+
+    // Sort by lastUpdated, keep most recent + current conversation
+    const entries = Array.from(map.entries());
+    const sorted = entries.sort((a, b) => {
+      // Always keep current conversation
+      if (a[0] === currentId) return -1;
+      if (b[0] === currentId) return 1;
+      return (b[1].lastUpdated?.getTime() ?? 0) - (a[1].lastUpdated?.getTime() ?? 0);
+    });
+
+    return new Map(sorted.slice(0, MAX_LOADED_CONVERSATIONS));
+  }, []);
+
+  // Wrapper that auto-enforces LRU limit on all setLoadedConversations calls
+  const setLoadedConversationsWithLimit = useCallback((
+    updater: React.SetStateAction<Map<string, Conversation>>
+  ) => {
+    setLoadedConversations((prev) => {
+      const next = typeof updater === 'function' ? updater(prev) : updater;
+      return enforceConversationLimit(next, currentConversationIdRef.current);
+    });
+  }, [enforceConversationLimit]);
+
+  const updateLoadedConversation = useCallback((chatId: string, updater: (conv: Conversation) => Conversation) => {
     setLoadedConversations((prev) => {
       const updated = new Map(prev);
       const conversation = updated.get(chatId);
       if (conversation) {
         updated.set(chatId, updater(conversation));
       }
-      return updated;
+      return enforceConversationLimit(updated, currentConversationIdRef.current);
     });
-  }, []);
+  }, [enforceConversationLimit]);
 
-  const saveCurrentStreamContent = React.useCallback(async () => {
+  const saveCurrentStreamContent = useCallback(async () => {
     if (!streamingConversationId || !authToken || !userId) return;
 
     const currentContent = accumulatedStreamContentRef.current;
@@ -449,14 +478,14 @@ const App = () => {
       });
     }
 
-    setLoadedConversations((prev) => {
+    setLoadedConversationsWithLimit((prev) => {
       const updated = new Map(prev);
       updated.set(streamingConversationId, updatedConv);
       return updated;
     });
-  }, [streamingConversationId, authToken, userId, streamingConversations, loadedConversations, updateLoadedConversation, saveMessageMutation]);
+  }, [streamingConversationId, authToken, userId, streamingConversations, loadedConversations, updateLoadedConversation, saveMessageMutation, setLoadedConversationsWithLimit]);
 
-  const stopGeneration = React.useCallback(async () => {
+  const stopGeneration = useCallback(async () => {
     if (streamingClientRef.current) {
       streamingClientRef.current.abort();
 
@@ -472,7 +501,7 @@ const App = () => {
         setStreamingConversations((prev) => {
           const streamingConv = prev.get(currentStreamingId);
           if (streamingConv) {
-            setLoadedConversations((loadedPrev) => {
+            setLoadedConversationsWithLimit((loadedPrev) => {
               const updated = new Map(loadedPrev);
               updated.set(currentStreamingId, streamingConv);
               return updated;
@@ -483,10 +512,10 @@ const App = () => {
           return updated;
         });
       }
-      
+
       accumulatedStreamContentRef.current = ""; // Clear ref after saving
     }
-  }, [saveCurrentStreamContent, streamingConversationId, setStreamingConversationId, setStreamingConversations, setLoadedConversations]);
+  }, [saveCurrentStreamContent, streamingConversationId, setStreamingConversationId, setStreamingConversations, setLoadedConversationsWithLimit]);
 
   const currentConversation = useMemo(() => {
     if (!currentConversationId) return null;
@@ -515,7 +544,7 @@ const App = () => {
     });
   }, [chatList, loadedConversations]);
 
-  const handleSendMessage = React.useCallback(async (data: SendMessageData) => {
+  const handleSendMessage = useCallback(async (data: SendMessageData) => {
     const {
       content,
       dateFilter,
@@ -741,7 +770,7 @@ const App = () => {
                 return updated;
               });
 
-              setLoadedConversations((prev) => {
+              setLoadedConversationsWithLimit((prev) => {
                 const conv = prev.get(updatedConversation.id);
                 if (!conv) return prev;
                 const updated = new Map(prev);
@@ -799,7 +828,7 @@ const App = () => {
                       lastUpdated: new Date(),
                     };
                     
-                    setLoadedConversations((loadedPrev) => {
+                    setLoadedConversationsWithLimit((loadedPrev) => {
                       const loadedUpdated = new Map(loadedPrev);
                       loadedUpdated.set(updatedConversation.id, finalConv);
                       return loadedUpdated;
@@ -867,7 +896,7 @@ const App = () => {
                   });
                 }
                 
-                setLoadedConversations((loadedPrev) => {
+                setLoadedConversationsWithLimit((loadedPrev) => {
                   const loadedUpdated = new Map(loadedPrev);
                   loadedUpdated.set(updatedConversation.id, updatedConv);
                   return loadedUpdated;
@@ -898,7 +927,7 @@ const App = () => {
                       lastUpdated: new Date(),
                     };
                     
-                    setLoadedConversations((loadedPrev) => {
+                    setLoadedConversationsWithLimit((loadedPrev) => {
                       const loadedUpdated = new Map(loadedPrev);
                       loadedUpdated.set(updatedConversation.id, finalConv);
                       return loadedUpdated;
@@ -997,7 +1026,7 @@ const App = () => {
         });
       } else {
         // New conversation - add to loaded conversations
-        setLoadedConversations((prev) => {
+        setLoadedConversationsWithLimit((prev) => {
           const updated = new Map(prev);
           updated.set(updatedConversation.id, updatedConversation);
           return updated;
@@ -1156,7 +1185,7 @@ const App = () => {
             return updated;
           });
 
-          setLoadedConversations((prev) => {
+          setLoadedConversationsWithLimit((prev) => {
             const conv = prev.get(updatedConversation.id);
             if (!conv) return prev;
             const updated = new Map(prev);
@@ -1214,7 +1243,7 @@ const App = () => {
                   lastUpdated: new Date(),
                 };
                 
-                setLoadedConversations((loadedPrev) => {
+                setLoadedConversationsWithLimit((loadedPrev) => {
                   const loadedUpdated = new Map(loadedPrev);
                   loadedUpdated.set(updatedConversation.id, finalConv);
                   return loadedUpdated;
@@ -1282,7 +1311,7 @@ const App = () => {
               });
             }
             
-            setLoadedConversations((loadedPrev) => {
+            setLoadedConversationsWithLimit((loadedPrev) => {
               const loadedUpdated = new Map(loadedPrev);
               loadedUpdated.set(updatedConversation.id, updatedConv);
               return loadedUpdated;
@@ -1313,7 +1342,7 @@ const App = () => {
                   lastUpdated: new Date(),
                 };
                 
-                setLoadedConversations((loadedPrev) => {
+                setLoadedConversationsWithLimit((loadedPrev) => {
                   const loadedUpdated = new Map(loadedPrev);
                   loadedUpdated.set(updatedConversation.id, finalConv);
                   return loadedUpdated;
@@ -1343,7 +1372,7 @@ const App = () => {
     }
   }, [isLoading, authToken, userId, translation, updateLoadedConversation, streamingClientRef, editingMessageId, editMessageMutation, refetchChatMessages, saveMessageMutation, createChatMutation, setStreamingConversationId, setEditingMessageId]);
 
-  const handleMockModeToggle = React.useCallback(() => {
+  const handleMockModeToggle = useCallback(() => {
     toggleMockMode?.();
   }, [toggleMockMode]);
 
@@ -1353,15 +1382,15 @@ const App = () => {
 
   const currentTheme = isDarkMode ? darkTheme : lightTheme;
 
-  const handleLogout = React.useCallback(() => {
+  const handleLogout = useCallback(() => {
     logout();
-    setLoadedConversations(new Map());
+    setLoadedConversationsWithLimit(new Map());
     setCurrentConversationId(null);
   }, [logout]);
 
-  React.useEffect(() => {
+  useEffect(() => {
     if (currentChatData && !loadedConversationsRef.current.has(currentChatData.id)) {
-      setLoadedConversations((prev) => {
+      setLoadedConversationsWithLimit((prev) => {
         const updated = new Map(prev);
         updated.set(currentChatData.id, currentChatData);
         return updated;
@@ -1425,7 +1454,7 @@ const App = () => {
     }, 5000);
 
     return () => clearInterval(interval);
-  }, [streamingConversationId, authToken, userId]);
+  }, [streamingConversationId, authToken, userId, updateLoadedConversation, saveMessageMutation]);
 
   const authTokenRef = useRef<string | null>(null);
   const userIdRef = useRef<string | null>(null);
@@ -1488,61 +1517,62 @@ const App = () => {
     };
   }, []);
 
-  useEffect(() => {
-    const handleBeforeUnload = () => {
-      const currentStreamingId = streamingConversationIdRef.current;
-      const currentAuthToken = authTokenRef.current;
-      const currentUserId = userIdRef.current;
+  // Memoized handler for beforeunload/pagehide to prevent stale closures
+  const handleBeforeUnload = useCallback(() => {
+    const currentStreamingId = streamingConversationIdRef.current;
+    const currentAuthToken = authTokenRef.current;
+    const currentUserId = userIdRef.current;
 
-      if (currentStreamingId && currentAuthToken && currentUserId) {
-        const currentContent = accumulatedStreamContentRef.current;
-        if (currentContent) {
-          const conversation = loadedConversationsRef.current.get(currentStreamingId);
-          if (conversation) {
-            const lastMessage = conversation.messages[conversation.messages.length - 1];
-            if (lastMessage && lastMessage.isStreaming) {
-              const updatedConv = {
-                ...conversation,
-                messages: [
-                  ...conversation.messages.slice(0, -1),
-                  updateMessageContent(
-                    lastMessage,
-                    currentContent,
-                    false,
-                    true // Mark as interrupted
-                  ),
-                ],
-                lastUpdated: new Date(),
-              };
+    if (currentStreamingId && currentAuthToken && currentUserId) {
+      const currentContent = accumulatedStreamContentRef.current;
+      if (currentContent) {
+        const conversation = loadedConversationsRef.current.get(currentStreamingId);
+        if (conversation) {
+          const lastMessage = conversation.messages[conversation.messages.length - 1];
+          if (lastMessage && lastMessage.isStreaming) {
+            const updatedConv = {
+              ...conversation,
+              messages: [
+                ...conversation.messages.slice(0, -1),
+                updateMessageContent(
+                  lastMessage,
+                  currentContent,
+                  false,
+                  true // Mark as interrupted
+                ),
+              ],
+              lastUpdated: new Date(),
+            };
 
-              if (updatedConv.messages.length > 0) {
-                const lastMessage = updatedConv.messages[updatedConv.messages.length - 1];
-                if (!lastMessage.isStreaming) {
-                  saveMessageMutation.mutate({
-                    chatId: updatedConv.id,
-                    message: {
-                      id: lastMessage.id,
-                      role: lastMessage.role,
-                      content: lastMessage.content,
-                      timestamp: lastMessage.timestamp,
-                      metadata: {
-                        ...lastMessage.metadata,
-                        parsed: lastMessage.parsed,
-                        sections: lastMessage.sections,
-                        currentSection: lastMessage.currentSection,
-                      },
-                      filterId: lastMessage.filterId,
-                      filterVersion: lastMessage.filterVersion,
+            if (updatedConv.messages.length > 0) {
+              const lastMessage = updatedConv.messages[updatedConv.messages.length - 1];
+              if (!lastMessage.isStreaming) {
+                saveMessageMutation.mutate({
+                  chatId: updatedConv.id,
+                  message: {
+                    id: lastMessage.id,
+                    role: lastMessage.role,
+                    content: lastMessage.content,
+                    timestamp: lastMessage.timestamp,
+                    metadata: {
+                      ...lastMessage.metadata,
+                      parsed: lastMessage.parsed,
+                      sections: lastMessage.sections,
+                      currentSection: lastMessage.currentSection,
                     },
-                  });
-                }
+                    filterId: lastMessage.filterId,
+                    filterVersion: lastMessage.filterVersion,
+                  },
+                });
               }
             }
           }
         }
       }
-    };
+    }
+  }, [saveMessageMutation]);
 
+  useEffect(() => {
     window.addEventListener("beforeunload", handleBeforeUnload);
     window.addEventListener("pagehide", handleBeforeUnload);
 
@@ -1550,28 +1580,28 @@ const App = () => {
       window.removeEventListener("beforeunload", handleBeforeUnload);
       window.removeEventListener("pagehide", handleBeforeUnload);
     };
-  }, []);
+  }, [handleBeforeUnload]);
 
-  const toggleTheme = React.useCallback(() => {
+  const toggleTheme = useCallback(() => {
     if (!enableDarkMode) return;
     setIsDarkMode((prev) => !prev);
   }, [enableDarkMode]);
 
-  React.useEffect(() => {
+  useEffect(() => {
     if (!enableDarkMode && isDarkMode) {
       setIsDarkMode(false);
     }
   }, [enableDarkMode, isDarkMode]);
 
-  const toggleSidebar = React.useCallback(() => {
+  const toggleSidebar = useCallback(() => {
     setIsSidebarOpen((prev) => !prev);
   }, []);
 
-  const handleSidebarWidthChange = React.useCallback((width: number) => {
+  const handleSidebarWidthChange = useCallback((width: number) => {
     setSidebarWidth(width);
   }, []);
 
-  const loadConversation = React.useCallback(async (chatId: string) => {
+  const loadConversation = useCallback(async (chatId: string) => {
     if (!authToken) return;
 
     // Don't reload if already loaded
@@ -1613,7 +1643,7 @@ const App = () => {
       };
 
       if (conversation) {
-        setLoadedConversations((prev) => {
+        setLoadedConversationsWithLimit((prev) => {
           const updated = new Map(prev);
           updated.set(conversation.id, conversation);
           return updated;
@@ -1626,7 +1656,7 @@ const App = () => {
     }
   }, [authToken]);
 
-  const createNewConversation = React.useCallback(async () => {
+  const createNewConversation = useCallback(async () => {
     const newConversation: Conversation = {
       id: generateUniqueId(),
       title: translation("sidebar.newChatTitle"),
@@ -1637,7 +1667,7 @@ const App = () => {
       lastUpdated: new Date(),
     };
 
-    setLoadedConversations((prev) => {
+    setLoadedConversationsWithLimit((prev) => {
       const updated = new Map(prev);
       updated.set(newConversation.id, newConversation);
       return updated;
@@ -1657,7 +1687,7 @@ const App = () => {
     }
   }, [authToken, userId, translation]);
 
-  const deleteConversation = React.useCallback(async (id: string) => {
+  const deleteConversation = useCallback(async (id: string) => {
     // Stop stream if this chat is currently streaming
     if (streamingConversationId === id && streamingClientRef.current) {
       streamingClientRef.current.abort();
@@ -1667,7 +1697,7 @@ const App = () => {
     }
 
     // Remove from loaded conversations
-    setLoadedConversations((prev) => {
+    setLoadedConversationsWithLimit((prev) => {
       const updated = new Map(prev);
       updated.delete(id);
       return updated;
@@ -1694,9 +1724,9 @@ const App = () => {
     }
   }, [authToken, currentConversationId, deleteChatMutation, streamingConversationId, setIsLoading, setStreamingConversationId, setCurrentConversationId]);
 
-  const renameConversation = React.useCallback(async (id: string, newTitle: string) => {
+  const renameConversation = useCallback(async (id: string, newTitle: string) => {
 
-    setLoadedConversations((prev) => {
+    setLoadedConversationsWithLimit((prev) => {
       const updated = new Map(prev);
       const conversation = updated.get(id);
       if (conversation) {
@@ -1720,7 +1750,7 @@ const App = () => {
     }
   }, [authToken, updateChatNameMutation]);
 
-  const refreshMessage = React.useCallback(async (messageId: string) => {
+  const refreshMessage = useCallback(async (messageId: string) => {
     const currentConvId = currentConversationIdRef.current;
     if (!currentConvId || isLoading) return;
     
@@ -1932,7 +1962,7 @@ const App = () => {
     }
   }, [isLoading, authToken, userId, updateLoadedConversation, streamingClientRef]);
 
-  const editMessage = React.useCallback(async (messageId: string) => {
+  const editMessage = useCallback(async (messageId: string) => {
     const currentConvId = currentConversationIdRef.current;
     if (!currentConvId) return;
     
@@ -1962,7 +1992,7 @@ const App = () => {
       setStreamingConversations((prev) => {
         const streamingConv = prev.get(conversation.id);
         if (streamingConv) {
-          setLoadedConversations((loadedPrev) => {
+          setLoadedConversationsWithLimit((loadedPrev) => {
             const updated = new Map(loadedPrev);
             updated.set(conversation.id, streamingConv);
             return updated;
@@ -1994,7 +2024,7 @@ const App = () => {
 
   }, [updateLoadedConversation, streamingConversationId, streamingClientRef, setIsLoading, setStreamingConversationId, accumulatedStreamContentRef, setEditingMessageId, saveCurrentStreamContent]);
 
-  const deleteMessage = React.useCallback(async (messageId: string) => {
+  const deleteMessage = useCallback(async (messageId: string) => {
     const currentConvId = currentConversationIdRef.current;
     if (!currentConvId || !authToken) return;
 
@@ -2032,28 +2062,28 @@ const App = () => {
     }
   }, [authToken, updateLoadedConversation, deleteMessageMutation]);
 
-  const shareMessage = React.useCallback(() => {
+  const shareMessage = useCallback(() => {
     // Share functionality placeholder
   }, []);
 
-  const handleVoiceInput = React.useCallback(() => {
+  const handleVoiceInput = useCallback(() => {
     // Voice input functionality placeholder
   }, []);
 
-  const handleClearInput = React.useCallback(() => {
+  const handleClearInput = useCallback(() => {
     setInput("");
   }, []);
 
-  const closeReportPanel = React.useCallback(() => {
+  const closeReportPanel = useCallback(() => {
     setIsReportPanelOpen(false);
     setReportData(null);
   }, []);
 
-  const handleReportPanelWidthChange = React.useCallback((width: number) => {
+  const handleReportPanelWidthChange = useCallback((width: number) => {
     setReportPanelWidth(width);
   }, []);
 
-  const openReportFromUrl = React.useCallback(async (url: string) => {
+  const openReportFromUrl = useCallback(async (url: string) => {
     const reportId = parseReportId(url);
     if (!reportId) {
       console.error("Invalid report URL:", url);
