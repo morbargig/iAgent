@@ -1517,61 +1517,62 @@ const App = () => {
     };
   }, []);
 
-  useEffect(() => {
-    const handleBeforeUnload = () => {
-      const currentStreamingId = streamingConversationIdRef.current;
-      const currentAuthToken = authTokenRef.current;
-      const currentUserId = userIdRef.current;
+  // Memoized handler for beforeunload/pagehide to prevent stale closures
+  const handleBeforeUnload = React.useCallback(() => {
+    const currentStreamingId = streamingConversationIdRef.current;
+    const currentAuthToken = authTokenRef.current;
+    const currentUserId = userIdRef.current;
 
-      if (currentStreamingId && currentAuthToken && currentUserId) {
-        const currentContent = accumulatedStreamContentRef.current;
-        if (currentContent) {
-          const conversation = loadedConversationsRef.current.get(currentStreamingId);
-          if (conversation) {
-            const lastMessage = conversation.messages[conversation.messages.length - 1];
-            if (lastMessage && lastMessage.isStreaming) {
-              const updatedConv = {
-                ...conversation,
-                messages: [
-                  ...conversation.messages.slice(0, -1),
-                  updateMessageContent(
-                    lastMessage,
-                    currentContent,
-                    false,
-                    true // Mark as interrupted
-                  ),
-                ],
-                lastUpdated: new Date(),
-              };
+    if (currentStreamingId && currentAuthToken && currentUserId) {
+      const currentContent = accumulatedStreamContentRef.current;
+      if (currentContent) {
+        const conversation = loadedConversationsRef.current.get(currentStreamingId);
+        if (conversation) {
+          const lastMessage = conversation.messages[conversation.messages.length - 1];
+          if (lastMessage && lastMessage.isStreaming) {
+            const updatedConv = {
+              ...conversation,
+              messages: [
+                ...conversation.messages.slice(0, -1),
+                updateMessageContent(
+                  lastMessage,
+                  currentContent,
+                  false,
+                  true // Mark as interrupted
+                ),
+              ],
+              lastUpdated: new Date(),
+            };
 
-              if (updatedConv.messages.length > 0) {
-                const lastMessage = updatedConv.messages[updatedConv.messages.length - 1];
-                if (!lastMessage.isStreaming) {
-                  saveMessageMutation.mutate({
-                    chatId: updatedConv.id,
-                    message: {
-                      id: lastMessage.id,
-                      role: lastMessage.role,
-                      content: lastMessage.content,
-                      timestamp: lastMessage.timestamp,
-                      metadata: {
-                        ...lastMessage.metadata,
-                        parsed: lastMessage.parsed,
-                        sections: lastMessage.sections,
-                        currentSection: lastMessage.currentSection,
-                      },
-                      filterId: lastMessage.filterId,
-                      filterVersion: lastMessage.filterVersion,
+            if (updatedConv.messages.length > 0) {
+              const lastMessage = updatedConv.messages[updatedConv.messages.length - 1];
+              if (!lastMessage.isStreaming) {
+                saveMessageMutation.mutate({
+                  chatId: updatedConv.id,
+                  message: {
+                    id: lastMessage.id,
+                    role: lastMessage.role,
+                    content: lastMessage.content,
+                    timestamp: lastMessage.timestamp,
+                    metadata: {
+                      ...lastMessage.metadata,
+                      parsed: lastMessage.parsed,
+                      sections: lastMessage.sections,
+                      currentSection: lastMessage.currentSection,
                     },
-                  });
-                }
+                    filterId: lastMessage.filterId,
+                    filterVersion: lastMessage.filterVersion,
+                  },
+                });
               }
             }
           }
         }
       }
-    };
+    }
+  }, [saveMessageMutation]);
 
+  useEffect(() => {
     window.addEventListener("beforeunload", handleBeforeUnload);
     window.addEventListener("pagehide", handleBeforeUnload);
 
@@ -1579,7 +1580,7 @@ const App = () => {
       window.removeEventListener("beforeunload", handleBeforeUnload);
       window.removeEventListener("pagehide", handleBeforeUnload);
     };
-  }, []);
+  }, [handleBeforeUnload]);
 
   const toggleTheme = React.useCallback(() => {
     if (!enableDarkMode) return;
