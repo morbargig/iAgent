@@ -1,12 +1,8 @@
 import { Injectable, UnauthorizedException } from '@nestjs/common';
+import { getJwtSecret } from './jwt-secret.js';
+import { DEMO_USERS, type User } from './auth.types.js';
 
-export interface User {
-  userId: string;
-  email: string;
-  password: string; // In real app, this should be hashed
-  role: string;
-  createdAt: Date;
-}
+export type { User } from './auth.types.js';
 
 export interface LoginRequest {
   email: string;
@@ -23,26 +19,7 @@ export interface LoginResponse {
 
 @Injectable()
 export class AuthService {
-  private readonly JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-in-production';
-  
-  // Demo credentials - Available in all environments including production
-  // These are provided for easy testing and demonstration purposes
-  private readonly users: User[] = [
-    {
-      userId: 'user_demo_001',
-      email: 'demo@iagent.com',
-      password: 'demo',
-      role: 'user',
-      createdAt: new Date('2024-01-01')
-    },
-    {
-      userId: 'user_test_001',
-      email: 'test@iagent.com',
-      password: 'test',
-      role: 'user',
-      createdAt: new Date('2024-01-01')
-    }
-  ];
+  private readonly users: User[] = DEMO_USERS;
 
   async login(loginRequest: LoginRequest): Promise<LoginResponse> {
     const { email, password } = loginRequest;
@@ -69,11 +46,12 @@ export class AuthService {
 
     // Generate JWT token
     const payload = {
+      sub: user.userId,
       userId: user.userId,
       email: user.email,
       role: user.role,
       iat: Math.floor(Date.now() / 1000),
-      exp: Math.floor(Date.now() / 1000) + (24 * 60 * 60) // 24 hours
+      exp: Math.floor(Date.now() / 1000) + (24 * 60 * 60),
     };
 
     // Simple JWT creation (in production, use proper JWT library)
@@ -135,7 +113,7 @@ export class AuthService {
     // Simple signature creation (in production, use proper HMAC)
     const crypto = require('crypto');
     return crypto
-      .createHmac('sha256', this.JWT_SECRET)
+      .createHmac('sha256', getJwtSecret())
       .update(data)
       .digest('base64url');
   }

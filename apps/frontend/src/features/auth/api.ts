@@ -1,6 +1,27 @@
 import { useMutation, useQuery } from '@tanstack/react-query';
+import axios from 'axios';
 import { http } from '../../lib/http';
 import { apiKeys } from '../../lib/keys';
+
+const getLoginErrorMessage = (error: unknown): string => {
+  if (axios.isAxiosError(error)) {
+    const status = error.response?.status;
+    const message = error.response?.data?.message;
+    if (status === 404) {
+      return 'Login service not found. Check that the API URL is correct.';
+    }
+    if (typeof message === 'string') {
+      return message;
+    }
+    if (status === 401) {
+      return 'Invalid email or password';
+    }
+  }
+  if (error instanceof Error) {
+    return error.message;
+  }
+  return 'Login failed';
+};
 
 export interface LoginCredentials {
   email: string;
@@ -29,8 +50,12 @@ export interface Permissions {
 export const useLogin = () => {
   return useMutation({
     mutationFn: async (credentials: LoginCredentials): Promise<LoginResponse> => {
-      const response = await http.post<LoginResponse>('/auth/login', credentials);
-      return response.data;
+      try {
+        const response = await http.post<LoginResponse>('/auth/login', credentials);
+        return response.data;
+      } catch (error) {
+        throw new Error(getLoginErrorMessage(error));
+      }
     },
   });
 };

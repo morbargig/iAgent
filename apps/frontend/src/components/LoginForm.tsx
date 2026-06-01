@@ -214,6 +214,14 @@ export const LoginForm: React.FC<LoginFormProps> = ({
             </Alert>
           )}
 
+          {!isMockMode && (
+            <Alert severity="info" sx={{ mb: 3 }}>
+              <Typography variant="body2">
+                <strong>Demo login:</strong> demo@iagent.com / demo — or test@iagent.com / test
+              </Typography>
+            </Alert>
+          )}
+
           {/* Error Alert */}
           {error && (
             <Alert

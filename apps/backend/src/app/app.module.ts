@@ -27,8 +27,8 @@ import { environment } from '../environments/environment';
     HttpModule,
     PassportModule,
     JwtModule.register({
-      secret: process.env.JWT_SECRET || 'demo-secret-key-for-development',
-      signOptions: { expiresIn: '1d' },
+      secret: environment.jwt.secret,
+      signOptions: { expiresIn: environment.jwt.expiresIn },
     }),
     MongooseModule.forRootAsync({
       useFactory: () => {

@@ -62,6 +62,7 @@ jobs:
           VITE_BASE_URL: ${{ env.BASE_URL }}
           VITE_API_BASE_URL: https://iagent-k0dx.onrender.com/api
           VITE_BASE_API_URL: https://iagent-k0dx.onrender.com/api
+          VITE_ENABLE_MOCK_MODE: "false"
           VITE_ENVIRONMENT: production
           NODE_ENV: production
           NX_CLOUD_DISTRIBUTED_EXECUTION: "false"

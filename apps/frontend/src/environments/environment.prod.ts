@@ -23,6 +23,6 @@ export const environment: Environment = {
 
   features: {
     ...baseEnvironment.features,
-    enableMockMode: getEnvBoolean('VITE_ENABLE_MOCK_MODE', true),
+    enableMockMode: getEnvBoolean('VITE_ENABLE_MOCK_MODE', false),
   },
 };

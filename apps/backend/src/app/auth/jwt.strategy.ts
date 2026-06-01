@@ -1,12 +1,15 @@
 import { Injectable } from '@nestjs/common';
 import { PassportStrategy } from '@nestjs/passport';
 import { ExtractJwt, Strategy } from 'passport-jwt';
+import { getJwtSecret } from './jwt-secret.js';
 
 export interface JwtPayload {
-  sub: string; // subject (user ID)
+  sub: string;
+  userId?: string;
   email?: string;
-  iat?: number; // issued at
-  exp?: number; // expires at
+  role?: string;
+  iat?: number;
+  exp?: number;
 }
 
 @Injectable()
@@ -15,7 +18,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     super({
       jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
       ignoreExpiration: true, // For demo purposes - in production set to false
-      secretOrKey: process.env.JWT_SECRET || 'demo-secret-key-for-development', // In production, use environment variable
+      secretOrKey: getJwtSecret(),
       passReqToCallback: true, // Pass request to validate method
     });
   }
@@ -54,8 +57,9 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     // In production, you might want to check if user exists in database
     // Return user information from JWT payload
     return {
-      userId: payload.sub,
+      userId: payload.sub || payload.userId || '',
       email: payload.email,
+      role: payload.role,
     };
   }
 } 

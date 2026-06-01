@@ -1,4 +1,5 @@
 import { Controller, Get, Post, Body, HttpStatus, BadRequestException } from '@nestjs/common';
+import { Public } from '../decorators/public.decorator';
 import {
   ApiTags,
   ApiOperation,
@@ -16,6 +17,7 @@ import { PermissionsDto } from '../dto/chat.dto';
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
+  @Public()
   @Post('login')
   @ApiOperation({
     summary: 'User login',
