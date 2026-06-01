@@ -38,6 +38,11 @@ jobs:
     steps:
       - name: 📥 Checkout repository
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: 🧭 Set Nx affected SHAs
+        uses: nrwl/nx-set-shas@v4
 
       - name: 🔧 Setup Node.js ${{ env.NODE_VERSION }}
         uses: actions/setup-node@v4
@@ -56,8 +61,28 @@ jobs:
           restore-keys: |
             nx-${{ runner.os }}-${{ hashFiles('**/package-lock.json') }}-
 
+      - name: 🧭 Check if backend is affected
+        id: affected
+        run: |
+          if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+            echo "affected=true" >> "$GITHUB_OUTPUT"
+            echo "Manual dispatch: deploying backend"
+            exit 0
+          fi
+
+          AFFECTED_PROJECTS="$(npm exec nx -- show projects --affected --base="$NX_BASE" --head="$NX_HEAD")"
+          echo "Affected projects:"
+          echo "$AFFECTED_PROJECTS"
+
+          if echo "$AFFECTED_PROJECTS" | grep -Fxq "@iagent/backend"; then
+            echo "affected=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "affected=false" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: 🏗️ Build backend for production
-        run: npx nx build @iagent/backend --configuration=production --no-cloud
+        if: steps.affected.outputs.affected == 'true'
+        run: npm exec nx -- build @iagent/backend --configuration=production --no-cloud
         env:
           NODE_ENV: production
           NX_CLOUD_DISTRIBUTED_EXECUTION: "false"
@@ -65,6 +90,7 @@ jobs:
           NX_CLOUD_NO_ACCESS: "true"
 
       - name: 📊 Verify build output
+        if: steps.affected.outputs.affected == 'true'
         run: |
           echo "📊 Build verification:"
           echo "📁 Build directory: dist/apps/backend"
@@ -81,9 +107,11 @@ jobs:
           ls -la dist/apps/backend | head -20
 
       - name: 🐳 Set up Docker Buildx
+        if: steps.affected.outputs.affected == 'true'
         uses: docker/setup-buildx-action@v3
 
       - name: 🔎 Verify Docker Hub secrets
+        if: steps.affected.outputs.affected == 'true'
         run: |
           if [[ -z "${{ secrets.DOCKER_USERNAME }}" ]]; then
             echo "❌ DOCKER_USERNAME secret is not configured"
@@ -96,12 +124,14 @@ jobs:
           fi
 
       - name: 🔐 Log in to Docker Hub
+        if: steps.affected.outputs.affected == 'true'
         uses: docker/login-action@v3
         with:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_TOKEN }}
 
       - name: 🏷️ Generate Docker image metadata
+        if: steps.affected.outputs.affected == 'true'
         id: docker-meta
         uses: docker/metadata-action@v5
         with:
@@ -111,6 +141,7 @@ jobs:
             type=sha,prefix=sha-
 
       - name: 🐳 Build and push backend Docker image
+        if: steps.affected.outputs.affected == 'true'
         uses: docker/build-push-action@v6
         with:
           context: .
@@ -122,6 +153,7 @@ jobs:
           cache-to: type=gha,mode=max
 
       - name: 🚀 Trigger Render Deployment
+        if: steps.affected.outputs.affected == 'true'
         run: |
           if [[ -z "${{ env.RENDER_DEPLOY_HOOK }}" ]]; then
             echo "❌ RENDER_DEPLOY_HOOK secret is not configured"
@@ -160,6 +192,7 @@ jobs:
           fi
 
       - name: 📋 Deployment summary
+        if: steps.affected.outputs.affected == 'true'
         run: |
           echo "📋 Deployment Summary:"
           echo "✅ Backend deployment triggered successfully!"
@@ -167,3 +200,7 @@ jobs:
           echo "🕐 Triggered at: $(date)"
           echo "📝 Commit: ${{ github.sha }}"
           echo "👤 Triggered by: ${{ github.actor }}"
+
+      - name: ⏭️ Skip deployment summary
+        if: steps.affected.outputs.affected != 'true'
+        run: echo "Backend is not affected; skipping deployment."

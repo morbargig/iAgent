@@ -48,7 +48,7 @@ export const environment: Environment = {
   },
   agentApi: {
     ...baseEnvironment.agentApi,
-    url: process.env.AGENT_API_URL || 'https://iagent-api.onrender.com'
+    url: process.env.AGENT_API_URL || 'https://iagent-latest-ywr0.onrender.com'
   }
 };
 

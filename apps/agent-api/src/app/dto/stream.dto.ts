@@ -1,6 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { IsString, IsEnum, IsOptional, IsArray, IsDateString, IsBoolean } from 'class-validator';
-import type { Message } from '@iagent/chat-types';
 
 export class AuthTokenDto {
   @ApiProperty({
@@ -231,4 +230,3 @@ export class ErrorResponseDto {
   })
   timestamp!: string;
 }
-

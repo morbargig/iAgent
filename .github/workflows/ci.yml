@@ -2,39 +2,41 @@ name: 🔍 Continuous Integration
 
 on:
   push:
-    branches: [ main, develop ]
+    branches: [main, develop]
   pull_request:
-    branches: [ main ]
+    branches: [main]
   workflow_dispatch:
 
-# Cancel previous runs if a new commit is pushed
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
 env:
-  NODE_VERSION: '20'
-  # Disable Nx Cloud completely
-  NX_CLOUD_DISTRIBUTED_EXECUTION: 'false'
-  NX_CLOUD_NO_ACCESS: 'true'
-  NX_SKIP_CLOUD_CACHE: 'true'
+  NODE_VERSION: "20"
+  NX_CLOUD_DISTRIBUTED_EXECUTION: "false"
+  NX_CLOUD_NO_ACCESS: "true"
+  NX_SKIP_CLOUD_CACHE: "true"
 
 jobs:
-  # Code Quality and Type Checking
   quality:
-    name: 🧹 Code Quality & Type Check
+    name: 🧹 Affected Quality & Type Check
     runs-on: ubuntu-latest
     timeout-minutes: 10
-    
+
     steps:
       - name: 📥 Checkout repository
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: 🧭 Set Nx affected SHAs
+        uses: nrwl/nx-set-shas@v4
 
       - name: 🔧 Setup Node.js ${{ env.NODE_VERSION }}
         uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
-          cache: 'npm'
+          cache: "npm"
 
       - name: 📦 Install dependencies
         run: npm ci --prefer-offline --no-audit
@@ -47,44 +49,34 @@ jobs:
           restore-keys: |
             nx-${{ runner.os }}-${{ hashFiles('**/package-lock.json') }}-
 
-      - name: 🧹 Lint Frontend
+      - name: 🧹 Lint affected projects
         continue-on-error: true
         run: |
-          npx nx lint frontend --skip-nx-cache 2>&1 | tee /tmp/lint-frontend.log || true
-          echo "✅ Lint completed (React Compiler warnings/errors are acceptable for now)"
+          npm exec nx -- affected -t lint --base="$NX_BASE" --head="$NX_HEAD" --skip-nx-cache
+          echo "✅ Affected lint completed"
 
-      - name: 🧹 Lint Backend
-        continue-on-error: true
-        run: |
-          npx nx lint backend --skip-nx-cache 2>&1 | tee /tmp/lint-backend.log || true
-          echo "✅ Lint completed (warnings are acceptable)"
+      - name: 🔧 Typecheck affected projects
+        run: npm exec nx -- affected -t typecheck --base="$NX_BASE" --head="$NX_HEAD" --skip-nx-cache
 
-      - name: 🔧 TypeScript check Frontend
-        run: npx nx typecheck frontend --skip-nx-cache
-
-      - name: 🔧 TypeScript check Backend
-        run: npx nx typecheck backend --skip-nx-cache
-
-  # Unit Tests
   test:
-    name: 🧪 Unit Tests
+    name: 🧪 Affected Unit Tests
     runs-on: ubuntu-latest
     timeout-minutes: 15
-    
-    strategy:
-      matrix:
-        project: ['frontend', 'backend']
-      fail-fast: false
-    
+
     steps:
       - name: 📥 Checkout repository
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: 🧭 Set Nx affected SHAs
+        uses: nrwl/nx-set-shas@v4
 
       - name: 🔧 Setup Node.js ${{ env.NODE_VERSION }}
         uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
-          cache: 'npm'
+          cache: "npm"
 
       - name: 📦 Install dependencies
         run: npm ci --prefer-offline --no-audit
@@ -97,45 +89,41 @@ jobs:
           restore-keys: |
             nx-${{ runner.os }}-${{ hashFiles('**/package-lock.json') }}-
 
-      - name: 🧪 Run tests for ${{ matrix.project }}
-        continue-on-error: ${{ matrix.project == 'frontend' }}
-        run: |
-          npx nx test ${{ matrix.project }} --coverage --watchAll=false --passWithNoTests --skip-nx-cache || echo "⚠️  Tests found errors, but continuing for frontend"
-          echo "✅ Tests completed"
+      - name: 🧪 Test affected projects
+        run: npm exec nx -- affected -t test --base="$NX_BASE" --head="$NX_HEAD" --passWithNoTests --skip-nx-cache
         env:
           CI: true
-          NX_CLOUD_DISTRIBUTED_EXECUTION: 'false'
+          NX_CLOUD_DISTRIBUTED_EXECUTION: "false"
 
-      - name: 📊 Upload test coverage
-        if: matrix.project == 'frontend'
+      - name: 📊 Upload frontend coverage
+        if: ${{ hashFiles('coverage/apps/frontend/**') != '' }}
         uses: codecov/codecov-action@v4
         with:
-          directory: ./coverage/apps/${{ matrix.project }}
-          flags: ${{ matrix.project }}
-          name: ${{ matrix.project }}-coverage
+          directory: ./coverage/apps/frontend
+          flags: frontend
+          name: frontend-coverage
           fail_ci_if_error: false
 
-  # Build Verification
   build:
-    name: 🏗️ Build Verification
+    name: 🏗️ Affected Build Verification
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 15
     needs: [quality]
-    
-    strategy:
-      matrix:
-        project: ['frontend', 'backend']
-      fail-fast: false
-    
+
     steps:
       - name: 📥 Checkout repository
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: 🧭 Set Nx affected SHAs
+        uses: nrwl/nx-set-shas@v4
 
       - name: 🔧 Setup Node.js ${{ env.NODE_VERSION }}
         uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
-          cache: 'npm'
+          cache: "npm"
 
       - name: 📦 Install dependencies
         run: npm ci --prefer-offline --no-audit
@@ -148,44 +136,37 @@ jobs:
           restore-keys: |
             nx-${{ runner.os }}-${{ hashFiles('**/package-lock.json') }}-
 
-      - name: 🏗️ Build ${{ matrix.project }}
-        run: |
-          if [ "${{ matrix.project }}" == "frontend" ]; then
-            npx nx build @iagent/frontend --configuration=production --skip-nx-cache
-          else
-            npx nx build @iagent/backend --configuration=production --skip-nx-cache
-          fi
+      - name: 🏗️ Build affected projects
+        run: npm exec nx -- affected -t build --base="$NX_BASE" --head="$NX_HEAD" --configuration=production --skip-nx-cache
         env:
-          # GitHub Pages environment variables for frontend
-          VITE_BASE_URL: '/iAgent/'
-          VITE_API_BASE_URL: '/iAgent/api'
-          VITE_ENVIRONMENT: 'production'
-          NX_CLOUD_DISTRIBUTED_EXECUTION: 'false'
-          NX_SKIP_CLOUD_CACHE: 'true'
-          NX_CLOUD_NO_ACCESS: 'true'
+          VITE_BASE_URL: "/iAgent/"
+          VITE_API_BASE_URL: "/iAgent/api"
+          VITE_ENVIRONMENT: "production"
+          NX_CLOUD_DISTRIBUTED_EXECUTION: "false"
+          NX_SKIP_CLOUD_CACHE: "true"
+          NX_CLOUD_NO_ACCESS: "true"
 
-      - name: 📊 Analyze build size
-        if: matrix.project == 'frontend'
+      - name: 📊 Analyze frontend build size
+        if: ${{ hashFiles('dist/apps/frontend/index.html') != '' }}
         run: |
           echo "📊 Frontend build analysis:"
           du -sh dist/apps/frontend
           echo "📄 Main files:"
           find dist/apps/frontend -name "*.js" -o -name "*.css" | head -10
 
-      - name: 📋 Upload build artifacts
-        if: matrix.project == 'frontend'
+      - name: 📋 Upload frontend build artifact
+        if: ${{ hashFiles('dist/apps/frontend/index.html') != '' }}
         uses: actions/upload-artifact@v4
         with:
           name: frontend-build
           path: dist/apps/frontend
           retention-days: 7
 
-  # Security Scan
   security:
     name: 🔒 Security Scan
     runs-on: ubuntu-latest
     timeout-minutes: 5
-    
+
     steps:
       - name: 📥 Checkout repository
         uses: actions/checkout@v4
@@ -194,7 +175,7 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
-          cache: 'npm'
+          cache: "npm"
 
       - name: 📦 Install dependencies
         run: npm ci --prefer-offline --no-audit
@@ -202,20 +183,19 @@ jobs:
       - name: 🔒 Run npm audit
         run: npm audit --audit-level=high --no-fund
 
-  # CI Success Check
   ci-success:
     name: ✅ CI Pipeline Success
     runs-on: ubuntu-latest
     needs: [quality, test, build, security]
     if: always()
-    
+
     steps:
       - name: ✅ All checks passed
         if: ${{ !contains(needs.*.result, 'failure') && !contains(needs.*.result, 'cancelled') }}
         run: |
           echo "✅ All CI checks passed successfully!"
           echo "🎉 Code is ready for deployment!"
-          
+
       - name: ❌ Some checks failed
         if: ${{ contains(needs.*.result, 'failure') || contains(needs.*.result, 'cancelled') }}
         run: |

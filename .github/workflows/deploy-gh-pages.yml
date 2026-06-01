@@ -37,6 +37,11 @@ jobs:
     steps:
       - name: 📥 Checkout repository
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: 🧭 Set Nx affected SHAs
+        uses: nrwl/nx-set-shas@v4
 
       - name: 🔧 Setup Node.js ${{ env.NODE_VERSION }}
         uses: actions/setup-node@v4
@@ -55,8 +60,28 @@ jobs:
           restore-keys: |
             nx-${{ runner.os }}-${{ hashFiles('**/package-lock.json') }}-
 
+      - name: 🧭 Check if frontend is affected
+        id: affected
+        run: |
+          if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+            echo "affected=true" >> "$GITHUB_OUTPUT"
+            echo "Manual dispatch: deploying frontend"
+            exit 0
+          fi
+
+          AFFECTED_PROJECTS="$(npm exec nx -- show projects --affected --base="$NX_BASE" --head="$NX_HEAD")"
+          echo "Affected projects:"
+          echo "$AFFECTED_PROJECTS"
+
+          if echo "$AFFECTED_PROJECTS" | grep -Fxq "@iagent/frontend"; then
+            echo "affected=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "affected=false" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: 🏗️ Build frontend for production
-        run: npx nx build @iagent/frontend --configuration=production --no-cloud
+        if: steps.affected.outputs.affected == 'true'
+        run: npm exec nx -- build @iagent/frontend --configuration=production --no-cloud
         env:
           # GitHub Pages specific environment variables
           VITE_BASE_URL: ${{ env.BASE_URL }}
@@ -70,6 +95,7 @@ jobs:
           NX_CLOUD_NO_ACCESS: "true"
 
       - name: 📊 Verify build output
+        if: steps.affected.outputs.affected == 'true'
         run: |
           echo "📊 Build verification:"
           echo "📁 Build directory: dist/apps/frontend"
@@ -88,6 +114,7 @@ jobs:
           ls -la dist/apps/frontend
 
       - name: 🔧 Prepare deployment files
+        if: steps.affected.outputs.affected == 'true'
         run: |
           cd dist/apps/frontend
 
@@ -122,6 +149,7 @@ jobs:
           echo "✅ Deployment files prepared"
 
       - name: 🚀 Deploy to GitHub Pages
+        if: steps.affected.outputs.affected == 'true'
         id: deployment
         uses: peaceiris/actions-gh-pages@v3
         with:
@@ -130,6 +158,7 @@ jobs:
           # Do not set CNAME as we want the default GitHub Pages URL
 
       - name: 📋 Deployment summary
+        if: steps.affected.outputs.affected == 'true'
         run: |
           echo "📋 Deployment Summary:"
           echo "✅ Frontend deployed successfully!"
@@ -140,6 +169,7 @@ jobs:
           echo "👤 Triggered by: ${{ github.actor }}"
 
       - name: 🌐 Verify deployment
+        if: steps.affected.outputs.affected == 'true'
         run: |
           echo "🌐 Verifying deployment accessibility..."
           DEPLOYMENT_URL="https://${{ github.repository_owner }}.github.io/iAgent/"
@@ -157,3 +187,7 @@ jobs:
             echo "🌐 Please check manually: $DEPLOYMENT_URL"
             echo "ℹ️ It may take a few minutes for GitHub Pages to update"
           fi
+
+      - name: ⏭️ Skip deployment summary
+        if: steps.affected.outputs.affected != 'true'
+        run: echo "Frontend is not affected; skipping deployment."

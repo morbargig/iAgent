@@ -18,9 +18,5 @@
     "src/**/*.ts"
   ],
   "exclude": [],
-  "references": [
-    {
-      "path": "../../libs/chat-types/tsconfig.lib.json"
-    }
-  ]
+  "references": []
 }

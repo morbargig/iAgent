@@ -1,6 +1,6 @@
 # Multi-stage build for optimal image size
 # Stage 1: Build stage
-FROM node:18-alpine AS builder
+FROM node:20-alpine AS builder
 
 # Set working directory
 WORKDIR /app
@@ -33,15 +33,18 @@ COPY apps/agent-api/ ./apps/agent-api/
 
 # Set build environment variables
 ENV NODE_ENV=production
+ENV NX_CLOUD_NO_ACCESS=true
+ENV NX_SKIP_CLOUD_CACHE=true
+ENV NX_CLOUD_DISTRIBUTED_EXECUTION=false
 
 # Sync TypeScript project references before building
 RUN npx nx sync
 
 # Build the application using Nx (it will automatically build dependencies)
-RUN npx nx build agent-api --configuration=production
+RUN npx nx build @iagent/agent-api --configuration=production --no-cloud
 
 # Stage 2: Runtime stage
-FROM node:18-alpine AS runtime
+FROM node:20-alpine AS runtime
 
 # Install dumb-init for proper signal handling
 RUN apk add --no-cache dumb-init
@@ -82,4 +85,3 @@ ENV HOST=0.0.0.0
 
 # Start the application
 CMD ["node", "main.js"]
-

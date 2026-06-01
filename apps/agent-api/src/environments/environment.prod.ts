@@ -9,7 +9,7 @@ export const environment: Environment = {
   production: true,
   port,
   host,
-  apiUrl: process.env.API_URL || 'https://iagent-api.onrender.com/api',
+  apiUrl: process.env.API_URL || 'https://iagent-latest-ywr0.onrender.com/api',
 
   ...baseEnvironment,
 
@@ -23,7 +23,7 @@ export const environment: Environment = {
     enabled: process.env.ENABLE_SWAGGER !== 'false',
     title: 'iAgent Agent API - Production',
     description: 'Production environment API documentation for streaming and mock generation',
-    serverUrl: process.env.RENDER_EXTERNAL_URL || process.env.API_URL || 'https://iagent-api.onrender.com'
+    serverUrl: process.env.RENDER_EXTERNAL_URL || process.env.API_URL || 'https://iagent-latest-ywr0.onrender.com'
   },
 
   logging: {

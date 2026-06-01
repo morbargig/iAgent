@@ -8,12 +8,10 @@ import {
   ApiConsumes,
   ApiProduces,
   ApiExtraModels,
-  getSchemaPath,
 } from '@nestjs/swagger';
 import { ChatRequestDto, StreamTokenDto, ErrorResponseDto, AuthTokenDto, ToolSelectionDto, ChatMessageDto, type ChatMessage } from './dto/stream.dto';
 import { MockGenerationService } from './services/mock-generation.service';
 import { StreamingService } from './services/streaming.service';
-import { environment } from '../environments/environment';
 
 @ApiTags('Agent API')
 @ApiExtraModels(ChatRequestDto, StreamTokenDto, ErrorResponseDto, AuthTokenDto, ToolSelectionDto, ChatMessageDto)
