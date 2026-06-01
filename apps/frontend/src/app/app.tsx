@@ -28,7 +28,7 @@ import {
   buildParsedMessageContent,
 } from "@iagent/chat-types";
 import type { StreamingCompletionPayload } from "@iagent/shared-renderer";
-import { StreamingClient } from "../utils/streaming-client";
+import { StreamingClient, resolveStreamAccumulatedContent } from "../utils/streaming-client";
 import { convertMongoMessageToMessage } from "../utils/chunkConverter";
 import { useMockMode } from "../hooks/useMockMode";
 import { useAppLocalStorage, useAppSessionStorage } from "../hooks/storage";
@@ -639,7 +639,11 @@ const App = () => {
           await streamingClientRef.current.streamChat(
             updatedConversation.messages,
             (token: string, metadata?: Record<string, any>) => {
-              accumulatedContent += token;
+              accumulatedContent = resolveStreamAccumulatedContent(
+                accumulatedContent,
+                token,
+                metadata
+              );
               accumulatedStreamContentRef.current = accumulatedContent;
               
               if (metadata?.sections) {
@@ -1054,7 +1058,11 @@ const App = () => {
       await streamingClientRef.current.streamChat(
         updatedConversation.messages,
         (token: string, metadata?: Record<string, any>) => {
-          accumulatedContent += token;
+          accumulatedContent = resolveStreamAccumulatedContent(
+            accumulatedContent,
+            token,
+            metadata
+          );
           accumulatedStreamContentRef.current = accumulatedContent;
           
           // Update sections if provided in metadata
@@ -1822,7 +1830,7 @@ const App = () => {
       await streamingClientRef.current.streamChat(
         messagesToSend,
         (token: string, metadata?: any) => {
-          currentContent += token;
+          currentContent = resolveStreamAccumulatedContent(currentContent, token, metadata);
           accumulatedStreamContentRef.current = currentContent;
 
           updateLoadedConversation(conversation.id, (conv) => ({

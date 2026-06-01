@@ -1,7 +1,7 @@
 import { useCallback } from "react";
 import { createMessage, updateMessageContent, type Message, type Conversation, buildParsedMessageContent, type ParsedMessageContent } from "@iagent/chat-types";
 import type { StreamingCompletionPayload } from "@iagent/shared-renderer";
-import { StreamingClient } from "../utils/streaming-client";
+import { StreamingClient, resolveStreamAccumulatedContent } from "../utils/streaming-client";
 import { generateUniqueId } from "../utils/id-generator";
 import { useSaveMessage, useCreateChat } from "../features/chats/api";
 import { getBaseApiUrl } from "../config/config";
@@ -202,7 +202,11 @@ export const useSendMessage = ({
       await streamingClientRef.current.streamChat(
         updatedConversation.messages,
         (token: string, metadata?: Record<string, any>) => {
-          accumulatedContent += token;
+          accumulatedContent = resolveStreamAccumulatedContent(
+            accumulatedContent,
+            token,
+            metadata
+          );
           accumulatedStreamContentRef.current = accumulatedContent;
           
           if (metadata?.sections) {

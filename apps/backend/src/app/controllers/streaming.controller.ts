@@ -296,6 +296,7 @@ export class StreamingController {
 
             ingestBytes(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk));
             callback(null, chunk);
+            flushStreamingResponse(res);
           },
           flush(callback) {
             flushParseBuffer();

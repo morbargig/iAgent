@@ -8,6 +8,20 @@ import {
 } from '@iagent/shared-renderer';
 import type { Message } from '@iagent/chat-types';
 
+const yieldToMain = (): Promise<void> =>
+  new Promise((resolve) => {
+    setTimeout(resolve, 0);
+  });
+
+export const resolveStreamAccumulatedContent = (
+  current: string,
+  token: string,
+  metadata?: { cumulativeContent?: string }
+): string =>
+  typeof metadata?.cumulativeContent === 'string'
+    ? metadata.cumulativeContent
+    : current + token;
+
 export class StreamingClient {
   private abortController: AbortController | null = null;
 
@@ -56,10 +70,13 @@ export class StreamingClient {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          ...(authToken && { 'Authorization': `Bearer ${authToken}` })
+          Accept: 'application/x-ndjson',
+          'Cache-Control': 'no-cache',
+          ...(authToken && { Authorization: `Bearer ${authToken}` }),
         },
         body: JSON.stringify(requestBody),
         signal: this.abortController.signal,
+        cache: 'no-store',
       });
       
       if (!response.ok) {
@@ -191,6 +208,7 @@ export class StreamingClient {
                           : undefined,
                         sections: tokenSection ? { ...sections } : undefined,
                       });
+                      await yieldToMain();
                       break;
                       
                     case 'progress':

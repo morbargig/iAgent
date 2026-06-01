@@ -27,7 +27,7 @@ export const baseEnvironment: Omit<Environment, 'production' | 'port' | 'host' |
   cors: {
     origins: getCorsOrigins(),
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'Cache-Control', 'x-user-id'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'Cache-Control', 'Accept', 'x-user-id'],
     credentials: true
   },
 
