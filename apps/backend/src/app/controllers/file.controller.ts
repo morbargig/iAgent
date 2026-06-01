@@ -14,7 +14,6 @@ import {
   BadRequestException,
   NotFoundException,
   UseGuards,
-  Logger,
 } from '@nestjs/common';
 import { FileInterceptor, FilesInterceptor } from '@nestjs/platform-express';
 import type { Response } from 'express';
@@ -28,8 +27,6 @@ import { TextBody } from '../decorators/text-body.decorator';
 @ApiTags('Files')
 @Controller('files')
 export class FileController {
-  private readonly logger = new Logger(FileController.name);
-  
   constructor(private readonly fileService: FileService) { }
 
   @Post('upload')

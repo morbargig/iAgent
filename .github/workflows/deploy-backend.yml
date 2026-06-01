@@ -21,8 +21,7 @@ concurrency:
 
 env:
   NODE_VERSION: "20"
-  # Render deploy hook URL (should be stored as GitHub secret: RENDER_DEPLOY_HOOK)
-  RENDER_DEPLOY_HOOK: ${{ secrets.RENDER_DEPLOY_HOOK || 'https://api.render.com/deploy/srv-d45kgn3e5dus73c7cp2g?key=YVXFP5NeUKw' }}
+  RENDER_DEPLOY_HOOK: ${{ secrets.RENDER_DEPLOY_HOOK }}
   # Disable Nx Cloud completely
   NX_CLOUD_DISTRIBUTED_EXECUTION: "false"
   NX_CLOUD_NO_ACCESS: "true"
@@ -83,6 +82,11 @@ jobs:
 
       - name: 🚀 Trigger Render Deployment
         run: |
+          if [[ -z "${{ env.RENDER_DEPLOY_HOOK }}" ]]; then
+            echo "❌ RENDER_DEPLOY_HOOK secret is not configured"
+            exit 1
+          fi
+
           echo "🚀 Triggering Render deployment..."
           
           RESPONSE=$(curl -X POST "${{ env.RENDER_DEPLOY_HOOK }}" \
@@ -113,5 +117,4 @@ jobs:
           echo "🕐 Triggered at: $(date)"
           echo "📝 Commit: ${{ github.sha }}"
           echo "👤 Triggered by: ${{ github.actor }}"
-          echo "🔗 Deploy Hook: ${{ env.RENDER_DEPLOY_HOOK }}"
 
