@@ -607,8 +607,8 @@ const App = () => {
             "assistant",
             "",
             true,
-            messageFilterSnapshot.filterId,
-            messageFilterSnapshot
+            filterId || null,
+            filterVersion || null
           );
           
           const lastMessageTimestamp = messagesForStreaming.length > 0 
@@ -2206,4 +2206,3 @@ const App = () => {
 };
 
 export default App;
-

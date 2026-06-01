@@ -21,7 +21,7 @@ export class AuthController {
   @Post('login')
   @ApiOperation({
     summary: 'User login',
-    description: 'Authenticate user and receive JWT token. Demo credentials available: demo@iagent.com/demo, test@iagent.com/test'
+    description: 'Authenticate user and receive JWT token. Demo: demo@iagent.com / demo'
   })
   @ApiBody({
     schema: {

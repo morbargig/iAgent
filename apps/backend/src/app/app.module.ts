@@ -63,7 +63,7 @@ import { environment } from '../environments/environment';
 export class AppModule {
   constructor() {
     console.log('🚀 MongoDB connection enabled');
-    
+
     // Log file upload limits
     console.log('📤 File Upload Limits:');
     console.log(`   - Max file size: ${(environment.fileUpload.maxFileSize / 1024 / 1024).toFixed(2)} MB`);

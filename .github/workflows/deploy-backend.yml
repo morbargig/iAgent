@@ -113,7 +113,32 @@ jobs:
           else
             echo "⚠️ Render deployment hook returned status: $HTTP_CODE"
             echo "📄 Response: $BODY"
+            exit 1
           fi
+
+      - name: ✅ Verify demo login on production
+        run: |
+          API_URL="${RENDER_API_URL:-https://iagent-k0dx.onrender.com/api}"
+          echo "Checking demo login at $API_URL/auth/login"
+
+          for attempt in $(seq 1 18); do
+            HTTP_CODE=$(curl -s -o /tmp/login-response.json -w "%{http_code}" \
+              -X POST "$API_URL/auth/login" \
+              -H "Content-Type: application/json" \
+              -d '{"email":"demo@iagent.com","password":"demo"}')
+
+            if [[ "$HTTP_CODE" == "200" ]] || [[ "$HTTP_CODE" == "201" ]]; then
+              echo "✅ Demo login works on production (attempt $attempt)"
+              exit 0
+            fi
+
+            echo "Attempt $attempt: HTTP $HTTP_CODE — waiting for Render deploy..."
+            cat /tmp/login-response.json 2>/dev/null || true
+            sleep 20
+          done
+
+          echo "❌ Demo login still failing after deploy"
+          exit 1
 
       - name: 📋 Deployment summary
         run: |
