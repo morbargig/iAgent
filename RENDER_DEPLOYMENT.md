@@ -1,5 +1,16 @@
 # Render Deployment Guide
 
+## Docker settings (required for demo login)
+
+In Render → your service → **Settings**:
+
+- **Dockerfile Path:** `apps/backend/Dockerfile`
+- **Docker Context:** `.` (repo root, not `apps/backend`)
+
+Then **Manual Deploy → Clear build cache & deploy**.
+
+Demo login: `demo@iagent.com` / `demo`
+
 ## Required Environment Variables
 
 Your Render deployment is failing because **required environment variables are not set**. You must configure these in your Render dashboard:
