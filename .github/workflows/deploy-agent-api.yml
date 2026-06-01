@@ -178,7 +178,7 @@ jobs:
           echo "📡 Response status: $HTTP_CODE"
           echo "📄 Response body: $BODY"
 
-          if [[ "$HTTP_CODE" == "200" ]] || [[ "$HTTP_CODE" == "201" ]]; then
+          if [[ "$HTTP_CODE" == "200" ]] || [[ "$HTTP_CODE" == "201" ]] || [[ "$HTTP_CODE" == "202" ]]; then
             echo "✅ Render deployment triggered successfully!"
             echo "🔗 Deployment ID: $(echo "$BODY" | grep -o '"id":"[^"]*"' | cut -d'"' -f4 || echo 'N/A')"
           else
