@@ -7,7 +7,7 @@ describe('markup renderer', () => {
     const parsed = buildParsedMessageContent(markdown);
 
     expect(parsed.blocks).toMatchObject([
-      { type: 'table', presentation: 'citation', caption: 'Weekly Status' },
+      { type: 'app-table', presentation: 'citation', caption: 'Weekly Status' },
       { type: 'quote', text: 'Remember to review' },
     ]);
 
