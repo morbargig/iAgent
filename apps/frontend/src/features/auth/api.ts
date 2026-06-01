@@ -47,6 +47,11 @@ export interface Permissions {
   };
 }
 
+const getAuthToken = (): string | null => {
+  if (typeof window === 'undefined') return null;
+  return sessionStorage.getItem('session-token');
+};
+
 export const useLogin = () => {
   return useMutation({
     mutationFn: async (credentials: LoginCredentials): Promise<LoginResponse> => {
@@ -69,6 +74,6 @@ export const usePermissions = () => {
     },
     staleTime: 5 * 60 * 1000,
     retry: 2,
+    enabled: !!getAuthToken(),
   });
 };
-

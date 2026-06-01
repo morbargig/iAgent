@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, HttpStatus, BadRequestException } from '@nestjs/common';
+import { Controller, Get, Post, Body, HttpStatus, BadRequestException, UseGuards } from '@nestjs/common';
 import { Public } from '../decorators/public.decorator';
 import {
   ApiTags,
@@ -6,11 +6,14 @@ import {
   ApiResponse,
   ApiBody,
   getSchemaPath,
-  ApiUnauthorizedResponse
+  ApiUnauthorizedResponse,
+  ApiBearerAuth
 } from '@nestjs/swagger';
 import { AuthService } from '../auth/auth.service';
 import type { LoginRequest, LoginResponse } from '../auth/auth.service';
 import { PermissionsDto } from '../dto/chat.dto';
+import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { User, type AuthUser } from '../decorators/user.decorator';
 
 @ApiTags('Authentication')
 @Controller('auth')
@@ -59,6 +62,8 @@ export class AuthController {
   }
 
   @Get('permissions')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth('JWT-auth')
   @ApiOperation({
     summary: 'Get user permissions',
     description: 'Returns permissions for the authenticated user based on their role'
@@ -74,10 +79,10 @@ export class AuthController {
   @ApiUnauthorizedResponse({
     description: 'Authentication required'
   })
-  getPermissions(): PermissionsDto {
+  getPermissions(@User() user: AuthUser): PermissionsDto {
     return {
-      userId: 'default',
-      role: 'user',
+      userId: user.userId,
+      role: user.role || 'user',
       permissions: {
         canUseToolT: true,
         canUseToolH: true,
@@ -88,4 +93,3 @@ export class AuthController {
     };
   }
 }
-

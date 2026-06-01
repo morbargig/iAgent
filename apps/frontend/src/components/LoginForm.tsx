@@ -8,7 +8,6 @@ import {
   CircularProgress,
   Card,
   CardContent,
-  Divider,
   IconButton,
   InputAdornment,
   Switch,
@@ -58,9 +57,10 @@ export const LoginForm: React.FC<LoginFormProps> = ({
 
     try {
       if (isMockMode) {
-        const email = credentials.email || `mock-user-${Date.now()}@example.com`;
-        const userId = `mock-user-${Date.now()}`;
-        const token = `mock-token-${Date.now()}`;
+        const now = Date.now();
+        const email = credentials.email || `mock-user-${now}@example.com`;
+        const userId = `mock-user-${now}`;
+        const token = `mock-token-${now}`;
         
         await new Promise((resolve) => setTimeout(resolve, 500));
         login(token, userId, email);
@@ -248,7 +248,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({
               variant="outlined"
               slotProps={{
                 input: {
-                  autoComplete: "off",
+                  autoComplete: "email",
                   "data-form-type": "other",
                   "data-lpignore": "true",
                   "data-1p-ignore": "true",
@@ -269,7 +269,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({
               variant="outlined"
               slotProps={{
                 input: {
-                  autoComplete: "off",
+                  autoComplete: "current-password",
                   "data-form-type": "other",
                   "data-lpignore": "true",
                   "data-1p-ignore": "true",
@@ -279,6 +279,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({
                 endAdornment: (
                   <InputAdornment position="end">
                     <IconButton
+                      aria-label={showPassword ? "Hide password" : "Show password"}
                       onClick={() => setShowPassword(!showPassword)}
                       edge="end"
                     >

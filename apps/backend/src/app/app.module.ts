@@ -3,6 +3,7 @@ import { MongooseModule } from '@nestjs/mongoose';
 import { JwtModule } from '@nestjs/jwt';
 import { PassportModule } from '@nestjs/passport';
 import { HttpModule } from '@nestjs/axios';
+import type { StringValue } from 'ms';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { AuthService } from './auth/auth.service';
@@ -28,7 +29,7 @@ import { environment } from '../environments/environment';
     PassportModule,
     JwtModule.register({
       secret: environment.jwt.secret,
-      signOptions: { expiresIn: environment.jwt.expiresIn },
+      signOptions: { expiresIn: environment.jwt.expiresIn as StringValue },
     }),
     MongooseModule.forRootAsync({
       useFactory: () => {

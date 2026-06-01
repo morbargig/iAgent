@@ -3,6 +3,7 @@ import { createParamDecorator, ExecutionContext } from '@nestjs/common';
 export interface AuthUser {
   userId: string;
   email?: string;
+  role?: string;
 }
 
 export const User = createParamDecorator(
@@ -19,4 +20,4 @@ export const UserId = createParamDecorator(
     const request = ctx.switchToHttp().getRequest();
     return request.user?.userId;
   },
-); 
+);
