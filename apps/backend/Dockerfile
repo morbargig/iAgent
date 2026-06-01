@@ -1,6 +1,6 @@
 # Multi-stage build for optimal image size
 # Stage 1: Build stage
-FROM node:18-alpine AS builder
+FROM node:20-alpine AS builder
 
 # Set working directory
 WORKDIR /app
@@ -35,11 +35,15 @@ COPY apps/backend/ ./apps/backend/
 # Sync TypeScript project references before building
 RUN npx nx sync
 
+ENV NX_CLOUD_NO_ACCESS=true
+ENV NX_SKIP_CLOUD_CACHE=true
+ENV NX_CLOUD_DISTRIBUTED_EXECUTION=false
+
 # Build the application using Nx
-RUN npx nx build backend --configuration=production
+RUN npx nx build @iagent/backend --configuration=production --no-cloud
 
 # Stage 2: Runtime stage
-FROM node:18-alpine AS runtime
+FROM node:20-alpine AS runtime
 
 # Install dumb-init for proper signal handling
 RUN apk add --no-cache dumb-init
@@ -76,9 +80,6 @@ ENTRYPOINT ["dumb-init", "--"]
 # Set environment variables with defaults
 ENV NODE_ENV=production
 ENV PORT=3030
-ENV MONGODB_URI=mongodb://localhost:27017/filesdb
-ENV DB_NAME=filesdb
-ENV JWT_SECRET=demo-secret-key-for-development
 
 # Start the application
 CMD ["node", "main.js"]
