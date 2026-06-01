@@ -8,6 +8,10 @@ export interface Environment {
     name: string;
     version: string;
   };
+
+  build: {
+    date: string;
+  };
   
   cors: {
     origins: (string | RegExp)[];

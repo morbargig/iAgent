@@ -45,6 +45,13 @@ jobs:
       - name: 🧭 Set Nx affected SHAs
         uses: nrwl/nx-set-shas@v4
 
+      - name: 🏷️ Set build metadata
+        id: build-meta
+        run: |
+          echo "build_date=$(date -u +"%Y-%m-%dT%H:%M:%SZ")" >> "$GITHUB_OUTPUT"
+          APP_VERSION="$(node -p "require('./package.json').version")"
+          echo "app_version=${APP_VERSION}" >> "$GITHUB_OUTPUT"
+
       - name: 🔧 Setup Node.js ${{ env.NODE_VERSION }}
         uses: actions/setup-node@v4
         with:
@@ -85,6 +92,8 @@ jobs:
         if: steps.affected.outputs.affected == 'true'
         run: npm exec nx -- build @iagent/frontend --configuration=production --no-cloud
         env:
+          BUILD_DATE: ${{ steps.build-meta.outputs.build_date }}
+          APP_VERSION: ${{ steps.build-meta.outputs.app_version }}
           # GitHub Pages specific environment variables
           VITE_BASE_URL: ${{ env.BASE_URL }}
           VITE_API_BASE_URL: https://iagent-k0dx.onrender.com/api

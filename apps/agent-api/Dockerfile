@@ -2,6 +2,9 @@
 # Stage 1: Build stage
 FROM node:20-alpine AS builder
 
+ARG BUILD_DATE
+ARG APP_VERSION
+
 # Set working directory
 WORKDIR /app
 
@@ -21,6 +24,7 @@ COPY apps/agent-api/package.json ./apps/agent-api/
 COPY apps/agent-api/project.json ./apps/agent-api/
 COPY apps/agent-api/tsconfig*.json ./apps/agent-api/
 COPY apps/agent-api/webpack.config.js ./apps/agent-api/
+COPY tools/build-metadata.cjs ./tools/build-metadata.cjs
 
 # Copy shared libraries (if they exist)
 COPY libs/ ./libs/
@@ -41,6 +45,8 @@ ENV NX_CLOUD_DISTRIBUTED_EXECUTION=false
 RUN npx nx sync
 
 # Build the application using Nx (it will automatically build dependencies)
+ENV BUILD_DATE=${BUILD_DATE}
+ENV APP_VERSION=${APP_VERSION}
 RUN npx nx build @iagent/agent-api --configuration=production --no-cloud
 
 # Stage 2: Runtime stage

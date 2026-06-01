@@ -1,7 +1,8 @@
 const { NxAppWebpackPlugin } = require("@nx/webpack/app-plugin");
 const { join } = require("path");
 const { DefinePlugin } = require("webpack");
-const { version } = require("./package.json");
+const { getBuildDate, getPackageVersion } = require("../../tools/build-metadata.cjs");
+const version = getPackageVersion();
 
 module.exports = {
   mode: process.env.NODE_ENV === "production" ? "production" : "development",
@@ -34,6 +35,7 @@ module.exports = {
     new DefinePlugin({
       __APP_VERSION__: JSON.stringify(version),
       "process.env.__APP_VERSION__": JSON.stringify(version),
+      __BUILD_DATE__: JSON.stringify(getBuildDate()),
     }),
   ],
 };

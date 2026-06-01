@@ -67,6 +67,11 @@ import { LanguageSwitcher } from "./LanguageSwitcher";
 import { FilterDetailsDialog } from "./FilterDetailsDialog";
 import { getApiUrl } from "../config/config";
 import { environment } from "../environments/environment";
+import {
+  formatBuildDate,
+  getBuildInfo,
+  getLocaleCode,
+} from "../utils/buildInfo.js";
 import { useAppLocalStorage, useAppSessionStorage } from "../hooks/storage";
 import { useFeatureFlag } from "../hooks/useFeatureFlag";
 import type { HeaderButtonId } from "../types/storage.types";
@@ -259,43 +264,11 @@ const ChatHeader = ({
   const [swaggerMenuAnchor, setSwaggerMenuAnchor] =
     useState<HTMLElement | null>(null);
 
-  const baseVersion =
-    typeof __APP_VERSION__ !== "undefined"
-      ? __APP_VERSION__
-      : environment.app.version;
-  const appVersion = `v.${baseVersion}-${environment.env}`;
-
-  const getLocaleCode = () => {
-    switch (currentLang) {
-      case "he":
-        return "he-IL";
-      case "ar":
-        return "ar-SA";
-      default:
-        return "en-US";
-    }
-  };
-
-  const formatBuildDate = (dateString: string | undefined) => {
-    const date = dateString
-      ? new Date(dateString)
-      : typeof __BUILD_DATE__ !== "undefined"
-        ? new Date(__BUILD_DATE__)
-        : new Date();
-
-    const locale = getLocaleCode();
-    const options: Intl.DateTimeFormatOptions = {
-      year: "numeric",
-      month: "short",
-      day: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-    };
-
-    return date.toLocaleString(locale, options);
-  };
-
-  const buildDate = formatBuildDate(environment.buildDate);
+  const { displayVersion: appVersion, buildDateIso } = getBuildInfo(environment);
+  const buildDate = formatBuildDate(
+    buildDateIso,
+    getLocaleCode(currentLang),
+  );
 
   const getSwaggerUrl = () => {
     const apiBaseUrl = environment.api.baseUrl || environment.apiUrl;

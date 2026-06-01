@@ -1,6 +1,6 @@
 {
   "name": "@iagent/agent-api",
-  "version": "0.0.1",
+  "version": "1.0.0",
   "private": true,
   "dependencies": {
     "@nestjs/common": "^11.0.0",

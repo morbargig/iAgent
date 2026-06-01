@@ -307,6 +307,12 @@ export class HealthCheckDto {
   version!: string;
 
   @ApiProperty({
+    description: 'Build timestamp',
+    example: '2024-01-01T12:00:00.000Z'
+  })
+  buildDate!: string;
+
+  @ApiProperty({
     description: 'Uptime in seconds',
     example: 3600
   })
@@ -340,7 +346,7 @@ export class VersionDto {
     description: 'Build timestamp',
     example: '2024-01-01T12:00:00.000Z'
   })
-  buildDate?: string;
+  buildDate!: string;
 }
 
 export class ToolSchemaPageOptionDto {

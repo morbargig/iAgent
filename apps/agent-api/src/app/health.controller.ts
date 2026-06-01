@@ -1,57 +1,40 @@
 import { Controller, Get, HttpStatus } from '@nestjs/common';
 import {
-  ApiTags,
   ApiOperation,
   ApiResponse,
+  ApiTags,
   getSchemaPath,
 } from '@nestjs/swagger';
 import { environment } from '../environments/environment';
-import { HealthCheckDto, VersionDto } from './dto/chat.dto';
+import { HealthCheckDto, VersionDto } from './dto/health.dto';
 
 @ApiTags('Health')
 @Controller()
-export class AppController {
+export class HealthController {
   @Get()
-  @ApiOperation({
-    summary: 'Health check',
-    description: 'Returns the health status and available endpoints of the API'
-  })
+  @ApiOperation({ summary: 'Health check' })
   @ApiResponse({
     status: HttpStatus.OK,
     description: 'Service is healthy',
     type: HealthCheckDto,
-    schema: {
-      $ref: getSchemaPath(HealthCheckDto)
-    }
+    schema: { $ref: getSchemaPath(HealthCheckDto) },
   })
-  getData(): HealthCheckDto {
+  getHealth(): HealthCheckDto {
     return {
       status: 'ok',
       version: environment.app.version,
       buildDate: environment.build.date,
       uptime: Math.floor(process.uptime()),
-      endpoints: {
-        health: '/api',
-        login: '/api/auth/login',
-        stream: '/api/chat/stream',
-        docs: '/docs',
-        version: '/api/version'
-      }
     };
   }
 
   @Get('version')
-  @ApiOperation({
-    summary: 'Get application version',
-    description: 'Returns the current application version information'
-  })
+  @ApiOperation({ summary: 'Get application version' })
   @ApiResponse({
     status: HttpStatus.OK,
     description: 'Version information retrieved successfully',
     type: VersionDto,
-    schema: {
-      $ref: getSchemaPath(VersionDto)
-    }
+    schema: { $ref: getSchemaPath(VersionDto) },
   })
   getVersion(): VersionDto {
     return {
@@ -61,4 +44,3 @@ export class AppController {
     };
   }
 }
-

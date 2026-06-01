@@ -40,6 +40,13 @@ jobs:
       - name: 🧭 Set Nx affected SHAs
         uses: nrwl/nx-set-shas@v4
 
+      - name: 🏷️ Set build metadata
+        id: build-meta
+        run: |
+          echo "build_date=$(date -u +"%Y-%m-%dT%H:%M:%SZ")" >> "$GITHUB_OUTPUT"
+          APP_VERSION="$(node -p "require('./package.json').version")"
+          echo "app_version=${APP_VERSION}" >> "$GITHUB_OUTPUT"
+
       - name: 🔧 Setup Node.js ${{ env.NODE_VERSION }}
         uses: actions/setup-node@v4
         with:
@@ -81,6 +88,8 @@ jobs:
         run: npm exec nx -- build @iagent/backend --configuration=production --no-cloud
         env:
           NODE_ENV: production
+          BUILD_DATE: ${{ steps.build-meta.outputs.build_date }}
+          APP_VERSION: ${{ steps.build-meta.outputs.app_version }}
           NX_CLOUD_DISTRIBUTED_EXECUTION: "false"
           NX_SKIP_CLOUD_CACHE: "true"
           NX_CLOUD_NO_ACCESS: "true"
@@ -145,6 +154,9 @@ jobs:
           push: true
           tags: ${{ steps.docker-meta.outputs.tags }}
           labels: ${{ steps.docker-meta.outputs.labels }}
+          build-args: |
+            BUILD_DATE=${{ steps.build-meta.outputs.build_date }}
+            APP_VERSION=${{ steps.build-meta.outputs.app_version }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
 

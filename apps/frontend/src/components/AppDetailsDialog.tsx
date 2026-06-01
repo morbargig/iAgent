@@ -18,6 +18,11 @@ import {
 import { useTranslation } from "../contexts/TranslationContext";
 import { environment } from "../environments/environment";
 import { useFeatureFlag } from "../hooks/useFeatureFlag";
+import {
+  formatBuildDate,
+  getBuildInfo,
+  getLocaleCode,
+} from "../utils/buildInfo.js";
 
 interface AppDetailsDialogProps {
   open: boolean;
@@ -33,40 +38,11 @@ export const AppDetailsDialog: React.FC<AppDetailsDialogProps> = ({
   const { t, currentLang } = useTranslation();
   const enableContactUs = useFeatureFlag('enableContactUs');
 
-  const baseVersion = typeof __APP_VERSION__ !== 'undefined' 
-    ? __APP_VERSION__ 
-    : environment.app.version;
-  
-  const appVersion = `v.${baseVersion}-${environment.env}`;
-  
-  const getLocaleCode = () => {
-    switch (currentLang) {
-      case 'he': return 'he-IL';
-      case 'ar': return 'ar-SA';
-      default: return 'en-US';
-    }
-  };
-
-  const formatBuildDate = (dateString: string | undefined) => {
-    const date = dateString
-      ? new Date(dateString)
-      : typeof __BUILD_DATE__ !== 'undefined'
-      ? new Date(__BUILD_DATE__)
-      : new Date();
-    
-    const locale = getLocaleCode();
-    const options: Intl.DateTimeFormatOptions = {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
-    };
-    
-    return date.toLocaleString(locale, options);
-  };
-  
-  const buildDate = formatBuildDate(environment.buildDate);
+  const { displayVersion: appVersion, buildDateIso } = getBuildInfo(environment);
+  const buildDate = formatBuildDate(
+    buildDateIso,
+    getLocaleCode(currentLang),
+  );
 
   const envLabel = environment.env.charAt(0).toUpperCase() + environment.env.slice(1);
 

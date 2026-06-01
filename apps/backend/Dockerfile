@@ -2,6 +2,9 @@
 # Stage 1: Build stage
 FROM node:20-alpine AS builder
 
+ARG BUILD_DATE
+ARG APP_VERSION
+
 # Set working directory
 WORKDIR /app
 
@@ -22,6 +25,7 @@ COPY apps/backend/project.json ./apps/backend/
 COPY apps/backend/tsconfig*.json ./apps/backend/
 COPY apps/backend/webpack.config.js ./apps/backend/
 COPY apps/backend/jest.config.js ./apps/backend/
+COPY tools/build-metadata.cjs ./tools/build-metadata.cjs
 
 # Copy shared libraries (if they exist)
 COPY libs/ ./libs/
@@ -40,6 +44,8 @@ ENV NX_SKIP_CLOUD_CACHE=true
 ENV NX_CLOUD_DISTRIBUTED_EXECUTION=false
 
 # Build the application using Nx
+ENV BUILD_DATE=${BUILD_DATE}
+ENV APP_VERSION=${APP_VERSION}
 RUN npx nx build @iagent/backend --configuration=production --no-cloud
 
 # Stage 2: Runtime stage

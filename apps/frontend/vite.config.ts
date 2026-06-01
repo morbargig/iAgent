@@ -3,7 +3,7 @@ import { defineConfig, Plugin } from 'vite';
 import react from '@vitejs/plugin-react';
 import { nxViteTsPaths } from '@nx/vite/plugins/nx-tsconfig-paths.plugin';
 import { resolve } from 'path';
-import { version } from './package.json';
+import { getBuildDate, getPackageVersion } from '../../tools/build-metadata.cjs';
 
 const createEnvironmentPlugin = (mode: string): Plugin => {
   const getEnvironmentFile = () => {
@@ -58,7 +58,8 @@ export default defineConfig(({ mode }) => {
   const base = isProduction ? '/iAgent/' : '/';
 
   // Import version from package.json (tree-shakeable)
-  const buildDate = new Date().toISOString();
+  const buildDate = getBuildDate();
+  const version = getPackageVersion();
 
   return {
     root: __dirname,

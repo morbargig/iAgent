@@ -2,6 +2,7 @@ import React from "react";
 import { Box, Typography } from "@mui/material";
 import { useTheme } from "@mui/material/styles";
 import { environment } from "../environments/environment";
+import { getBuildInfo } from "../utils/buildInfo.js";
 
 interface AppFooterProps {
   isDarkMode: boolean;
@@ -10,11 +11,7 @@ interface AppFooterProps {
 export const AppFooter: React.FC<AppFooterProps> = ({ isDarkMode }) => {
   const theme = useTheme();
 
-  const baseVersion = typeof __APP_VERSION__ !== 'undefined' 
-    ? __APP_VERSION__ 
-    : environment.app.version;
-  
-  const appVersion = `v.${baseVersion}-${environment.env}`;
+  const { displayVersion: appVersion } = getBuildInfo(environment);
 
   return (
     <Box

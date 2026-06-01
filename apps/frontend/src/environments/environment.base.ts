@@ -28,8 +28,10 @@ export const baseEnvironment: Omit<Environment, 'env' | 'production' | 'apiUrl' 
     teamName: 'iAgent Team',
   },
   
-  buildDate: typeof __BUILD_DATE__ !== 'undefined' 
-    ? __BUILD_DATE__ 
-    : new Date().toISOString(),
+  buildDate:
+    typeof __BUILD_DATE__ !== 'undefined'
+      ? __BUILD_DATE__
+      : new Date().toISOString(),
+
 };
 

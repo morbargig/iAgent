@@ -15,6 +15,10 @@ export interface Environment {
     version: string;
   };
 
+  build: {
+    date: string;
+  };
+
   mongodb: {
     uri: string;
     dbName: string;

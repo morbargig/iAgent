@@ -1,10 +1,20 @@
 import type { Environment } from './environment.type';
-import { requireEnv, getPort, getCorsOrigins, getAppVersion } from './environment.helper';
+import {
+  requireEnv,
+  getPort,
+  getCorsOrigins,
+  getAppVersion,
+  getBuildDate,
+} from './environment.helper';
 
 export const baseEnvironment: Omit<Environment, 'production' | 'port' | 'host' | 'apiUrl' | 'frontendUrl'> = {
   app: {
     name: 'iAgent Backend',
     version: getAppVersion(),
+  },
+
+  build: {
+    date: getBuildDate(),
   },
   
   mongodb: {

@@ -100,6 +100,7 @@ export const getCorsOrigins = (): (string | RegExp)[] => {
 };
 
 declare const __APP_VERSION__: string;
+declare const __BUILD_DATE__: string;
 
 export const getAppVersion = (): string => {
   if (process.env.APP_VERSION) {
@@ -112,3 +113,16 @@ export const getAppVersion = (): string => {
 
   return '1.0.0';
 };
+
+export const getBuildDate = (): string => {
+  if (process.env.BUILD_DATE) {
+    return process.env.BUILD_DATE;
+  }
+
+  if (typeof __BUILD_DATE__ !== 'undefined') {
+    return __BUILD_DATE__;
+  }
+
+  return new Date().toISOString();
+};
+

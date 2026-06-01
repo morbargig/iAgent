@@ -1,10 +1,19 @@
 import type { Environment } from './environment.type';
-import { getPort, getCorsOrigins, getAppVersion } from './environment.helper';
+import {
+  getPort,
+  getCorsOrigins,
+  getAppVersion,
+  getBuildDate,
+} from './environment.helper';
 
 export const baseEnvironment: Omit<Environment, 'production' | 'port' | 'host' | 'apiUrl'> = {
   app: {
     name: 'iAgent Agent API',
     version: getAppVersion(),
+  },
+
+  build: {
+    date: getBuildDate(),
   },
   
   cors: {

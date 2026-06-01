@@ -26,12 +26,12 @@
     "clean": "npx nx reset && rm -rf node_modules && npm install",
     "graph": "npx nx graph",
     "affected": "npx nx affected",
-    "release": "standard-version",
-    "release:minor": "standard-version --release-as minor",
-    "release:major": "standard-version --release-as major",
-    "release:patch": "standard-version --release-as patch",
-    "release:alpha": "standard-version --prerelease alpha",
-    "release:beta": "standard-version --prerelease beta"
+    "version": "standard-version",
+    "version:patch": "standard-version --release-as patch",
+    "version:minor": "standard-version --release-as minor",
+    "version:major": "standard-version --release-as major",
+    "version:alpha": "standard-version --prerelease alpha",
+    "version:beta": "standard-version --prerelease beta"
   },
   "private": true,
   "dependencies": {
