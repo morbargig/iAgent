@@ -39,7 +39,7 @@ Your Render deployment is failing because **required environment variables are n
 
 7. **API_URL**
    - Value: Your API URL
-   - Example: `https://iagent-1-jzyj.onrender.com/api`
+   - Example: `https://iagent-k0dx.onrender.com/api`
 
 ## How to Set Environment Variables in Render
 

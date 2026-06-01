@@ -56,7 +56,7 @@ async function bootstrap() {
       // Fallback if serverUrl is not set
       if (!baseUrl) {
         if (environment.production) {
-          baseUrl = process.env.RENDER_EXTERNAL_URL || process.env.API_URL || `https://iagent-1-jzyj.onrender.com`;
+          baseUrl = process.env.RENDER_EXTERNAL_URL || process.env.API_URL || `https://iagent-k0dx.onrender.com`;
         } else {
           baseUrl = `http://localhost:${environment.port}`;
         }

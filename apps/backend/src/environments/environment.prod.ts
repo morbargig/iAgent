@@ -10,7 +10,7 @@ export const environment: Environment = {
   production: true,
   port,
   host,
-  apiUrl: process.env.API_URL || 'https://iagent-1-jzyj.onrender.com/api',
+  apiUrl: process.env.API_URL || 'https://iagent-k0dx.onrender.com/api',
   frontendUrl: 'https://morbargig.github.io/iAgent/',
 
   // Base configuration with prod-specific overrides
@@ -31,7 +31,7 @@ export const environment: Environment = {
     enabled: process.env.ENABLE_SWAGGER !== 'false',
     title: 'iAgent API - Production',
     description: 'Production environment API documentation',
-    serverUrl: process.env.RENDER_EXTERNAL_URL || process.env.API_URL || 'https://iagent-1-jzyj.onrender.com'
+    serverUrl: process.env.RENDER_EXTERNAL_URL || process.env.API_URL || 'https://iagent-k0dx.onrender.com'
   },
 
   logging: {
