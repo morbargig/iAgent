@@ -120,6 +120,7 @@ build/
 
 # TypeScript
 *.tsbuildinfo
+**/out-tsc/
 
 # ESLint
 .eslintcache

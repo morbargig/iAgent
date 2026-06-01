@@ -8,6 +8,7 @@ const host = getHost();
 
 export const environment: Environment = {
   production: false,
+  env: 'stage',
   port,
   host,
   apiUrl: process.env.API_URL || 'https://iagent-stage.onrender.com/api',

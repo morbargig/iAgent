@@ -7,6 +7,7 @@ const host = getHost();
 
 export const environment: Environment = {
   production: true,
+  env: 'prod',
   port,
   host,
   apiUrl: process.env.API_URL || 'https://iagent-latest-ywr0.onrender.com/api',

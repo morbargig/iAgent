@@ -10,6 +10,7 @@ import { NestExpressApplication } from '@nestjs/platform-express';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { AppModule } from './app/app.module.js';
 import { environment } from './environments/environment';
+import { getSwaggerVersionLabel } from './environments/environment.helper.js';
 
 async function bootstrap() {
   try {
@@ -72,7 +73,7 @@ async function bootstrap() {
 
       const configBuilder = new DocumentBuilder()
         .setTitle(environment.swagger.title)
-        .setVersion(environment.swagger.version);
+        .setVersion(getSwaggerVersionLabel(environment.env));
       
       if (environment.swagger.contact) {
         configBuilder.setContact(

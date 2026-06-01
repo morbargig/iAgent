@@ -8,6 +8,7 @@ const host = getHost();
 
 export const environment: Environment = {
   production: true,
+  env: 'prod',
   port,
   host,
   apiUrl: process.env.API_URL || 'https://iagent-k0dx.onrender.com/api',

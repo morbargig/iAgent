@@ -3,8 +3,11 @@
  * This file defines the type structure for all environment configurations
  */
 
+export type DeployEnv = 'dev' | 'prod' | 'test' | 'local' | 'stage';
+
 export interface Environment {
   production: boolean;
+  env: DeployEnv;
   port: number;
   host: string;
   apiUrl: string;

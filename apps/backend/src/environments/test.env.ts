@@ -8,6 +8,7 @@ const host = getHost();
 
 export const environment: Environment = {
   production: false,
+  env: 'test',
   port,
   host,
   apiUrl: `http://localhost:${port}/api`,
