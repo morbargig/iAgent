@@ -100,7 +100,7 @@
       ],
       "options": {
         "passWithNoTests": true,
-        "reportsDirectory": "../../coverage/apps/frontend"
+        "reportsDirectory": "{projectRoot}/../../coverage/apps/frontend"
       }
     },
     "lint": {

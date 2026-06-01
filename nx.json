@@ -128,5 +128,6 @@
   "sync": {
     "applyChanges": true
   },
-  "nxCloudId": "68acd13cf39d44129f9bf5a6"
+  "nxCloudId": "68acd13cf39d44129f9bf5a6",
+  "analytics": true
 }

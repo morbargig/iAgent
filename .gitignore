@@ -131,3 +131,8 @@ iagent/
 # Keep org directory but ignore any nested .git
 org/**/.git 
 test-output
+
+.nx/polygraph
+.claude/worktrees
+.claude/settings.local.json
+.nx/self-healing
