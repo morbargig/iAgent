@@ -25,7 +25,11 @@ import { environment } from '../environments/environment';
 
 @Module({
   imports: [
-    HttpModule,
+    HttpModule.register({
+      timeout: 0,
+      maxContentLength: Infinity,
+      maxBodyLength: Infinity,
+    }),
     PassportModule,
     JwtModule.register({
       secret: environment.jwt.secret,

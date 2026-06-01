@@ -2,6 +2,13 @@ import { Controller, Post, Body, Res, HttpStatus } from '@nestjs/common';
 import type { Response } from 'express';
 import { HttpService } from '@nestjs/axios';
 import { firstValueFrom } from 'rxjs';
+import { Transform } from 'node:stream';
+import { pipeline } from 'node:stream/promises';
+import type { Readable } from 'node:stream';
+import {
+  configureStreamingResponse,
+  flushStreamingResponse,
+} from '../utils/streaming-response.util';
 import {
   ApiTags,
   ApiOperation,
@@ -158,6 +165,8 @@ export class StreamingController {
 
       const sessionId = `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 
+      configureStreamingResponse(res);
+
       if (lastUserMessage && lastUserMessageDto) {
         try {
           let filterId = null;
@@ -191,12 +200,6 @@ export class StreamingController {
         }
       }
 
-      res.setHeader('Content-Type', 'application/json; charset=utf-8');
-      res.setHeader('Cache-Control', 'no-cache');
-      res.setHeader('Connection', 'keep-alive');
-      res.setHeader('Access-Control-Allow-Origin', '*');
-      res.setHeader('Access-Control-Allow-Headers', 'Cache-Control, Content-Type');
-
       const abortController = new AbortController();
       let isClientDisconnected = false;
       let streamDestroyed = false;
@@ -223,17 +226,59 @@ export class StreamingController {
           this.httpService.post(agentApiUrl, request, {
             responseType: 'stream',
             signal: abortController.signal,
+            decompress: false,
+            timeout: 0,
+            maxContentLength: Infinity,
+            maxBodyLength: Infinity,
             headers: {
               'Content-Type': 'application/json',
+              Accept: 'application/x-ndjson',
+              'Accept-Encoding': 'identity',
             },
           })
         );
 
-        const stream = response.data;
+        const stream = response.data as Readable;
         const decoder = new TextDecoder();
         let finalContent = '';
         let completeChunk: { chunkType: string; data?: { finalContent?: string } } | null = null;
-        let buffer = '';
+        let parseBuffer = '';
+
+        const ingestLine = (line: string) => {
+          if (!line.trim()) {
+            return;
+          }
+
+          try {
+            const parsed = JSON.parse(line);
+
+            if (parsed.chunkType === 'token' && parsed.data?.token) {
+              finalContent += parsed.data.token;
+            }
+
+            if (parsed.chunkType === 'complete') {
+              completeChunk = parsed;
+            }
+          } catch (parseError) {
+            console.error('Failed to parse chunk:', parseError);
+          }
+        };
+
+        const ingestBytes = (chunk: Buffer) => {
+          parseBuffer += decoder.decode(chunk, { stream: true });
+          const lines = parseBuffer.split('\n');
+          parseBuffer = lines.pop() || '';
+
+          for (const line of lines) {
+            ingestLine(line);
+          }
+        };
+
+        const flushParseBuffer = () => {
+          if (parseBuffer.trim()) {
+            ingestLine(parseBuffer);
+          }
+        };
 
         stream.on('error', (error: Error) => {
           if (error.name === 'AbortError' || isClientDisconnected) {
@@ -243,62 +288,27 @@ export class StreamingController {
           console.error('Stream error:', error);
         });
 
-        try {
-          for await (const chunk of stream) {
+        const passthrough = new Transform({
+          transform(chunk, _encoding, callback) {
             if (isClientDisconnected) {
-              console.log('✅ Stopping stream processing - client disconnected');
-              break;
+              callback();
+              return;
             }
 
-            buffer += decoder.decode(chunk, { stream: true });
-            const lines = buffer.split('\n');
-            buffer = lines.pop() || '';
+            ingestBytes(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk));
+            callback(null, chunk);
+          },
+          flush(callback) {
+            flushParseBuffer();
+            callback();
+          },
+        });
 
-            for (const line of lines) {
-              if (!line.trim()) continue;
-              
-              if (isClientDisconnected) {
-                break;
-              }
-
-              try {
-                const parsed = JSON.parse(line);
-                
-                if (parsed.chunkType === 'token' && parsed.data?.token) {
-                  finalContent += parsed.data.token;
-                }
-                
-                if (parsed.chunkType === 'complete') {
-                  completeChunk = parsed;
-                }
-
-                if (!isClientDisconnected) {
-                  res.write(line + '\n');
-                }
-              } catch (parseError) {
-                console.error('Failed to parse chunk:', parseError);
-              }
-            }
-          }
+        try {
+          await pipeline(stream, passthrough, res);
 
           if (!isClientDisconnected) {
-            if (buffer.trim()) {
-              try {
-                const parsed = JSON.parse(buffer);
-                
-                if (parsed.chunkType === 'token' && parsed.data?.token) {
-                  finalContent += parsed.data.token;
-                }
-                
-                if (parsed.chunkType === 'complete') {
-                  completeChunk = parsed;
-                }
-
-                res.write(buffer + '\n');
-              } catch (parseError) {
-                console.error('Failed to parse final buffer:', parseError);
-              }
-            }
+            flushParseBuffer();
 
             if (completeChunk?.data?.finalContent) {
               finalContent = completeChunk.data.finalContent;
@@ -325,10 +335,6 @@ export class StreamingController {
                 console.error('Failed to save assistant message:', saveError);
               }
             }
-
-            if (!res.closed) {
-              res.end();
-            }
           } else {
             console.log('⚠️ Client disconnected before stream completion');
             if (stream && typeof stream.destroy === 'function') {
@@ -336,17 +342,22 @@ export class StreamingController {
             }
           }
         } catch (streamError) {
-          console.error('Error streaming from agent-api:', streamError);
-          throw streamError;
+          if (
+            isClientDisconnected &&
+            streamError instanceof Error &&
+            (streamError.message.includes('aborted') || streamError.name === 'AbortError')
+          ) {
+            console.log('✅ Stream pipeline ended after client disconnect');
+          } else {
+            console.error('Error streaming from agent-api:', streamError);
+            throw streamError;
+          }
         }
       } catch (innerError) {
         console.error('Error proxying to agent-api:', innerError);
 
         if (!res.headersSent) {
-          res.setHeader('Content-Type', 'application/json; charset=utf-8');
-          res.setHeader('Cache-Control', 'no-cache');
-          res.setHeader('Connection', 'keep-alive');
-          res.setHeader('Access-Control-Allow-Origin', '*');
+          configureStreamingResponse(res);
         }
 
         const errorChunk = {
@@ -365,7 +376,8 @@ export class StreamingController {
         };
 
         try {
-          res.write(JSON.stringify(errorChunk) + '\n');
+          res.write(`${JSON.stringify(errorChunk)}\n`);
+          flushStreamingResponse(res);
           res.end();
         } catch (writeError) {
           console.error('Failed to write error chunk:', writeError);
@@ -400,7 +412,8 @@ export class StreamingController {
             timestamp: new Date().toISOString(),
             sessionId: 'unknown'
           };
-          res.write(JSON.stringify(errorChunk) + '\n');
+          res.write(`${JSON.stringify(errorChunk)}\n`);
+          flushStreamingResponse(res);
           res.end();
         } catch (endError) {
           console.error('Failed to end response after outer error:', endError);

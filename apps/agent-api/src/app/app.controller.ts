@@ -12,6 +12,7 @@ import {
 import { ChatRequestDto, StreamTokenDto, ErrorResponseDto, AuthTokenDto, ToolSelectionDto, ChatMessageDto, type ChatMessage } from './dto/stream.dto';
 import { MockGenerationService } from './services/mock-generation.service';
 import { StreamingService } from './services/streaming.service';
+import { configureStreamingResponse, writeStreamingChunk } from './utils/streaming-response.util';
 
 @ApiTags('Agent API')
 @ApiExtraModels(ChatRequestDto, StreamTokenDto, ErrorResponseDto, AuthTokenDto, ToolSelectionDto, ChatMessageDto)
@@ -95,11 +96,9 @@ export class AppController {
 
       const sessionId = `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 
-      res.setHeader('Content-Type', 'application/json; charset=utf-8');
-      res.setHeader('Cache-Control', 'no-cache');
-      res.setHeader('Connection', 'keep-alive');
-      res.setHeader('Access-Control-Allow-Origin', '*');
-      res.setHeader('Access-Control-Allow-Headers', 'Cache-Control, Content-Type');
+      configureStreamingResponse(res);
+      const writeChunk = (payload: unknown) =>
+        writeStreamingChunk(res, `${JSON.stringify(payload)}\n`);
 
       try {
         const startChunk = {
@@ -114,7 +113,7 @@ export class AppController {
           timestamp: new Date().toISOString(),
           sessionId
         };
-        res.write(JSON.stringify(startChunk) + '\n');
+        writeChunk(startChunk);
 
         const hasToolT = tools && Array.isArray(tools) && tools.some((t: any) => t?.id === 'tool-t' || t?.name === 'tool-t');
         const hasToolH = tools && Array.isArray(tools) && tools.some((t: any) => t?.id === 'tool-h' || t?.name === 'tool-h');
@@ -141,7 +140,7 @@ export class AppController {
           timestamp: new Date().toISOString(),
           sessionId
         };
-        res.write(JSON.stringify(metadataChunk) + '\n');
+        writeChunk(metadataChunk);
 
         if (shouldGenerateToolSections) {
           if (hasToolT || Math.random() < 0.5) {
@@ -159,7 +158,7 @@ export class AppController {
               timestamp: new Date().toISOString(),
               sessionId
             };
-            res.write(JSON.stringify(toolTSectionStart) + '\n');
+            writeChunk(toolTSectionStart);
 
             let toolTContentAccumulator = '';
             for (let i = 0; i < toolTTokens.length; i++) {
@@ -184,7 +183,7 @@ export class AppController {
                 timestamp: new Date().toISOString(),
                 sessionId
               };
-              res.write(JSON.stringify(tokenChunk) + '\n');
+              writeChunk(tokenChunk);
 
               if (i < toolTTokens.length - 1) {
                 const delay = this.streamingService.calculateStreamingDelay(token, i, toolTTokens);
@@ -202,7 +201,7 @@ export class AppController {
               timestamp: new Date().toISOString(),
               sessionId
             };
-            res.write(JSON.stringify(toolTSectionEnd) + '\n');
+            writeChunk(toolTSectionEnd);
           }
 
           if (hasToolH || Math.random() < 0.5) {
@@ -220,7 +219,7 @@ export class AppController {
               timestamp: new Date().toISOString(),
               sessionId
             };
-            res.write(JSON.stringify(toolHSectionStart) + '\n');
+            writeChunk(toolHSectionStart);
 
             let toolHContentAccumulator = '';
             for (let i = 0; i < toolHTokens.length; i++) {
@@ -245,7 +244,7 @@ export class AppController {
                 timestamp: new Date().toISOString(),
                 sessionId
               };
-              res.write(JSON.stringify(tokenChunk) + '\n');
+              writeChunk(tokenChunk);
 
               if (i < toolHTokens.length - 1) {
                 const delay = this.streamingService.calculateStreamingDelay(token, i, toolHTokens);
@@ -263,7 +262,7 @@ export class AppController {
               timestamp: new Date().toISOString(),
               sessionId
             };
-            res.write(JSON.stringify(toolHSectionEnd) + '\n');
+            writeChunk(toolHSectionEnd);
           }
 
           if (hasToolF || Math.random() < 0.5) {
@@ -281,7 +280,7 @@ export class AppController {
               timestamp: new Date().toISOString(),
               sessionId
             };
-            res.write(JSON.stringify(toolFSectionStart) + '\n');
+            writeChunk(toolFSectionStart);
 
             let toolFContentAccumulator = '';
             for (let i = 0; i < toolFTokens.length; i++) {
@@ -306,7 +305,7 @@ export class AppController {
                 timestamp: new Date().toISOString(),
                 sessionId
               };
-              res.write(JSON.stringify(tokenChunk) + '\n');
+              writeChunk(tokenChunk);
 
               if (i < toolFTokens.length - 1) {
                 const delay = this.streamingService.calculateStreamingDelay(token, i, toolFTokens);
@@ -324,7 +323,7 @@ export class AppController {
               timestamp: new Date().toISOString(),
               sessionId
             };
-            res.write(JSON.stringify(toolFSectionEnd) + '\n');
+            writeChunk(toolFSectionEnd);
           }
         }
 
@@ -345,7 +344,7 @@ export class AppController {
           timestamp: new Date().toISOString(),
           sessionId
         };
-        res.write(JSON.stringify(answerSectionStart) + '\n');
+        writeChunk(answerSectionStart);
 
         for (let i = 0; i < answerTokens.length; i++) {
           const token = answerTokens[i];
@@ -371,7 +370,7 @@ export class AppController {
             sessionId
           };
 
-          res.write(JSON.stringify(tokenChunk) + '\n');
+          writeChunk(tokenChunk);
 
           if (i > 0 && i % 10 === 0 && !isLast) {
             const progressChunk = {
@@ -387,7 +386,7 @@ export class AppController {
               timestamp: new Date().toISOString(),
               sessionId
             };
-            res.write(JSON.stringify(progressChunk) + '\n');
+            writeChunk(progressChunk);
           }
 
           if (!isLast) {
@@ -406,7 +405,7 @@ export class AppController {
           timestamp: new Date().toISOString(),
           sessionId
         };
-        res.write(JSON.stringify(answerSectionEnd) + '\n');
+        writeChunk(answerSectionEnd);
 
         const completeChunk = {
           chunkType: 'complete',
@@ -430,17 +429,14 @@ export class AppController {
           timestamp: new Date().toISOString(),
           sessionId
         };
-        res.write(JSON.stringify(completeChunk) + '\n');
+        writeChunk(completeChunk);
 
         res.end();
       } catch (innerError) {
         console.error('Streaming error:', innerError);
 
         if (!res.headersSent) {
-          res.setHeader('Content-Type', 'application/json; charset=utf-8');
-          res.setHeader('Cache-Control', 'no-cache');
-          res.setHeader('Connection', 'keep-alive');
-          res.setHeader('Access-Control-Allow-Origin', '*');
+          configureStreamingResponse(res);
         }
 
         const errorChunk = {
@@ -459,7 +455,7 @@ export class AppController {
         };
 
         try {
-          res.write(JSON.stringify(errorChunk) + '\n');
+          writeChunk(errorChunk);
           res.end();
         } catch (writeError) {
           console.error('Failed to write error chunk:', writeError);
@@ -494,7 +490,7 @@ export class AppController {
             timestamp: new Date().toISOString(),
             sessionId: 'unknown'
           };
-          res.write(JSON.stringify(errorChunk) + '\n');
+          writeChunk(errorChunk);
           res.end();
         } catch (endError) {
           console.error('Failed to end response after outer error:', endError);
