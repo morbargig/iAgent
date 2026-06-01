@@ -65,7 +65,7 @@ import {
 import { useTranslation } from "../contexts/TranslationContext";
 import { LanguageSwitcher } from "./LanguageSwitcher";
 import { FilterDetailsDialog } from "./FilterDetailsDialog";
-import { getApiUrl, getBaseApiUrl } from "../config/config";
+import { getApiUrl } from "../config/config";
 import { environment } from "../environments/environment";
 import { useAppLocalStorage, useAppSessionStorage } from "../hooks/storage";
 import { useFeatureFlag } from "../hooks/useFeatureFlag";
@@ -2638,15 +2638,19 @@ export function ChatArea({
   const saveFilterName = async () => {
     if (!activeMessage?.filterId || !newFilterName.trim())
       return;
+    if (!authToken) {
+      console.error("Cannot rename filter: missing auth token");
+      return;
+    }
 
     try {
       const response = await fetch(
-        `${getBaseApiUrl()}/api/chats/filters/${activeMessage.filterId}`,
+        getApiUrl(`/chats/filters/${activeMessage.filterId}`),
         {
           method: "PUT",
           headers: {
             "Content-Type": "application/json",
-            Authorization: `Bearer ${localStorage.getItem("authToken")}`,
+            Authorization: `Bearer ${authToken}`,
           },
           body: JSON.stringify({ name: newFilterName.trim() }),
         }
