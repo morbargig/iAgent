@@ -33,6 +33,7 @@ describe('ChatService', () => {
     deleteMany: jest.fn().mockReturnValue(createMockQuery({ deletedCount: 0 })),
     countDocuments: jest.fn().mockReturnValue(createMockQuery(0)),
     updateMany: jest.fn().mockReturnValue(createMockQuery({ modifiedCount: 0 })),
+    db: { readyState: 1 },
   };
 
   const MockMessageModel = jest.fn().mockImplementation((data) => {
@@ -102,6 +103,7 @@ describe('ChatService', () => {
     userId: 'test-user-id',
     chatId: 'test-chat-id',
     filterConfig: { dateFilter: { type: 'custom' } },
+    version: 1,
     isActive: false,
     createdAt: new Date(),
     updatedAt: new Date(),
@@ -297,9 +299,19 @@ describe('ChatService', () => {
           content: 'Test message',
         };
 
+        const savedMessage = {
+          ...mockMessage,
+          filterId: null,
+          filterVersion: null,
+          timestamp: expect.any(Date),
+        };
+
         mockChatModel.findOneAndUpdate.mockReturnValue(createMockQuery(mockChat));
         mockMessageModel.findOne.mockReturnValue(createMockQuery(null));
-        mockChatModel.findOneAndUpdate.mockReturnValue(createMockQuery(mockChat));
+        MockMessageModel.mockReturnValueOnce({
+          ...savedMessage,
+          save: jest.fn().mockResolvedValue(savedMessage),
+        });
 
         const result = await service.addMessage(messageDto);
 
@@ -308,7 +320,12 @@ describe('ChatService', () => {
           chatId: messageDto.chatId,
           userId: messageDto.userId,
         });
-        expect(result).toEqual(mockMessage);
+        expect(result).toEqual(expect.objectContaining({
+          id: messageDto.id,
+          content: messageDto.content,
+          filterId: null,
+          filterVersion: null,
+        }));
       });
 
       it('should skip duplicate messages', async () => {
@@ -362,15 +379,26 @@ describe('ChatService', () => {
         };
 
         const chatWithFilter = { ...mockChat, activeFilterId: 'active-filter-id' };
+        const activeFilter = {
+          ...mockFilter,
+          filterId: 'active-filter-id',
+          isActive: true,
+        };
+
         mockChatModel.findOneAndUpdate.mockReturnValue(createMockQuery(chatWithFilter));
         mockMessageModel.findOne.mockReturnValue(createMockQuery(null));
-        mockFilterModel.findOne.mockReturnValue(createMockQuery(mockFilter));
+        mockFilterModel.findOne.mockReturnValue(createMockQuery(activeFilter));
+        MockMessageModel.mockReturnValueOnce({
+          ...mockMessage,
+          save: jest.fn().mockResolvedValue(mockMessage),
+        });
 
         await service.addMessage(messageDto);
 
         expect(mockFilterModel.findOne).toHaveBeenCalledWith({
           filterId: 'active-filter-id',
           userId: 'test-user-id',
+          isActive: true,
         });
       });
     });
@@ -433,50 +461,83 @@ describe('ChatService', () => {
           filterConfig: { dateFilter: { type: 'custom' } },
         };
 
+        const savedFilter = { ...mockFilter, version: 1 };
+
+        mockFilterModel.findOne.mockReturnValue(createMockQuery(null));
         mockChatModel.findOneAndUpdate.mockReturnValue(createMockQuery(mockChat));
+        MockFilterModel.mockReturnValueOnce({
+          ...savedFilter,
+          save: jest.fn().mockResolvedValue(savedFilter),
+        });
 
         const result = await service.createFilter(filterDto);
 
-        expect(MockFilterModel).toHaveBeenCalledWith(filterDto);
+        expect(mockFilterModel.findOne).toHaveBeenCalledWith({
+          filterId: filterDto.filterId,
+          userId: filterDto.userId,
+        });
+        expect(MockFilterModel).toHaveBeenCalledWith(
+          expect.objectContaining({ ...filterDto, version: 1 })
+        );
         expect(mockChatModel.findOneAndUpdate).toHaveBeenCalledWith(
           { chatId: filterDto.chatId, userId: filterDto.userId },
           { $addToSet: { associatedFilters: filterDto.filterId } }
         );
-        expect(result).toEqual(mockFilter);
+        expect(result).toEqual(savedFilter);
       });
     });
 
     describe('getFiltersForChat', () => {
       it('should return all filters for a chat', async () => {
-        const filters = [mockFilter, { ...mockFilter, filterId: 'filter-2' }];
-        mockFilterModel.find.mockReturnValue(createMockQuery(filters));
+        const chatFilters = [mockFilter, { ...mockFilter, filterId: 'filter-2' }];
+        const globalFilters = [{ ...mockFilter, filterId: 'global-filter', chatId: null }];
+        mockFilterModel.find
+          .mockReturnValueOnce(createMockQuery(chatFilters))
+          .mockReturnValueOnce(createMockQuery(globalFilters));
 
         const result = await service.getFiltersForChat('test-chat-id', 'test-user-id');
 
-        expect(mockFilterModel.find).toHaveBeenCalledWith({ chatId: 'test-chat-id', userId: 'test-user-id' });
-        expect(result).toEqual(filters);
+        expect(mockFilterModel.find).toHaveBeenNthCalledWith(1, { userId: 'test-user-id', chatId: 'test-chat-id' });
+        expect(mockFilterModel.find).toHaveBeenNthCalledWith(2, { userId: 'test-user-id', chatId: null });
+        expect(result).toEqual([...chatFilters, ...globalFilters]);
       });
     });
 
     describe('updateFilter', () => {
       it('should update a filter', async () => {
-        const updatedFilter = { ...mockFilter, name: 'Updated Filter' };
+        const latestFilter = { ...mockFilter, version: 1 };
+        const updatedFilter = { ...mockFilter, name: 'Updated Filter', version: 2 };
         const updateData = { name: 'Updated Filter' };
 
-        mockFilterModel.findOneAndUpdate.mockReturnValue(createMockQuery(updatedFilter));
+        mockFilterModel.findOne.mockReturnValue(createMockQuery(latestFilter));
+        mockFilterModel.updateMany.mockReturnValue(createMockQuery({ modifiedCount: 1 }));
+        MockFilterModel.mockReturnValueOnce({
+          ...updatedFilter,
+          save: jest.fn().mockResolvedValue(updatedFilter),
+        });
 
         const result = await service.updateFilter('test-filter-id', 'test-user-id', updateData);
 
-        expect(mockFilterModel.findOneAndUpdate).toHaveBeenCalledWith(
+        expect(mockFilterModel.findOne).toHaveBeenCalledWith({
+          filterId: 'test-filter-id',
+          userId: 'test-user-id',
+        });
+        expect(mockFilterModel.updateMany).toHaveBeenCalledWith(
           { filterId: 'test-filter-id', userId: 'test-user-id' },
-          { ...updateData, updatedAt: expect.any(Date) },
-          { new: true }
+          { isActive: false }
+        );
+        expect(MockFilterModel).toHaveBeenCalledWith(
+          expect.objectContaining({
+            filterId: 'test-filter-id',
+            version: 2,
+            name: 'Updated Filter',
+          })
         );
         expect(result).toEqual(updatedFilter);
       });
 
       it('should throw NotFoundException if filter does not exist', async () => {
-        mockFilterModel.findOneAndUpdate.mockReturnValue(createMockQuery(null));
+        mockFilterModel.findOne.mockReturnValue(createMockQuery(null));
 
         await expect(service.updateFilter('non-existent-id', 'test-user-id', { name: 'New Name' })).rejects.toThrow(NotFoundException);
       });
@@ -484,23 +545,28 @@ describe('ChatService', () => {
 
     describe('setActiveFilter', () => {
       it('should set a filter as active', async () => {
-        const activeFilter = { ...mockFilter, isActive: true };
+        const filterWithVersion = { ...mockFilter, version: 1 };
         const updatedChat = { ...mockChat, activeFilterId: 'test-filter-id', currentFilterConfig: mockFilter.filterConfig };
 
         mockFilterModel.updateMany.mockReturnValue(createMockQuery({ modifiedCount: 1 }));
-        mockFilterModel.findOneAndUpdate.mockReturnValue(createMockQuery(activeFilter));
+        mockFilterModel.findOne.mockReturnValue(createMockQuery(filterWithVersion));
+        mockFilterModel.findOneAndUpdate.mockReturnValue(createMockQuery({ ...filterWithVersion, isActive: true }));
         mockChatModel.findOneAndUpdate.mockReturnValue(createMockQuery(updatedChat));
 
         const result = await service.setActiveFilter('test-chat-id', 'test-user-id', 'test-filter-id');
 
         expect(mockFilterModel.updateMany).toHaveBeenCalledWith(
-          { chatId: 'test-chat-id', userId: 'test-user-id' },
+          { userId: 'test-user-id', chatId: 'test-chat-id' },
           { isActive: false }
         );
+        expect(mockFilterModel.findOne).toHaveBeenCalledWith({
+          filterId: 'test-filter-id',
+          userId: 'test-user-id',
+          $or: [{ chatId: 'test-chat-id' }, { chatId: null }],
+        });
         expect(mockFilterModel.findOneAndUpdate).toHaveBeenCalledWith(
-          { filterId: 'test-filter-id', userId: 'test-user-id', chatId: 'test-chat-id' },
-          { isActive: true },
-          { new: true }
+          { filterId: 'test-filter-id', userId: 'test-user-id', version: 1 },
+          { isActive: true }
         );
         expect(mockChatModel.findOneAndUpdate).toHaveBeenCalledWith(
           { chatId: 'test-chat-id', userId: 'test-user-id' },
@@ -532,13 +598,14 @@ describe('ChatService', () => {
 
       it('should throw NotFoundException if filter does not exist', async () => {
         mockFilterModel.updateMany.mockReturnValue(createMockQuery({ modifiedCount: 1 }));
-        mockFilterModel.findOneAndUpdate.mockReturnValue(createMockQuery(null));
+        mockFilterModel.findOne.mockReturnValue(createMockQuery(null));
 
         await expect(service.setActiveFilter('test-chat-id', 'test-user-id', 'non-existent-id')).rejects.toThrow(NotFoundException);
       });
 
       it('should throw NotFoundException if chat does not exist', async () => {
         mockFilterModel.updateMany.mockReturnValue(createMockQuery({ modifiedCount: 1 }));
+        mockFilterModel.findOne.mockReturnValue(createMockQuery(mockFilter));
         mockFilterModel.findOneAndUpdate.mockReturnValue(createMockQuery(mockFilter));
         mockChatModel.findOneAndUpdate.mockReturnValue(createMockQuery(null));
 
@@ -548,12 +615,17 @@ describe('ChatService', () => {
 
     describe('deleteFilter', () => {
       it('should delete a filter', async () => {
-        mockFilterModel.findOneAndDelete.mockReturnValue(createMockQuery(mockFilter));
+        mockFilterModel.find.mockReturnValue(createMockQuery([mockFilter]));
+        mockFilterModel.deleteMany.mockReturnValue(createMockQuery({ deletedCount: 1 }));
         mockChatModel.updateMany.mockReturnValue(createMockQuery({ modifiedCount: 1 }));
 
         await service.deleteFilter('test-filter-id', 'test-user-id');
 
-        expect(mockFilterModel.findOneAndDelete).toHaveBeenCalledWith({
+        expect(mockFilterModel.find).toHaveBeenCalledWith({
+          filterId: 'test-filter-id',
+          userId: 'test-user-id',
+        });
+        expect(mockFilterModel.deleteMany).toHaveBeenCalledWith({
           filterId: 'test-filter-id',
           userId: 'test-user-id',
         });
@@ -568,7 +640,7 @@ describe('ChatService', () => {
       });
 
       it('should throw NotFoundException if filter does not exist', async () => {
-        mockFilterModel.findOneAndDelete.mockReturnValue(createMockQuery(null));
+        mockFilterModel.find.mockReturnValue(createMockQuery([]));
 
         await expect(service.deleteFilter('non-existent-id', 'test-user-id')).rejects.toThrow(NotFoundException);
       });

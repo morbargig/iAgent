@@ -89,7 +89,7 @@ describe('AppController', () => {
       expect(typeof result.uptime).toBe('number');
       expect(result.endpoints).toBeDefined();
       expect(result.endpoints.health).toBe('/api');
-      expect(result.endpoints.docs).toBe('/api/docs');
+      expect(result.endpoints.docs).toBe('/docs');
     });
   });
 
