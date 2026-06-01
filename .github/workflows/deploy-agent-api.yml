@@ -4,17 +4,16 @@ on:
   push:
     branches: [main]
     paths:
-      - 'apps/agent-api/**'
-      - 'apps/agent-api/Dockerfile'
+      - 'apps/**'
       - 'libs/**'
       - 'package.json'
       - 'package-lock.json'
-      - '.github/workflows/deploy-agent-api.yml'
+      - '.github/workflows/deploy-*.yml'
 
   workflow_dispatch:
 
 concurrency:
-  group: render-agent-api-deployment
+  group: deploy-pipeline
   cancel-in-progress: false
 
 env:

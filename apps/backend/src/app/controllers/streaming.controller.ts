@@ -241,7 +241,6 @@ export class StreamingController {
         const stream = response.data as Readable;
         const decoder = new TextDecoder();
         let finalContent = '';
-        let completeChunk: { chunkType: string; data?: { finalContent?: string } } | null = null;
         let parseBuffer = '';
 
         const ingestLine = (line: string) => {
@@ -256,8 +255,8 @@ export class StreamingController {
               finalContent += parsed.data.token;
             }
 
-            if (parsed.chunkType === 'complete') {
-              completeChunk = parsed;
+            if (parsed.chunkType === 'complete' && parsed.data?.finalContent) {
+              finalContent = parsed.data.finalContent;
             }
           } catch (parseError) {
             console.error('Failed to parse chunk:', parseError);
@@ -309,10 +308,6 @@ export class StreamingController {
 
           if (!isClientDisconnected) {
             flushParseBuffer();
-
-            if (completeChunk?.data?.finalContent) {
-              finalContent = completeChunk.data.finalContent;
-            }
 
             if (assistantPlaceholderDto?.role === 'assistant' && finalContent) {
               try {

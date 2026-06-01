@@ -1,23 +1,15 @@
 name: 🚀 Deploy Backend to Render
 
 on:
-  # Deploy backend on push to main branch (after CI passes)
-  push:
+  workflow_run:
+    workflows: ["🚀 Deploy Agent API to Render"]
+    types: [completed]
     branches: [main]
-    paths:
-      - 'apps/backend/**'
-      - 'apps/backend/Dockerfile'
-      - 'libs/**'
-      - 'package.json'
-      - 'package-lock.json'
-      - '.github/workflows/deploy-backend.yml'
 
-  # Allow manual deployment
   workflow_dispatch:
 
-# Ensure only one deployment runs at a time
 concurrency:
-  group: render-backend-deployment
+  group: deploy-pipeline
   cancel-in-progress: false
 
 env:
@@ -34,11 +26,15 @@ jobs:
     name: 🚀 Deploy Backend to Render
     runs-on: ubuntu-latest
     timeout-minutes: 25
+    if: >
+      github.event_name == 'workflow_dispatch' ||
+      github.event.workflow_run.conclusion == 'success'
 
     steps:
       - name: 📥 Checkout repository
         uses: actions/checkout@v4
         with:
+          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
           fetch-depth: 0
 
       - name: 🧭 Set Nx affected SHAs

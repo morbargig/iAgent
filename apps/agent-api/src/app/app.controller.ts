@@ -490,7 +490,7 @@ export class AppController {
             timestamp: new Date().toISOString(),
             sessionId: 'unknown'
           };
-          writeChunk(errorChunk);
+          writeStreamingChunk(res, `${JSON.stringify(errorChunk)}\n`);
           res.end();
         } catch (endError) {
           console.error('Failed to end response after outer error:', endError);
