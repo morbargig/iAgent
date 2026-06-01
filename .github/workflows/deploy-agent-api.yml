@@ -1,0 +1,165 @@
+name: 🚀 Deploy Agent API to Render
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'apps/agent-api/**'
+      - 'apps/agent-api/Dockerfile'
+      - 'libs/**'
+      - 'package.json'
+      - 'package-lock.json'
+      - '.github/workflows/deploy-agent-api.yml'
+
+  workflow_dispatch:
+
+concurrency:
+  group: render-agent-api-deployment
+  cancel-in-progress: false
+
+env:
+  NODE_VERSION: "20"
+  RENDER_DEPLOY_HOOK: ${{ secrets.RENDER_AGENT_API_DEPLOY_HOOK }}
+  DOCKER_IMAGE: ${{ secrets.DOCKER_USERNAME }}/iagent-agent
+  NX_CLOUD_DISTRIBUTED_EXECUTION: "false"
+  NX_CLOUD_NO_ACCESS: "true"
+  NX_SKIP_CLOUD_CACHE: "true"
+
+jobs:
+  deploy-agent-api:
+    name: 🚀 Deploy Agent API to Render
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+
+    steps:
+      - name: 📥 Checkout repository
+        uses: actions/checkout@v4
+
+      - name: 🔧 Setup Node.js ${{ env.NODE_VERSION }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: "npm"
+
+      - name: 📦 Install dependencies
+        run: npm ci --prefer-offline --no-audit --production=false
+
+      - name: 🔍 Cache Nx computation cache
+        uses: actions/cache@v4
+        with:
+          path: .nx/cache
+          key: nx-${{ runner.os }}-${{ hashFiles('**/package-lock.json') }}-${{ github.sha }}
+          restore-keys: |
+            nx-${{ runner.os }}-${{ hashFiles('**/package-lock.json') }}-
+
+      - name: 🏗️ Build agent-api for production
+        run: npx nx build @iagent/agent-api --configuration=production --no-cloud
+        env:
+          NODE_ENV: production
+          NX_CLOUD_DISTRIBUTED_EXECUTION: "false"
+          NX_SKIP_CLOUD_CACHE: "true"
+          NX_CLOUD_NO_ACCESS: "true"
+
+      - name: 📊 Verify build output
+        run: |
+          echo "📊 Build verification:"
+          echo "📁 Build directory: dist/apps/agent-api"
+          echo "📏 Total size: $(du -sh dist/apps/agent-api || echo 'N/A')"
+
+          if [[ -f "dist/apps/agent-api/main.js" ]]; then
+            echo "✅ main.js exists"
+          else
+            echo "❌ main.js missing"
+            exit 1
+          fi
+
+          echo "📄 Main files:"
+          ls -la dist/apps/agent-api | head -20
+
+      - name: 🐳 Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: 🔎 Verify Docker Hub secrets
+        run: |
+          if [[ -z "${{ secrets.DOCKER_USERNAME }}" ]]; then
+            echo "❌ DOCKER_USERNAME secret is not configured"
+            exit 1
+          fi
+
+          if [[ -z "${{ secrets.DOCKER_TOKEN }}" ]]; then
+            echo "❌ DOCKER_TOKEN secret is not configured"
+            exit 1
+          fi
+
+      - name: 🔐 Log in to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_TOKEN }}
+
+      - name: 🏷️ Generate Docker image metadata
+        id: docker-meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.DOCKER_IMAGE }}
+          tags: |
+            type=raw,value=latest,enable={{is_default_branch}}
+            type=sha,prefix=sha-
+
+      - name: 🐳 Build and push agent-api Docker image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: apps/agent-api/Dockerfile
+          push: true
+          tags: ${{ steps.docker-meta.outputs.tags }}
+          labels: ${{ steps.docker-meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: 🚀 Trigger Render Deployment
+        run: |
+          if [[ -z "${{ env.RENDER_DEPLOY_HOOK }}" ]]; then
+            echo "❌ RENDER_AGENT_API_DEPLOY_HOOK secret is not configured"
+            exit 1
+          fi
+
+          HOOK_URL="${{ env.RENDER_DEPLOY_HOOK }}"
+          if [[ "$HOOK_URL" != *"clearCache="* ]]; then
+            if [[ "$HOOK_URL" == *"?"* ]]; then
+              HOOK_URL="${HOOK_URL}&clearCache=true"
+            else
+              HOOK_URL="${HOOK_URL}?clearCache=true"
+            fi
+          fi
+
+          echo "🚀 Triggering Render agent-api deployment..."
+
+          RESPONSE=$(curl -X POST "$HOOK_URL" \
+            -H "Content-Type: application/json" \
+            -w "\n%{http_code}" \
+            -s)
+
+          HTTP_CODE=$(echo "$RESPONSE" | tail -n1)
+          BODY=$(echo "$RESPONSE" | sed '$d')
+
+          echo "📡 Response status: $HTTP_CODE"
+          echo "📄 Response body: $BODY"
+
+          if [[ "$HTTP_CODE" == "200" ]] || [[ "$HTTP_CODE" == "201" ]]; then
+            echo "✅ Render deployment triggered successfully!"
+            echo "🔗 Deployment ID: $(echo "$BODY" | grep -o '"id":"[^"]*"' | cut -d'"' -f4 || echo 'N/A')"
+          else
+            echo "⚠️ Render deployment hook returned status: $HTTP_CODE"
+            echo "📄 Response: $BODY"
+            exit 1
+          fi
+
+      - name: 📋 Deployment summary
+        run: |
+          echo "📋 Deployment Summary:"
+          echo "✅ Agent API deployment triggered successfully!"
+          echo "🐳 Docker image: ${{ env.DOCKER_IMAGE }}"
+          echo "🕐 Triggered at: $(date)"
+          echo "📝 Commit: ${{ github.sha }}"
+          echo "👤 Triggered by: ${{ github.actor }}"
